@@ -1,0 +1,1082 @@
+[
+ {
+  "file": "src/ServerScriptService/DummyRespawn.server.luau",
+  "names": [
+   "ServerScriptService",
+   "DummyRespawn"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/DashRelay.server.luau",
+  "names": [
+   "ServerScriptService",
+   "DashRelay"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/PlayerStats.luau",
+  "names": [
+   "ServerScriptService",
+   "PlayerStats"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/StatsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "StatsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Damage.luau",
+  "names": [
+   "ServerScriptService",
+   "Damage"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PunchCombat.server.luau",
+  "names": [
+   "ServerScriptService",
+   "PunchCombat"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/AdminServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "AdminServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/SkillSetServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SkillSetServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Overcharge.luau",
+  "names": [
+   "ServerScriptService",
+   "Overcharge"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/ShopServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "ShopServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/SkillCooldowns.luau",
+  "names": [
+   "ServerScriptService",
+   "SkillCooldowns"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/EnemyAI.server.luau",
+  "names": [
+   "ServerScriptService",
+   "EnemyAI"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/CrowdControl.luau",
+  "names": [
+   "ServerScriptService",
+   "CrowdControl"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Passives.luau",
+  "names": [
+   "ServerScriptService",
+   "Passives"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Loadout.luau",
+  "names": [
+   "ServerScriptService",
+   "Loadout"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/LoadoutServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "LoadoutServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/LuminanceServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "LuminanceServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Projectiles.luau",
+  "names": [
+   "ServerScriptService",
+   "Projectiles"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/RangedServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "RangedServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/AnimationPreview.server.luau",
+  "names": [
+   "ServerScriptService",
+   "AnimationPreview"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Ragdoll.server.luau",
+  "names": [
+   "ServerScriptService",
+   "Ragdoll"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Sunmark.luau",
+  "names": [
+   "ServerScriptService",
+   "Sunmark"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/StatusEffects.luau",
+  "names": [
+   "ServerScriptService",
+   "StatusEffects"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/KillFeed.server.luau",
+  "names": [
+   "ServerScriptService",
+   "KillFeed"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Skills/BlackHole.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "BlackHole"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Tornado.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Tornado"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/AxeBoomerang.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "AxeBoomerang"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/SpineLash.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "SpineLash"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/OvercomeThePossibility.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "OvercomeThePossibility"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/PrismShot.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "PrismShot"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/RefractionField.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "RefractionField"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/SolarLance.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "SolarLance"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/PrismForm.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "PrismForm"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Lightstep.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Lightstep"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/KnifeThrow.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "KnifeThrow"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/LightShot.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "LightShot"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/RevolverShot.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "RevolverShot"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/FanTheHammer.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "FanTheHammer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/DeadEye.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "DeadEye"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/PlaceWhereDreamEnds.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "PlaceWhereDreamEnds"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/AboveTheClouds.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "AboveTheClouds"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/HitFeedback.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "HitFeedback"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Dash.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Dash"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ShiftLock.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ShiftLock"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Stamina.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Stamina"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Sprint.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Sprint"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/StatusHUD.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "StatusHUD"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Punch.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Punch"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/StatsMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "StatsMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/AdminPanel.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "AdminPanel"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillBar.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillBar"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/init.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillEffects"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/TornadoEffect.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillEffects",
+   "TornadoEffect"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/BlackHoleEffect.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillEffects",
+   "BlackHoleEffect"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DodgeCharges.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DodgeCharges"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DoubleJump.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DoubleJump"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Inventory.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Inventory"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/OverheadHealth.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "OverheadHealth"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/AimIndicator.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "AimIndicator"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Hotbar.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Hotbar"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Flight.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Flight"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Ranged.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Ranged"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/AnimationPreview.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "AnimationPreview"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ShopMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ShopMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/StatusVFX.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "StatusVFX"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/KillFeed.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "KillFeed"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterCharacterScripts/Health.server.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterCharacterScripts",
+   "Health"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterCharacterScripts",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterCharacterScripts/MovementAnimations.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterCharacterScripts",
+   "MovementAnimations"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterCharacterScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/StatConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "StatConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/PunchConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "PunchConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/SkillSetConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "SkillSetConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/ShopConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "ShopConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/VFX.luau",
+  "names": [
+   "ReplicatedStorage",
+   "VFX"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/StatusConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "StatusConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/StatusIcons.luau",
+  "names": [
+   "ReplicatedStorage",
+   "StatusIcons"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
+  "names": [
+   "ServerStorage",
+   "BlackHoleTemplate",
+   "ClientEffect"
+  ],
+  "classes": [
+   "ServerStorage",
+   "Model",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Client",
+  "enabled": true
+ }
+]
