@@ -75,8 +75,32 @@ check("valid", Keybinds.Valid(Keybinds.Defaults()) and not Keybinds.Valid(double
 	and not Keybinds.Valid(missing) and not Keybinds.Valid(spaced))
 
 check("short_names", Keybinds.ShortName("Q") == "Q" and Keybinds.ShortName("F5") == "F5"
-	and Keybinds.ShortName("Keypad1") == "N1" and Keybinds.ShortName("Semicolon") == ";"
-	and Keybinds.ShortName("LeftAlt") == "LAlt")
+	and Keybinds.ShortName("KeypadOne") == "N1" and Keybinds.ShortName("KeypadZero") == "N0"
+	and Keybinds.ShortName("Semicolon") == ";" and Keybinds.ShortName("LeftAlt") == "LAlt")
+
+-- Roblox names the number pad KeypadZero..KeypadNine; "Keypad1" isn't a KeyCode
+check("keypad_names_are_real", Keybinds.Allowed.KeypadOne and Keybinds.Allowed.KeypadNine
+	and Keybinds.Allowed.KeypadZero and not Keybinds.Allowed.Keypad1)
+
+-- keys Roblox's own controls use: I and O zoom the camera, . opens emotes, , turns the camera
+check("roblox_keys_not_allowed", not Keybinds.Allowed.I and not Keybinds.Allowed.O
+	and not Keybinds.Allowed.Period and not Keybinds.Allowed.Comma)
+
+-- every allowed key is a real Enum.KeyCode name (checked against Roblox's list)
+local REAL = {}
+for name in string.gmatch("A B C D E F G H I J K L M N O P Q R S T U V W X Y Z F1 F2 F3 F4 F5 F6 F7 F8 "
+	.. "KeypadZero KeypadOne KeypadTwo KeypadThree KeypadFour KeypadFive KeypadSix KeypadSeven KeypadEight KeypadNine "
+	.. "Comma Period Semicolon Quote LeftBracket RightBracket Minus Equals BackSlash LeftAlt RightAlt CapsLock", "%S+") do
+	REAL[name] = true
+end
+local allReal = true
+for name in pairs(Keybinds.Allowed) do
+	if not REAL[name] then
+		allReal = false
+		print("  not a KeyCode name: " .. name)
+	end
+end
+check("allowed_are_keycode_names", allReal)
 
 if failures > 0 then
 	error(string.format("%d check(s) failed", failures))

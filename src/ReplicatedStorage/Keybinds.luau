@@ -33,21 +33,24 @@ for _, action in ipairs(Keybinds.Actions) do
 end
 
 -- every key an action may be put on (Enum.KeyCode names). Letters but
--- W A S D (movement), B and M (Inventory, Stats) and P (Settings); F1-F8
--- (F9 is the console, F11 fullscreen); the number pad; some punctuation
+-- W A S D (movement), B and M (Inventory, Stats), P (Settings) and I and O
+-- (Roblox's camera zoom); F1-F8 (F9 is the console, F11 fullscreen); the
+-- number pad (KeypadZero..KeypadNine); some punctuation, not . (emotes) or
+-- , (camera turning)
 Keybinds.Allowed = {}
-for letter in string.gmatch("CEFGHIJKLNOQRTUVXYZ", ".") do
+for letter in string.gmatch("CEFGHJKLNQRTUVXYZ", ".") do
 	Keybinds.Allowed[letter] = true
 end
 for i = 1, 8 do
 	Keybinds.Allowed["F" .. i] = true
 end
-for i = 0, 9 do
-	Keybinds.Allowed["Keypad" .. i] = true
+local DIGITS = { "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine" }
+local KEYPAD_DIGIT = {} -- "KeypadOne" -> "1"
+for i, word in ipairs(DIGITS) do
+	Keybinds.Allowed["Keypad" .. word] = true
+	KEYPAD_DIGIT["Keypad" .. word] = tostring(i - 1)
 end
 local SHORT = {
-	Comma = ",",
-	Period = ".",
 	Semicolon = ";",
 	Quote = "'",
 	LeftBracket = "[",
@@ -65,7 +68,7 @@ end
 
 -- a key's label for a small keycap: "Q", "F5", "N1" for the number pad, ";"
 function Keybinds.ShortName(keyName)
-	local digit = string.match(keyName, "^Keypad(%d)$")
+	local digit = KEYPAD_DIGIT[keyName]
 	return SHORT[keyName] or (digit and "N" .. digit) or keyName
 end
 

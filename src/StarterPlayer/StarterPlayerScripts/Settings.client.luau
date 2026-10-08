@@ -4,9 +4,10 @@
 -- press a key, and it's bound there (a key another action had swaps the
 -- two; reserved keys are refused). RESET TO DEFAULTS puts every action back.
 -- Each change goes to SettingsServer on the SetKeybinds remote, which saves
--- the player's Keybinds attribute; the rows show that attribute, so they
--- always match what's saved. While waiting for a key, Keybinds.Capturing()
+-- the player's Keybinds attribute, at most once per SEND_SPACING with the
+-- newest change winning; the rows show that attribute once it's back. While waiting for a key, Keybinds.Capturing()
 -- is on and the skill bar, dash, reload and gallery ignore key presses.
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -23,6 +24,8 @@ local KEY_WIDTH = 70
 local GEAR_SIZE = 36
 local CAPTURE_TIMEOUT = 6 -- seconds of waiting for a key before giving up
 local CAPTURE_RELEASE = 0.15 -- seconds the bound key stays swallowed, so it doesn't also cast
+local SEND_SPACING = 0.6 -- seconds between saves (SettingsServer takes one per 0.5 s)
+local PENDING_TIMEOUT = 3 -- seconds a save may go unanswered before the saved keys show again
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local BUTTON = Color3.fromRGB(38, 38, 50)
 local TEXT = Color3.new(1, 1, 1)
@@ -135,13 +138,58 @@ local capturing -- the action id waiting for a key, or nil
 local captureToken
 local status
 
-local function refresh()
+-- Saves go out at most once per SEND_SPACING, the newest one winning, so
+-- quick changes aren't dropped by the server's limit. Until it's echoed
+-- back, the bindings shown and built on are the pending ones.
+local pending -- the map waiting to be sent or echoed, or nil
+local lastSentAt = -math.huge
+local sendQueued = false
+
+local refresh -- defined below
+
+local function shown()
+	return pending or Keybinds.Current()
+end
+
+local function flush()
+	sendQueued = false
+	if not pending then
+		return
+	end
+	lastSentAt = os.clock()
+	local sent = pending
+	setKeybinds:FireServer(Keybinds.Serialize(sent))
+	-- never echoed (refused, or nothing changed): show what's saved again
+	task.delay(PENDING_TIMEOUT, function()
+		if pending == sent and not sendQueued then
+			pending = nil
+			refresh()
+		end
+	end)
+end
+
+local function save(map)
+	pending = map
+	if sendQueued then
+		return
+	end
+	local wait = SEND_SPACING - (os.clock() - lastSentAt)
+	if wait <= 0 then
+		flush()
+	else
+		sendQueued = true
+		task.delay(wait, flush)
+	end
+end
+
+function refresh()
+	local map = shown()
 	for id, keyButton in pairs(keyButtons) do
 		if id == capturing then
 			keyButton.Text = "Press a key…"
 			keyButton.TextColor3 = ACCENT
 		else
-			keyButton.Text = Keybinds.Text(id)
+			keyButton.Text = Keybinds.ShortName(map[id])
 			keyButton.TextColor3 = TEXT
 		end
 	end
@@ -217,7 +265,7 @@ end
 -- the key the player pressed while an action waited for one
 local function bindPressed(keyCode)
 	local id = capturing
-	local current = Keybinds.Current()
+	local current = shown()
 	local bound, reason = Keybinds.Bind(current, id, keyCode.Name)
 	if not bound then
 		setStatus(reason == "reserved" and "That key is reserved. Pick another." or "Can't bind that.", DANGER)
@@ -229,7 +277,7 @@ local function bindPressed(keyCode)
 			message ..= string.format("  (%s moved to %s)", labelOf(otherId), Keybinds.ShortName(current[id]))
 		end
 	end
-	setKeybinds:FireServer(Keybinds.Serialize(bound))
+	save(bound)
 	stopCapture()
 	setStatus(message, TEXT)
 end
@@ -255,7 +303,8 @@ resetButton.Activated:Connect(function()
 	if capturing then
 		stopCapture()
 	end
-	setKeybinds:FireServer("")
+	save(Keybinds.Defaults())
+	refresh()
 	setStatus("Every key is back on its default.", TEXT)
 end)
 
@@ -263,9 +312,10 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if input.UserInputType ~= Enum.UserInputType.Keyboard then
 		return
 	end
-	-- waiting for a key: this one is it, whatever else wanted it
+	-- waiting for a key: this one is it, whatever else wanted it (but not
+	-- typing into chat or another text box: that calls the wait off)
 	if capturing then
-		if input.KeyCode == Enum.KeyCode.Escape then
+		if UserInputService:GetFocusedTextBox() or input.KeyCode == Enum.KeyCode.Escape then
 			stopCapture()
 			setStatus("")
 		else
@@ -280,6 +330,22 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- the rows show what's saved, so a refused or late save never shows wrong
-Keybinds.Changed(refresh)
+-- Esc usually opens Roblox's own menu without reaching the script above:
+-- the menu opening calls off any wait for a key and closes this one
+GuiService.MenuOpened:Connect(function()
+	if capturing then
+		stopCapture()
+		setStatus("")
+	end
+	setOpen(false)
+end)
+
+-- the rows show what's saved once it's echoed back (or refused: then the
+-- saved bindings show again)
+Keybinds.Changed(function()
+	if pending and not sendQueued and Keybinds.Serialize(pending) == Keybinds.Serialize(Keybinds.Current()) then
+		pending = nil
+	end
+	refresh()
+end)
 refresh()
