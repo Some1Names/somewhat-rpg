@@ -5,7 +5,9 @@
 -- blasts everyone near the caster away, then splits into three red-tinged
 -- tornadoes fanning out. Players protected by CrowdControl aren't carried or
 -- thrown, only hurt as it passes, and a carried player is dropped after
--- CrowdControl's MaxHold or as soon as they dodge. Clients draw them from the same path (see
+-- CrowdControl's MaxHold or as soon as they dodge. Someone flying (Iridescent
+-- Requiem) is only hurt, never carried or thrown: light outruns the wind,
+-- and a carried player who takes off is let go. Clients draw them from the same path (see
 -- the template's ClientEffect). SkillSetServer checks the tool, mastery and
 -- cooldown before calling Cast.
 local Debris = game:GetService("Debris")
@@ -68,6 +70,11 @@ local function groundBelow(position, ignore)
 	params.RespectCanCollide = true
 	local hit = workspace:Raycast(position + Vector3.new(0, 10, 0), Vector3.new(0, -200, 0), params)
 	return hit and hit.Position or position - Vector3.new(0, 3, 0)
+end
+
+-- in flight (LuminanceServer's Flying attribute): it can't carry them
+local function flying(model)
+	return model ~= nil and model:GetAttribute("Flying") == true
 end
 
 local function attachPull(root)
@@ -170,7 +177,7 @@ local function runTornado(caster, casterCharacter, start, direction, settings, c
 				if root and not caught[humanoid] and not claimed[humanoid] and humanoid.Health > 0 then
 					local offset = root.Position - base
 					if Vector3.new(offset.X, 0, offset.Z).Magnitude <= reach and offset.Y > -4 and offset.Y < CONFIG.CatchHeight then
-						if CrowdControl.CanControl(character) then
+						if CrowdControl.CanControl(character) and not flying(character) then
 							claimed[humanoid] = true
 							caught[humanoid] = { root = root, caughtAt = now, pull = not root.Anchored and attachPull(root) or nil }
 							CrowdControl.Begin(character)
@@ -187,9 +194,10 @@ local function runTornado(caster, casterCharacter, start, direction, settings, c
 				if not entry.root.Parent then
 					caught[humanoid] = nil
 					CrowdControl.End(humanoid.Parent)
-				elseif not CrowdControl.Holding(humanoid.Parent) then
-					-- a player whose hold is up (CrowdControl.MaxHold) or who dodged
-					-- out drops from wherever they've got to; it can still graze them
+				elseif not CrowdControl.Holding(humanoid.Parent) or flying(humanoid.Parent) then
+					-- a player whose hold is up (CrowdControl.MaxHold), who dodged
+					-- out or who took off drops from wherever they've got to; it can
+					-- still graze them
 					if entry.pull then
 						entry.pull.velocity:Destroy()
 						entry.pull.attachment:Destroy()
@@ -290,7 +298,7 @@ function Tornado.Cast(player, character, aim)
 		if target and not blasted[target] and target.Health > 0 and target.RootPart then
 			blasted[target] = true
 			Damage.Deal(player, target, OVERCHARGED.BlastDamage, DAMAGE_OPTIONS)
-			if not target.RootPart.Anchored and CrowdControl.CanControl(model) then
+			if not target.RootPart.Anchored and not flying(model) and CrowdControl.CanControl(model) then
 				fling(target.RootPart, root.Position, OVERCHARGED.BlastSpeed, OVERCHARGED.BlastLift, OVERCHARGED.BlastTime)
 				CrowdControl.Apply(model, OVERCHARGED.BlastTime)
 			end

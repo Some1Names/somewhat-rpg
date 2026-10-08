@@ -3,11 +3,14 @@
 -- character's PrismForm attribute is on, LuminanceServer burns the light
 -- instead of gathering it, physical hits pass through him (Passives), and the
 -- skills marked `form` in SkillSetConfig are empowered. It ends when X is
--- pressed again (Revert), the light runs out, the set is put away, or he
--- dies. Clients draw it from the attribute (SkillEffects).
+-- pressed again (Revert), the light runs out, the set is put away, he
+-- dies, or Photoshop's Desaturate drains the colour out of him (Desaturated,
+-- which also keeps him from entering it). Clients draw it from the
+-- attribute (SkillEffects).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 
 local SET_NAME = "IridescentRequiem"
 local FORM = SkillSetConfig.Sets[SET_NAME].form
@@ -31,6 +34,7 @@ local function watch(player, character, humanoid)
 			or humanoid.Health <= 0
 			or setName ~= SET_NAME
 			or (player:GetAttribute(LUMINANCE) or 0) <= 0
+			or StatusConfig.Stacks(character, "Desaturated") > 0
 		then
 			break
 		end
@@ -44,6 +48,9 @@ local PrismForm = {}
 function PrismForm.Cast(player, character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if not humanoid or humanoid.Health <= 0 or character:GetAttribute(FORM.attribute) then
+		return false
+	end
+	if StatusConfig.Stacks(character, "Desaturated") > 0 then
 		return false
 	end
 	local luminance = player:GetAttribute(LUMINANCE) or 0

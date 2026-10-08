@@ -6,8 +6,9 @@
 -- while it's open detonates it (Recast): it collapses at once, dealing the
 -- damage it had left in one hit and throwing everyone in reach outward.
 -- While Mandela is overcharged it's the red black hole instead: bigger,
--- longer, stronger. SkillSetServer checks the tool, mastery and cooldown
--- before calling Cast.
+-- longer, stronger. Someone flying (Iridescent Requiem) is hurt but never
+-- dragged or thrown: light outruns the pull. SkillSetServer checks the
+-- tool, mastery and cooldown before calling Cast.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -183,6 +184,11 @@ local function fling(root, from)
 	end)
 end
 
+-- in flight (LuminanceServer's Flying attribute): it can't hold them
+local function flying(model)
+	return model ~= nil and model:GetAttribute("Flying") == true
+end
+
 -- collapses early: everything it would still have dealt, at once, and
 -- everyone in reach thrown clear (those it was holding, or anyone not
 -- protected by CrowdControl); returns who it threw
@@ -196,7 +202,7 @@ local function detonate(caster, model, center, variant, variantName, timeLeft, o
 	for humanoid, root in pairs(findTargets(center, variant.radius, overlap)) do
 		Damage.Deal(caster, humanoid, damage, DAMAGE_OPTIONS)
 		local target = humanoid.Parent
-		if root.Parent and not root.Anchored and (held[humanoid] or CrowdControl.CanControl(target)) then
+		if root.Parent and not root.Anchored and not flying(target) and (held[humanoid] or CrowdControl.CanControl(target)) then
 			fling(root, center)
 			CrowdControl.Apply(target, CONFIG.DetonateFlingTime)
 			thrown[humanoid] = true
@@ -241,7 +247,7 @@ local function runBlackHole(caster, casterCharacter, center, launchFrom, travelT
 			-- let go of anyone out of reach, and of players whose hold is up
 			-- (CrowdControl.MaxHold, or they dodged out)
 			for humanoid, pull in pairs(pulls) do
-				if not targets[humanoid] or not CrowdControl.Holding(humanoid.Parent) then
+				if not targets[humanoid] or not CrowdControl.Holding(humanoid.Parent) or flying(humanoid.Parent) then
 					releasePull(pull)
 					pulls[humanoid] = nil
 					CrowdControl.End(humanoid.Parent)
@@ -249,7 +255,7 @@ local function runBlackHole(caster, casterCharacter, center, launchFrom, travelT
 			end
 			-- everyone in reach is hurt; only those not protected are dragged
 			for humanoid, root in pairs(targets) do
-				if not pulls[humanoid] and CrowdControl.CanControl(humanoid.Parent) then
+				if not pulls[humanoid] and not flying(humanoid.Parent) and CrowdControl.CanControl(humanoid.Parent) then
 					pulls[humanoid] = attachPull(root, TRAIL_COLORS[variantName])
 					CrowdControl.Begin(humanoid.Parent)
 				end
