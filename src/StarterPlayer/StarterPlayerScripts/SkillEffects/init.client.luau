@@ -12,7 +12,8 @@
 -- Most looks come from ReplicatedStorage.VFXPrefabs through the VFX toolkit
 -- (ReplicatedStorage.VFX): prefabs, camera shake, impact frames, craters.
 -- The tornado and black hole models are drawn by the TornadoEffect and
--- BlackHoleEffect modules under this script (see the end).
+-- BlackHoleEffect modules under this script (see the end), and Photoshop's
+-- looks by PhotoshopEffects.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local HttpService = game:GetService("HttpService")
@@ -2981,6 +2982,21 @@ function effects.EnemyDash(root, time)
 	for _, instance in ipairs({ trail, top, bottom }) do
 		Debris:AddItem(instance, time + 0.25)
 	end
+end
+
+-- Photoshop's looks live in their own module, built on the helpers here
+local photoshopEffects = require(script:WaitForChild("PhotoshopEffects"))({
+	folder = folder,
+	effectPart = effectPart,
+	tween = tween,
+	flash = flash,
+	ring = ring,
+	burst = burst,
+	lightBeam = lightBeam,
+	ghostOf = ghostOf,
+})
+for kind, draw in pairs(photoshopEffects) do
+	effects[kind] = draw
 end
 
 local function play(kind, ...)
