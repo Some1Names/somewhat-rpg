@@ -6,7 +6,8 @@
 -- flies, whose G takes off and lands instead (and whose Prism Form spends
 -- it: the skills it empowers get a shimmering orange-cyan strip and their
 -- `formAim`). In shade the Luminance meter dims above the shade cap, the
--- most it can hold there.
+-- most it can hold there. A set with an Undo (Photoshop) shows it there
+-- instead, filling back up as it recharges; its G undoes.
 -- A set with its own dash (Lightstep) gets a small Q slot on the bar's left
 -- showing the dodge charges it spends (DodgeCharges), and one with a ranged
 -- move a small slot beside it showing its ammo: charges, shots of Luminance
@@ -31,6 +32,7 @@ local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
 local activateOvercharge = ReplicatedStorage:WaitForChild("ActivateOvercharge")
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
+local undoRemote = ReplicatedStorage:WaitForChild("Undo") -- made by PhotoshopServer
 local masteryEvent = ReplicatedStorage:WaitForChild("MasteryUp")
 local player = Players.LocalPlayer
 
@@ -476,6 +478,16 @@ local function tryOvercharge()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local setName = equippedSet()
+	-- on a set with an Undo, the same key rewinds (once it's recharged)
+	local undo = setName and SkillSetConfig.Sets[setName].undo
+	if undo and humanoid and humanoid.Health > 0 then
+		if (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) > workspace:GetServerTimeNow() then
+			overchargeDeniedUntil = os.clock() + 0.4
+			return
+		end
+		undoRemote:FireServer()
+		return
+	end
 	-- on a set that flies, the same key takes off or lands (it takes some light)
 	local flight = setName and SkillSetConfig.Sets[setName].flight
 	if flight and humanoid and humanoid.Health > 0 then
@@ -568,8 +580,28 @@ RunService.RenderStepped:Connect(function()
 	local settings = set.overcharge
 	local overcharged = settings ~= nil and SkillSetConfig.IsOvercharged(player, setName)
 	local luminancePassive = set.passive ~= nil and set.passive.name == "Luminance"
-	stackRow.Visible = settings ~= nil or luminancePassive
-	if luminancePassive then
+	local undo = set.undo
+	stackRow.Visible = settings ~= nil or luminancePassive or undo ~= nil
+	if undo then
+		-- one segment that fills back up as Undo recharges
+		buildStacks(1)
+		local left = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
+		if left > 0 then
+			stackLabel.Text = string.format("%s %ds", string.upper(undo.name), math.ceil(left))
+			stackLabel.TextColor3 = MUTED
+		else
+			stackLabel.Text = string.format("%s  [%s]", string.upper(undo.name), SkillSetConfig.OverchargeKey)
+			stackLabel.TextColor3 = set.color
+		end
+		if os.clock() < overchargeDeniedUntil then
+			stackLabel.TextColor3 = DENIED
+		end
+		local segment = stackSegments[1]
+		segment.fill.Size = UDim2.fromScale(math.clamp(1 - left / undo.cooldown, 0, 1), 1)
+		segment.fill.BackgroundColor3 = left > 0 and COOLING or set.color
+		segment.fill.BackgroundTransparency = 0
+		segment.track.BackgroundTransparency = TRACK_TRANSPARENCY
+	elseif luminancePassive then
 		-- the light held, one band of the spectrum per segment
 		buildStacks(LUMINANCE_SEGMENTS)
 		local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0

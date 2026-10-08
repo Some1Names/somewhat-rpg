@@ -7,8 +7,9 @@
 -- (reality he rewrote can't be undone) and cut by healing cuts like
 -- Poisoned. It can't slip a hold (CrowdControl.Held) and recharges for
 -- undo.cooldown (the player's UndoReadyAttribute, server time, for the bar).
--- The Gallery keeps GallerySlots photos of places (the saved PhotoGallery
--- text attribute, "x,y,z;x,y,z;" with empty entries for empty slots). The
+-- The Gallery keeps the set's gallery.slots photos of places (the saved
+-- PhotoGallery text attribute, "x,y,z;x,y,z;" with empty entries for empty
+-- slots). The
 -- PhotoGallery remote takes ("save", slot): the spot she stands on, and
 -- ("travel", slot): out of combat only (no damage taken or dealt for
 -- CombatLock seconds), the photo develops for DevelopTime and she steps
@@ -33,7 +34,7 @@ local UNDO_READY = SkillSetConfig.UndoReadyAttribute(SET_NAME)
 local GALLERY = "PhotoGallery" -- saved by PlayerStats
 local CONFIG = {
 	SampleInterval = 0.25, -- seconds between History samples
-	GallerySlots = 3,
+	GallerySlots = SkillSetConfig.Sets[SET_NAME].gallery.slots,
 	CombatLock = 8, -- seconds without dealing or taking damage before travelling
 	DevelopTime = 2, -- seconds the photo develops before she steps in
 }

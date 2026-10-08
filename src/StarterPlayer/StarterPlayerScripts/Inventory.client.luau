@@ -560,6 +560,12 @@ local function showDetails()
 	if set.flight then
 		detailRow(SkillSetConfig.FlightKey, "Flight")
 	end
+	if set.undo then
+		detailRow(SkillSetConfig.OverchargeKey, set.undo.name)
+	end
+	if set.gallery then
+		detailRow(set.gallery.key, set.gallery.name)
+	end
 	local level = mastery(selected)
 	for _, key in ipairs(SkillSetConfig.Keys) do
 		local skill = set.skills and set.skills[key]

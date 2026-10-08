@@ -309,6 +309,9 @@ SkillSetConfig.Sets = {
 		-- G, Undo: back to where she stood `rewind` seconds ago, healing
 		-- healShare of the damage taken since
 		undo = { name = "Undo", cooldown = 18, rewind = 3, healShare = 0.5 },
+		-- `key` opens her saved photos of places, `slots` of them, to step
+		-- back into out of combat (PhotoshopServer, the PhotoGallery script)
+		gallery = { name = "Gallery", key = "T", slots = 3 },
 		-- camera flashes at the mouse, from 3 charges; one on someone she's
 		-- Framed keeps the frame going
 		ranged = {
