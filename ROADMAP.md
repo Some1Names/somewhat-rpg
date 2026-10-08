@@ -28,8 +28,13 @@ server code; Studio for visuals, animations, models.)
 
 1. **Aido** (S power, red, atomic bomb): Z Catastrophe, X Collapse, C Total Destruction, F dragon
    form ultimate; inflicts Burnt.
-2. **Photoshop** (Nozomi, S power, pink / light blue): photo teleport / fast travel, Iris Horizon,
-   ultimate Kaleidoscope.
+2. **Photoshop** (Nozomi, S power, pink / light blue): **code built** on branch
+   `claude/vigilant-rubin-ckqtnn` (spec and plan in `docs/superpowers/`), waiting on the Studio
+   apply and a playtest with `docs/superpowers/specs/2026-10-08-photoshop-checklist.md`. Needs in
+   Studio: a `Photoshop` Tool in `ServerStorage.SkillSetTools` (attribute `SkillSet = "Photoshop"`);
+   optional wearables (`ServerStorage.SkillSets.Photoshop`) and `ReplicatedStorage.PhotoshopAnimations`
+   (CastZ, CastX, CastC, CastV, CastF). Later: a "named areas" tab for the Gallery once the map
+   has area markers.
 3. Later: Himaru (S power), Daemon (A power) + Daemon's katana (A weapon, shop item),
    Kintsugi (B power), Monotwister (Aido's katana, S weapon).
 
@@ -39,7 +44,8 @@ and saved ownership + loadout (`Loadout` is session-only today).
 ## Before release
 
 - `SkillSetConfig.OwnAllSets` is `true` (everyone owns every set, for testing): turn it off. (Cloud)
-- Power Dealer prices are placeholders (Iridescent Requiem ¥25,000; the rest are "coming soon"). (Cloud)
+- Power Dealer prices are placeholders (Iridescent Requiem and Photoshop ¥25,000; the rest are
+  "coming soon"). (Cloud)
 - Kill feed credit between two real players is untested (only the `Player Dummy`). (Studio, 2 players)
 - Remove `workspace."Player Dummy"` when done testing the kill feed. (Studio)
 - `IridescentRequiemAnimations.CastX` (Prism Form pose) is still waiting to be published. (Studio, owner)
