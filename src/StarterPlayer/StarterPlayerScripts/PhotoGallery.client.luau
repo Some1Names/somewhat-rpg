@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local galleryRemote = ReplicatedStorage:WaitForChild("PhotoGallery") -- made by PhotoshopServer
 local player = Players.LocalPlayer
@@ -188,11 +189,12 @@ closeButton.Activated:Connect(function()
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then
+	if gameProcessed or Keybinds.Capturing() then
 		return
 	end
 	local set = gallerySet()
-	if set and input.KeyCode == Enum.KeyCode[set.gallery.key] then
+	-- the player's own gallery key (Keybinds; the set's gallery.key unless rebound)
+	if set and input.KeyCode == Keybinds.Key("Gallery") then
 		gui.Enabled = not gui.Enabled
 		if gui.Enabled then
 			refresh()

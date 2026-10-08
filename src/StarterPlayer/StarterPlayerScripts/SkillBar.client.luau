@@ -17,7 +17,9 @@
 -- it's locked, plus the set's overcharge stacks (Mandela's Backbone Power):
 -- once full they pulse green until G overcharges the set, burn red and drain while
 -- it's overcharged, then show the overcharge cooldown. Also pops up mastery
--- level ups. SkillSetServer checks every cast and overcharge; the cooldowns
+-- level ups. The keys are the player's own (Keybinds, set in Settings); a
+-- skill still reaches the server by its slot (Z..F) whatever key cast it.
+-- SkillSetServer checks every cast and overcharge; the cooldowns
 -- here are just the client's prediction for the display.
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -26,6 +28,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
@@ -192,6 +195,7 @@ for i, key in ipairs(keys) do
 		BackgroundColor3 = TEXT,
 		Position = UDim2.fromOffset(4, 4),
 		Size = UDim2.fromOffset(18, 18),
+		AutomaticSize = Enum.AutomaticSize.X, -- wider for keys like F5 or LAlt
 	})
 	local status = label(frame, { TextSize = 14, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.new(1, 0, 0, 18) })
 	-- strip along the top while this skill is in its overcharged form
@@ -247,6 +251,7 @@ local function miniSlot(keyText)
 		BackgroundColor3 = TEXT,
 		Position = UDim2.fromOffset(3, 3),
 		Size = UDim2.fromOffset(14, 14),
+		AutomaticSize = Enum.AutomaticSize.X,
 	})
 	slot.status = label(slot.frame, { TextSize = 11, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.new(1, 0, 0, 14) })
 	slot.name = label(slot.frame, {
@@ -260,8 +265,18 @@ local function miniSlot(keyText)
 	make("UITextSizeConstraint", { Parent = slot.name, MaxTextSize = 8 })
 	return slot
 end
-local dashSlot = miniSlot("Q")
+local dashSlot = miniSlot(Keybinds.Text("Dash"))
 local rangedSlot = miniSlot("M2")
+
+-- the keycaps show the player's own keys (Settings), kept up as they change
+local function refreshKeys()
+	for key, slot in pairs(slots) do
+		slot.keycap.Text = Keybinds.Text("Skill" .. key)
+	end
+	dashSlot.keycap.Text = Keybinds.Text("Dash")
+end
+refreshKeys()
+Keybinds.Changed(refreshKeys)
 local dashWasCooling = false
 local lastDodgeCharges = DodgeCharges.Get()
 
@@ -471,8 +486,7 @@ local function pressSkill(key)
 	end
 end
 
--- the overcharge key does something only with full stacks and no cooldown
-local OVERCHARGE_KEYCODE = Enum.KeyCode[SkillSetConfig.OverchargeKey]
+-- the Special key (G unless rebound) does something only with full stacks and no cooldown
 local overchargeDeniedUntil = 0 -- the meter's label flashes red after a refused press
 local function tryOvercharge()
 	local character = player.Character
@@ -512,18 +526,20 @@ local function tryOvercharge()
 	activateOvercharge:FireServer()
 end
 
-local keyForCode = {}
-for _, key in ipairs(keys) do
-	keyForCode[Enum.KeyCode[key]] = key
+-- the skill slot a key is bound to (Keybinds' SkillZ..SkillF), if any
+local function slotFor(keyCode)
+	local action = Keybinds.ActionFor(keyCode)
+	local slot = action and string.match(action, "^Skill(%u)$")
+	return slot and slots[slot] and slot or nil
 end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then
+	if gameProcessed or Keybinds.Capturing() then
 		return
 	end
-	local key = keyForCode[input.KeyCode]
+	local key = slotFor(input.KeyCode)
 	if key then
 		pressSkill(key)
-	elseif input.KeyCode == OVERCHARGE_KEYCODE then
+	elseif Keybinds.ActionFor(input.KeyCode) == "Special" then
 		tryOvercharge()
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 and aiming then
 		-- right click calls the aim off
@@ -532,7 +548,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 -- letting go of the aimed key casts it, even over a menu
 UserInputService.InputEnded:Connect(function(input)
-	local key = keyForCode[input.KeyCode]
+	local key = slotFor(input.KeyCode)
 	if key and key == aiming then
 		stopAiming()
 		cast(key)
@@ -590,7 +606,7 @@ RunService.RenderStepped:Connect(function()
 			stackLabel.Text = string.format("%s %ds", string.upper(undo.name), math.ceil(left))
 			stackLabel.TextColor3 = MUTED
 		else
-			stackLabel.Text = string.format("%s  [%s]", string.upper(undo.name), SkillSetConfig.OverchargeKey)
+			stackLabel.Text = string.format("%s  [%s]", string.upper(undo.name), Keybinds.Text("Special"))
 			stackLabel.TextColor3 = set.color
 		end
 		if os.clock() < overchargeDeniedUntil then
@@ -640,7 +656,7 @@ RunService.RenderStepped:Connect(function()
 				stackLabel.TextColor3 = MUTED
 			elseif filled >= settings.maxStacks then
 				ready = true
-				stackLabel.Text = string.format("READY  [%s]", SkillSetConfig.OverchargeKey)
+				stackLabel.Text = string.format("READY  [%s]", Keybinds.Text("Special"))
 				stackLabel.TextColor3 = ACCENT
 			else
 				stackLabel.Text = string.upper(settings.name)
@@ -839,7 +855,7 @@ masteryEvent.OnClientEvent:Connect(function(setName, fromLevel, toLevel)
 		local skill = set.skills[key]
 		if skill and skill.handler and skill.mastery > fromLevel and skill.mastery <= toLevel then
 			line += 1
-			popup(string.format("%s (%s) unlocked", skill.name, key), GOLD, 16, 0.16 + 0.045 * line, 2.5)
+			popup(string.format("%s (%s) unlocked", skill.name, Keybinds.Text("Skill" .. key)), GOLD, 16, 0.16 + 0.045 * line, 2.5)
 		end
 	end
 end)

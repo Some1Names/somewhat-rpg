@@ -1,5 +1,5 @@
--- Press Q to dash the way you're moving (relative to the camera), or
--- forward if no movement key is held. A dash out to the side of where the
+-- Press the dash key (Q unless rebound, Keybinds) to dash the way you're
+-- moving (relative to the camera), or forward if no movement key is held. A dash out to the side of where the
 -- character faces (shift lock, or mid-turn) keeps facing ahead and plays
 -- DashLeft/DashRightAnimation; any other dash turns to face the way it goes
 -- and plays DashRollAnimation (right leg leading), or, straight after
@@ -26,6 +26,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local VFX = require(ReplicatedStorage:WaitForChild("VFX"))
@@ -45,7 +46,6 @@ local sideAnimations = {
 local player = Players.LocalPlayer
 local controls = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")):GetControls()
 
-local DASH_KEY = Enum.KeyCode.Q
 local DASH_SPEED = 100 -- studs per second
 local DASH_TIME = 0.2 -- seconds
 local STAMINA_COST = StatConfig.StaminaPerBox / 2
@@ -501,7 +501,8 @@ local function dash()
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == DASH_KEY then
+	-- the player's own dash key (Keybinds; Q unless rebound in Settings)
+	if not gameProcessed and not Keybinds.Capturing() and input.KeyCode == Keybinds.Key("Dash") then
 		dash()
 	end
 end)
