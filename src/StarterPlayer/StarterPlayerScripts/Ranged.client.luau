@@ -370,7 +370,7 @@ local function fire()
 		params.FilterType = Enum.RaycastFilterType.Exclude
 		params.FilterDescendantsInstances = { character, workspace:FindFirstChild("SkillEffects") }
 		local hit = workspace:Raycast(origin, direction * ranged.beam.range, params)
-		localSkillEffect:Fire("LightShot", origin, hit and hit.Position or origin + direction * ranged.beam.range, false)
+		localSkillEffect:Fire(ranged.beam.effect or "LightShot", origin, hit and hit.Position or origin + direction * ranged.beam.range, false)
 	end
 end
 

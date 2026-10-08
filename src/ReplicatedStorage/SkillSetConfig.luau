@@ -86,7 +86,7 @@ end
 -- costs: one of `charges` (refilling one per `recharge` seconds), or
 -- `luminanceCost`, or a round of `rounds` (reloading for `reload` seconds).
 -- `projectile` flies a ReplicatedStorage.ProjectileModels piece; `beam` is
--- instant. `animation`: a <Set>Animations one to play per shot.
+-- instant (its `effect` names how SkillEffects draws it; LightShot if none). `animation`: a <Set>Animations one to play per shot.
 -- Aim assist: while a move that `aims` is readied (right click held),
 -- everyone within its reach and in sight gets a circle AimAssistRadius studs
 -- around them; a shot fired with the crosshair inside one is locked onto
