@@ -31,6 +31,15 @@ function CrowdControl.CanControl(model)
 	return (model:GetAttribute(ATTRIBUTE) or 0) <= workspace:GetServerTimeNow()
 end
 
+-- whether a player is inside a hold right now (not just immune after one);
+-- Photoshop's Undo can't slip one
+function CrowdControl.Held(model)
+	if not isPlayer(model) then
+		return false
+	end
+	return (model:GetAttribute(ATTRIBUTE) or 0) - IMMUNITY > workspace:GetServerTimeNow()
+end
+
 -- a hold lasting `duration` seconds starts now (a knockback, yank, stun)
 function CrowdControl.Apply(model, duration)
 	if isPlayer(model) then

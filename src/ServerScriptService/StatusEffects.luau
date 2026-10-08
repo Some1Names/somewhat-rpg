@@ -1,4 +1,4 @@
--- Puts status effects (Burnt, Bleeding, Poisoned, Weakened; numbers in
+-- Puts status effects (Burnt, Bleeding, Poisoned, Weakened, Desaturated; numbers in
 -- ReplicatedStorage.StatusConfig) on players and NPCs and runs them: damage
 -- over time ticks go through Damage.Deal for whoever applied the effect (kill
 -- credit, their stat bonus, mastery), can't crit and no passive erases them.

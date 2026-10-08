@@ -74,7 +74,9 @@ end
 -- flying; `dash`: the dash key does the set's own dash instead of the
 -- normal one; `form`: one of its skills transforms the character, and
 -- skills marked `form` are empowered meanwhile (`formAim` for their bigger
--- reach). See the Iridescent Requiem entry for all three.
+-- reach). See the Iridescent Requiem entry for all three. `undo`: the G key
+-- rewinds the character instead (Photoshop's Undo, PhotoshopServer); a set
+-- has one of overcharge, flight or undo.
 --
 -- `ranged`: the right-click/left-click move (client Ranged, RangedServer):
 -- holding right click readies it and left click fires, through `handler`
@@ -289,6 +291,79 @@ SkillSetConfig.Sets = {
 		},
 	},
 
+	-- Nozomi Yume's Photoshop: she edits reality like a photo. She can
+	-- collapse it (cut it, paste it, crush it into a black hole) but not
+	-- change it, which is why Mandela's rewrites win against her. Her edits
+	-- shut down light: Desaturate grounds Iridescent Requiem's flight, Prism
+	-- Form and Luminance. Snapshot and Shutter leave her Framed mark (Framed),
+	-- which her other skills build on.
+	Photoshop = {
+		tool = "Photoshop",
+		kind = "power",
+		tier = "S",
+		color = Color3.fromRGB(255, 126, 200), -- the pink of its palette (PhotoshopPink)
+		-- History: where she's been and the damage she's taken lately is kept,
+		-- so Undo can take it back (PhotoshopServer). Mandela's damage can't be
+		-- undone.
+		passive = { name = "History" },
+		-- G, Undo: back to where she stood `rewind` seconds ago, healing
+		-- healShare of the damage taken since
+		undo = { name = "Undo", cooldown = 18, rewind = 3, healShare = 0.5 },
+		-- camera flashes at the mouse, from 3 charges; one on someone she's
+		-- Framed keeps the frame going
+		ranged = {
+			name = "Shutter",
+			handler = "Shutter",
+			aims = true,
+			charges = 3,
+			recharge = 3, -- seconds per charge
+			interval = 0.25,
+			animation = "CastZ",
+			beam = { range = 120, effect = "Shutter" },
+		},
+		skills = {
+			Z = {
+				name = "Snapshot",
+				mastery = 1,
+				cooldown = 6,
+				handler = "Snapshot",
+				recast = "Step In", -- behind whoever she's Framed
+				aim = { kind = "lock", range = 50, cone = 30 },
+			},
+			X = {
+				name = "Photo Teleport",
+				mastery = 5,
+				cooldown = 10,
+				handler = "PhotoTeleport",
+				recast = "Paste", -- her, or someone she's Framed, into the photo
+				aim = { kind = "circle", range = 60, radius = 4 },
+			},
+			C = {
+				name = "Desaturate",
+				mastery = 20,
+				cooldown = 14, -- per charge
+				charges = 3,
+				handler = "Desaturate",
+				aim = { kind = "circle", range = 50, radius = 18 },
+			},
+			V = {
+				name = "Iris Horizon",
+				mastery = 50,
+				cooldown = 35,
+				handler = "IrisHorizon",
+				aim = { kind = "lock", range = 60, cone = 30 },
+			},
+			-- the ultimate; she has no overcharge, so it needs only the mastery
+			F = {
+				name = "Kaleidoscope",
+				mastery = 100,
+				cooldown = 90,
+				handler = "Kaleidoscope",
+				aim = { kind = "self", radius = 60 },
+			},
+		},
+	},
+
 	-- The shop's revolver, a B-tier weapon. Left click shoots (no punches
 	-- with it out), right click steadies the aim and zooms in, R reloads.
 	Revolver = {
@@ -367,6 +442,15 @@ function SkillSetConfig.IridescentColor(share)
 		return SkillSetConfig.IridescentOrange:Lerp(IRIDESCENT_SHEEN, share * 2)
 	end
 	return IRIDESCENT_SHEEN:Lerp(SkillSetConfig.IridescentCyan, share * 2 - 1)
+end
+
+-- Photoshop's pink and light blue
+SkillSetConfig.PhotoshopPink = Color3.fromRGB(255, 126, 200)
+SkillSetConfig.PhotoshopBlue = Color3.fromRGB(140, 210, 255)
+
+-- server time an undo set's Undo is ready again
+function SkillSetConfig.UndoReadyAttribute(setName)
+	return setName .. "UndoReadyAt"
 end
 
 -- the player attribute that's true while a Luminance set's holder stands in shade

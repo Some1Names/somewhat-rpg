@@ -48,9 +48,18 @@ StatusConfig.Effects = {
 		color = Color3.fromRGB(130, 120, 150),
 		glyph = "\u{2B07}",
 	},
+	-- Photoshop's Desaturate drained the colour out of them: no Luminance
+	-- gathers (it drains instead), no flight and no Prism Form
+	-- (LuminanceServer, Skills.PrismForm). Refreshed while they stay in it.
+	Desaturated = {
+		duration = 1,
+		maxStacks = 1,
+		color = Color3.fromRGB(150, 150, 160),
+		glyph = "\u{25D0}",
+	},
 }
 -- the order icons are drawn in
-StatusConfig.Order = { "Burnt", "Bleeding", "Poisoned", "Weakened" }
+StatusConfig.Order = { "Burnt", "Bleeding", "Poisoned", "Weakened", "Desaturated" }
 StatusConfig.MovingSpeed = 4 -- studs per second along the ground that counts as moving
 
 function StatusConfig.EndsAttribute(name)
