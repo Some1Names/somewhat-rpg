@@ -46,6 +46,7 @@ end
 local TEXT_DEFAULTS = {
 	AdminKeybinds = "", -- an admin's own keys for panel actions (AdminPanel, AdminServer)
 	PhotoGallery = "", -- Photoshop's saved photos of places (PhotoshopServer)
+	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
 }
 local TEXT_MAX_LENGTH = 200
 
