@@ -6,8 +6,9 @@
 -- (LuminanceServer, Skills.PrismForm). Mandela's Misremembered forgets the
 -- edit for the rest of that zone (Passives.ResistEdit); the damage still
 -- lands. The zone ends early if she dies or puts the set away. Clients draw
--- it from the SkillEffects "Desaturate" event ("DesaturateEnd" if it ends early). SkillSetServer checks the
--- tool, mastery and charges before calling Cast.
+-- it from the SkillEffects "Desaturate" event ("DesaturateEnd" if it ends
+-- early). SkillSetServer checks the tool, mastery and charges before calling
+-- Cast.
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
