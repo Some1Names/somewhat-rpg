@@ -1232,5 +1232,47 @@
    "ModuleScript"
   ],
   "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/Keybinds.luau",
+  "names": [
+   "ReplicatedStorage",
+   "Keybinds"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/SettingsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SettingsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Settings.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Settings"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

@@ -41,6 +41,14 @@ server code; Studio for visuals, animations, models.)
 Infrastructure these need: a `weapon` kind with a katana combo, the reserved MELEE inventory slot,
 and saved ownership + loadout (`Loadout` is session-only today).
 
+## Settings
+
+- **Settings menu** (gear at the right edge, or P) with rebindable fighting keys: **code built** on
+  branch `claude/vigilant-rubin-ckqtnn`, waiting on the Studio apply and a playtest with
+  `docs/superpowers/specs/2026-10-09-settings-keybinds-checklist.md`. Nothing to add in Studio.
+  `tests/run.sh` runs the Keybinds unit tests with Lune (not part of Studio). Later sections:
+  camera, audio, graphics.
+
 ## Before release
 
 - `SkillSetConfig.OwnAllSets` is `true` (everyone owns every set, for testing): turn it off. (Cloud)
