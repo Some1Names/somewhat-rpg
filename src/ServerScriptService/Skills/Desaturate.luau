@@ -3,9 +3,10 @@
 -- it, at any height, takes TickDamage and is Desaturated (StatusConfig) for
 -- Linger seconds, so it holds while they stay in and wears off just after
 -- they leave: no Luminance gathers, no flight, no Prism Form
--- (LuminanceServer, Skills.PrismForm). Mandela's Misremembered forgets the
--- edit for the rest of that zone (Passives.ResistEdit); the damage still
--- lands. The zone ends early if she dies or puts the set away. Clients draw
+-- (LuminanceServer, Skills.PrismForm). On someone it would take that from,
+-- Mandela's Misremembered forgets the edit for the rest of that zone
+-- (Passives.ResistEdit); the damage still lands. Aimed over the void, it
+-- doesn't go off. The zone ends early if she dies or puts the set away. Clients draw
 -- it from the SkillEffects "Desaturate" event ("DesaturateEnd" if it ends
 -- early). SkillSetServer checks the tool, mastery and charges before calling
 -- Cast.
@@ -17,6 +18,7 @@ local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
 local StatusEffects = require(ServerScriptService:WaitForChild("StatusEffects"))
+local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -31,6 +33,14 @@ local CONFIG = {
 local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
 local STATUS_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", duration = CONFIG.Linger }
 
+-- whether Desaturated would take anything from them: a set with Luminance,
+-- flight or a form in hand. Only then is it worth Misremembered forgetting.
+local function lightBound(model)
+	local _, setName = SkillSetConfig.Equipped(model)
+	local set = setName and SkillSetConfig.Sets[setName]
+	return set ~= nil and (set.flight ~= nil or set.form ~= nil or (set.passive ~= nil and set.passive.name == "Luminance"))
+end
+
 local function run(id, player, character, humanoid, center)
 	local resisted = {} -- models whose Misremembered forgot this zone
 	local options = table.clone(STATUS_OPTIONS)
@@ -40,7 +50,7 @@ local function run(id, player, character, humanoid, center)
 		for _, target in ipairs(PhotoshopUtil.enemiesWithin(character, center, CONFIG.Radius)) do
 			Damage.Deal(player, target.humanoid, CONFIG.TickDamage, DAMAGE_OPTIONS)
 			local targetPlayer = PhotoshopUtil.playerOf(target.model)
-			if not resisted[target.model] and targetPlayer and Passives.ResistEdit(targetPlayer) then
+			if not resisted[target.model] and targetPlayer and lightBound(target.model) and Passives.ResistEdit(targetPlayer) then
 				resisted[target.model] = true
 			end
 			if not resisted[target.model] then
@@ -63,8 +73,11 @@ function Desaturate.Cast(player, character, aim)
 		return false
 	end
 	local spot = PhotoshopUtil.clampFlat(root.Position, aim, CONFIG.Range)
-	local ground = PhotoshopUtil.groundAt(spot, { character })
-	local center = ground and ground - Vector3.new(0, 3, 0) or spot -- groundAt stands a root 3 up
+	local ground = PhotoshopUtil.groundAt(spot, { character }, PhotoshopUtil.AIM_RISE)
+	if not ground then
+		return false -- over the void: no charge spent
+	end
+	local center = ground - Vector3.new(0, 3, 0) -- groundAt stands a root 3 up
 	local id = HttpService:GenerateGUID(false)
 	skillEffects:FireAllClients("Desaturate", id, center, CONFIG.Radius, CONFIG.Duration)
 	task.spawn(run, id, player, character, humanoid, center)

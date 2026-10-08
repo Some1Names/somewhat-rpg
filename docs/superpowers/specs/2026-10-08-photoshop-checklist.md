@@ -27,20 +27,30 @@ diff is applied to Studio.
 - [ ] **Z again (Step In)**: while the corners show, you land behind the target, facing them.
 - [ ] Step In with the target's back against a wall: you land in front of them instead, not in
       the wall.
+- [ ] Step In on a target standing at a cliff edge (drop behind them): you land in front of them,
+      or beside them at their height. Never at the bottom of the cliff.
+- [ ] Step In on a flying player: you appear in the air behind them and fall. You don't land on the
+      ground far below them.
 - [ ] Shutter hits on a Framed target keep the corners up longer (each hit adds 1.5 s, never more
       than 4 s left).
 - [ ] **X Photo Teleport**: a photo card stands where you aimed (up to 60 studs). X again pastes
       you into it. Unused, it fades after 8 s.
-- [ ] Aiming X over a cliff or the void: nothing happens and no cooldown is spent.
+- [ ] Aiming X at the sky: the photo lands on the ground the aim circle showed, not nowhere.
+- [ ] Aiming X off a cliff: the photo lands at the cliff bottom (within 200 studs). Over the void
+      nothing happens and no cooldown is spent.
 - [ ] **Z → X → X (Cut & Paste)**: Frame the dummy, pin a photo, press X again: the **dummy** is
       moved into the photo and frozen for half a second. You stay where you are.
 - [ ] **C Desaturate**: a grey column (18 studs across) where you aimed. Enemies inside take ticks
       of damage and show a grey highlight and the Desaturated icon. 3 charges.
+- [ ] Desaturate aimed at the sky still lands on the ground where the circle showed.
+- [ ] Two Desaturates on the same spot: the grey highlight stays on, with no flicker, until the
+      target leaves both or both end.
 - [ ] **V Iris Horizon**: a ring of 8 photo cards round the target closes in about 1.5 s, then a
       rainbow black hole bursts (shake, crater). Big damage to the target, less to anyone near.
 - [ ] Iris Horizon on a **Framed** target: the ring starts half closed and shuts almost at once.
 - [ ] Iris Horizon escape: as the target (second player), dash (Q) out of the ring before it
-      shuts. You take only a small hit. Walking or sprinting shouldn't escape.
+      shuts. You take only a small hit. Walking or sprinting shouldn't escape. Re-check sprinting
+      in a **live** server: lag doesn't show in Studio.
 - [ ] **F Kaleidoscope**: a dome of pink/blue mirror shards around you for 5 s, with mirror hits
       on everyone inside every half second (Framed targets take two).
 - [ ] **G Undo**: walk away for a few seconds, take some damage, press G. You snap back to where
@@ -63,13 +73,14 @@ diff is applied to Studio.
 - [ ] Iris Horizon on a flying Iridescent player knocks him down.
 - [ ] Kaleidoscope: an Iridescent player inside the dome firing Light Shot or Prism Shot at you
       gets hit by his own beam instead.
-- [ ] Cut & Paste a Framed flying Iridescent player into a photo on the ground.
+- [ ] Cut & Paste a Framed flying Iridescent player into a photo on the ground: he lands there and
+      is no longer flying.
 - [ ] **Mandela vs Photoshop**:
   - Snapshot on a Mandela player whose Misremembered is ready: the damage lands but no Frame
     appears, and their Misremembered goes on cooldown (its effect plays).
   - A second Snapshot (passive now cooling) does frame them.
-- [ ] A Mandela player resists a Desaturate zone once and stays un-greyed for the rest of that
-      zone.
+- [ ] Desaturate on a Mandela player does **not** use up his Misremembered (Desaturated takes
+      nothing from him). A Snapshot right after is still forgotten.
 - [ ] Take damage from Mandela, then Undo: none of Mandela's damage comes back (other damage
       still does).
 - [ ] **Iridescent Requiem vs Mandela**:
@@ -86,6 +97,8 @@ diff is applied to Studio.
 - [ ] Undo just after falling off a ledge puts you back on the ledge.
 - [ ] Spamming SAVE/GO causes no errors, and only one travel happens at a time.
 - [ ] The gallery is kept after leaving and rejoining **in a live server** (Studio doesn't save).
+- [ ] SAVE works while standing still or walking, on flat ground and on a slope, both in Studio and
+      in a live server.
 
 ## Tuning notes
 Iris Horizon's ring drifts after its target at 34 studs/s, just faster than a sprint (32), so

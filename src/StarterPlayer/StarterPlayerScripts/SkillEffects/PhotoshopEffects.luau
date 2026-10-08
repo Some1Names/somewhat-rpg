@@ -220,12 +220,42 @@ return function(helpers)
 
 	-- Desaturate: a grey column; anyone inside goes grey, and your own view
 	-- drains of colour while you're in it
-	local zones = {} -- id -> { parts, ended }
-	local greyed = {} -- model -> Highlight
+	local zones = {} -- id -> { parts, ended, inside = { model -> true } }
+	local greyed = {} -- model -> { outline, zones = how many zones hold them }
+
+	-- a zone takes hold of someone, or lets go; the grey stays while any zone holds them
+	local function grey(model)
+		local entry = greyed[model]
+		if entry then
+			entry.zones += 1
+			return
+		end
+		local outline = Instance.new("Highlight")
+		outline.Name = "Desaturated"
+		outline.FillColor = GREY
+		outline.FillTransparency = 0.35
+		outline.OutlineColor = WHITE
+		outline.OutlineTransparency = 0.6
+		outline.Adornee = model
+		outline.Parent = folder
+		greyed[model] = { outline = outline, zones = 1 }
+	end
+	local function ungrey(model)
+		local entry = greyed[model]
+		if not entry then
+			return
+		end
+		entry.zones -= 1
+		if entry.zones <= 0 then
+			greyed[model] = nil
+			tween(entry.outline, 0.6, { FillTransparency = 1, OutlineTransparency = 1 })
+			Debris:AddItem(entry.outline, 0.6)
+		end
+	end
 	local localGrade
 	local localZones = 0
 	function effects.Desaturate(id, center, radius, duration)
-		local zone = { parts = {}, ended = false }
+		local zone = { parts = {}, ended = false, inside = {} }
 		zones[id] = zone
 		local column = effectPart(
 			Enum.PartType.Cylinder,
@@ -264,17 +294,9 @@ return function(helpers)
 					local model = part.Name == "HumanoidRootPart" and part.Parent
 					if model and ((part.Position - center) * Vector3.new(1, 0, 1)).Magnitude <= radius then
 						here[model] = true
-						if not greyed[model] then
-							local outline = Instance.new("Highlight")
-							outline.Name = "Desaturated"
-							outline.FillColor = GREY
-							outline.FillTransparency = 0.35
-							outline.OutlineColor = WHITE
-							outline.OutlineTransparency = 0.6
-							outline.Adornee = model
-							outline.Parent = folder
-							greyed[model] = outline
-							Debris:AddItem(outline, duration + 2)
+						if not zone.inside[model] then
+							zone.inside[model] = true
+							grey(model)
 						end
 					end
 				end
@@ -290,11 +312,10 @@ return function(helpers)
 					end
 					tween(localGrade, 0.3, { Saturation = localZones > 0 and -1 or 0 })
 				end
-				for model, outline in pairs(greyed) do
-					if not here[model] then
-						greyed[model] = nil
-						tween(outline, 0.6, { FillTransparency = 1, OutlineTransparency = 1 })
-						Debris:AddItem(outline, 0.6)
+				for model in pairs(zone.inside) do
+					if not here[model] or not model.Parent then
+						zone.inside[model] = nil
+						ungrey(model)
 					end
 				end
 				task.wait(0.15)
@@ -316,6 +337,10 @@ return function(helpers)
 		end
 		zones[id] = nil
 		zone.ended = true
+		for model in pairs(zone.inside) do
+			ungrey(model)
+		end
+		table.clear(zone.inside)
 		for _, part in ipairs(zone.parts) do
 			if part.Parent then
 				tween(part, 0.5, { Transparency = 1 })

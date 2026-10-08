@@ -36,6 +36,7 @@ local CONFIG = {
 	SplashDamage = 25,
 	SplashRadius = 10, -- studs round the burst
 	EscapedDamage = 10, -- to a target who got out before it shut
+	EscapeMargin = 2, -- studs past the ring before they count as out (network jitter)
 }
 local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
 local BURST_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", critical = true }
@@ -104,7 +105,7 @@ local function run(id, player, character, humanoid, target, closeTime, startShar
 		end
 		center = Vector3.new(center.X, targetRoot.Position.Y, center.Z)
 		-- out past the shrinking ring once is out for good
-		if not escaped and share < 1 and flat(targetRoot.Position - center).Magnitude > math.max(radius, 1) then
+		if not escaped and share < 1 and flat(targetRoot.Position - center).Magnitude > radius + CONFIG.EscapeMargin then
 			escaped = true
 		end
 		if share >= 1 then

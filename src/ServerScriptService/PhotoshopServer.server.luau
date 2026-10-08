@@ -9,9 +9,8 @@
 -- undo.cooldown (the player's UndoReadyAttribute, server time, for the bar).
 -- The Gallery keeps the set's gallery.slots photos of places (the saved
 -- PhotoGallery text attribute, "x,y,z;x,y,z;" with empty entries for empty
--- slots). The
--- PhotoGallery remote takes ("save", slot): the spot she stands on, and
--- ("travel", slot): out of combat only (no damage taken or dealt for
+-- slots). The PhotoGallery remote takes ("save", slot): the spot she stands
+-- on, and ("travel", slot): out of combat only (no damage taken or dealt for
 -- CombatLock seconds), the photo develops for DevelopTime and she steps
 -- into it, unless she's hurt meanwhile. Clients draw it from the
 -- SkillEffects "Undo", "GalleryDevelop", "GalleryTravel" and
@@ -32,6 +31,7 @@ local SET_NAME = "Photoshop"
 local UNDO = SkillSetConfig.Sets[SET_NAME].undo
 local UNDO_READY = SkillSetConfig.UndoReadyAttribute(SET_NAME)
 local GALLERY = "PhotoGallery" -- saved by PlayerStats
+local STANDING_SLACK = 2.5 -- studs a root may be above where groundAt stands one and still count as standing
 local CONFIG = {
 	SampleInterval = 0.25, -- seconds between History samples
 	GallerySlots = SkillSetConfig.Sets[SET_NAME].gallery.slots,
@@ -229,7 +229,8 @@ galleryRemote.OnServerEvent:Connect(function(player, action, slot)
 	local slots = readGallery(player)
 	if action == "save" then
 		-- only a spot she's standing on, so travel never drops her into the air
-		if humanoid.FloorMaterial == Enum.Material.Air then
+		local ground = PhotoshopUtil.groundAt(root.Position, { character })
+		if not ground or root.Position.Y - ground.Y > STANDING_SLACK then
 			return
 		end
 		slots[slot] = root.Position

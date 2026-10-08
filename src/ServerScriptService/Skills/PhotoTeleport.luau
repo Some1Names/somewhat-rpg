@@ -2,7 +2,7 @@
 -- to Range away, on the ground beneath it) that stays for Lifetime seconds.
 -- X again is Paste (Recast): if someone she's Framed (Framed) is within
 -- PasteRange of the photo, they're pasted into it, moved there and frozen
--- for PasteHold; otherwise she pastes herself into it. Moving a player
+-- for PasteHold (a flier lands there); otherwise she pastes herself into it. Moving a player
 -- follows CrowdControl, and Mandela's Misremembered forgets the paste
 -- (Passives.ResistEdit); then she goes herself. A new photo replaces the
 -- old one. Clients draw it from the SkillEffects "PhotoPin", "PhotoPaste"
@@ -70,7 +70,7 @@ function PhotoTeleport.Cast(player, character, aim)
 	if not root or humanoid.Health <= 0 then
 		return false
 	end
-	local point = PhotoshopUtil.groundAt(PhotoshopUtil.clampFlat(root.Position, aim, CONFIG.Range), { character })
+	local point = PhotoshopUtil.groundAt(PhotoshopUtil.clampFlat(root.Position, aim, CONFIG.Range), { character }, PhotoshopUtil.AIM_RISE)
 	if not point then
 		return false
 	end
@@ -104,6 +104,8 @@ function PhotoTeleport.Recast(player, character)
 		local targetPlayer = PhotoshopUtil.playerOf(target)
 		local movable = not targetPlayer or (CrowdControl.CanControl(target) and not Passives.ResistEdit(targetPlayer))
 		if movable then
+			-- pasted into a photo on the ground: out of the sky too
+			target:SetAttribute("Flying", nil)
 			local from = paste(target, targetRoot, photo.point)
 			hold(targetRoot, CONFIG.PasteHold)
 			CrowdControl.Apply(target, CONFIG.PasteHold)

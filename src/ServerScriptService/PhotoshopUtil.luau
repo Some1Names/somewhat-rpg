@@ -32,8 +32,9 @@ function PhotoshopUtil.alive(player, character, humanoid)
 end
 
 -- where a root should stand over `position`: the ground beneath it (past
--- characters), STAND_HEIGHT up; nil over the void
-function PhotoshopUtil.groundAt(position, ignore)
+-- characters), looked for from `rise` studs above it (4 by default),
+-- STAND_HEIGHT up; nil over the void
+function PhotoshopUtil.groundAt(position, ignore, rise)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	params.RespectCanCollide = true
@@ -42,7 +43,7 @@ function PhotoshopUtil.groundAt(position, ignore)
 	if effects then
 		table.insert(skip, effects)
 	end
-	local from = position + Vector3.new(0, 4, 0)
+	local from = position + Vector3.new(0, rise or 4, 0)
 	for _ = 1, 6 do
 		params.FilterDescendantsInstances = skip
 		local hit = workspace:Raycast(from, Vector3.new(0, -GROUND_RAY, 0), params)
@@ -58,13 +59,17 @@ function PhotoshopUtil.groundAt(position, ignore)
 	return nil
 end
 
--- `aim` pulled back to at most `range` studs (flat) from `origin`
+-- the spot a circle aim points at, at `origin`'s height (the client's aim
+-- height isn't trusted, and is far off when the mouse is on the sky), at
+-- most `range` studs out (flat); look for the ground under it from
+-- AIM_RISE up, as SolarLance and the aim preview do
+PhotoshopUtil.AIM_RISE = 20
 function PhotoshopUtil.clampFlat(origin, aim, range)
 	local offset = flat(aim - origin)
 	if offset.Magnitude > range then
-		return Vector3.new(origin.X, aim.Y, origin.Z) + offset.Unit * range
+		offset = offset.Unit * range
 	end
-	return aim
+	return origin + offset
 end
 
 -- the root part of the character nearest the direction of `aim`, within
