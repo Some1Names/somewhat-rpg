@@ -1,7 +1,7 @@
 # Aido skill set: design
 
-Status: approved in chat 2026-10-09 (the kit, the names, no "No Rebirth", the full-dragon form);
-waiting on review of this written spec.
+Status: approved in chat 2026-10-09 (the kit, the names, no "No Rebirth", the full-dragon form),
+and this written spec approved by the owner the same day.
 
 ## Intent
 
