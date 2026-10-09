@@ -66,6 +66,13 @@ and saved ownership + loadout (`Loadout` is session-only today).
   or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
   (talents at level milestones), the world (quests, bosses).
 
+## Getting powers
+
+- **Briefcases, storage, lifetime, drops, gacha, selling** (and saved powers, no starter power):
+  **designed**, spec `docs/superpowers/specs/2026-10-09-power-acquisition-design.md`, plan
+  `docs/superpowers/plans/2026-10-09-power-acquisition.md` (not built yet). Later: enemies dropping
+  briefcases, the stat rework, trading, storage upgrades.
+
 ## UI
 
 - **HUD layout pass** (top-right icon row, key hints, one menu at a time): **designed**, spec
