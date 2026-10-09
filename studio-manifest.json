@@ -1078,5 +1078,229 @@
   "class": "Script",
   "runContext": "Client",
   "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Framed.luau",
+  "names": [
+   "ServerScriptService",
+   "Framed"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PhotoshopUtil.luau",
+  "names": [
+   "ServerScriptService",
+   "PhotoshopUtil"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PhotoshopServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "PhotoshopServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Shutter.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Shutter"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Snapshot.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Snapshot"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/PhotoTeleport.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "PhotoTeleport"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Desaturate.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Desaturate"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/IrisHorizon.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "IrisHorizon"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Kaleidoscope.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Kaleidoscope"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PhotoGallery.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PhotoGallery"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/PhotoshopEffects.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillEffects",
+   "PhotoshopEffects"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/Keybinds.luau",
+  "names": [
+   "ReplicatedStorage",
+   "Keybinds"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/SettingsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SettingsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Settings.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Settings"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/Preferences.luau",
+  "names": [
+   "ReplicatedStorage",
+   "Preferences"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DeathScreen.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DeathScreen"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

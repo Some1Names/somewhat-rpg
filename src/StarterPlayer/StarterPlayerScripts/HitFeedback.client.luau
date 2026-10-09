@@ -1,9 +1,13 @@
 -- Hit feedback for any character that loses health: a floating damage
 -- number, a short red flash and a small burst of sparks. Critical hits get a
--- bigger gold number and more sparks.
+-- bigger gold number and more sparks. The numbers can be turned off in
+-- Settings (Preferences "DamageNumbers").
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -35,6 +39,9 @@ local function formatAmount(amount)
 end
 
 local function showNumber(anchor, amount, critical)
+	if not Preferences.Get("DamageNumbers") then
+		return -- turned off in Settings (the flash and sparks still play)
+	end
 	local scale = critical and CRIT_SIZE or 1
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "DamageNumber"

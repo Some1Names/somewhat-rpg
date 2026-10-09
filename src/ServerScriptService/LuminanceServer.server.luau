@@ -8,17 +8,21 @@
 -- to take off or land, and the character's Flying attribute tells every
 -- client (the Flight script does the moving). Flight ends when Luminance runs
 -- out or the set is put away. Passives reads Luminance for its damage cut.
+-- Desaturated (Photoshop's Desaturate) drains the colour out: no light
+-- gathers, it drains DESATURATED_DRAIN a second, and he can't fly.
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
 
 local TICK = 0.2 -- seconds
 local SUN_RAY_LENGTH = 1000 -- studs
 local SEE_THROUGH = 0.5 -- parts at least this transparent let the light through
 local FLYING = "Flying"
+local DESATURATED_DRAIN = 0.15 -- Luminance per second while Desaturated
 
 -- the equipped set, if its passive is Luminance
 local function luminanceSet(character)
@@ -58,6 +62,10 @@ local function inSunlight(position)
 	return false
 end
 
+local function desaturated(character)
+	return StatusConfig.Stacks(character, "Desaturated") > 0
+end
+
 local function setFlying(character, flying)
 	character:SetAttribute(FLYING, flying or nil)
 end
@@ -73,7 +81,7 @@ toggleFlight.OnServerEvent:Connect(function(player)
 		return
 	end
 	local setName, set = luminanceSet(character)
-	if not set or not set.flight then
+	if not set or not set.flight or desaturated(character) then
 		return
 	end
 	-- it takes some light to get off the ground
@@ -103,7 +111,11 @@ task.spawn(function()
 					local key = SkillSetConfig.LuminanceAttribute(setName)
 					local luminance = player:GetAttribute(key) or 0
 					local shaded = false
-					if SkillSetConfig.InForm(character, setName) then
+					local drained = desaturated(character)
+					if drained then
+						-- no colour, no light: it only drains (and grounds him, below)
+						luminance -= DESATURATED_DRAIN * dt
+					elseif SkillSetConfig.InForm(character, setName) then
 						-- the form spends the light; sunlight doesn't top it up meanwhile
 						luminance -= set.form.drainPerSecond * dt
 					elseif flying and set.flight then
@@ -129,7 +141,7 @@ task.spawn(function()
 					if player:GetAttribute(SkillSetConfig.ShadedAttribute) ~= shaded then
 						player:SetAttribute(SkillSetConfig.ShadedAttribute, shaded)
 					end
-					if flying and luminance <= 0 then
+					if flying and (luminance <= 0 or drained) then
 						setFlying(character, false)
 					end
 				end

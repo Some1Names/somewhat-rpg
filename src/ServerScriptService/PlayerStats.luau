@@ -45,6 +45,9 @@ end
 -- saved text fields, with their defaults and longest allowed length
 local TEXT_DEFAULTS = {
 	AdminKeybinds = "", -- an admin's own keys for panel actions (AdminPanel, AdminServer)
+	PhotoGallery = "", -- Photoshop's saved photos of places (PhotoshopServer)
+	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
+	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
 }
 local TEXT_MAX_LENGTH = 200
 

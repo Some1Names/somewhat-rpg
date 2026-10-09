@@ -6,7 +6,8 @@
 -- flies, whose G takes off and lands instead (and whose Prism Form spends
 -- it: the skills it empowers get a shimmering orange-cyan strip and their
 -- `formAim`). In shade the Luminance meter dims above the shade cap, the
--- most it can hold there.
+-- most it can hold there. A set with an Undo (Photoshop) shows it there
+-- instead, filling back up as it recharges; its G undoes.
 -- A set with its own dash (Lightstep) gets a small Q slot on the bar's left
 -- showing the dodge charges it spends (DodgeCharges), and one with a ranged
 -- move a small slot beside it showing its ammo: charges, shots of Luminance
@@ -16,7 +17,10 @@
 -- it's locked, plus the set's overcharge stacks (Mandela's Backbone Power):
 -- once full they pulse green until G overcharges the set, burn red and drain while
 -- it's overcharged, then show the overcharge cooldown. Also pops up mastery
--- level ups. SkillSetServer checks every cast and overcharge; the cooldowns
+-- level ups. The keys are the player's own (Keybinds, set in Settings); a
+-- skill still reaches the server by its slot (Z..F) whatever key cast it.
+-- A refused press says why just above the bar ("Snapshot: 3s cooldown").
+-- SkillSetServer checks every cast and overcharge; the cooldowns
 -- here are just the client's prediction for the display.
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -25,12 +29,14 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
 local activateOvercharge = ReplicatedStorage:WaitForChild("ActivateOvercharge")
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
+local undoRemote = ReplicatedStorage:WaitForChild("Undo") -- made by PhotoshopServer
 local masteryEvent = ReplicatedStorage:WaitForChild("MasteryUp")
 local player = Players.LocalPlayer
 
@@ -91,6 +97,39 @@ local bar = make("Frame", {
 	Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_SIZE),
 	BackgroundTransparency = 1,
 })
+
+-- why the last press was refused ("Snapshot: 3s cooldown"), just above the bar
+local FEEDBACK_TIME = 1.2 -- seconds a message stays before fading
+local feedback = label(bar, {
+	TextSize = 13,
+	TextColor3 = DENIED,
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 0, -6),
+	Size = UDim2.fromOffset(420, 18),
+	Text = "",
+})
+local feedbackToken
+local feedbackFade -- the fade playing, if any
+local function refuse(text)
+	if not text then
+		return
+	end
+	local token = {}
+	feedbackToken = token
+	-- a fade still running from the last message would hide this one
+	if feedbackFade then
+		feedbackFade:Cancel()
+		feedbackFade = nil
+	end
+	feedback.Text = text
+	feedback.TextTransparency = 0
+	task.delay(FEEDBACK_TIME, function()
+		if feedbackToken == token then
+			feedbackFade = TweenService:Create(feedback, TweenInfo.new(0.3), { TextTransparency = 1 })
+			feedbackFade:Play()
+		end
+	end)
+end
 
 -- header: the set's name, its mastery and progress to the next level
 local setLabel = label(bar, { TextSize = 12, TextColor3 = ACCENT, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0.5, 0, 0, 14) })
@@ -190,6 +229,7 @@ for i, key in ipairs(keys) do
 		BackgroundColor3 = TEXT,
 		Position = UDim2.fromOffset(4, 4),
 		Size = UDim2.fromOffset(18, 18),
+		AutomaticSize = Enum.AutomaticSize.X, -- wider for keys like F5 or LAlt
 	})
 	local status = label(frame, { TextSize = 14, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.new(1, 0, 0, 18) })
 	-- strip along the top while this skill is in its overcharged form
@@ -245,6 +285,7 @@ local function miniSlot(keyText)
 		BackgroundColor3 = TEXT,
 		Position = UDim2.fromOffset(3, 3),
 		Size = UDim2.fromOffset(14, 14),
+		AutomaticSize = Enum.AutomaticSize.X,
 	})
 	slot.status = label(slot.frame, { TextSize = 11, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.new(1, 0, 0, 14) })
 	slot.name = label(slot.frame, {
@@ -258,8 +299,18 @@ local function miniSlot(keyText)
 	make("UITextSizeConstraint", { Parent = slot.name, MaxTextSize = 8 })
 	return slot
 end
-local dashSlot = miniSlot("Q")
+local dashSlot = miniSlot(Keybinds.Text("Dash"))
 local rangedSlot = miniSlot("M2")
+
+-- the keycaps show the player's own keys (Settings), kept up as they change
+local function refreshKeys()
+	for key, slot in pairs(slots) do
+		slot.keycap.Text = Keybinds.Text("Skill" .. key)
+	end
+	dashSlot.keycap.Text = Keybinds.Text("Dash")
+end
+refreshKeys()
+Keybinds.Changed(refreshKeys)
 local dashWasCooling = false
 local lastDodgeCharges = DodgeCharges.Get()
 
@@ -400,6 +451,11 @@ local function activeSet()
 end
 
 -- whether the skill could go off right now
+-- the name a skill's slot shows: its overcharged or full-light form's when it's in one
+local function shownName(skill, overcharged)
+	return overcharged and skill.overchargedName or skill.fullName and atFullLight() and skill.fullName or skill.name
+end
+
 local function readyToCast(setName, key, skill)
 	local mastery = player:GetAttribute(SkillSetConfig.MasteryAttribute(setName)) or 1
 	local overcharged = SkillSetConfig.IsOvercharged(player, setName)
@@ -413,12 +469,23 @@ local function readyToCast(setName, key, skill)
 		and form.key == key
 		and (player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0) < form.minimumToStart
 	-- (a skill with charges: when all are back, so one is ready a few recharges sooner)
-	return skill.handler ~= nil
-		and mastery >= skill.mastery
-		and os.clock() >= (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * skill.cooldown
-		and not waitingForWeapon
-		and not lacksLight
-		and not (skill.overchargedOnly and not overcharged)
+	local readyIn = (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * skill.cooldown - os.clock()
+	-- the first reason that applies, for the message above the bar
+	local name = shownName(skill, overcharged)
+	if not skill.handler then
+		return false, name .. ": coming soon"
+	elseif mastery < skill.mastery then
+		return false, string.format("%s: needs mastery %d", name, skill.mastery)
+	elseif skill.overchargedOnly and not overcharged then
+		return false, name .. ": needs overcharge"
+	elseif waitingForWeapon then
+		return false, string.format("%s: %s still thrown", name, skill.weaponName or "weapon")
+	elseif lacksLight then
+		return false, name .. ": not enough Luminance"
+	elseif readyIn > 0 then
+		return false, string.format("%s: %ds cooldown", name, math.ceil(readyIn))
+	end
+	return true
 end
 
 local function cast(key)
@@ -429,12 +496,21 @@ local function cast(key)
 	end
 	local slot = slots[key]
 	-- things may have changed while it was held (the axe still out, say)
-	if not readyToCast(setName, key, skill) then
+	local ready, reason = readyToCast(setName, key, skill)
+	if not ready then
 		pulse(slot, DENIED)
+		refuse(reason)
 		return
 	end
 	local overcharged = SkillSetConfig.IsOvercharged(player, setName)
 	local inForm = SkillSetConfig.InForm(player.Character, setName)
+	-- a skill that needs someone to lock onto isn't sent without one
+	local spec = aimSpecFor(skill, overcharged, inForm)
+	if skill.needsTarget and spec and spec.kind == "lock" and not AimIndicator.LockTarget(player.Character, aimPoint(), spec.range, spec.cone) then
+		pulse(slot, DENIED)
+		refuse(shownName(skill, overcharged) .. ": no target")
+		return
+	end
 	local id = setName .. "." .. key
 	predictedReadyAt[id] = math.max(predictedReadyAt[id] or 0, os.clock()) + skill.cooldown
 	playCast(player.Character:FindFirstChildOfClass("Humanoid"), setName, key, overcharged)
@@ -458,8 +534,10 @@ local function pressSkill(key)
 		pulse(slot)
 		return
 	end
-	if not readyToCast(setName, key, skill) then
+	local ready, reason = readyToCast(setName, key, skill)
+	if not ready then
 		pulse(slot, DENIED)
+		refuse(reason)
 		return
 	end
 	if aimSpecFor(skill, SkillSetConfig.IsOvercharged(player, setName), SkillSetConfig.InForm(player.Character, setName)) then
@@ -469,19 +547,31 @@ local function pressSkill(key)
 	end
 end
 
--- the overcharge key does something only with full stacks and no cooldown
-local OVERCHARGE_KEYCODE = Enum.KeyCode[SkillSetConfig.OverchargeKey]
+-- the Special key (G unless rebound) does something only with full stacks and no cooldown
 local overchargeDeniedUntil = 0 -- the meter's label flashes red after a refused press
 local function tryOvercharge()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local setName = equippedSet()
+	-- on a set with an Undo, the same key rewinds (once it's recharged)
+	local undo = setName and SkillSetConfig.Sets[setName].undo
+	if undo and humanoid and humanoid.Health > 0 then
+		local undoIn = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
+		if undoIn > 0 then
+			overchargeDeniedUntil = os.clock() + 0.4
+			refuse(string.format("%s ready in %ds", undo.name, math.ceil(undoIn)))
+			return
+		end
+		undoRemote:FireServer()
+		return
+	end
 	-- on a set that flies, the same key takes off or lands (it takes some light)
 	local flight = setName and SkillSetConfig.Sets[setName].flight
 	if flight and humanoid and humanoid.Health > 0 then
 		local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0
 		if not character:GetAttribute("Flying") and luminance < flight.minimumToStart then
 			overchargeDeniedUntil = os.clock() + 0.4
+			refuse("Not enough light to fly")
 			return
 		end
 		toggleFlight:FireServer()
@@ -492,26 +582,33 @@ local function tryOvercharge()
 		return
 	end
 	local full = (player:GetAttribute(SkillSetConfig.StacksAttribute(setName)) or 0) >= settings.maxStacks
-	local cooling = (player:GetAttribute(SkillSetConfig.OverchargeCooldownAttribute(setName)) or 0) > workspace:GetServerTimeNow()
-	if not full or cooling then
+	local coolingFor = (player:GetAttribute(SkillSetConfig.OverchargeCooldownAttribute(setName)) or 0) - workspace:GetServerTimeNow()
+	if not full or coolingFor > 0 then
 		overchargeDeniedUntil = os.clock() + 0.4
+		if coolingFor > 0 then
+			refuse(string.format("%s ready in %ds", "Overcharge", math.ceil(coolingFor)))
+		else
+			refuse("Overcharge not full")
+		end
 		return
 	end
 	activateOvercharge:FireServer()
 end
 
-local keyForCode = {}
-for _, key in ipairs(keys) do
-	keyForCode[Enum.KeyCode[key]] = key
+-- the skill slot a key is bound to (Keybinds' SkillZ..SkillF), if any
+local function slotFor(keyCode)
+	local action = Keybinds.ActionFor(keyCode)
+	local slot = action and string.match(action, "^Skill(%u)$")
+	return slot and slots[slot] and slot or nil
 end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then
+	if gameProcessed or Keybinds.Capturing() then
 		return
 	end
-	local key = keyForCode[input.KeyCode]
+	local key = slotFor(input.KeyCode)
 	if key then
 		pressSkill(key)
-	elseif input.KeyCode == OVERCHARGE_KEYCODE then
+	elseif Keybinds.ActionFor(input.KeyCode) == "Special" then
 		tryOvercharge()
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 and aiming then
 		-- right click calls the aim off
@@ -520,7 +617,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 -- letting go of the aimed key casts it, even over a menu
 UserInputService.InputEnded:Connect(function(input)
-	local key = keyForCode[input.KeyCode]
+	local key = slotFor(input.KeyCode)
 	if key and key == aiming then
 		stopAiming()
 		cast(key)
@@ -568,8 +665,28 @@ RunService.RenderStepped:Connect(function()
 	local settings = set.overcharge
 	local overcharged = settings ~= nil and SkillSetConfig.IsOvercharged(player, setName)
 	local luminancePassive = set.passive ~= nil and set.passive.name == "Luminance"
-	stackRow.Visible = settings ~= nil or luminancePassive
-	if luminancePassive then
+	local undo = set.undo
+	stackRow.Visible = settings ~= nil or luminancePassive or undo ~= nil
+	if undo then
+		-- one segment that fills back up as Undo recharges
+		buildStacks(1)
+		local left = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
+		if left > 0 then
+			stackLabel.Text = string.format("%s %ds", string.upper(undo.name), math.ceil(left))
+			stackLabel.TextColor3 = MUTED
+		else
+			stackLabel.Text = string.format("%s  [%s]", string.upper(undo.name), Keybinds.Text("Special"))
+			stackLabel.TextColor3 = set.color
+		end
+		if os.clock() < overchargeDeniedUntil then
+			stackLabel.TextColor3 = DENIED
+		end
+		local segment = stackSegments[1]
+		segment.fill.Size = UDim2.fromScale(math.clamp(1 - left / undo.cooldown, 0, 1), 1)
+		segment.fill.BackgroundColor3 = left > 0 and COOLING or set.color
+		segment.fill.BackgroundTransparency = 0
+		segment.track.BackgroundTransparency = TRACK_TRANSPARENCY
+	elseif luminancePassive then
 		-- the light held, one band of the spectrum per segment
 		buildStacks(LUMINANCE_SEGMENTS)
 		local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0
@@ -608,7 +725,7 @@ RunService.RenderStepped:Connect(function()
 				stackLabel.TextColor3 = MUTED
 			elseif filled >= settings.maxStacks then
 				ready = true
-				stackLabel.Text = string.format("READY  [%s]", SkillSetConfig.OverchargeKey)
+				stackLabel.Text = string.format("READY  [%s]", Keybinds.Text("Special"))
 				stackLabel.TextColor3 = ACCENT
 			else
 				stackLabel.Text = string.upper(settings.name)
@@ -642,7 +759,7 @@ RunService.RenderStepped:Connect(function()
 		end
 		local available = skill.handler ~= nil and mastery >= skill.mastery
 		local remaining = math.max((predictedReadyAt[setName .. "." .. key] or 0) - now, 0)
-		local skillName = overcharged and skill.overchargedName or skill.fullName and atFullLight() and skill.fullName or skill.name
+		local skillName = shownName(skill, overcharged)
 		slot.name.Text = skill.handler and skillName or "Soon"
 		slot.name.TextTransparency = available and 0 or 0.4
 		slot.keycap.BackgroundTransparency = available and 0 or 0.5
@@ -807,7 +924,7 @@ masteryEvent.OnClientEvent:Connect(function(setName, fromLevel, toLevel)
 		local skill = set.skills[key]
 		if skill and skill.handler and skill.mastery > fromLevel and skill.mastery <= toLevel then
 			line += 1
-			popup(string.format("%s (%s) unlocked", skill.name, key), GOLD, 16, 0.16 + 0.045 * line, 2.5)
+			popup(string.format("%s (%s) unlocked", skill.name, Keybinds.Text("Skill" .. key)), GOLD, 16, 0.16 + 0.045 * line, 2.5)
 		end
 	end
 end)

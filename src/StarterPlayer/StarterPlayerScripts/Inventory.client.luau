@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
 
@@ -552,13 +553,19 @@ local function showDetails()
 		detailRow(set.ranged.primary and "LMB" or "RMB+LMB", set.ranged.name)
 	end
 	if set.dash then
-		detailRow("Q", set.dash.name)
+		detailRow(Keybinds.Text("Dash"), set.dash.name)
 	end
 	if set.overcharge then
-		detailRow(SkillSetConfig.OverchargeKey, set.overcharge.name, "overcharge")
+		detailRow(Keybinds.Text("Special"), set.overcharge.name, "overcharge")
 	end
 	if set.flight then
-		detailRow(SkillSetConfig.FlightKey, "Flight")
+		detailRow(Keybinds.Text("Special"), "Flight")
+	end
+	if set.undo then
+		detailRow(Keybinds.Text("Special"), set.undo.name)
+	end
+	if set.gallery then
+		detailRow(Keybinds.Text("Gallery"), set.gallery.name)
 	end
 	local level = mastery(selected)
 	for _, key in ipairs(SkillSetConfig.Keys) do
@@ -573,7 +580,7 @@ local function showDetails()
 			end
 			local locked = level < (skill.mastery or 0)
 			local note = locked and ("Mastery " .. skill.mastery) or skill.overchargedOnly and "overcharge only" or nil
-			detailRow(key, name, note, locked)
+			detailRow(Keybinds.Text("Skill" .. key), name, note, locked)
 		end
 	end
 
@@ -654,8 +661,9 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- which attributes change what the menu shows: ownership, what's carried, mastery
-local watched = { [SkillSetConfig.OwnedSetsAttribute] = true, PowerSet = true, WeaponSet = true }
+-- which attributes change what the menu shows: ownership, what's carried,
+-- mastery, the player's keys
+local watched = { [SkillSetConfig.OwnedSetsAttribute] = true, PowerSet = true, WeaponSet = true, [Keybinds.Attribute] = true }
 for setName in pairs(SkillSetConfig.Sets) do
 	watched[SkillSetConfig.MasteryAttribute(setName)] = true
 end

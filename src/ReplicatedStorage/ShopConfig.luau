@@ -68,9 +68,9 @@ ShopConfig.Items = {
 		id = "Photoshop",
 		name = "Photoshop",
 		shop = "Powers",
-		tier = "S",
-		comingSoon = true,
-		description = "Nozomi's power. ???",
+		set = "Photoshop",
+		price = 25000,
+		description = "Nozomi's power. Snapshot, Photo Teleport, Desaturate, Iris Horizon, Kaleidoscope. G: Undo. T: photo gallery.",
 	},
 	{
 		id = "HimaruPower",

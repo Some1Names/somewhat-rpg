@@ -1,12 +1,15 @@
 -- Iridescent Requiem Z, Prism Shot: light from Ayato's hand splits into a
 -- fan of orange and cyan beams toward where he aimed, tilted up or down to it. Each beam goes through
 -- everyone along it and stops at walls; in Prism Form the fan is wider.
--- Whoever it hits gets a Sunmark, which Solar Lance locks onto.
+-- Whoever it hits gets a Sunmark, which Solar Lance locks onto. A beam
+-- that would hit Photoshop inside her own Kaleidoscope bounces back at him
+-- instead (Kaleidoscope.Reflect).
 -- Clients draw it from the SkillEffects "PrismShot" event.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
+local Kaleidoscope = require(ServerScriptService:WaitForChild("Skills"):WaitForChild("Kaleidoscope"))
 local Sunmark = require(ServerScriptService:WaitForChild("Sunmark"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
@@ -93,9 +96,11 @@ local function fire(player, character, aim, inForm)
 		local tip = wall or origin + direction * CONFIG.Length
 		tips[i] = tip
 		for struck in pairs(along(character, origin, tip)) do
-			Damage.Deal(player, struck, CONFIG.Damage, DAMAGE_OPTIONS)
-			if struck.Health > 0 then
-				Sunmark.Mark(player, struck.Parent)
+			if not Kaleidoscope.Reflect(struck, character, CONFIG.Damage) then
+				Damage.Deal(player, struck, CONFIG.Damage, DAMAGE_OPTIONS)
+				if struck.Health > 0 then
+					Sunmark.Mark(player, struck.Parent)
+				end
 			end
 		end
 	end

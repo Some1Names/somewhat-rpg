@@ -3,8 +3,9 @@
 -- `aims` shows a crosshair and turns to fire where it points (the Revolver
 -- also zooms in); one that doesn't throws straight ahead.
 -- A `primary` ranged weapon (the Revolver) fires on left click without
--- readying, in place of punches, and R reloads it. While left click belongs
--- to this, the local RangedReady attribute is set and Punch leaves it alone.
+-- readying, in place of punches, and the reload key (R unless rebound,
+-- Keybinds) reloads it. While left click belongs to this, the local
+-- RangedReady attribute is set and Punch leaves it alone.
 -- RangedServer checks and pays for every shot; this draws the shooter's own
 -- straight away (SkillEffects, through LocalSkillEffect).
 -- Aim assist: while a move that aims is readied, everyone it could hit gets
@@ -16,12 +17,12 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local fireRanged = ReplicatedStorage:WaitForChild("FireRanged")
 local localSkillEffect = ReplicatedStorage:WaitForChild("LocalSkillEffect")
 local player = Players.LocalPlayer
 
-local RELOAD_KEY = Enum.KeyCode.R
 local AIM_DISTANCE = 1000
 local ZOOM_TIME = 0.15 -- seconds to zoom in or out
 local CROSSHAIR_SIZE = 14 -- pixels, aimed
@@ -370,12 +371,12 @@ local function fire()
 		params.FilterType = Enum.RaycastFilterType.Exclude
 		params.FilterDescendantsInstances = { character, workspace:FindFirstChild("SkillEffects") }
 		local hit = workspace:Raycast(origin, direction * ranged.beam.range, params)
-		localSkillEffect:Fire("LightShot", origin, hit and hit.Position or origin + direction * ranged.beam.range, false)
+		localSkillEffect:Fire(ranged.beam.effect or "LightShot", origin, hit and hit.Position or origin + direction * ranged.beam.range, false)
 	end
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then
+	if gameProcessed or Keybinds.Capturing() then
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton2 then
@@ -386,7 +387,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 			firing = true
 			fire()
 		end
-	elseif input.KeyCode == RELOAD_KEY then
+	elseif input.KeyCode == Keybinds.Key("Reload") then -- R unless rebound in Settings
 		reload()
 	end
 end)
