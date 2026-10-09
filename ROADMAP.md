@@ -66,6 +66,13 @@ and saved ownership + loadout (`Loadout` is session-only today).
   or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
   (talents at level milestones), the world (quests, bosses).
 
+## UI
+
+- **HUD layout pass** (top-right icon row, key hints, one menu at a time): **designed**, spec
+  `docs/superpowers/specs/2026-10-09-hud-layout-design.md`, plan
+  `docs/superpowers/plans/2026-10-09-hud-layout.md` (not built yet). The final visual design comes
+  later; this fixes the layout.
+
 ## Settings
 
 - **Settings menu** (gear at the right edge, or P) with rebindable fighting keys: **code built** on
