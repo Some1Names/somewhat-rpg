@@ -109,17 +109,24 @@ local feedback = label(bar, {
 	Text = "",
 })
 local feedbackToken
+local feedbackFade -- the fade playing, if any
 local function refuse(text)
 	if not text then
 		return
 	end
 	local token = {}
 	feedbackToken = token
+	-- a fade still running from the last message would hide this one
+	if feedbackFade then
+		feedbackFade:Cancel()
+		feedbackFade = nil
+	end
 	feedback.Text = text
 	feedback.TextTransparency = 0
 	task.delay(FEEDBACK_TIME, function()
 		if feedbackToken == token then
-			TweenService:Create(feedback, TweenInfo.new(0.3), { TextTransparency = 1 }):Play()
+			feedbackFade = TweenService:Create(feedback, TweenInfo.new(0.3), { TextTransparency = 1 })
+			feedbackFade:Play()
 		end
 	end)
 end
@@ -444,6 +451,11 @@ local function activeSet()
 end
 
 -- whether the skill could go off right now
+-- the name a skill's slot shows: its overcharged or full-light form's when it's in one
+local function shownName(skill, overcharged)
+	return overcharged and skill.overchargedName or skill.fullName and atFullLight() and skill.fullName or skill.name
+end
+
 local function readyToCast(setName, key, skill)
 	local mastery = player:GetAttribute(SkillSetConfig.MasteryAttribute(setName)) or 1
 	local overcharged = SkillSetConfig.IsOvercharged(player, setName)
@@ -459,18 +471,19 @@ local function readyToCast(setName, key, skill)
 	-- (a skill with charges: when all are back, so one is ready a few recharges sooner)
 	local readyIn = (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * skill.cooldown - os.clock()
 	-- the first reason that applies, for the message above the bar
+	local name = shownName(skill, overcharged)
 	if not skill.handler then
-		return false, skill.name .. ": coming soon"
+		return false, name .. ": coming soon"
 	elseif mastery < skill.mastery then
-		return false, string.format("%s: needs mastery %d", skill.name, skill.mastery)
+		return false, string.format("%s: needs mastery %d", name, skill.mastery)
 	elseif skill.overchargedOnly and not overcharged then
-		return false, skill.name .. ": needs overcharge"
+		return false, name .. ": needs overcharge"
 	elseif waitingForWeapon then
-		return false, string.format("%s: %s still thrown", skill.name, skill.weaponName or "weapon")
+		return false, string.format("%s: %s still thrown", name, skill.weaponName or "weapon")
 	elseif lacksLight then
-		return false, skill.name .. ": not enough Luminance"
+		return false, name .. ": not enough Luminance"
 	elseif readyIn > 0 then
-		return false, string.format("%s: %ds cooldown", skill.name, math.ceil(readyIn))
+		return false, string.format("%s: %ds cooldown", name, math.ceil(readyIn))
 	end
 	return true
 end
@@ -495,7 +508,7 @@ local function cast(key)
 	local spec = aimSpecFor(skill, overcharged, inForm)
 	if skill.needsTarget and spec and spec.kind == "lock" and not AimIndicator.LockTarget(player.Character, aimPoint(), spec.range, spec.cone) then
 		pulse(slot, DENIED)
-		refuse(skill.name .. ": no target")
+		refuse(shownName(skill, overcharged) .. ": no target")
 		return
 	end
 	local id = setName .. "." .. key
@@ -746,7 +759,7 @@ RunService.RenderStepped:Connect(function()
 		end
 		local available = skill.handler ~= nil and mastery >= skill.mastery
 		local remaining = math.max((predictedReadyAt[setName .. "." .. key] or 0) - now, 0)
-		local skillName = overcharged and skill.overchargedName or skill.fullName and atFullLight() and skill.fullName or skill.name
+		local skillName = shownName(skill, overcharged)
 		slot.name.Text = skill.handler and skillName or "Soon"
 		slot.name.TextTransparency = available and 0 or 0.4
 		slot.keycap.BackgroundTransparency = available and 0 or 0.5
