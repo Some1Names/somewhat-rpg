@@ -228,8 +228,10 @@ SkillSetConfig.Sets = {
 		-- Q is Lightstep instead of the normal dash: a flash of light `range`
 		-- studs, untouchable for `travelTime`, hurting everyone it passes through
 		-- (Skills.Lightstep). It spends a dodge charge like the normal dash, but
-		-- no stamina.
-		dash = { name = "Lightstep", handler = "Lightstep", range = 28, travelTime = 0.1 },
+		-- no stamina. The light it leaves lingers for trailDuration seconds,
+		-- hurting anyone who walks into it once per trail; only maxTrails of his
+		-- trails last at a time (a new one ends the oldest).
+		dash = { name = "Lightstep", handler = "Lightstep", range = 28, travelTime = 0.1, trailDuration = 3, maxTrails = 3 },
 		-- Prism Form, on X: it needs minimumToStart Luminance and costs entryCost,
 		-- then burns drainPerSecond (sunlight stops refilling it meanwhile) until
 		-- X is pressed again or the light runs out. Physical hits are cut by

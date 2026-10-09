@@ -1475,12 +1475,15 @@ local function bokeh(cframe, size, count, lifetime)
 end
 
 -- A ribbon of light from `from` to `to`: a white core inside a wider band
--- that runs orange to cyan along its length (or `colors`), fading over `lifetime`.
+-- that runs orange to cyan along its length (or `colors`), fading over
+-- `lifetime` (after holding at full for the first `hold` seconds, if given).
+-- Returns the part holding it, or nil for no ribbon.
 local RIBBON_TEXTURE = "rbxassetid://14191581119" -- fine white streaks
-local function lightRibbon(from, to, width, lifetime, colors)
+local function lightRibbon(from, to, width, lifetime, colors, hold)
 	if (to - from).Magnitude < 0.1 then
-		return
+		return nil
 	end
+	hold = hold or 0
 	local holder = effectPart(Enum.PartType.Block, WHITE, Vector3.one * 0.2, CFrame.new(from), lifetime + 0.1)
 	holder.Transparency = 1
 	local a0 = Instance.new("Attachment")
@@ -1518,11 +1521,12 @@ local function lightRibbon(from, to, width, lifetime, colors)
 	local startedAt = os.clock()
 	local connection
 	connection = RunService.RenderStepped:Connect(function()
-		local k = (os.clock() - startedAt) / lifetime
-		if k >= 1 or not holder.Parent then
+		local elapsed = os.clock() - startedAt
+		if elapsed >= lifetime or not holder.Parent then
 			connection:Disconnect()
 			return
 		end
+		local k = math.max(elapsed - hold, 0) / (lifetime - hold)
 		local near, far = math.clamp(k * 1.3, 0, 1), math.clamp(k * 1.3 + 0.35, 0, 1)
 		band.Transparency = NumberSequence.new(near, far)
 		core.Transparency = NumberSequence.new(math.min(near + 0.1, 1), far)
@@ -1531,6 +1535,7 @@ local function lightRibbon(from, to, width, lifetime, colors)
 		core.Width0 = width * 0.25 * (1 - k)
 		core.Width1 = width * 0.25 * (1 - k)
 	end)
+	return holder
 end
 
 -- a glimpse of a character as it was: a shimmering glass copy, orange at the
@@ -1594,9 +1599,15 @@ function effects.PrismShot(origin, tips)
 end
 
 -- Lightstep: a glass glimpse of Ayato is left fading where he stood, two
--- fainter ones flicker along the way, and a ribbon of light marks the path;
--- the body blinks out while it's light, then fades back in at the end
+-- fainter ones flicker along the way, and a ribbon of light marks the path,
+-- leaving a thinner one that lingers for the dash's trailDuration (it hurts
+-- anyone who walks in, Skills.Lightstep). Like the server, only maxTrails of
+-- a character's trails last at a time, the oldest going first. The body
+-- blinks out while it's light, then fades back in at the end.
 local LIGHTSTEP_FADE_IN = 0.15 -- seconds the body takes to reappear
+local LIGHTSTEP_TRAIL_FADE = 0.5 -- seconds a lingering trail takes to fade at the end
+local LIGHTSTEP_DASH = SkillSetConfig.Sets.IridescentRequiem.dash
+local lightstepTrails = setmetatable({}, { __mode = "k" }) -- character -> its lingering trails, oldest first
 function effects.Lightstep(character, from, to, travelTime)
 	local path = to - from
 	local along = path.Magnitude > 0.1 and path.Unit or Vector3.zero
@@ -1642,6 +1653,16 @@ function effects.Lightstep(character, from, to, travelTime)
 
 	lightRibbon(from, to, 2.2, 0.4)
 	lightRibbon(from + Vector3.new(0, 1.2, 0), to + Vector3.new(0, 1.2, 0), 0.7, 0.3)
+	local linger = LIGHTSTEP_DASH.trailDuration
+	local trail = lightRibbon(from, to, 1.1, linger, nil, linger - LIGHTSTEP_TRAIL_FADE)
+	if trail then
+		local trails = lightstepTrails[character] or {}
+		lightstepTrails[character] = trails
+		table.insert(trails, trail)
+		while #trails > LIGHTSTEP_DASH.maxTrails do
+			table.remove(trails, 1):Destroy()
+		end
+	end
 	local middle = (from + to) / 2
 	local pathFrame = path.Magnitude > 0.1 and CFrame.lookAt(middle, to) or CFrame.new(middle)
 	bokeh(pathFrame, Vector3.new(2.5, 3, math.max(path.Magnitude, 1)), 14, 0.9)

@@ -23,3 +23,8 @@ undefined-variable check.
       but deals the **same** damage as an unmarked lance (40–80 by Luminance).
 - [ ] Luminance fills about 25% faster: empty to full in about 10 s of sunlight (was 12.5 s). In
       shade it rises to the cap at 0.025/s (was 0.02/s).
+- [ ] Lightstep (Q) leaves its light on the path for **3 s**. A dummy that walks (or is pushed) into
+      it takes the dash's hit (8, or 12 and Burnt in Prism Form), only once per trail. One already
+      hit by the dash itself isn't hit again by that trail.
+- [ ] Dash 4 times quickly: only **3** trails show at once (the oldest disappears), and only those 3
+      still hurt. Another player sees the same.
