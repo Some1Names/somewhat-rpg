@@ -1,4 +1,4 @@
--- Settings menu: a square gear button at the right edge of the screen, or
+-- Settings menu: a square gear button at the top right of the screen, or
 -- P, opens it; × or Esc closes it. Its first section, KEYBINDS, lists the
 -- rebindable actions (Keybinds.Actions) with the key each is on: click one,
 -- press a key, and it's bound there (a key another action had swaps the
@@ -64,11 +64,11 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- the gear, always there
+-- the gear, always there: top right, above the kill feed (which starts lower)
 local gear = make("TextButton", {
 	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -8, 0.5, 0),
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, -16, 0, 12),
 	Size = UDim2.fromOffset(GEAR_SIZE, GEAR_SIZE),
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.2,
