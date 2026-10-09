@@ -88,6 +88,21 @@ diff is applied to Studio.
   - A Tornado doesn't carry him while flying.
   - Taking off while caught drops him out of the pull or carry.
 
+## Punches and the Step In combo (`2026-10-09-photoshop-punches.md`)
+- [x] Left click with Photoshop out throws 4 punches (12, 12, 12, then a 30 critical that knocks
+      back). Checked in Studio on a dummy.
+- [x] Punch damage grows with Superliminal (20 points: 24/24/24/60), not Strength. Checked.
+- [x] Right click held + left click shoots Shutter, not a punch. Checked with real mouse input.
+- [x] Mandela's axe (14/14/14/35) and bare fists (10/10/10/25) are unchanged. Checked.
+- [x] Punches earn Photoshop mastery XP. Checked.
+- [x] Z then Z: she lands behind the target and throws 3 punches (8, 8, 14) about 0.15 s apart;
+      the last knocks back, and her arms play the punches. Checked.
+- [x] The target dashes off right after Step In: the later punches miss. Checked.
+- [x] She dies mid-combo: no errors and no more hits. Checked.
+- [x] Mashing Z during the combo starts no second Step In. Checked.
+- [ ] **Two players:** the last combo punch on a player under hold protection still deals damage
+      but doesn't knock back. Not checked (needs two real players).
+
 ## Things that might break (from the plan's Review Focus)
 - [ ] Die (or reset) while Iris Horizon is closing: the ring disappears and no burst follows.
 - [ ] Die mid-Kaleidoscope or mid-Desaturate: the dome or column goes away early.

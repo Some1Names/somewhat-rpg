@@ -13,12 +13,15 @@ local PunchConfig = {
 	StaggerImmunity = 2,
 }
 
--- Per weapon: damage before Strength, timing, reach and animations (in the
--- ReplicatedStorage folder `animationFolder`, named `animationPrefix` plus the
--- hit number). Per hit: seconds from the start of the swing to the impact,
--- and the length of its animation. `overcharged`: extras while its skill set
--- is overcharged (lifesteal: share of damage dealt healed back; the finisher
--- bursts spikes out around the first target it hits).
+-- Per weapon: damage before its stat bonus, timing, reach and animations (in
+-- the ReplicatedStorage folder `animationFolder`, named `animationPrefix` plus
+-- the hit number). Per hit: seconds from the start of the swing to the impact,
+-- and the length of its animation. `stat`: the stat its damage scales with
+-- (Strength if none). `hitEffect`: the SkillEffects kind each landed hit
+-- plays, (point, critical), in place of the usual slash or fist burst.
+-- `overcharged`: extras while its skill set is overcharged (lifesteal: share
+-- of damage dealt healed back; the finisher bursts spikes out around the
+-- first target it hits).
 PunchConfig.Weapons = {
 	Fists = {
 		baseDamage = 10,
@@ -58,6 +61,28 @@ PunchConfig.Weapons = {
 			{ impact = 0.12, length = 0.38 }, -- rising backhand
 			{ impact = 0.14, length = 0.4 }, -- wide horizontal sweep
 			{ impact = 0.28, length = 0.6 }, -- overhead chop
+		},
+	},
+	-- Photoshop's punches: her fists with Photoshop out, scaling with
+	-- Superliminal. Right click held still readies Shutter instead (Ranged).
+	PhotoshopPunch = {
+		tool = "Photoshop",
+		skillSet = "Photoshop", -- punches earn Photoshop mastery
+		stat = "Superliminal",
+		hitEffect = "PhotoshopPunchHit",
+		baseDamage = 12,
+		minInterval = 0.3,
+		finisherCooldown = 0.6,
+		hitboxSize = Vector3.new(6, 6, 6),
+		hitboxForward = 3.5,
+		-- the fists' animations until Photoshop has her own
+		animationFolder = "PunchAnimations",
+		animationPrefix = "Punch",
+		hits = {
+			{ impact = 0.05, length = 0.38 },
+			{ impact = 0.05, length = 0.4 },
+			{ impact = 0.23, length = 0.37 },
+			{ impact = 0.15, length = 0.52 }, -- finisher
 		},
 	},
 }

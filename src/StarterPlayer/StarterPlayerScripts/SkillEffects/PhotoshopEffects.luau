@@ -154,6 +154,39 @@ return function(helpers)
 		end
 	end
 
+	-- one of her punches landing (PunchCombat, and Step In's combo): a camera flash
+	function effects.PhotoshopPunchHit(point, critical)
+		VFX.Play("Photoshop/CameraFlash", point, { scale = critical and 1.6 or 1 })
+	end
+
+	-- Step In's punches on the caster's own screen: her arms throw Punch1..hits,
+	-- `interval` apart, in time with the server's (Snapshot)
+	local comboTracks = setmetatable({}, { __mode = "k" }) -- animator -> { Punch1, ... }
+	function effects.StepInCombo(character, hits, interval)
+		local humanoid = character == Players.LocalPlayer.Character and character:FindFirstChildOfClass("Humanoid")
+		local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+		local animations = ReplicatedStorage:FindFirstChild("PunchAnimations")
+		if not animator or not animations then
+			return
+		end
+		local tracks = comboTracks[animator] or {}
+		comboTracks[animator] = tracks
+		for i = 1, hits do
+			task.delay(interval * i, function()
+				local animation = animations:FindFirstChild("Punch" .. i)
+				-- not published yet: the punches still land, just without arms
+				if not animation or animation.AnimationId == "" or not animator.Parent then
+					return
+				end
+				if not tracks[i] then
+					tracks[i] = animator:LoadAnimation(animation)
+					tracks[i].Priority = Enum.AnimationPriority.Action3
+				end
+				tracks[i]:Play(0.05)
+			end)
+		end
+	end
+
 	-- Framed: four pink corners round them, for the caster only
 	local frames = {} -- model -> { gui, endsAt }
 	function effects.Framed(model, duration)
