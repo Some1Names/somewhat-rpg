@@ -113,7 +113,8 @@ fireRanged.OnServerEvent:Connect(function(player, action, origin, direction, id,
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	if not root or humanoid.Health <= 0 then
+	-- (Rewinding: Photoshop's Undo is carrying her back, PhotoshopServer)
+	if not root or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
 		return
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

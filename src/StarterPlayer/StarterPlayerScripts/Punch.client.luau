@@ -88,7 +88,14 @@ end
 local function tryAttack()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or humanoid.Sit or player:GetAttribute("Dashing") or player:GetAttribute("RangedReady") then
+	if
+		not humanoid
+		or humanoid.Health <= 0
+		or humanoid.Sit
+		or player:GetAttribute("Dashing")
+		or player:GetAttribute("RangedReady")
+		or character:GetAttribute("Rewinding") -- Photoshop's Undo carrying her back
+	then
 		return
 	end
 	local name, weapon = PunchConfig.WeaponFor(character)

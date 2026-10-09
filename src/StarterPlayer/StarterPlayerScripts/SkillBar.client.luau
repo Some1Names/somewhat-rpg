@@ -440,11 +440,12 @@ local function stopAiming()
 	AimIndicator.Hide()
 end
 
--- the equipped set, while the character is alive
+-- the equipped set, while the character is alive (and not being rewound by
+-- Photoshop's Undo)
 local function activeSet()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
+	if not humanoid or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
 		return nil
 	end
 	return equippedSet()

@@ -53,8 +53,17 @@ diff is applied to Studio.
       in a **live** server: lag doesn't show in Studio.
 - [ ] **F Kaleidoscope**: a dome of pink/blue mirror shards around you for 5 s, with mirror hits
       on everyone inside every half second (Framed targets take two).
-- [ ] **G Undo**: walk away for a few seconds, take some damage, press G. You snap back to where
-      you were about 3 s ago and get half that damage back. The meter shows the 18 s recharge.
+- [ ] **G Undo**: walk away for a few seconds, take some damage, press G. You're carried back
+      along the way you walked, backwards, in about 0.6 s (blue copies of you left along the way,
+      a thin blue line down the path), land where you were about 3 s ago and get half that damage
+      back. The meter shows the 18 s recharge.
+- [ ] **The rewind's animations:** your run/walk plays backwards on the way back (a moonwalk), and
+      once you land you move and animate normally again (no stuck walk or frozen pose). If the
+      backwards animation looks wrong, note how: the fallback is gliding back in one pose.
+- [ ] During the rewind: you can't be hurt (the dummy's hits, a second player's skills), and Z/X/
+      C/V/F, Shutter and punches do nothing. A second player sees you slide back smoothly.
+- [ ] Undo, then die during the 0.6 s (e.g. rewind off a ledge into the void): no errors; you
+      respawn normally.
 - [ ] Undo while caught in Event Horizon's pull or a knife pin: nothing happens.
 - [ ] **T Gallery**: T opens a square 3-slot panel. SAVE fills a slot with your position. GO
       (after 8 s without fighting) shows a photo developing over your head for 2 s, then you're

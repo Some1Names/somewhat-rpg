@@ -209,7 +209,8 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 	end
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
+	-- (Rewinding: Photoshop's Undo is carrying her back, PhotoshopServer)
+	if not humanoid or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
 		return
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

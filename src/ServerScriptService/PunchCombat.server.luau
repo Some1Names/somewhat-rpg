@@ -290,7 +290,7 @@ punchEvent.OnServerEvent:Connect(function(player, index)
 	end
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
+	if not humanoid or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
 		return
 	end
 

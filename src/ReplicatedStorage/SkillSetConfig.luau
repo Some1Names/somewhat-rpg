@@ -314,8 +314,9 @@ SkillSetConfig.Sets = {
 		-- undone.
 		passive = { name = "History" },
 		-- G, Undo: back to where she stood `rewind` seconds ago, healing
-		-- healShare of the damage taken since
-		undo = { name = "Undo", cooldown = 18, rewind = 3, healShare = 0.5 },
+		-- healShare of the damage taken since; she's carried back along the
+		-- way she came over rewindTime seconds, untouchable and unable to act
+		undo = { name = "Undo", cooldown = 18, rewind = 3, healShare = 0.5, rewindTime = 0.6 },
 		-- `key` opens her saved photos of places, `slots` of them, to step
 		-- back into out of combat (PhotoshopServer, the PhotoGallery script)
 		gallery = { name = "Gallery", key = "T", slots = 3 },

@@ -228,11 +228,12 @@ local function updateAssist(active, character, ranged, color)
 	end
 end
 
--- the set in hand and its ranged move, while alive
+-- the set in hand and its ranged move, while alive (and not being rewound
+-- by Photoshop's Undo)
 local function heldSet()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or not humanoid.RootPart then
+	if not humanoid or humanoid.Health <= 0 or not humanoid.RootPart or character:GetAttribute("Rewinding") then
 		return nil
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

@@ -631,22 +631,88 @@ return function(helpers)
 		VFX.Play("Shared/Impact", to, { color = PINK, scale = 0.8 })
 	end
 
-	-- Undo: a blue copy of her at the spot she left, folding back into her
-	function effects.Undo(character, from, to)
-		afterimage(character, BLUE, 0.5)
-		pixelate(from, BLUE)
-		lightBeam(from, to, BLUE, 0.4, 0.3)
-		flash(to, BLUE, 0.5, 4, 0.2)
-		sparkles(to, PINK, 10)
-		pasteRing(to, BLUE, 0.6)
+	-- Undo: she's carried back the way she came, like a video scrubbed
+	-- backwards. Her own client moves her along `path` (where she's been,
+	-- newest first) over `duration`, running the animations she's in
+	-- backwards (the rig's Animate script is paused meanwhile, so it doesn't
+	-- start new ones). Everyone sees blue copies of her left along the way, a
+	-- thin blue line down the path and a flash where she lands. The server
+	-- puts her exactly on the last spot when it's over.
+	local REWIND_ANIMATION_SPEED = -2 -- the animations she's in, played backwards this fast
+	local REWIND_GHOST_EVERY = 0.08 -- seconds between the copies left along the way
+
+	-- the pivot `share` (0 to 1) of the way along a path of pivots
+	local function alongPath(path, share)
+		local scaled = math.clamp(share, 0, 1) * (#path - 1)
+		local i = math.min(math.floor(scaled) + 1, #path - 1)
+		return path[i]:Lerp(path[i + 1], scaled - (i - 1))
+	end
+
+	function effects.Undo(character, path, duration)
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		local root = rootOf(character)
-		if root then
-			VFX.Play("Shared/AuraBurst", root, { color = BLUE, offset = CFrame.new(0, -0.5, 0) })
+		if #path < 1 or not humanoid or not root then
+			return
 		end
-		-- her own screen rushes back with her
-		if character == Players.LocalPlayer.Character then
-			VFX.ScreenSpeedLines(0.35)
+		local landing = path[#path].Position
+		afterimage(character, BLUE, 0.5)
+		for i = 1, #path - 1 do
+			lightBeam(path[i].Position, path[i + 1].Position, BLUE, 0.2, duration + 0.3)
 		end
+
+		-- her own client carries her back and runs her animations backwards
+		local carries = character == Players.LocalPlayer.Character and #path >= 2
+		local animate = carries and character:FindFirstChild("Animate")
+		local speeds = {} -- track -> its speed before
+		if carries then
+			if animate then
+				animate.Enabled = false
+			end
+			local animator = humanoid:FindFirstChildOfClass("Animator")
+			for _, track in ipairs(animator and animator:GetPlayingAnimationTracks() or {}) do
+				speeds[track] = track.Speed
+				track:AdjustSpeed(REWIND_ANIMATION_SPEED)
+			end
+			VFX.ScreenSpeedLines(duration)
+		end
+
+		local started = os.clock()
+		local lastCopy = 0
+		local connection
+		connection = RunService.RenderStepped:Connect(function()
+			local elapsed = os.clock() - started
+			local done = elapsed >= duration or not character.Parent or humanoid.Health <= 0
+			if carries and character.Parent then
+				character:PivotTo(done and path[#path] or alongPath(path, elapsed / duration))
+				root.AssemblyLinearVelocity = Vector3.zero
+			end
+			if not done then
+				if elapsed - lastCopy >= REWIND_GHOST_EVERY then
+					lastCopy = elapsed
+					afterimage(character, BLUE, 0.3)
+				end
+				return
+			end
+			connection:Disconnect()
+			-- with the rig's Animate script back, it picks the right pose
+			-- again; without one, the tracks just play forwards again
+			for track, speed in pairs(speeds) do
+				if animate then
+					track:Stop(0.15)
+				else
+					track:AdjustSpeed(speed)
+				end
+			end
+			if animate and animate.Parent then
+				animate.Enabled = true
+			end
+			if character.Parent then
+				flash(landing, BLUE, 0.5, 4, 0.2)
+				sparkles(landing, PINK, 10)
+				pasteRing(landing, BLUE, 0.6)
+				VFX.Play("Shared/AuraBurst", root, { color = BLUE, offset = CFrame.new(0, -0.5, 0) })
+			end
+		end)
 	end
 
 	-- the Gallery's photo developing over her head, then taking her or spoiling

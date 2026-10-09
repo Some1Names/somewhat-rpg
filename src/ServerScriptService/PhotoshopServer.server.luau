@@ -2,7 +2,10 @@
 -- (fast travel on T). While the set is equipped, where she stands is
 -- recorded every SampleInterval and kept for the set's undo.rewind seconds,
 -- along with every bit of health she loses. Undo (the Undo remote, sent by
--- the skill bar) puts her back where she stood that long ago and heals
+-- the skill bar) carries her back the way she came, over undo.rewindTime
+-- (her own client moves her, the SkillEffects "Undo" event; meanwhile she's
+-- Invulnerable and Rewinding, which stops her acting), puts her exactly where
+-- she stood that long ago and heals
 -- undo.healShare of what she lost since, less anything Mandela dealt
 -- (reality he rewrote can't be undone) and cut by healing cuts like
 -- Poisoned. It can't slip a hold (CrowdControl.Held) and recharges for
@@ -37,6 +40,7 @@ local CONFIG = {
 	GallerySlots = SkillSetConfig.Sets[SET_NAME].gallery.slots,
 	CombatLock = 8, -- seconds without dealing or taking damage before travelling
 	DevelopTime = 2, -- seconds the photo develops before she steps in
+	RewindGrace = 0.1, -- extra seconds untouchable after Undo lands her
 }
 
 local undoRemote = Instance.new("RemoteEvent")
@@ -158,15 +162,30 @@ undoRemote.OnServerEvent:Connect(function(player)
 	end
 	local lost = total(losses[player], oldest.at) - total(rewritten[player], oldest.at)
 	local heal = math.max(lost, 0) * UNDO.healShare * StatusConfig.HealMultiplier(character)
-	local from = root.Position
-	root.AssemblyLinearVelocity = Vector3.zero
-	character:PivotTo(oldest.pivot)
-	if heal > 0 then
-		humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + heal)
+	-- the way back: where she is now, then her History newest first
+	local path = { character:GetPivot() }
+	for i = #samples[player], 1, -1 do
+		table.insert(path, samples[player][i].pivot)
 	end
 	forget(player)
 	player:SetAttribute(UNDO_READY, workspace:GetServerTimeNow() + UNDO.cooldown)
-	skillEffects:FireAllClients("Undo", character, from, oldest.pivot.Position)
+	character:SetAttribute("Rewinding", true)
+	character:SetAttribute("Invulnerable", true)
+	skillEffects:FireAllClients("Undo", character, path, UNDO.rewindTime)
+	task.delay(UNDO.rewindTime, function()
+		-- she lands exactly where she stood, whatever her client did on the way
+		if character.Parent and humanoid.Health > 0 then
+			root.AssemblyLinearVelocity = Vector3.zero
+			character:PivotTo(oldest.pivot)
+			if heal > 0 then
+				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + heal)
+			end
+		end
+		character:SetAttribute("Rewinding", nil)
+		task.delay(CONFIG.RewindGrace, function()
+			character:SetAttribute("Invulnerable", nil)
+		end)
+	end)
 end)
 
 -- the saved photos: a Vector3 or false per slot (a bad entry is an empty slot)
