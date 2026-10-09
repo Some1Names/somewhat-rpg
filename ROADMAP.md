@@ -49,9 +49,12 @@ and saved ownership + loadout (`Loadout` is session-only today).
 ## Combat depth ("deeper than Blox Fruits, simpler than Deepwoken")
 
 - **Block, parry and posture** on E: **designed**, spec `docs/superpowers/specs/2026-10-09-block-parry-design.md`,
-  plan `docs/superpowers/plans/2026-10-09-block-parry.md` (not built yet). Later: each power, moveset
-  or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it, in the
-  owner's order: builds (talents at level milestones), death stakes, the world (quests, bosses).
+  plan `docs/superpowers/plans/2026-10-09-block-parry.md` (not built yet).
+- **Death stakes and the Headhunter** (dropped yen, the kill leader mark): **designed**, spec
+  `docs/superpowers/specs/2026-10-09-death-stakes-design.md`, plan
+  `docs/superpowers/plans/2026-10-09-death-stakes.md` (not built yet). Later: each power, moveset
+  or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
+  (talents at level milestones), the world (quests, bosses).
 
 ## Settings
 
