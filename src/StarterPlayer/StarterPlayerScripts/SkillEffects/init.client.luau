@@ -24,6 +24,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local VFX = require(ReplicatedStorage:WaitForChild("VFX"))
 
@@ -91,6 +92,9 @@ local function burst(position, props, count, size, life)
 end
 
 local function shake(origin, radius, strength, time)
+	if not Preferences.Get("CameraShake") then
+		return -- turned off in Settings
+	end
 	local character = Players.LocalPlayer.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	if not root then

@@ -19,12 +19,21 @@
 -- Besides prefabs: camera shake, impact frames (the screen flashing black and
 -- white with the fighters as silhouettes), ground craters of rock chunks and
 -- thrown rubble. Particle and rock counts drop on low graphics settings.
+-- A player can turn camera shake and the impact frames and speed lines off
+-- in Settings (Preferences "CameraShake", "Flashes").
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
 local Debris = game:GetService("Debris")
+
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
+
+-- the player's Settings may turn shake and flashes off; only a client has a player to ask
+local function allowed(id)
+	return not RunService:IsClient() or Preferences.Get(id)
+end
 
 local prefabs = ReplicatedStorage:WaitForChild("VFXPrefabs")
 
@@ -266,6 +275,9 @@ end
 -- `power`: "Light", "Medium", "Heavy" or studs; weaker with distance from
 -- `origin` (nil: full strength), none past `radius`
 function VFX.Shake(origin, power, radius)
+	if not allowed("CameraShake") then
+		return
+	end
 	local preset = SHAKES[power] or { tonumber(power) or 0.3, 0.3 }
 	local falloff = 1
 	if origin then
@@ -293,6 +305,9 @@ end
 -- speed lines rush in from the screen's edges and fade (after an impact
 -- frame, or any big moment for this player)
 function VFX.ScreenSpeedLines(time)
+	if not allowed("Flashes") then
+		return
+	end
 	time = time or SPEEDLINES_TIME
 	local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
 	if not playerGui then
@@ -353,6 +368,9 @@ end
 -- the screen flashes black with `subjects` (character models) as white
 -- silhouettes, then the other way round, then snaps back with a contrast pop
 function VFX.ImpactFrame(subjects)
+	if not allowed("Flashes") then
+		return
+	end
 	local now = os.clock()
 	if now - lastImpactFrameAt < IMPACT_FRAME_GAP then
 		return
@@ -409,6 +427,9 @@ end
 -- an impact frame only for the caster and for whoever stands within
 -- `radius` of `origin`; they and everyone else inside become the silhouettes
 function VFX.ImpactFrameNear(origin, radius, caster)
+	if not allowed("Flashes") then
+		return
+	end
 	local me = Players.LocalPlayer.Character
 	local myRoot = me and me:FindFirstChild("HumanoidRootPart")
 	if not myRoot then
