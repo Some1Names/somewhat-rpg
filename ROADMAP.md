@@ -59,7 +59,10 @@ and saved ownership + loadout (`Loadout` is session-only today).
   belong to the coming quest system; boss mastery to the boss and enemy rework.
 - **Mastery unlocks per power** (own skill levels; passives, G, Lightstep, the Gallery by mastery):
   **designed**, spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
-  `docs/superpowers/plans/2026-10-09-mastery-unlocks.md` (not built yet). Later: each power, moveset
+  `docs/superpowers/plans/2026-10-09-mastery-unlocks.md` (not built yet).
+- **Quests** (level quests from givers, mastery challenges): **designed**, spec
+  `docs/superpowers/specs/2026-10-09-quests-design.md`, plan `docs/superpowers/plans/2026-10-09-quests.md`
+  (not built yet). Later on the same system: daily challenges, story quests. Later: each power, moveset
   or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
   (talents at level milestones), the world (quests, bosses).
 
