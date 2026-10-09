@@ -52,7 +52,11 @@ and saved ownership + loadout (`Loadout` is session-only today).
   plan `docs/superpowers/plans/2026-10-09-block-parry.md` (not built yet).
 - **Death stakes and the Headhunter** (dropped yen, the kill leader mark): **designed**, spec
   `docs/superpowers/specs/2026-10-09-death-stakes-design.md`, plan
-  `docs/superpowers/plans/2026-10-09-death-stakes.md` (not built yet). Later: each power, moveset
+  `docs/superpowers/plans/2026-10-09-death-stakes.md` (not built yet).
+- **More ways to earn mastery** (PvP, kill bonus, training dummies to 10): **designed**, spec
+  `docs/superpowers/specs/2026-10-09-mastery-sources-design.md`, plan
+  `docs/superpowers/plans/2026-10-09-mastery-sources.md` (not built yet). Mastery challenges
+  belong to the coming quest system; boss mastery to the boss and enemy rework. Later: each power, moveset
   or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
   (talents at level milestones), the world (quests, bosses).
 

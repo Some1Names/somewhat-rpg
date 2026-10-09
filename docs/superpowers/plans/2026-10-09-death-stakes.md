@@ -21,6 +21,7 @@
 - Attributes: player `HeadhunterKills` (number, not saved), player `LastDeathYenLost` (number), `ReplicatedStorage` `Headhunter` (UserId or nil).
 - UI square, no `UICorner`; match the KillFeed/StatusHUD look (dark square panels, Gotham).
 - Match the surrounding style (header comments, CONFIG tables with units, tabs).
+- **Repeat kills are shared with `2026-10-09-mastery-sources.md`:** use `ServerScriptService/KillRecords.luau` (`Record(killer, victim)`, `IsRepeat(killer, victim)`, `RepeatWindow = 300`) for the 5-minute rule if it exists; if not, create it as that plan's Task 1 describes, and keep `HeadhunterConfig.isRepeat` as the pure rule it calls.
 
 ## Review Focus
 
