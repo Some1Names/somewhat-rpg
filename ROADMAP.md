@@ -1,6 +1,6 @@
 # Roadmap
 
-What's left, as of 2026-10-09. **Cloud** = code-only, a cloud session can do it.
+What's left, as of 2026-10-09. Plans ready to run are listed in `docs/superpowers/plans/README.md`. **Cloud** = code-only, a cloud session can do it.
 **Studio** = needs the local Studio connection (looking at effects, prefabs, uploads, playtests).
 
 ## In progress: Iridescent Requiem revisual
@@ -26,8 +26,11 @@ reuse `FORM_*` textures, `sunShaft`, `lyingFlat` and pack prefabs, check with fr
 Design with the owner first (questions, then a written spec), then build. (Cloud for design and
 server code; Studio for visuals, animations, models.)
 
-1. **Aido** (S power, red, atomic bomb): Z Catastrophe, X Collapse, C Total Destruction, F dragon
-   form ultimate; inflicts Burnt.
+1. **Aido** (Furukiwa Aido, The Director; S power, red, atomic): **designed**, spec
+   `docs/superpowers/specs/2026-10-09-aido-design.md`, plan `docs/superpowers/plans/2026-10-09-aido.md`
+   (not built yet). Fuse, Z Catastrophe, X Collapse, C Total Destruction, V Ground Zero, F Final Cut
+   (dragon form), G Chain Reaction, passive Half-Life (Fallout, Burnt). Later in Studio: the dragon
+   model, `AidoAnimations`, VFX packs.
 2. **Photoshop** (Nozomi, S power, pink / light blue): **in Studio** from branch
    `claude/vigilant-rubin-ckqtnn` (spec and plans in `docs/superpowers/`), with its `Photoshop`
    Tool in `ServerStorage.SkillSetTools`. Punches (a Superliminal 4-hit combo) and Step In's
