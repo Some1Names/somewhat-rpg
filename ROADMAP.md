@@ -28,13 +28,15 @@ server code; Studio for visuals, animations, models.)
 
 1. **Aido** (S power, red, atomic bomb): Z Catastrophe, X Collapse, C Total Destruction, F dragon
    form ultimate; inflicts Burnt.
-2. **Photoshop** (Nozomi, S power, pink / light blue): **code built** on branch
-   `claude/vigilant-rubin-ckqtnn` (spec and plan in `docs/superpowers/`), waiting on the Studio
-   apply and a playtest with `docs/superpowers/specs/2026-10-08-photoshop-checklist.md`. Needs in
-   Studio: a `Photoshop` Tool in `ServerStorage.SkillSetTools` (attribute `SkillSet = "Photoshop"`);
-   optional wearables (`ServerStorage.SkillSets.Photoshop`) and `ReplicatedStorage.PhotoshopAnimations`
-   (CastZ, CastX, CastC, CastV, CastF). Later: a "named areas" tab for the Gallery once the map
-   has area markers.
+2. **Photoshop** (Nozomi, S power, pink / light blue): **in Studio** from branch
+   `claude/vigilant-rubin-ckqtnn` (spec and plans in `docs/superpowers/`), with its `Photoshop`
+   Tool in `ServerStorage.SkillSetTools`. Punches (a Superliminal 4-hit combo) and Step In's
+   3-punch combo are done and checked in Studio; the rest of
+   `docs/superpowers/specs/2026-10-08-photoshop-checklist.md` still needs a playtest. Next: the
+   revisual with imported VFX packs (`docs/superpowers/plans/2026-10-09-photoshop-revisual.md`,
+   needs the owner's OK on packs). Optional: wearables (`ServerStorage.SkillSets.Photoshop`) and
+   `ReplicatedStorage.PhotoshopAnimations` (CastZ, CastX, CastC, CastV, CastF). Later: a "named
+   areas" tab for the Gallery once the map has area markers.
 3. Later: Himaru (S power), Daemon (A power) + Daemon's katana (A weapon, shop item),
    Kintsugi (B power), Monotwister (Aido's katana, S weapon).
 
