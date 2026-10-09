@@ -95,7 +95,8 @@ end
 -- them and steers in, so it lands unless a wall gets in the way.
 --
 -- `overcharge`: damage dealt with the set builds stacks (melee hits only count
--- for meleeShare of their damage); at maxStacks it's ready, and pressing
+-- for meleeShare of their damage; damage taken while holding it counts
+-- takenShare); at maxStacks it's ready, and pressing
 -- OverchargeKey with the set equipped
 -- overcharges for `duration` seconds (its OverchargeOnly wearables appear and
 -- skills cast their overcharged forms), then the stacks are spent and it
@@ -122,6 +123,7 @@ SkillSetConfig.Sets = {
 			maxStacks = 10,
 			damagePerStack = 40,
 			meleeShare = 0.35,
+			takenShare = 0.5, -- damage he takes counts half as much as damage he deals
 			duration = 15,
 			cooldown = 30,
 			killRefill = 1.5,
@@ -152,7 +154,7 @@ SkillSetConfig.Sets = {
 				overchargedName = "Spine Lash",
 				overchargedHandler = "SpineLash",
 				aim = { kind = "line", length = 42 },
-				overchargedAim = { kind = "lock", range = 40, cone = 30 },
+				overchargedAim = { kind = "lock", range = 80, cone = 30 },
 			},
 			X = {
 				name = "Event Horizon",
@@ -212,10 +214,10 @@ SkillSetConfig.Sets = {
 		passive = {
 			name = "Luminance",
 			physicalReduction = 0.15,
-			chargePerSecond = 0.08,
+			chargePerSecond = 0.1,
 			shadeDrainPerSecond = 0.06,
 			shadeCap = 0.5,
-			shadeChargePerSecond = 0.02,
+			shadeChargePerSecond = 0.025,
 			cloudHeight = 250, -- studs; the map tops out around 126
 			cloudMultiplier = 3,
 		},
@@ -335,7 +337,7 @@ SkillSetConfig.Sets = {
 				handler = "Snapshot",
 				needsTarget = true,
 				recast = "Step In", -- behind whoever she's Framed
-				aim = { kind = "lock", range = 50, cone = 30 },
+				aim = { kind = "lock", range = 100, cone = 30 },
 			},
 			X = {
 				name = "Photo Teleport",
@@ -359,7 +361,7 @@ SkillSetConfig.Sets = {
 				cooldown = 35,
 				handler = "IrisHorizon",
 				needsTarget = true,
-				aim = { kind = "lock", range = 60, cone = 30 },
+				aim = { kind = "lock", range = 120, cone = 30 },
 			},
 			-- the ultimate; she has no overcharge, so it needs only the mastery
 			F = {

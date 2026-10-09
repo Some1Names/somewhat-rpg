@@ -18,10 +18,10 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Range = 50, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
+	Range = 100, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
 	Cone = 30, -- degrees either side of the aim it locks onto a target in
 	Damage = 12, -- before the caster's Superliminal bonus
-	StepRange = 60, -- studs from her a framed target can be for Step In
+	StepRange = 110, -- studs from her a framed target can be for Step In (past Range, so anyone she framed)
 	BehindDistance = 4, -- studs behind them she lands
 	MaxDrop = 6, -- studs below them the ground there may be; past that (a cliff edge, a flier) she stays at their height
 	WatchInterval = 0.1, -- seconds between checks that the frame is still on

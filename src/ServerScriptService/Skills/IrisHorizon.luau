@@ -25,7 +25,7 @@ local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Range = 60, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
+	Range = 120, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
 	Cone = 30, -- degrees either side of the aim it locks onto a target in
 	RingRadius = 8, -- studs (16 across) when it forms
 	CloseTime = 1.5, -- seconds to shut

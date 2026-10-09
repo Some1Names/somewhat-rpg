@@ -7,7 +7,8 @@
 -- second. Aimed near someone carrying the
 -- caster's Sunmark (from Prism Shot or Refraction Field), it locks onto
 -- them instead: almost no warning, it follows them through it, hits
--- LockedBonus harder and uses the mark up. Clients draw it from the
+-- LockedBonus harder (none for now: the lock makes it land, not hurt more)
+-- and uses the mark up. Clients draw it from the
 -- SkillEffects "SolarLanceWarning", "SolarLance" and "SolarPool" events.
 local Debris = game:GetService("Debris")
 local Lighting = game:GetService("Lighting")
@@ -37,7 +38,7 @@ local CONFIG = {
 	-- locking onto a Sunmark
 	LockRadius = 18, -- studs round the aim point it looks for one
 	LockedWarningTime = 0.15, -- seconds
-	LockedBonus = 0.25, -- extra share of damage
+	LockedBonus = 0, -- extra share of damage (none: locking makes it land, not hit harder)
 	-- the pool it leaves in Prism Form
 	PoolShare = 0.75, -- of the strike's radius
 	PoolDuration = 4, -- seconds

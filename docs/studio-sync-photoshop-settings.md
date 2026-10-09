@@ -5,7 +5,7 @@ Everything on branch `claude/vigilant-rubin-ckqtnn` since the last Studio sync (
 sections, Quick respawn, the death screen, and the cast feedback.
 
 The plan: you paste the 16 **new** scripts by hand, which uses no Claude usage. Then a local
-Claude session with the Studio connection applies the 20 **changed** scripts as small edits,
+Claude session with the Studio connection applies the 23 **changed** scripts as small edits,
 checks your pastes, and compile-checks.
 
 Get the files from your local clone (`git fetch && git checkout claude/vigilant-rubin-ckqtnn`), or
@@ -46,7 +46,7 @@ Also add, in Studio, a **Tool** named `Photoshop` in `ServerStorage.SkillSetTool
 attribute `SkillSet` = `Photoshop`. You can copy the Iridescent Requiem tool there and change its
 name and attribute.
 
-## Part B: the 20 changed scripts (a local Claude session)
+## Part B: the 23 changed scripts (a local Claude session)
 
 Open Claude Code on your computer in your local clone, with Studio open and the Studio MCP
 connected, and paste this prompt:
@@ -60,28 +60,31 @@ connected, and paste this prompt:
 > 2. For each file marked **A** (new): don't rewrite it. Check that it exists in Studio at its
 >    `studio-manifest.json` path with the right class, and that its source length matches the
 >    repo file. Report any that are missing or differ.
-> 3. For each file marked **M** (20 files): apply the diff hunks as targeted edits to the
+> 3. For each file marked **M** (23 files): apply the diff hunks as targeted edits to the
 >    existing script. Don't paste whole files.
 > 4. Compile-check in a playtest (the output window shows no script errors), then
 >    `git tag -f studio HEAD` and push the tag.
 >
 > Keep it lean: read one file's diff at a time, and don't re-read files you've already applied.
 
-The 20 changed scripts, for reference:
+The 23 changed scripts, for reference:
 
 | Script (Studio path) | What changed |
 |---|---|
 | ReplicatedStorage.ShopConfig | Photoshop sold for ¥25,000 |
-| ReplicatedStorage.SkillSetConfig | the Photoshop set, `undo`/`gallery`, `needsTarget`, `weaponName` |
+| ReplicatedStorage.SkillSetConfig | the Photoshop set, `undo`/`gallery`, `needsTarget`, `weaponName`, `takenShare`, longer reaches, faster Luminance |
 | ReplicatedStorage.StatusConfig | the Desaturated status |
 | ReplicatedStorage.VFX | shake, impact frames and speed lines obey Settings |
 | ServerScriptService.CrowdControl | `Held` |
+| ServerScriptService.Overcharge | Mandela's bar also fills from damage taken |
 | ServerScriptService.LuminanceServer | Desaturated drains light and grounds flight |
 | ServerScriptService.Passives | `ResistEdit` (Mandela forgets Photoshop's edits) |
 | ServerScriptService.PlayerStats | saved `PhotoGallery`, `Keybinds`, `Preferences` |
 | ServerScriptService.StatusEffects | comment only |
 | ServerScriptService.Skills.BlackHole | flying characters aren't pulled |
 | ServerScriptService.Skills.Tornado | flying characters aren't carried |
+| ServerScriptService.Skills.SpineLash | reach 40 → 80 |
+| ServerScriptService.Skills.SolarLance | no extra damage when locked onto a Sunmark |
 | ServerScriptService.Skills.LightShot | bounces off Kaleidoscope |
 | ServerScriptService.Skills.PrismShot | bounces off Kaleidoscope |
 | ServerScriptService.Skills.PrismForm | Desaturated ends or blocks it |
@@ -98,5 +101,6 @@ Playtest with:
 - `docs/superpowers/specs/2026-10-08-photoshop-checklist.md`
 - `docs/superpowers/specs/2026-10-09-settings-keybinds-checklist.md`
 - `docs/superpowers/specs/2026-10-09-settings-death-feedback-checklist.md`
+- `docs/superpowers/specs/2026-10-09-balance-pass-checklist.md`
 
 Saving (gallery photos, keybinds and settings) only works in a live server.

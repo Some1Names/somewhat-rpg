@@ -18,7 +18,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Range = 40, -- studs
+	Range = 80, -- studs (SkillSetConfig's overchargedAim shows the same)
 	ExtendSpeed = 150, -- studs per second the whip shoots out
 	Width = 3.5, -- studs either side of the whip that it catches
 	MaxTargets = 3,

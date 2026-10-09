@@ -1,5 +1,7 @@
 -- Overcharge for skill sets that have one (Mandela's Backbone Power). Damage
--- dealt with the set builds stacks; once they're full (full stacks don't
+-- dealt with the set builds stacks, and so does damage taken while holding
+-- it, counting the set's takenShare of it (any source: players, enemies,
+-- falls, burns); once they're full (full stacks don't
 -- fade) the player presses the overcharge key to overcharge for a while.
 -- When that ends the stacks are spent and it cools down before it can be used
 -- again; stacks still build meanwhile. Dying loses the stacks and any
@@ -74,6 +76,14 @@ function Overcharge.AddDamage(player, setName, damage, melee)
 	player:SetAttribute(key, stacks)
 	lastGainAt[player] = lastGainAt[player] or {}
 	lastGainAt[player][setName] = os.clock()
+end
+
+-- damage taken while holding the set counts its takenShare towards the stacks
+function Overcharge.AddTaken(player, setName, damage)
+	local settings = settingsFor(setName)
+	if settings and settings.takenShare then
+		Overcharge.AddDamage(player, setName, damage * settings.takenShare)
+	end
 end
 
 -- a kill while overcharged buys back some time, never past a full bar
@@ -161,6 +171,18 @@ local function watchCharacter(player, character)
 	if humanoid then
 		humanoid.Died:Connect(function()
 			resetAll(player)
+		end)
+		-- every bit of health lost while holding a set with an overcharge
+		local health = humanoid.Health
+		humanoid.HealthChanged:Connect(function(newHealth)
+			local lost = health - newHealth
+			health = newHealth
+			if lost > 0 and newHealth > 0 then
+				local _, setName = SkillSetConfig.Equipped(character)
+				if setName then
+					Overcharge.AddTaken(player, setName, lost)
+				end
+			end
 		end)
 	end
 end
