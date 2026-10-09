@@ -36,6 +36,10 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 - All player damage goes through `ServerScriptService/Damage.luau` (`Damage.Deal`).
 - Any upload to the owner's Roblox account (images, animations) needs their OK first.
 - Match the surrounding code: comment density, naming, and the existing helpers.
+- Real VFX come from imported effect/particle packs (or assets from VFX websites), set up as
+  prefabs in `ReplicatedStorage.VFXPrefabs` and played with `VFX.Play`. Don't design final
+  visuals from Roblox's stock particles or parts built in code; those are placeholders only,
+  until the pack prefab exists.
 
 ## Architecture (where things live)
 
