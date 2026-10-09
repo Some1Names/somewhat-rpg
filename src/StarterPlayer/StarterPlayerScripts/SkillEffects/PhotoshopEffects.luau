@@ -3,7 +3,7 @@
 -- Kaleidoscope, and PhotoshopServer), in the set's pink and light blue.
 -- Photos (thin white cards with a coloured outline) and pixels (someone cut
 -- out of the picture breaking into little glowing cubes) are built here; the
--- particles are VFXPrefabs.Photoshop (ShutterFlash: a camera flash going off;
+-- particles are VFXPrefabs.Photoshop (CameraFlash: a camera flash going off;
 -- PhotoGlint: sparkles off a photo; GreyAsh: Desaturate's falling grey;
 -- PrismGlitter: Kaleidoscope's dome) and the Shared ones. Returns a function
 -- that takes the SkillEffects script's own helpers and gives back the
@@ -104,7 +104,7 @@ return function(helpers)
 	-- a camera flash: a white pop with a coloured ring and glints
 	local function cameraFlash(position, size, color)
 		flash(position, WHITE, size * 0.3, size, 0.12)
-		VFX.Play("Photoshop/ShutterFlash", position, { color = color or PINK, scale = size / 4 })
+		VFX.Play("Photoshop/CameraFlash", position, { color = color or PINK, scale = size / 4 })
 	end
 
 	-- where someone was cut out of the picture: it breaks into square pixels
@@ -145,7 +145,7 @@ return function(helpers)
 	function effects.Shutter(origin, finish, struck)
 		lightBeam(origin, finish, struck and PINK or BLUE, 0.25, 0.2)
 		flash(origin, WHITE, 0.3, 1.6, 0.1)
-		VFX.Play("Photoshop/ShutterFlash", origin, { color = BLUE, scale = 0.35 })
+		VFX.Play("Photoshop/CameraFlash", origin, { color = BLUE, scale = 0.35 })
 		if struck then
 			cameraFlash(finish, 3)
 			VFX.Play("Shared/Impact", finish, { color = PINK, scale = 0.6 })
