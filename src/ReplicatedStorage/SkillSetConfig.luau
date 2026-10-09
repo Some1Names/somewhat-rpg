@@ -53,6 +53,8 @@ end
 -- weapon, so it can't be cast while the weapon is still out. `recast`:
 -- pressing the key again while the skill is still out does this instead
 -- (its handler's Recast), shown on the slot while it's possible.
+-- `needsTarget`: a "lock" skill that does nothing without someone to lock
+-- onto, so the skill bar refuses it then ("no target") instead of sending it.
 -- `overchargedOnly`: it can only be cast while the set is overcharged (an
 -- ultimate). `charges`: it can be cast that many times in a row, each
 -- charge coming back `cooldown` seconds after the last one did.
@@ -144,6 +146,7 @@ SkillSetConfig.Sets = {
 				cooldown = 6,
 				handler = "AxeBoomerang",
 				needsWeapon = true,
+				weaponName = "axe", -- for the skill bar's "axe still thrown"
 				recast = "Recall",
 				overcharged = true,
 				overchargedName = "Spine Lash",
@@ -330,6 +333,7 @@ SkillSetConfig.Sets = {
 				mastery = 1,
 				cooldown = 6,
 				handler = "Snapshot",
+				needsTarget = true,
 				recast = "Step In", -- behind whoever she's Framed
 				aim = { kind = "lock", range = 50, cone = 30 },
 			},
@@ -354,6 +358,7 @@ SkillSetConfig.Sets = {
 				mastery = 50,
 				cooldown = 35,
 				handler = "IrisHorizon",
+				needsTarget = true,
 				aim = { kind = "lock", range = 60, cone = 30 },
 			},
 			-- the ultimate; she has no overcharge, so it needs only the mastery

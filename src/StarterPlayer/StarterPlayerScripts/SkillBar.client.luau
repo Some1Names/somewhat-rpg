@@ -19,6 +19,7 @@
 -- it's overcharged, then show the overcharge cooldown. Also pops up mastery
 -- level ups. The keys are the player's own (Keybinds, set in Settings); a
 -- skill still reaches the server by its slot (Z..F) whatever key cast it.
+-- A refused press says why just above the bar ("Snapshot: 3s cooldown").
 -- SkillSetServer checks every cast and overcharge; the cooldowns
 -- here are just the client's prediction for the display.
 local Debris = game:GetService("Debris")
@@ -96,6 +97,32 @@ local bar = make("Frame", {
 	Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_SIZE),
 	BackgroundTransparency = 1,
 })
+
+-- why the last press was refused ("Snapshot: 3s cooldown"), just above the bar
+local FEEDBACK_TIME = 1.2 -- seconds a message stays before fading
+local feedback = label(bar, {
+	TextSize = 13,
+	TextColor3 = DENIED,
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 0, -6),
+	Size = UDim2.fromOffset(420, 18),
+	Text = "",
+})
+local feedbackToken
+local function refuse(text)
+	if not text then
+		return
+	end
+	local token = {}
+	feedbackToken = token
+	feedback.Text = text
+	feedback.TextTransparency = 0
+	task.delay(FEEDBACK_TIME, function()
+		if feedbackToken == token then
+			TweenService:Create(feedback, TweenInfo.new(0.3), { TextTransparency = 1 }):Play()
+		end
+	end)
+end
 
 -- header: the set's name, its mastery and progress to the next level
 local setLabel = label(bar, { TextSize = 12, TextColor3 = ACCENT, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0.5, 0, 0, 14) })
@@ -430,12 +457,22 @@ local function readyToCast(setName, key, skill)
 		and form.key == key
 		and (player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0) < form.minimumToStart
 	-- (a skill with charges: when all are back, so one is ready a few recharges sooner)
-	return skill.handler ~= nil
-		and mastery >= skill.mastery
-		and os.clock() >= (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * skill.cooldown
-		and not waitingForWeapon
-		and not lacksLight
-		and not (skill.overchargedOnly and not overcharged)
+	local readyIn = (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * skill.cooldown - os.clock()
+	-- the first reason that applies, for the message above the bar
+	if not skill.handler then
+		return false, skill.name .. ": coming soon"
+	elseif mastery < skill.mastery then
+		return false, string.format("%s: needs mastery %d", skill.name, skill.mastery)
+	elseif skill.overchargedOnly and not overcharged then
+		return false, skill.name .. ": needs overcharge"
+	elseif waitingForWeapon then
+		return false, string.format("%s: %s still thrown", skill.name, skill.weaponName or "weapon")
+	elseif lacksLight then
+		return false, skill.name .. ": not enough Luminance"
+	elseif readyIn > 0 then
+		return false, string.format("%s: %ds cooldown", skill.name, math.ceil(readyIn))
+	end
+	return true
 end
 
 local function cast(key)
@@ -446,12 +483,21 @@ local function cast(key)
 	end
 	local slot = slots[key]
 	-- things may have changed while it was held (the axe still out, say)
-	if not readyToCast(setName, key, skill) then
+	local ready, reason = readyToCast(setName, key, skill)
+	if not ready then
 		pulse(slot, DENIED)
+		refuse(reason)
 		return
 	end
 	local overcharged = SkillSetConfig.IsOvercharged(player, setName)
 	local inForm = SkillSetConfig.InForm(player.Character, setName)
+	-- a skill that needs someone to lock onto isn't sent without one
+	local spec = aimSpecFor(skill, overcharged, inForm)
+	if skill.needsTarget and spec and spec.kind == "lock" and not AimIndicator.LockTarget(player.Character, aimPoint(), spec.range, spec.cone) then
+		pulse(slot, DENIED)
+		refuse(skill.name .. ": no target")
+		return
+	end
 	local id = setName .. "." .. key
 	predictedReadyAt[id] = math.max(predictedReadyAt[id] or 0, os.clock()) + skill.cooldown
 	playCast(player.Character:FindFirstChildOfClass("Humanoid"), setName, key, overcharged)
@@ -475,8 +521,10 @@ local function pressSkill(key)
 		pulse(slot)
 		return
 	end
-	if not readyToCast(setName, key, skill) then
+	local ready, reason = readyToCast(setName, key, skill)
+	if not ready then
 		pulse(slot, DENIED)
+		refuse(reason)
 		return
 	end
 	if aimSpecFor(skill, SkillSetConfig.IsOvercharged(player, setName), SkillSetConfig.InForm(player.Character, setName)) then
@@ -495,8 +543,10 @@ local function tryOvercharge()
 	-- on a set with an Undo, the same key rewinds (once it's recharged)
 	local undo = setName and SkillSetConfig.Sets[setName].undo
 	if undo and humanoid and humanoid.Health > 0 then
-		if (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) > workspace:GetServerTimeNow() then
+		local undoIn = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
+		if undoIn > 0 then
 			overchargeDeniedUntil = os.clock() + 0.4
+			refuse(string.format("%s ready in %ds", undo.name, math.ceil(undoIn)))
 			return
 		end
 		undoRemote:FireServer()
@@ -508,6 +558,7 @@ local function tryOvercharge()
 		local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0
 		if not character:GetAttribute("Flying") and luminance < flight.minimumToStart then
 			overchargeDeniedUntil = os.clock() + 0.4
+			refuse("Not enough light to fly")
 			return
 		end
 		toggleFlight:FireServer()
@@ -518,9 +569,14 @@ local function tryOvercharge()
 		return
 	end
 	local full = (player:GetAttribute(SkillSetConfig.StacksAttribute(setName)) or 0) >= settings.maxStacks
-	local cooling = (player:GetAttribute(SkillSetConfig.OverchargeCooldownAttribute(setName)) or 0) > workspace:GetServerTimeNow()
-	if not full or cooling then
+	local coolingFor = (player:GetAttribute(SkillSetConfig.OverchargeCooldownAttribute(setName)) or 0) - workspace:GetServerTimeNow()
+	if not full or coolingFor > 0 then
 		overchargeDeniedUntil = os.clock() + 0.4
+		if coolingFor > 0 then
+			refuse(string.format("%s ready in %ds", "Overcharge", math.ceil(coolingFor)))
+		else
+			refuse("Overcharge not full")
+		end
 		return
 	end
 	activateOvercharge:FireServer()
