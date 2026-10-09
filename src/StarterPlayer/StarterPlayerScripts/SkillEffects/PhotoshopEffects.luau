@@ -1,8 +1,11 @@
 -- Photoshop's looks, drawn for the SkillEffects events its skills send
 -- (Skills.Shutter, Snapshot, PhotoTeleport, Desaturate, IrisHorizon,
--- Kaleidoscope, and PhotoshopServer). Everything is built here from parts,
--- outlines and particles in the set's pink and light blue, with no prefabs:
--- photos are thin white cards with a coloured outline. Returns a function
+-- Kaleidoscope, and PhotoshopServer), in the set's pink and light blue.
+-- Photos (thin white cards with a coloured outline) and pixels (someone cut
+-- out of the picture breaking into little glowing cubes) are built here; the
+-- particles are VFXPrefabs.Photoshop (ShutterFlash: a camera flash going off;
+-- PhotoGlint: sparkles off a photo; GreyAsh: Desaturate's falling grey;
+-- PrismGlitter: Kaleidoscope's dome) and the Shared ones. Returns a function
 -- that takes the SkillEffects script's own helpers and gives back the
 -- effects by name, which that script adds to its own.
 local Debris = game:GetService("Debris")
@@ -22,6 +25,7 @@ local SPARKLE_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
 local CARD_SIZE = Vector3.new(3, 3.6, 0.1) -- a photo, studs
 local IRIS_CARDS = 8
 local SHARD_COUNT = 36 -- Kaleidoscope's mirror shards (fewer on low quality)
+local PIXEL_COUNT = 18 -- cubes a body breaks into when it's cut out (fewer on low quality)
 local DESATURATE_HEIGHT = 60 -- studs, the grey column
 
 -- a hue round the rainbow, for Iris Horizon's black hole
@@ -97,18 +101,54 @@ return function(helpers)
 		Debris:AddItem(ghost, time)
 	end
 
-	-- a camera flash: a white pop with pink and blue in its edge
-	local function cameraFlash(position, size)
+	-- a camera flash: a white pop with a coloured ring and glints
+	local function cameraFlash(position, size, color)
 		flash(position, WHITE, size * 0.3, size, 0.12)
-		ring(position, PINK, size * 0.4, size * 1.4, 0.25, 0.15)
-		sparkles(position, BLUE, 6)
+		VFX.Play("Photoshop/ShutterFlash", position, { color = color or PINK, scale = size / 4 })
+	end
+
+	-- where someone was cut out of the picture: it breaks into square pixels
+	-- that drift off and fade (`scale` 1: a body's worth)
+	local function pixelate(position, color, scale)
+		scale = scale or 1
+		local count = math.max(6, math.round(PIXEL_COUNT * VFX.Quality()))
+		for i = 1, count do
+			local offset = Vector3.new(math.random() - 0.5, (math.random() - 0.5) * 2, math.random() - 0.5) * 2.5 * scale
+			local size = (0.25 + math.random() * 0.35) * scale
+			local pixel = effectPart(Enum.PartType.Block, i % 3 == 0 and WHITE or color, Vector3.one * size, CFrame.new(position + offset), 1)
+			local out = offset.Magnitude > 0.01 and offset.Unit or Vector3.zero
+			local drift = (out * (1 + math.random() * 2) + Vector3.new(0, 2 + math.random() * 2, 0)) * scale
+			tween(pixel, 0.5 + math.random() * 0.4, { CFrame = pixel.CFrame + drift, Size = Vector3.one * 0.05, Transparency = 1 })
+		end
+	end
+
+	-- a zone prefab stretched over `size`; its emitters speed up with the
+	-- ground it covers (up to 10x) so it stays as thick as the prefab's own
+	local function stretch(holder, size)
+		if not holder then
+			return
+		end
+		local area = math.min(size.X * size.Z / (holder.Size.X * holder.Size.Z), 10)
+		holder.Size = size
+		for _, emitter in ipairs(holder:GetDescendants()) do
+			if emitter:IsA("ParticleEmitter") then
+				emitter.Rate *= area
+			end
+		end
+	end
+
+	-- the ring on the ground where someone is pasted in (`position`: their root)
+	local function pasteRing(position, color, scale)
+		VFX.Play("Shared/Shockwave", CFrame.new(position - Vector3.new(0, 2.8, 0)), { color = color, scale = scale })
 	end
 
 	function effects.Shutter(origin, finish, struck)
 		lightBeam(origin, finish, struck and PINK or BLUE, 0.25, 0.2)
 		flash(origin, WHITE, 0.3, 1.6, 0.1)
+		VFX.Play("Photoshop/ShutterFlash", origin, { color = BLUE, scale = 0.35 })
 		if struck then
 			cameraFlash(finish, 3)
+			VFX.Play("Shared/Impact", finish, { color = PINK, scale = 0.6 })
 		else
 			flash(finish, BLUE, 0.4, 1.5, 0.12)
 		end
@@ -165,6 +205,8 @@ return function(helpers)
 		end
 		if root then
 			cameraFlash(root.Position, 5)
+			VFX.Play("Shared/Sparks", root.Position, { color = PINK })
+			VFX.Shake(root.Position, "Light", 30)
 			local card, border = photoCard(CFrame.new(root.Position + Vector3.new(0, 4, 0)), PINK, 0.6)
 			tween(card, 0.6, { CFrame = card.CFrame * CFrame.new(0, 2, 0) * CFrame.Angles(0, math.pi, 0) })
 			fadeCard(card, border, 0.6)
@@ -174,13 +216,16 @@ return function(helpers)
 	-- cut out of one spot and pasted into the other
 	function effects.StepIn(character, from, to)
 		afterimage(character, PINK, 0.4)
+		pixelate(from, PINK)
 		local card, border = photoCard(CFrame.new(from), PINK, 0.35, Vector3.new(4, 6, 0.1))
 		fadeCard(card, border, 0.35)
 		cameraFlash(to, 4)
+		pasteRing(to, PINK, 0.5)
+		VFX.Shake(to, "Light", 30)
 	end
 
 	-- Photo Teleport's pinned photo, standing at the spot until it's used or fades
-	local photos = {} -- id -> { card, border }
+	local photos = {} -- id -> { card, border, glint }
 	function effects.PhotoPin(id, character, point, lifetime)
 		local root = rootOf(character)
 		local facing = root and Vector3.new(root.Position.X, point.Y, root.Position.Z) or point + Vector3.new(0, 0, 1)
@@ -188,9 +233,11 @@ return function(helpers)
 			facing = point + Vector3.new(0, 0, 1)
 		end
 		local card, border = photoCard(CFrame.lookAt(point, facing), BLUE, lifetime + 1, Vector3.new(3.4, 4.2, 0.12))
-		photos[id] = { card = card, border = border }
+		-- it glints for as long as it stands there
+		local glint = VFX.Play("Photoshop/PhotoGlint", card, { color = BLUE, duration = lifetime })
+		photos[id] = { card = card, border = border, glint = glint }
 		ring(point - Vector3.new(0, 2.8, 0), BLUE, 1, 6, 0.4, 0.2)
-		sparkles(point, PINK, 6)
+		cameraFlash(point, 2.5, BLUE)
 		task.delay(lifetime, function()
 			effects.PhotoGone(id)
 		end)
@@ -202,6 +249,7 @@ return function(helpers)
 			return
 		end
 		photos[id] = nil
+		VFX.Stop(photo.glint)
 		fadeCard(photo.card, photo.border, 0.3)
 	end
 
@@ -212,9 +260,12 @@ return function(helpers)
 			tween(photo.card, 0.25, { CFrame = photo.card.CFrame * CFrame.Angles(0, math.pi, 0) })
 		end
 		afterimage(model, BLUE, 0.4)
+		pixelate(from, BLUE)
 		local card, border = photoCard(CFrame.new(from), BLUE, 0.35, Vector3.new(4, 6, 0.1))
 		fadeCard(card, border, 0.35)
-		cameraFlash(to, 4)
+		cameraFlash(to, 4, BLUE)
+		pasteRing(to, BLUE, 0.5)
+		VFX.Shake(to, "Light", 30)
 		effects.PhotoGone(id)
 	end
 
@@ -269,18 +320,11 @@ return function(helpers)
 		tween(column, 0.3, { Transparency = 0.6 })
 		table.insert(zone.parts, column)
 		ring(center + Vector3.new(0, 0.2, 0), GREY, radius * 0.5, radius * 2, 0.5, 0.25)
-		local holder = effectPart(Enum.PartType.Block, WHITE, Vector3.new(radius * 2, 1, radius * 2), CFrame.new(center + Vector3.new(0, 8, 0)), duration + 2)
-		holder.Transparency = 1
-		local flakes = Instance.new("ParticleEmitter")
-		flakes.Texture = SPARKLE_TEXTURE
-		flakes.Color = ColorSequence.new(Color3.fromRGB(200, 200, 205), GREY)
-		flakes.Size = NumberSequence.new(0.3, 0)
-		flakes.Lifetime = NumberRange.new(1.5, 2.5)
-		flakes.Speed = NumberRange.new(0.5, 1.5)
-		flakes.Acceleration = Vector3.new(0, -1, 0)
-		flakes.Rate = 30 * VFX.Quality()
-		flakes.Parent = holder
-		table.insert(zone.parts, holder)
+		VFX.Play("Shared/Shockwave", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = GREY, scale = radius / 10 })
+		VFX.Shake(center, "Light", radius * 2)
+		-- grey pixels sift down through the whole column while it lasts
+		zone.ash = VFX.Play("Photoshop/GreyAsh", CFrame.new(center + Vector3.new(0, 12, 0)), { duration = duration })
+		stretch(zone.ash, Vector3.new(radius * 2, 1, radius * 2))
 
 		local insideMe = false
 		local endsAt = os.clock() + duration
@@ -337,6 +381,7 @@ return function(helpers)
 		end
 		zones[id] = nil
 		zone.ended = true
+		VFX.Stop(zone.ash)
 		for model in pairs(zone.inside) do
 			ungrey(model)
 		end
@@ -366,7 +411,9 @@ return function(helpers)
 		irises[id] = iris
 		for _ = 1, IRIS_CARDS do
 			local card, border = photoCard(CFrame.new(root.Position), PINK, closeTime + 2, Vector3.new(3.2, 4, 0.1))
-			table.insert(iris.cards, { card = card, border = border })
+			-- each blade trails glints as it closes
+			local glint = VFX.Play("Photoshop/PhotoGlint", card, { color = PINK, duration = closeTime })
+			table.insert(iris.cards, { card = card, border = border, glint = glint })
 		end
 		local startRadius = ringRadius * (1 - startShare)
 		local started = os.clock()
@@ -407,6 +454,7 @@ return function(helpers)
 		irises[id] = nil
 		iris.done = true
 		for _, entry in ipairs(iris.cards) do
+			VFX.Stop(entry.glint)
 			fadeCard(entry.card, entry.border, 0.2)
 		end
 		return iris
@@ -436,15 +484,21 @@ return function(helpers)
 			end
 			sparkles(point, PINK, caught and 24 or 12)
 			sparkles(point, BLUE, caught and 24 or 12)
+			VFX.Play("Shared/BigImpact", point, { color = PINK, scale = 1.3 })
+			VFX.Play("Shared/Shockwave", CFrame.new(point - Vector3.new(0, 2.8, 0)), { color = PINK, scale = splashRadius / 8 })
+			pixelate(point, BLUE, 2)
 			VFX.Shake(point, caught and "Heavy" or "Medium")
 			VFX.Crater(point, splashRadius * 0.6)
+			if caught then
+				VFX.ImpactFrameNear(point, splashRadius + 4)
+			end
 		end)
 	end
 
 	-- Kaleidoscope: a dome of mirror shards, slowly turning
-	local scopes = {} -- id -> { shards, done }
+	local scopes = {} -- id -> { shards, done, center, glitter }
 	function effects.Kaleidoscope(id, character, center, radius, duration)
-		local scope = { shards = {}, done = false }
+		local scope = { shards = {}, done = false, center = center }
 		scopes[id] = scope
 		local count = math.max(12, math.round(SHARD_COUNT * VFX.Quality()))
 		for i = 1, count do
@@ -471,6 +525,14 @@ return function(helpers)
 		end
 		ring(center, PINK, 2, radius * 2, 0.6, 0.4)
 		cameraFlash(center + Vector3.new(0, 3, 0), 8)
+		-- the ultimate going up: everyone inside sees it land
+		VFX.Play("Shared/Shockwave", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = PINK, scale = radius / 10 })
+		VFX.Play("Shared/BigImpact", center + Vector3.new(0, 3, 0), { color = BLUE, scale = 1.4 })
+		VFX.Shake(center, "Heavy", radius * 3)
+		VFX.ImpactFrameNear(center, radius + 4, character)
+		-- glints and pixels hang in the dome while it stands, around head height
+		scope.glitter = VFX.Play("Photoshop/PrismGlitter", CFrame.new(center + Vector3.new(0, 6, 0)), { duration = duration })
+		stretch(scope.glitter, Vector3.new(radius * 1.6, 12, radius * 1.6))
 		local started = os.clock()
 		local connection
 		connection = RunService.Heartbeat:Connect(function()
@@ -498,11 +560,15 @@ return function(helpers)
 		local side = Vector3.new(math.random() - 0.5, 0, math.random() - 0.5)
 		side = side.Magnitude > 0.01 and side.Unit or Vector3.new(1, 0, 0)
 		local from = root.Position + side * 4
-		local shard = effectPart(Enum.PartType.Block, math.random() < 0.5 and PINK or BLUE, Vector3.new(0.2, 3, 2), CFrame.lookAt(from, root.Position), 0.3)
+		local color = math.random() < 0.5 and PINK or BLUE
+		local shard = effectPart(Enum.PartType.Block, color, Vector3.new(0.2, 3, 2), CFrame.lookAt(from, root.Position), 0.3)
 		shard.Material = Enum.Material.Glass
 		shard.Reflectance = 0.5
 		tween(shard, 0.15, { CFrame = CFrame.lookAt(root.Position, root.Position + side), Transparency = 1 })
 		flash(root.Position, WHITE, 0.5, 2.5, 0.12)
+		VFX.Play("Shared/SlashArc", root.Position, { color = color, rotation = math.random(0, 180) })
+		VFX.Play("Shared/Impact", root.Position, { color = color, scale = 0.6 })
+		VFX.Shake(root.Position, "Light", 20)
 	end
 
 	function effects.KaleidoscopeEnd(id)
@@ -512,6 +578,9 @@ return function(helpers)
 		end
 		scopes[id] = nil
 		scope.done = true
+		VFX.Stop(scope.glitter)
+		-- the mirrors shatter
+		VFX.Play("Shared/Sparks", scope.center + Vector3.new(0, 3, 0), { color = BLUE, scale = 2 })
 		for _, shard in ipairs(scope.shards) do
 			if shard.part.Parent then
 				tween(shard.part, 0.4, { Transparency = 1, Size = shard.part.Size * 0.3 })
@@ -526,14 +595,25 @@ return function(helpers)
 		lightBeam(from, to, BLUE, 0.15, 0.3)
 		cameraFlash(from, 2.5)
 		flash(to, PINK, 0.5, 3, 0.15)
+		VFX.Play("Shared/Impact", to, { color = PINK, scale = 0.8 })
 	end
 
 	-- Undo: a blue copy of her at the spot she left, folding back into her
 	function effects.Undo(character, from, to)
 		afterimage(character, BLUE, 0.5)
+		pixelate(from, BLUE)
 		lightBeam(from, to, BLUE, 0.4, 0.3)
 		flash(to, BLUE, 0.5, 4, 0.2)
 		sparkles(to, PINK, 10)
+		pasteRing(to, BLUE, 0.6)
+		local root = rootOf(character)
+		if root then
+			VFX.Play("Shared/AuraBurst", root, { color = BLUE, offset = CFrame.new(0, -0.5, 0) })
+		end
+		-- her own screen rushes back with her
+		if character == Players.LocalPlayer.Character then
+			VFX.ScreenSpeedLines(0.35)
+		end
 	end
 
 	-- the Gallery's photo developing over her head, then taking her or spoiling
@@ -573,14 +653,17 @@ return function(helpers)
 		if entry then
 			fadeCard(entry.card, entry.border, 0.2)
 		end
-		cameraFlash(from, 4)
-		cameraFlash(to, 4)
+		cameraFlash(from, 4, BLUE)
+		pixelate(from, BLUE)
+		cameraFlash(to, 4, BLUE)
+		pasteRing(to, BLUE, 0.6)
 	end
 
 	function effects.GalleryCancel(character)
 		local entry = stopDeveloping(character)
 		if entry and entry.card.Parent then
-			-- the photo spoils: it greys and drops
+			-- the photo spoils: it greys, crumbles and drops
+			pixelate(entry.card.Position, GREY, 0.5)
 			tween(entry.card, 0.4, { Color = GREY, Transparency = 1, CFrame = entry.card.CFrame * CFrame.new(0, -2, 0) })
 			Debris:AddItem(entry.card, 0.4)
 		end
