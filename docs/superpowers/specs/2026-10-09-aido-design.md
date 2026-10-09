@@ -34,7 +34,8 @@ blasts never hurt him.
 
 ### Passive: Half-Life
 
-`passive = { name = "Half-Life", burntBonus = 0.25, falloutRadius = 6, falloutDuration = 3 }`
+`passive = { name = "Half-Life", mastery = 10, burntBonus = 0.25, falloutRadius = 6, falloutDuration = 3 }`
+(unlocks at mastery 10, per `2026-10-09-mastery-unlocks-design.md`; the overcharge at 25)
 
 - Every **skill blast** (Z, X's final blast, each C blast, V, F's roar; not Fuse, not aftershocks,
   not Atomic Breath) leaves a **Fallout** patch: `falloutRadius` studs, `falloutDuration`

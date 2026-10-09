@@ -56,7 +56,10 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **More ways to earn mastery** (PvP, kill bonus, training dummies to 10): **designed**, spec
   `docs/superpowers/specs/2026-10-09-mastery-sources-design.md`, plan
   `docs/superpowers/plans/2026-10-09-mastery-sources.md` (not built yet). Mastery challenges
-  belong to the coming quest system; boss mastery to the boss and enemy rework. Later: each power, moveset
+  belong to the coming quest system; boss mastery to the boss and enemy rework.
+- **Mastery unlocks per power** (own skill levels; passives, G, Lightstep, the Gallery by mastery):
+  **designed**, spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
+  `docs/superpowers/plans/2026-10-09-mastery-unlocks.md` (not built yet). Later: each power, moveset
   or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
   (talents at level milestones), the world (quests, bosses).
 
