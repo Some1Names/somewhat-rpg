@@ -1,4 +1,5 @@
--- Server side of melee (fists, or the Mandela axe while it's equipped): keeps
+-- Server side of melee (fists, the Mandela axe, or Photoshop's punches while
+-- that set is out): keeps
 -- count of each player's combo, finds what's in front of them when a hit
 -- lands and damages it. The last hit of the combo is a critical that knocks
 -- the target back (players protected by CrowdControl, and anyone of a higher
@@ -23,7 +24,7 @@ local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 
-local SCALING_STAT = "Strength" -- every weapon here is melee
+local DEFAULT_STAT = "Strength" -- a weapon's damage scales with its own `stat`, else this
 
 local punchEvent = ReplicatedStorage:WaitForChild("Punch")
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -200,7 +201,7 @@ local function spikeBurst(player, character, center, weapon)
 	local overlap = OverlapParams.new()
 	overlap.FilterType = Enum.RaycastFilterType.Exclude
 	overlap.FilterDescendantsInstances = { character }
-	local options = { stat = SCALING_STAT, skillSet = weapon.skillSet, melee = true }
+	local options = { stat = weapon.stat or DEFAULT_STAT, skillSet = weapon.skillSet, melee = true }
 	local dealt = 0
 	local struck = {}
 	for _, part in ipairs(workspace:GetPartBoundsInRadius(center, settings.spikeRadius, overlap)) do
@@ -227,7 +228,7 @@ local function land(player, character, weapon, finisher)
 	local box = root.CFrame * CFrame.new(0, 0, -weapon.hitboxForward)
 
 	local damage = weapon.baseDamage * (finisher and PunchConfig.CritMultiplier or 1)
-	local options = { stat = SCALING_STAT, critical = finisher, skillSet = weapon.skillSet, melee = true }
+	local options = { stat = weapon.stat or DEFAULT_STAT, critical = finisher, skillSet = weapon.skillSet, melee = true }
 	local look = root.CFrame.LookVector
 	local direction = Vector3.new(look.X, 0, look.Z).Unit
 
@@ -242,7 +243,10 @@ local function land(player, character, weapon, finisher)
 		if target and not hit[target] and target.Health > 0 then
 			hit[target] = true
 			firstRoot = firstRoot or target.RootPart
-			if slashColor and target.RootPart then
+			if weapon.hitEffect and target.RootPart then
+				-- its own look (Photoshop's camera flash), on the side the hit struck
+				skillEffects:FireAllClients(weapon.hitEffect, target.RootPart.Position - direction * 0.8, finisher)
+			elseif slashColor and target.RootPart then
 				skillEffects:FireAllClients("Slash", target.RootPart.Position, direction, finisher, slashColor)
 			elseif punchColor and target.RootPart then
 				-- on the side of the body the fist struck

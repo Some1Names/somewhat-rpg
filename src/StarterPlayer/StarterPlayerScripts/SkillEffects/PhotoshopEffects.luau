@@ -154,6 +154,11 @@ return function(helpers)
 		end
 	end
 
+	-- one of her punches landing (PunchCombat, and Step In's combo): a camera flash
+	function effects.PhotoshopPunchHit(point, critical)
+		VFX.Play("Photoshop/CameraFlash", point, { scale = critical and 1.6 or 1 })
+	end
+
 	-- Framed: four pink corners round them, for the caster only
 	local frames = {} -- model -> { gui, endsAt }
 	function effects.Framed(model, duration)
