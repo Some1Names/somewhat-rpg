@@ -1274,5 +1274,33 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/Preferences.luau",
+  "names": [
+   "ReplicatedStorage",
+   "Preferences"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DeathScreen.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DeathScreen"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

@@ -46,8 +46,11 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **Settings menu** (gear at the right edge, or P) with rebindable fighting keys: **code built** on
   branch `claude/vigilant-rubin-ckqtnn`, waiting on the Studio apply and a playtest with
   `docs/superpowers/specs/2026-10-09-settings-keybinds-checklist.md`. Nothing to add in Studio.
-  `tests/run.sh` runs the Keybinds unit tests with Lune (not part of Studio). Later sections:
-  camera, audio, graphics.
+  `tests/run.sh` runs the Keybinds and Preferences unit tests with Lune (not part of Studio).
+- **Settings: Quick respawn, Camera shake, Flashes & impact frames, Damage numbers**, a **death
+  screen** and **cast feedback** (why a skill didn't go off): **code built** on the same branch,
+  waiting on Studio and `docs/superpowers/specs/2026-10-09-settings-death-feedback-checklist.md`.
+  Later sections: effects quality, audio (once there are sounds).
 
 ## Before release
 
