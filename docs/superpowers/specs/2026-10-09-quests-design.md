@@ -13,23 +13,27 @@ them try every move; adding a quest is one config line plus a giver in Studio.
 
 ## A. Level quests
 
-- **Givers:** NPC models tagged **`QuestGiver`** with a `GiverId` attribute and a ProximityPrompt
-  (E; with the block plan built, prompts hide in combat). Placed in Studio by the owner.
-- **The panel:** E opens a small square panel listing that giver's 2–3 quests: title, objective,
-  level, reward, and **Accept**. Quests above your level show greyed out with "Lv. 30".
+- **Givers are Bounty Hunters,** and their level quests are called **bounties** in the game's text
+  ("BOUNTY HUNTER" on the panel, "Bounty complete", the tracker's title). NPC models tagged
+  **`QuestGiver`** (kept generic for later story-quest givers) with a `GiverId` attribute and a
+  ProximityPrompt whose `ObjectText` is "Bounty Hunter" (E; with the block plan built, prompts
+  hide in combat). Placed in Studio by the owner.
+- **The panel:** E opens a small square panel titled **BOUNTY HUNTER** listing that giver's 2–3
+  bounties: title, objective, level, reward, and **Accept**. Ones above your level show greyed out
+  with "Lv. 30".
 - **Objective (v1):** "Defeat N <EnemyType>". Enemies carry an **`EnemyType`** attribute set in
   Studio ("Bandit"); a kill counts when you get the kill credit (the existing NPC payout in
   `Damage`) on a model whose `EnemyType` matches.
 - **One level quest at a time.** Accepting another replaces it. The quest lasts this session only
   (leaving drops it); dying keeps it. It can be abandoned from the Quests menu.
 - **Completion:** the moment the count is reached, wherever you are: the reward is paid at once
-  and a gold "Quest complete" popup shows.
+  and a gold "Bounty complete" popup shows.
 - **Reward:** 1.5 × what those kills pay, on top of the kills themselves:
   `1.5 × count × StatConfig.EnemyXP(questLevel)` XP and `1.5 × count × StatConfig.EnemyYen(questLevel)` ¥.
 - **Repeatable** without limit.
 - **The tracker:** small, square, on the right edge of the screen: the quest title and
   "Bandits 3/6". Hidden with no quest.
-- **The quest list** lives in config (`QuestConfig.Givers`): `GiverId → { name, quests = { { id,
+- **The quest list** lives in config (`QuestConfig.Givers`): `GiverId → { name (default "Bounty Hunter"), quests = { { id,
   title, level, enemyType, count } } }`. The owner and a local session fill it in with the real
   enemies and areas (a cloud session can't see the map).
 
@@ -71,7 +75,7 @@ Collapse).
 
 - **J** opens it (a fixed menu key like B, M and P; J is removed from the keys skills can be
   rebound to). Square, like the other menus.
-- **Quest tab:** the current level quest (objective, progress, reward, **Abandon**).
+- **Bounty tab:** the current bounty (objective, progress, reward, **Abandon**).
 - **Challenges tab:** the held set's challenges (and a set picker for the others you own): each
   with its progress bar, reward, and done ✓; locked ones show the move's mastery level.
 
