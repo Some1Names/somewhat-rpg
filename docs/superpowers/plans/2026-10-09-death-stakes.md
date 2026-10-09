@@ -8,7 +8,7 @@
 
 **Goal:** Dying drops 5% of your yen to your killer; the server's kill leader (3+ player kills) becomes the Headhunter, who drops 20% and pays bonus XP to whoever takes their head, which resets everyone's count.
 
-**Architecture:** Numbers and pure rules in `HeadhunterConfig` (Lune-tested); one server script, `Headhunter`, that credits kills (the KillFeed rule), moves yen through two new `PlayerStats` functions, keeps counts and the mark (attributes), and sends extra kill-feed lines; client pieces for the banner, the head tag, the red name and the death screen's yen line.
+**Architecture:** Numbers and pure rules in `HeadhunterConfig` (Lune-tested); one server script, `Headhunter`, that credits kills (the KillFeed rule), moves yen through two new `PlayerStats` functions, keeps counts and the mark (attributes), and sends extra kill-feed lines; client pieces for the head tag, the red name and the death screen's yen line.
 
 **Tech Stack:** Roblox Luau; Lune (`tests/run.sh`); StyLua (parse) and selene in `~/.cargo/bin`.
 
@@ -73,9 +73,9 @@
 
 **Files:** Create `src/StarterPlayer/StarterPlayerScripts/Headhunter.client.luau`. Modify `KillFeed.client.luau` (draw the `"Headhunter"` messages), `OverheadHealth.client.luau` (the Headhunter's name red), `DeathScreen.client.luau` (the "−N ¥" line from `LastDeathYenLost`, hidden at 0).
 
-- [ ] **Step 1:** Headhunter client: the top-centre banner (shown while `ReplicatedStorage.Headhunter` is set or your `HeadhunterKills > 0`), and a red square **HEADHUNTER** BillboardGui (`AlwaysOnTop`, no max distance) on the Headhunter's head, following respawns.
+- [ ] **Step 1:** Headhunter client: a red square **HEADHUNTER** BillboardGui (`AlwaysOnTop`, no max distance) on the Headhunter's head, following respawns. **No banner or kill counter on screen** (the owner turned it down).
 - [ ] **Step 2:** KillFeed lines in its existing row style ("is the Headhunter", "took …'s head  +XP  +¥", "The Headhunter fell"); OverheadHealth red name; DeathScreen yen line. Read through Review Focus 5.
-- [ ] **Step 3:** StyLua and selene; commit `"Headhunter: banner, head tag, feed lines and the death screen's yen"`.
+- [ ] **Step 3:** StyLua and selene; commit `"Headhunter: head tag, feed lines and the death screen's yen"`.
 
 ### Task 5: Docs and review
 
@@ -87,5 +87,5 @@
 ### Task 6 (Studio, local session): apply and playtest
 
 - [ ] **Step 1:** Repo → Studio per `CLAUDE.md` (new: HeadhunterConfig, Headhunter server and client; edits to the rest).
-- [ ] **Step 2:** Solo in Studio with the Player Dummy: three dummy kills give the mark, the banner and the head tag; a reset ends it ("fell").
+- [ ] **Step 2:** Solo in Studio with the Player Dummy: three dummy kills give the mark and the head tag; a reset ends it ("fell").
 - [ ] **Step 3:** In a live server with 2–3 players: yen moves on kills, repeat kills pay nothing, the Headhunter pays 20% and the XP bonus, leaving in and out of combat. Move the `studio` tag; re-export; push.

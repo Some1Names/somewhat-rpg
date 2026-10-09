@@ -64,8 +64,6 @@ loses their yen; it just disappears.
 
 - **Over the Headhunter's head:** a red square **HEADHUNTER** tag, seen from any distance and
   through walls (`AlwaysOnTop`). Their name in OverheadHealth turns red.
-- **A banner, top centre** (square, small): **"HEADHUNTER: Name (5 kills)"** while there's one,
-  and **"Your kills: 2"** once you have any.
 - **Kill feed lines:** "**Name** is the Headhunter" (it starts or moves), "**Killer** took
   **Name**'s head" (with **+XP** and **+¥**), "The Headhunter fell" (any other end, leaving
   included).
@@ -88,12 +86,13 @@ loses their yen; it just disappears.
 - **Remotes:** the `KillFeed` remote gets the extra lines as a second message kind
   (`"Headhunter", kind, names, xp, yen`), drawn by `KillFeed.client.luau`. The death screen reads
   the player attribute `LastDeathYenLost` (set before the character is removed).
-- **Client:** `Headhunter.client.luau` (the banner and the head tag);
+- **Client:** `Headhunter.client.luau` (the head tag);
   `OverheadHealth` (red name for the Headhunter); `DeathScreen` (the yen line).
 
 ## Not in scope
 
-Lives, XP loss, wound debuffs; a Headhunter perk; saving kill counts across servers; a global
+Lives, XP loss, wound debuffs; a Headhunter perk; an on-screen banner or kill counter (the
+owner doesn't want one: the head tag and the feed lines are the only signs); saving kill counts across servers; a global
 leaderboard; team/party rules (friends can still fight; the repeat rule is the only anti-farm).
 
 ## Testing
