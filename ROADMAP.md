@@ -46,6 +46,13 @@ server code; Studio for visuals, animations, models.)
 Infrastructure these need: a `weapon` kind with a katana combo, the reserved MELEE inventory slot,
 and saved ownership + loadout (`Loadout` is session-only today).
 
+## Combat depth ("deeper than Blox Fruits, simpler than Deepwoken")
+
+- **Block, parry and posture** on E: **designed**, spec `docs/superpowers/specs/2026-10-09-block-parry-design.md`,
+  plan `docs/superpowers/plans/2026-10-09-block-parry.md` (not built yet). Later: each power, moveset
+  or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it, in the
+  owner's order: builds (talents at level milestones), death stakes, the world (quests, bosses).
+
 ## Settings
 
 - **Settings menu** (gear at the right edge, or P) with rebindable fighting keys: **code built** on
