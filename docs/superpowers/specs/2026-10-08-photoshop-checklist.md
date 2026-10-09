@@ -62,6 +62,11 @@ diff is applied to Studio.
 - [ ] GO, then get hit during the 2 s: the photo spoils and you stay put.
 - [ ] GO right after dealing or taking damage: nothing happens.
 - [ ] SAVE while jumping or falling: nothing is saved.
+- [ ] **Waypoints:** with Photoshop out, each saved photo's spot shows a square pink marker with its
+      number (matching PHOTO 1–3 in the panel) and the distance in m, visible through walls and
+      from far away. Empty slots show none. SAVE over a slot moves its marker at once.
+- [ ] Put Photoshop away (or hold another set): the markers hide; take it out again: they're back.
+      Respawn: they're still there. A second player never sees your markers.
 - [ ] Unequip with the panel open: it closes.
 
 ## The triangle (needs two players)

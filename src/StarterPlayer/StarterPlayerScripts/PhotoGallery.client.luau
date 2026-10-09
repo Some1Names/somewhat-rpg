@@ -4,7 +4,9 @@
 -- GO steps back into it, out of combat only, after the photo develops (any
 -- hit meanwhile spoils it). PhotoshopServer does all the checking and keeps
 -- the photos in the player's saved PhotoGallery attribute, which this reads
--- to show what each slot holds. Closes when the set is put away.
+-- to show what each slot holds. Closes when the set is put away. While the
+-- set is in hand, each saved spot also gets a waypoint only this player sees
+-- (its photo number and how far away it is), drawn through walls.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -19,6 +21,10 @@ local PANEL_WIDTH = 300
 local PADDING = 12
 local ROW_HEIGHT = 30
 local BUTTON_WIDTH = 52
+local WAYPOINT_SIZE = 44 -- pixels, the square with the photo number
+local WAYPOINT_WIDTH = 72 -- pixels, room for the distance under it
+local WAYPOINT_HEIGHT = 4 -- studs above the saved spot
+local WAYPOINT_UPDATE = 0.2 -- seconds between distance updates
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local BUTTON = Color3.fromRGB(38, 38, 50)
 local TEXT = Color3.new(1, 1, 1)
@@ -184,6 +190,87 @@ local function refresh()
 end
 player:GetAttributeChangedSignal("PhotoGallery"):Connect(refresh)
 
+-- the waypoints: a client-side Attachment at each saved spot, with a
+-- BillboardGui on it; made the first time a slot holds a photo
+local waypoints = {} -- slot -> { anchor = Attachment, board = BillboardGui, distance = TextLabel }
+local function waypoint(slot)
+	if waypoints[slot] then
+		return waypoints[slot]
+	end
+	local anchor = make("Attachment", { Name = "PhotoWaypoint" .. slot, Parent = workspace.Terrain })
+	local board = make("BillboardGui", {
+		Name = "PhotoWaypoint" .. slot,
+		Adornee = anchor,
+		AlwaysOnTop = true,
+		ResetOnSpawn = false,
+		LightInfluence = 0,
+		Size = UDim2.fromOffset(WAYPOINT_WIDTH, WAYPOINT_SIZE + 18),
+		StudsOffsetWorldSpace = Vector3.new(0, WAYPOINT_HEIGHT, 0),
+		Enabled = false,
+		Parent = player:WaitForChild("PlayerGui"),
+	})
+	local square = make("Frame", {
+		Parent = board,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.fromScale(0.5, 0),
+		Size = UDim2.fromOffset(WAYPOINT_SIZE, WAYPOINT_SIZE),
+		BackgroundColor3 = BACKGROUND,
+		BackgroundTransparency = 0.25,
+		BorderSizePixel = 0,
+	})
+	make("UIStroke", { Parent = square, Color = PINK, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	label(square, {
+		Text = tostring(slot),
+		Font = Enum.Font.GothamBold,
+		TextSize = 22,
+		TextColor3 = PINK,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1),
+	})
+	local distance = label(board, {
+		Font = Enum.Font.GothamBold,
+		TextSize = 12,
+		TextStrokeTransparency = 0.4,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(0, WAYPOINT_SIZE + 2),
+		Size = UDim2.new(1, 0, 0, 16),
+	})
+	waypoints[slot] = { anchor = anchor, board = board, distance = distance }
+	return waypoints[slot]
+end
+
+local function updateDistances()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	for _, each in pairs(waypoints) do
+		if each.board.Enabled then
+			local away = root and (each.anchor.WorldPosition - root.Position).Magnitude
+			each.distance.Text = away and string.format("%d m", math.round(away)) or ""
+		end
+	end
+end
+
+-- shows a waypoint for every saved photo while the set is in hand, none otherwise
+local waypointsShown = false
+local function updateWaypoints()
+	local set = gallerySet()
+	waypointsShown = set ~= nil
+	local slots = set and readSlots(set.gallery.slots) or {}
+	for slot, point in ipairs(slots) do
+		if point then
+			local each = waypoint(slot)
+			each.anchor.WorldPosition = point
+			each.board.Enabled = true
+		end
+	end
+	for slot, each in pairs(waypoints) do
+		if not slots[slot] then
+			each.board.Enabled = false
+		end
+	end
+	updateDistances()
+end
+player:GetAttributeChangedSignal("PhotoGallery"):Connect(updateWaypoints)
+
 closeButton.Activated:Connect(function()
 	gui.Enabled = false
 end)
@@ -202,9 +289,19 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 end)
 
--- put away: the gallery closes
-RunService.Heartbeat:Connect(function()
-	if gui.Enabled and not gallerySet() then
+-- put away: the gallery closes and the waypoints hide (taken out: they show)
+local sinceDistances = 0
+RunService.Heartbeat:Connect(function(dt)
+	local inHand = gallerySet() ~= nil
+	if gui.Enabled and not inHand then
 		gui.Enabled = false
+	end
+	if inHand ~= waypointsShown then
+		updateWaypoints()
+	end
+	sinceDistances += dt
+	if waypointsShown and sinceDistances >= WAYPOINT_UPDATE then
+		sinceDistances = 0
+		updateDistances()
 	end
 end)
