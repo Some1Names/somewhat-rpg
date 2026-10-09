@@ -7,13 +7,18 @@
 -- the player's Keybinds attribute, at most once per SEND_SPACING with the
 -- newest change winning; the rows show that attribute once it's back. While waiting for a key, Keybinds.Capturing()
 -- is on and the skill bar, dash, reload and gallery ignore key presses.
+-- Below them, GAMEPLAY and EFFECTS hold the ON/OFF settings (Preferences:
+-- Quick respawn, Camera shake, Flashes & impact frames, Damage numbers),
+-- saved the same way on the SetPreferences remote.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local setKeybinds = ReplicatedStorage:WaitForChild("SetKeybinds") -- made by SettingsServer
+local setPreferences = ReplicatedStorage:WaitForChild("SetPreferences") -- made by SettingsServer
 local player = Players.LocalPlayer
 
 local TOGGLE_KEY = Enum.KeyCode.P
@@ -138,52 +143,70 @@ local capturing -- the action id waiting for a key, or nil
 local captureToken
 local status
 
--- Saves go out at most once per SEND_SPACING, the newest one winning, so
--- quick changes aren't dropped by the server's limit. Until it's echoed
--- back, the bindings shown and built on are the pending ones.
-local pending -- the map waiting to be sent or echoed, or nil
-local lastSentAt = -math.huge
-local sendQueued = false
+local toggleButtons = {} -- preference id -> TextButton
 
 local refresh -- defined below
 
-local function shown()
-	return pending or Keybinds.Current()
-end
+-- Saves go out at most once per SEND_SPACING, the newest one winning, so
+-- quick changes aren't dropped by the server's limit. Until it's echoed
+-- back, what's shown and built on is the pending map. One of these each for
+-- the keybinds and the ON/OFF settings: `module` is Keybinds or Preferences,
+-- `current()` the saved map.
+local function saver(remote, module, current)
+	local self = { pending = nil, lastSentAt = -math.huge, queued = false }
 
-local function flush()
-	sendQueued = false
-	if not pending then
-		return
+	function self.shown()
+		return self.pending or current()
 	end
-	lastSentAt = os.clock()
-	local sent = pending
-	setKeybinds:FireServer(Keybinds.Serialize(sent))
-	-- never echoed (refused, or nothing changed): show what's saved again
-	task.delay(PENDING_TIMEOUT, function()
-		if pending == sent and not sendQueued then
-			pending = nil
-			refresh()
+
+	local function flush()
+		self.queued = false
+		if not self.pending then
+			return
 		end
-	end)
+		self.lastSentAt = os.clock()
+		local sent = self.pending
+		remote:FireServer(module.Serialize(sent))
+		-- never echoed (refused, or nothing changed): show what's saved again
+		task.delay(PENDING_TIMEOUT, function()
+			if self.pending == sent and not self.queued then
+				self.pending = nil
+				refresh()
+			end
+		end)
+	end
+
+	function self.save(map)
+		self.pending = map
+		if self.queued then
+			return
+		end
+		local wait = SEND_SPACING - (os.clock() - self.lastSentAt)
+		if wait <= 0 then
+			flush()
+		else
+			self.queued = true
+			task.delay(wait, flush)
+		end
+	end
+
+	-- the saved map changed: once it's what was sent, stop showing the pending one
+	function self.echoed()
+		if self.pending and not self.queued and module.Serialize(self.pending) == module.Serialize(current()) then
+			self.pending = nil
+		end
+	end
+
+	return self
 end
 
-local function save(map)
-	pending = map
-	if sendQueued then
-		return
-	end
-	local wait = SEND_SPACING - (os.clock() - lastSentAt)
-	if wait <= 0 then
-		flush()
-	else
-		sendQueued = true
-		task.delay(wait, flush)
-	end
-end
+local keys = saver(setKeybinds, Keybinds, Keybinds.Current)
+local prefs = saver(setPreferences, Preferences, function()
+	return Preferences.Parse(player:GetAttribute(Preferences.Attribute))
+end)
 
 function refresh()
-	local map = shown()
+	local map = keys.shown()
 	for id, keyButton in pairs(keyButtons) do
 		if id == capturing then
 			keyButton.Text = "Press a key…"
@@ -192,6 +215,11 @@ function refresh()
 			keyButton.Text = Keybinds.ShortName(map[id])
 			keyButton.TextColor3 = TEXT
 		end
+	end
+	local settings = prefs.shown()
+	for id, toggle in pairs(toggleButtons) do
+		toggle.Text = settings[id] and "ON" or "OFF"
+		toggle.TextColor3 = settings[id] and ACCENT or MUTED
 	end
 end
 
@@ -251,6 +279,30 @@ local resetButton = button(section(ROW_HEIGHT), {
 	Text = "RESET TO DEFAULTS",
 	TextColor3 = MUTED,
 })
+
+-- the ON/OFF settings, under their section headings
+local lastSection
+for _, option in ipairs(Preferences.Options) do
+	if option.section ~= lastSection then
+		lastSection = option.section
+		label(section(16), { Text = option.section, Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = ACCENT, Size = UDim2.fromScale(1, 1) })
+	end
+	local row = section(ROW_HEIGHT)
+	label(row, { Text = option.label, TextSize = 12, Size = UDim2.new(1, -KEY_WIDTH - 8, 1, 0) })
+	local toggle = button(row, {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0, KEY_WIDTH, 1, 0),
+	})
+	toggle.Activated:Connect(function()
+		local map = table.clone(prefs.shown())
+		map[option.id] = not map[option.id]
+		prefs.save(map)
+		refresh()
+	end)
+	toggleButtons[option.id] = toggle
+end
+
 status = label(section(16), { Text = "", TextSize = 11, TextColor3 = MUTED, TextWrapped = true, Size = UDim2.fromScale(1, 1) })
 
 local function labelOf(id)
@@ -265,7 +317,7 @@ end
 -- the key the player pressed while an action waited for one
 local function bindPressed(keyCode)
 	local id = capturing
-	local current = shown()
+	local current = keys.shown()
 	local bound, reason = Keybinds.Bind(current, id, keyCode.Name)
 	if not bound then
 		setStatus(reason == "reserved" and "That key is reserved. Pick another." or "Can't bind that.", DANGER)
@@ -277,7 +329,7 @@ local function bindPressed(keyCode)
 			message ..= string.format("  (%s moved to %s)", labelOf(otherId), Keybinds.ShortName(current[id]))
 		end
 	end
-	save(bound)
+	keys.save(bound)
 	stopCapture()
 	setStatus(message, TEXT)
 end
@@ -303,7 +355,7 @@ resetButton.Activated:Connect(function()
 	if capturing then
 		stopCapture()
 	end
-	save(Keybinds.Defaults())
+	keys.save(Keybinds.Defaults())
 	refresh()
 	setStatus("Every key is back on its default.", TEXT)
 end)
@@ -343,9 +395,11 @@ end)
 -- the rows show what's saved once it's echoed back (or refused: then the
 -- saved bindings show again)
 Keybinds.Changed(function()
-	if pending and not sendQueued and Keybinds.Serialize(pending) == Keybinds.Serialize(Keybinds.Current()) then
-		pending = nil
-	end
+	keys.echoed()
+	refresh()
+end)
+Preferences.Changed(function()
+	prefs.echoed()
 	refresh()
 end)
 refresh()
