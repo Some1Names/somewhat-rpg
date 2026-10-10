@@ -254,6 +254,30 @@ function PlayerStats.SpendYen(player, amount)
 	return true
 end
 
+-- takes `share` of the yen a player carries (rounded down) and returns how
+-- much; 0 while they're still loading (Headhunter: yen dropped on death)
+function PlayerStats.TakeYen(player, share)
+	local yen = player:GetAttribute("Yen")
+	if not yen or share <= 0 then
+		return 0
+	end
+	-- a little slack so a share like 0.29 × 100 isn't floored to 28
+	local amount = math.clamp(math.floor(yen * share + 1e-9), 0, yen)
+	if amount > 0 then
+		player:SetAttribute("Yen", yen - amount)
+	end
+	return amount
+end
+
+-- functions run as a player leaves, just before their data is saved, so what
+-- they change is kept; not while the server is shutting down (Headhunter:
+-- leaving mid-fight)
+local leaveCallbacks = {}
+local closing = false
+function PlayerStats.BeforeLeave(callback)
+	table.insert(leaveCallbacks, callback)
+end
+
 -- Skill-set mastery, earned by dealing damage with the set. Like levels, XP
 -- past the top mastery is banked up to one level's worth.
 function PlayerStats.AddMasteryXP(player, setName, amount)
@@ -391,10 +415,19 @@ function PlayerStats.Start()
 		task.spawn(onPlayerAdded, player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		if not closing then
+			for _, callback in ipairs(leaveCallbacks) do
+				local ok, err = pcall(callback, player)
+				if not ok then
+					warn("[PlayerStats] a leave callback failed for " .. player.Name .. ": " .. tostring(err))
+				end
+			end
+		end
 		save(player)
 		canSave[player] = nil
 	end)
 	game:BindToClose(function()
+		closing = true
 		local pending = 0
 		for _, player in ipairs(Players:GetPlayers()) do
 			pending += 1
