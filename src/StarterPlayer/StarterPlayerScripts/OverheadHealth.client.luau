@@ -9,6 +9,7 @@
 -- something stands between them and your camera. A target your Z left
 -- exposed (open to your axe finisher) shows red edges on its boxes.
 -- Status effects on them (Burnt, Bleeding...) show as icons above the name.
+-- The Headhunter's name (ReplicatedStorage's Headhunter attribute) is red.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -103,6 +104,10 @@ local function showName(entry)
 		if level - (player:GetAttribute("Level") or 0) >= StatConfig.DangerLevelGap then
 			color = DANGER_COLOR
 		end
+	end
+	local owner = not entry.enemy and Players:GetPlayerFromCharacter(entry.model)
+	if owner and owner.UserId == ReplicatedStorage:GetAttribute("Headhunter") then
+		color = DANGER_COLOR
 	end
 	if entry.nameLabel.Text ~= text then
 		entry.nameLabel.Text = text
