@@ -1302,5 +1302,59 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/HeadhunterConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "HeadhunterConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/KillRecords.luau",
+  "names": [
+   "ServerScriptService",
+   "KillRecords"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Headhunter.server.luau",
+  "names": [
+   "ServerScriptService",
+   "Headhunter"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Headhunter.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Headhunter"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

@@ -50,9 +50,9 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 - **Block, parry and posture** on E: **designed**, spec `docs/superpowers/specs/2026-10-09-block-parry-design.md`,
   plan `docs/superpowers/plans/2026-10-09-block-parry.md` (not built yet).
-- **Death stakes and the Headhunter** (dropped yen, the kill leader mark): **designed**, spec
-  `docs/superpowers/specs/2026-10-09-death-stakes-design.md`, plan
-  `docs/superpowers/plans/2026-10-09-death-stakes.md` (not built yet).
+- **Death stakes and the Headhunter** (dropped yen, the kill leader mark): **built and in Studio**
+  (checked solo); the 2–3 player half of `docs/superpowers/specs/2026-10-09-death-stakes-checklist.md`
+  needs a live server.
 - **More ways to earn mastery** (PvP, kill bonus, training dummies to 10): **designed**, spec
   `docs/superpowers/specs/2026-10-09-mastery-sources-design.md`, plan
   `docs/superpowers/plans/2026-10-09-mastery-sources.md` (not built yet). Mastery challenges
