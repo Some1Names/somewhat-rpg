@@ -1,63 +1,81 @@
-# Swimmable Water Implementation Plan
+# Swimmable Water Parts Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **Written for a LOCAL session with the Roblox Studio MCP.** The water is part of the map, which
-> only exists in Studio. Branch `claude/vigilant-rubin-ckqtnn` (or a fresh branch off it). Read
-> `CLAUDE.md`.
+> **Who runs it:** Tasks 1–3 are code: a **cloud session** can write them. Task 4 needs **Studio**
+> (tag the water parts, playtest, tune the feel). Branch `claude/vigilant-rubin-ckqtnn` (or a fresh
+> branch off it). Read `CLAUDE.md`.
 
-**Goal:** Players swim in the map's water instead of walking on it or through it, and every move and skill behaves sensibly in and over water.
+**Goal:** The map's water **Parts** (kept as parts, not converted to Terrain) become swimmable: you sink into them, float at the surface, swim where the camera points, rise with Space and climb out at the edge, with Roblox's swim animation.
 
-**Architecture:** No script in `src/` disables swimming (checked: nothing calls `SetStateEnabled` or touches `Swimming`), so the water is almost certainly made of **Parts** (Roblox only swims in **Terrain water**). The fix is to turn those parts into Terrain water with `Terrain:FillBlock`, which gives Roblox's built-in swimming, splashes and waves for free, then fix the few scripts whose ground raycasts should ignore water.
+**Architecture:** Roblox only swims in Terrain water, so swimming in parts is scripted. Water parts are tagged `Water` in Studio and made non-solid. A shared `Water` module answers "is this point inside water, and where's the surface?" (an oriented-box test, Lune-tested). A client `Swim` script, running on the local character (which the client owns, so movement replicates), puts the Humanoid in the Swimming state and drives it with a `LinearVelocity` and a buoyancy `VectorForce`. Server checks that care (Gallery saves) use the same module.
 
-**Tech Stack:** Roblox Studio (MCP), Luau; StyLua (parse) and selene if installed; `tests/run.sh` must still pass.
+**Tech Stack:** Roblox Luau; Lune (`tests/run.sh`); StyLua (parse) and selene in `~/.cargo/bin`.
 
 **Spec (approved in chat on 2026-10-10; this section is the spec):**
-- The map's water becomes swimmable using Roblox's normal swimming (Space to rise, move keys to swim).
-- It should look like water: the owner picks the Terrain water colour, transparency and waves (`Terrain.WaterColor`, `WaterTransparency`, `WaterWaveSize`, `WaterWaveSpeed`) to match the old look.
-- No drowning, no swim stamina for now (normal Roblox swimming).
-- Moves stay sane in water: dashing and Lightstep work while swimming; skills that place things "on the ground" (Snapshot's landing, Photo Teleport, Gallery saves, aim previews, craters) use the solid floor under the water, or the water surface where there's no floor within reach, never place someone at the bottom of deep water.
-- If some water must stay a Part (for example moving or animated water), it keeps its look and gets a Terrain water volume under it, rather than a custom swim script.
+- **The water stays Parts.** Every water part is tagged **`Water`** (CollectionService) and set to `CanCollide = false`, `CanQuery = false`, `CanTouch = false`, so you fall into it and ground raycasts see the floor under it.
+- **In water** (your character's root inside a `Water` part):
+  - You **float at the surface** when you aren't moving (your head just above it).
+  - You **swim where the camera points** with the move keys (looking down and moving dives); **Space** rises. Speed **16** studs/s (normal walk speed), no sprint in water.
+  - **At the surface by an edge, Space jumps out** (a normal jump).
+  - Roblox's **swim animation** plays (the rig's Animate script reacts to the Swimming state).
+  - Gravity is cancelled while in water; leaving the water gives normal physics back at once.
+- **Not in water:** nothing changes.
+- **Flying** (Iridescent Requiem) ignores water. **Dash and Lightstep** work in water. **Double jump** doesn't work underwater. No drowning, no swim stamina.
+- **Saving a Gallery photo while in water is refused** (no footing), like in the air.
+- Other players see you swim (your client owns your character, so its movement replicates).
 
 ## Global Constraints
 
-- **Nothing is uploaded** (no new assets). Terrain water is built in.
-- Keep a backup: before converting, duplicate the water parts into `ServerStorage.OldWaterBackup` (not deleted) until the owner approves the result.
-- Raycast fixes use `RaycastParams.IgnoreWater = true` only where a solid floor is wanted; leave hit detection (projectiles, beams, melee) alone.
-- Match the surrounding style.
+- Numbers in `Water` (or the Swim script's CONFIG): `SwimSpeed = 16`, `SurfaceOffset = 1.2` (studs the root floats below the surface; head above), `RiseSpeed = 10`, `CheckInterval = 0` (every frame on the client), the tag `"Water"`.
+- Only the **local** character is driven by the client; no server physics.
+- Every Humanoid state the script disables while swimming is re-enabled on leaving the water, death and respawn.
+- Match the surrounding style (header comments, CONFIG with units, tabs).
+- Don't invent instances: tagging and setting the parts' properties is Studio work (Task 4).
 
 ## Review Focus
 
-1. **Deep water and "ground" skills:** Step In or Paste onto someone swimming over deep water lands the caster at their height (the existing "over a drop" rule), not on the sea floor. (Task 3 step.)
-2. **Gallery saves while swimming:** saving refuses like it does in the air (no solid footing), so a photo can't be saved mid-lake. (Task 3 step.)
-3. **NPC enemies near water:** they don't get stuck swimming or chase into water forever; if they do, they give up and return home like when a target flies. (Task 4 playtest.)
-4. **Performance:** the converted Terrain doesn't add a big lag spike; very large water areas are filled in chunks. (Task 2 step.)
-5. **Old parts:** the original water parts are gone from Workspace (or made non-colliding and kept only for looks) so nobody walks on an invisible floor. (Task 2 step.)
+1. **Stuck states:** leaving the water, dying in it, respawning, or being yanked out by a skill (Event Horizon's pull, Step In) always restores normal physics and states; no floating on land. (Task 2 step.)
+2. **Skill movers in water:** a BlackHole/Collapse pull (`LinearVelocity` with `Hold`), a knockback or a Paste still move a swimming player; the swim controller yields to them (it skips driving while a `Hold`-tagged mover is on the root, like Dash does). (Task 2 step.)
+3. **Rotated and overlapping parts:** the inside test works for rotated parts and when two water parts touch (no flicker at the seam). (Task 1 test.)
+4. **Edges:** you can always get out: at the surface next to a ledge up to about 4 studs high, Space gets you onto it. (Task 4 playtest.)
+5. **NPCs:** enemies don't swim; they walk along the bottom under water parts. If that looks wrong or gets them stuck, note it for the enemy rework rather than fixing it here. (Task 4 playtest.)
 
 ---
 
-### Task 1: Find the water
+### Task 1: The Water module (pure test, TDD)
 
-- [ ] **Step 1:** In the Edit datamodel, list every candidate: BaseParts with `Material = Water`, named like "Water"/"Sea"/"Lake"/"River", or large flat transparent blue parts; and any existing Terrain water (`Terrain:ReadVoxels` over the map bounds, or visually).
-- [ ] **Step 2:** Take frozen screenshots of each water area and show the owner the list (names, sizes, positions). Confirm which ones should become swimmable.
+**Files:** Create `src/ReplicatedStorage/Water.luau`, `tests/Water.spec.luau`.
 
-### Task 2: Convert to Terrain water
+**Interfaces:**
+- Produces: `Water.Tag = "Water"`, the numbers above, `Water.inside(cframe: CFrame, size: Vector3, point: Vector3) -> boolean` (oriented box), `Water.surfaceY(cframe, size, point) -> number` (the top of the box above that point, for unrotated-or-tilted parts: the highest point of the box's top face over `point`), and the game helpers `Water.Find(point) -> BasePart?` (any tagged part containing it) and `Water.IsIn(character) -> boolean` (its root).
+- First line `local CFrame = CFrame or require("@lune/roblox").CFrame` and the same for `Vector3`, so Lune can run the pure functions (the game helpers only run in Roblox).
 
-- [ ] **Step 1:** Back up the confirmed parts into `ServerStorage.OldWaterBackup`.
-- [ ] **Step 2:** For each part: `workspace.Terrain:FillBlock(part.CFrame, part.Size, Enum.Material.Water)` (for a wedge or cylinder, `FillWedge` / `FillCylinder`; for huge parts, fill in chunks of at most 512 studs). Then remove the part from Workspace (or, for a part kept for looks, set `CanCollide = false`, `CanQuery = false`, `CanTouch = false`).
-- [ ] **Step 3:** Match the look with the owner: set `Terrain.WaterColor`, `WaterTransparency`, `WaterReflectance`, `WaterWaveSize`, `WaterWaveSpeed`; screenshot before/after.
-- [ ] **Step 4:** Playtest: walk in, swim, jump out at an edge; check the frame rate. Read through Review Focus 4 and 5.
+- [ ] **Step 1: Write the spec:** a 10×4×10 box at the origin: `(0,0,0)` inside, `(0,2.1,0)` outside, `(4.9,0,4.9)` inside, `(5.1,0,0)` outside; the same box rotated 45° about Y (its corners now on the axes, about 7.07 out): `(6,0,0)` inside, `(7.2,0,0)` outside, `(3.4,0,3.4)` inside, `(4,0,4)` outside; `surfaceY` of the unrotated box at any inside point is `2`.
+- [ ] **Step 2:** `tests/run.sh`: FAIL (module missing).
+- [ ] **Step 3:** Write the module (`cframe:PointToObjectSpace(point)` against half the size).
+- [ ] **Step 4:** `tests/run.sh`: all pass.
+- [ ] **Step 5:** StyLua and selene; commit `"Water: inside-the-water test"`.
 
-### Task 3: Ground raycasts that should ignore water
+### Task 2: The Swim client script
 
-**Files (check each; change only where a solid floor is wanted):** `src/ServerScriptService/PhotoshopUtil.luau` (`groundAt`), `src/ServerScriptService/Skills/Snapshot.luau` (landing), `src/ServerScriptService/Skills/PhotoTeleport.luau`, `src/ServerScriptService/PhotoshopServer.server.luau` (Gallery save standing check), `src/StarterPlayer/StarterPlayerScripts/AimIndicator.luau` (ground previews), `src/ReplicatedStorage/VFX.luau` (`Ground` / `Crater`; it already lists `Enum.Material.Water` ~463, check what for), plus any other `RaycastParams` found by `grep -rn "RaycastParams.new" src`.
+**Files:** Create `src/StarterPlayer/StarterPlayerScripts/Swim.client.luau`. Modify `DoubleJump.client.luau` (no double jump while `Water.IsIn`), `Sprint.client.luau` (no sprint while swimming), and `Flight.client.luau` only if flying needs an explicit skip.
 
-- [ ] **Step 1:** For each, decide: solid floor wanted → `IgnoreWater = true`; otherwise leave it. For Gallery saves, also refuse while the Humanoid state is `Swimming` (Review Focus 2). Keep Snapshot's "over a drop" rule working over deep water (Review Focus 1).
-- [ ] **Step 2:** StyLua and selene on the changed files; `tests/run.sh`.
-- [ ] **Step 3:** Commit `"Ground raycasts ignore water where a floor is wanted"`.
+- [ ] **Step 1:** Each frame: if the local character's root is in water and it isn't flying: on entering, disable `Freefall`, `Running`, `Climbing`, `Landed`, `GettingUp`, `FallingDown` states, `ChangeState(Swimming)`, and attach a `LinearVelocity` (world, `MaxForce` moderate) and a `VectorForce` cancelling gravity (`mass × workspace.Gravity`). While in: velocity = camera-relative move direction × `SwimSpeed`, plus `RiseSpeed` up while Space is held, plus a spring toward `surfaceY − SurfaceOffset` when idle near the top; Space at the surface → re-enable states and `Jump`. On leaving (or death/respawn): remove both movers and re-enable every state.
+- [ ] **Step 2:** Yield to skill movers: if the root has a `LinearVelocity`/`BodyVelocity` with the `Hold` attribute that isn't ours, don't drive this frame (Review Focus 2). Read through Review Focus 1.
+- [ ] **Step 3:** The DoubleJump and Sprint guards.
+- [ ] **Step 4:** StyLua and selene; commit `"Swim: swimming in water parts"`.
 
-### Task 4: Playtest and wrap-up
+### Task 3: Server-side water checks and docs
 
-- [ ] **Step 1:** In water, try: swimming with each power out; Dash and Lightstep while swimming; double jump out of water; Photoshop Snapshot → Step In on a swimming dummy; Photo Teleport onto water; saving a Gallery photo while swimming (refused); Mandela's Event Horizon and Tornado over water; an NPC chasing you into water (Review Focus 3). Screenshots for the owner.
-- [ ] **Step 2:** With the owner's OK, delete `ServerStorage.OldWaterBackup`.
-- [ ] **Step 3:** Add `docs/superpowers/specs/2026-10-10-swimmable-water-checklist.md` (the Step 1 list); update `ROADMAP.md` and `docs/superpowers/plans/README.md` (done). Re-export Studio → repo (`CLAUDE.md`), move the `studio` tag, commit, push.
+**Files:** `src/ServerScriptService/PhotoshopServer.server.luau` (Gallery "save": refuse when `Water.IsIn(character)`); create `docs/superpowers/specs/2026-10-10-swimmable-water-checklist.md` (every spec line and Review Focus item as something to try); update `ROADMAP.md`, `docs/superpowers/plans/README.md`, `CLAUDE.md` (Architecture: the `Water` tag and module).
+
+- [ ] **Step 1:** The Gallery check; the docs.
+- [ ] **Step 2:** StyLua and selene; `tests/run.sh`; commit `"Water: no Gallery saves in water; checklist and docs"`; push.
+
+### Task 4 (Studio, local session): tag, playtest, tune
+
+- [ ] **Step 1:** Repo → Studio per `CLAUDE.md`.
+- [ ] **Step 2:** Find the water parts (Material Water, or named Water/Sea/Lake/River, or big transparent blue parts); show the owner the list with screenshots; with their OK, tag each `Water` and set `CanCollide`/`CanQuery`/`CanTouch` false.
+- [ ] **Step 3:** Playtest with the checklist (swim, dive, surface, climb out at edges, Dash/Lightstep in water, a pull and a Step In on a swimmer, dying in water, a second player watching). Tune `SwimSpeed`, `SurfaceOffset` and `RiseSpeed` with the owner.
+- [ ] **Step 4:** Move the `studio` tag; re-export Studio → repo; push.

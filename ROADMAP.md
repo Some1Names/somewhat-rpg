@@ -75,8 +75,8 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## World
 
-- **Swimmable water:** plan `docs/superpowers/plans/2026-10-10-swimmable-water.md` (Studio; not
-  done yet). The water is Parts today, so nobody can swim; it becomes Terrain water.
+- **Swimmable water parts:** plan `docs/superpowers/plans/2026-10-10-swimmable-water.md` (not done
+  yet). The water stays Parts (tagged `Water`), with scripted swimming.
 
 ## UI
 
