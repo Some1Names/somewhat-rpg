@@ -73,6 +73,11 @@ and saved ownership + loadout (`Loadout` is session-only today).
   `docs/superpowers/plans/2026-10-09-power-acquisition.md` (not built yet). Later: enemies dropping
   briefcases, the stat rework, trading, storage upgrades.
 
+## World
+
+- **Swimmable water:** plan `docs/superpowers/plans/2026-10-10-swimmable-water.md` (Studio; not
+  done yet). The water is Parts today, so nobody can swim; it becomes Terrain water.
+
 ## UI
 
 - **HUD layout pass** (top-right icon row, key hints, one menu at a time): **designed**, spec
