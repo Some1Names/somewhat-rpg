@@ -13,8 +13,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
+local HeadhunterConfig = require(ReplicatedStorage:WaitForChild("HeadhunterConfig"))
 
-local CREDIT_TIME = 15 -- seconds a player's hit still counts as the kill
+local CREDIT_TIME = HeadhunterConfig.CreditTime -- seconds a player's hit still counts as the kill (one rule, shared with Headhunter)
 local DUMMY_TAG = "KillFeedDummy"
 
 local remote = Instance.new("RemoteEvent")
