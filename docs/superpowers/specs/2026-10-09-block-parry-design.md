@@ -1,23 +1,26 @@
-# Block, parry and posture: design
+# Block and posture: design
 
-Status: approved in chat 2026-10-09; waiting on review of this written spec.
+Status: approved in chat 2026-10-09. **2026-10-13: parry dropped for now** (owner's call: a 0.25 s
+window is hard on Roblox ping and the extra rules aren't worth it for a first version). Block,
+posture and guard break stay; parry can be added later as a layer in `Guard.Resolve`. The parry
+rules were removed below; the filename keeps "parry" only for continuity.
 
 ## Intent
 
 The first step of making the game's systems "deeper than Blox Fruits, simpler than Deepwoken".
 Today nobody can defend, so fights come down to who hits first. This adds a **base** defence every
-player has: a front block that cuts damage, a timed parry that punishes attackers, and a posture
+player has: a front block that cuts damage, and a posture
 bar so blocking isn't free. Powers, movesets and weapons can bring **their own block** later
 (this spec only adds the hook).
 
-Success: a good read (a parry) wins an exchange; holding block buys time but runs out; flanking
+Success: holding block buys time but runs out; flanking
 and unblockable moves stay real threats; nothing about it is frustrating on normal Roblox ping.
 
 ## Controls
 
-- **Block is E**, a new rebindable Keybinds action `{ id = "Block", label = "Block / Parry",
+- **Block is E**, a new rebindable Keybinds action `{ id = "Block", label = "Block",
   default = "E" }` (E is free and Allowed).
-- **Hold E**: block. **Press E** just before a hit lands: parry (the same press starts a block).
+- **Hold E**: block.
 - **E and interaction prompts:** while a ProximityPrompt is on screen (the Power Dealer's shop,
   and any later interactable), E is the prompt's and doesn't block. Prompts **hide while you're in
   combat** (you dealt or took damage in the last `CombatTime` = 5 s), so E always blocks mid-fight.
@@ -45,18 +48,6 @@ and unblockable moves stay real threats; nothing about it is frustrating on norm
   (`PunchConfig.Weapons.X.block`) may carry `{ melee = , ranged = , skill = }` cuts that replace
   the base ones while it's equipped. No set uses it yet.
 
-## Parry
-
-- A hit from the front that lands within **0.25 s** after the blocker's E press (measured on the
-  server, when the press arrives) is **parried**: it deals **no damage**, and the attacker is
-  **staggered for 0.6 s** (can't act, half speed) and gains **+30 posture**. NPC attackers get
-  their existing hitstun (`HitstunUntil`) for 0.6 s and the posture.
-- Parry works on **every** kind, unblockable ones included; not on damage over time; not from
-  behind.
-- **One parry per press:** every hit inside that 0.25 s window is parried (a multi-hit move
-  inside it is fully parried). A press that parries nothing locks parrying for **0.5 s** (block
-  still works). Spamming E can't keep a parry window open.
-
 ## Posture and guard break
 
 - **Posture** runs 0 to **100** (`Posture` attribute on the character, server-written, so every
@@ -65,9 +56,8 @@ and unblockable moves stay real threats; nothing about it is frustrating on norm
   move), and can't block again for **2 s** (`GuardBrokenUntil`). Posture resets to 0 after.
 - **Draining:** 20/s once he hasn't blocked for 1.5 s; 5/s while blocking but not being hit
   (for 1.5 s).
-- Parried attackers' posture follows the same rules (parrying someone repeatedly can guard-break
-  them). NPCs have posture too (they don't block yet, so only parries fill it); a guard break on an
-  NPC is 1 s of hitstun.
+- NPCs carry the same `Posture` / `HitstunUntil` attributes (they don't block yet, so nothing fills
+  their posture today; the bars and rules are ready for when they do).
 
 ## What you see
 
@@ -76,17 +66,16 @@ and unblockable moves stay real threats; nothing about it is frustrating on norm
   let go. After a guard break the bar flashes red and cracks, then hides.
 - **Everyone else's:** a thin white posture bar **under every overhead HP bar** (OverheadHealth,
   players and NPCs) while their posture is above 0. It **flashes red** while they're
-  guard-broken or staggered by a parry.
+  guard-broken.
 - **Effects** (placeholders until pack prefabs exist, `CLAUDE.md`): a small spark where a block
-  takes a hit (`"Block"`), a white flash and ring for a parry (`"Parry"`), a crack burst for a
+  takes a hit (`"Block"`), a crack burst for a
   guard break (`"GuardBreak"`); `Guard/*` prefabs first, `Shared/Sparks`/`Impact` otherwise. A
   **block pose** plays from `ReplicatedStorage.CombatAnimations.Block` if it exists (it needs
   uploading in Studio, with the owner's OK); without it, no pose.
 
 ## Not in scope
 
-NPCs blocking or parrying; feints; per-set blocks (only the hook); parry sounds; a parry for
-ranged-only builds that reflects shots.
+Parry; NPCs blocking; feints; per-set blocks (only the hook); block sounds.
 
 ## Architecture
 
@@ -94,10 +83,10 @@ ranged-only builds that reflects shots.
   `isFront(look, toSource)`, `cut(kind, blockTable)`, `postureAfter(posture, prevented)`,
   `drain(posture, sinceBlock, blocking, dt)`. Shared, so the HUDs read the same numbers.
 - **`ServerScriptService/Guard.luau`:** the state (attributes on the character: `Blocking`,
-  `Posture`, `GuardBrokenUntil`, `HitstunUntil` for staggers and breaks, `LastCombatAt`), the
-  `Block` RemoteEvent (`true`/`false`; a `true` is a press, which opens the parry window), the
+  `Posture`, `GuardBrokenUntil`, `HitstunUntil` for guard breaks, `LastCombatAt`), the
+  `Block` RemoteEvent (`true`/`false`), the
   drain loop, and `Guard.Resolve(targetCharacter, amount, kind, sourcePosition, attackerModel)
-  -> amount` (parry, block cut, posture, guard break, the effects).
+  -> amount` (block cut, posture, guard break, the effects).
 - **`Damage.Deal`:** a new `options.guard` (`"melee"`, `"ranged"`, `"skill"`, `"unblockable"`;
   default `"melee"` when `melee`, else `"skill"`; skipped for `dot`). For player targets it calls
   `Guard.Resolve` before `Passives.Absorb`. It also stamps `LastCombatAt` on both characters.
@@ -113,9 +102,9 @@ ranged-only builds that reflects shots.
   shown prompts with `ProximityPromptService.PromptShown/PromptHidden`, and locally disables every
   ProximityPrompt while `LastCombatAt` is within `CombatTime`); drops the block on dash and death;
   plays the block pose if it exists.
-- **Sprint:** walk speed halves while `Blocking` or staggered, is 0 while guard-broken, and
+- **Sprint:** walk speed halves while `Blocking` or stunned, is 0 while guard-broken, and
   sprinting is off meanwhile.
-- **StatusHUD / OverheadHealth:** the bars above. **SkillEffects:** `Block`, `Parry`,
+- **StatusHUD / OverheadHealth:** the bars above. **SkillEffects:** `Block`,
   `GuardBreak`.
 - **Settings:** the new action appears automatically (it lists `Keybinds.Actions`).
 
@@ -126,4 +115,4 @@ ranged-only builds that reflects shots.
   passing with the new action.
 - StyLua parse and selene on every changed script.
 - In-game checklist `docs/superpowers/specs/2026-10-09-block-parry-checklist.md` (needs two
-  players for parries and the overhead bars).
+  players for the overhead bars).
