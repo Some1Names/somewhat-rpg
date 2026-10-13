@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -48,8 +49,11 @@ local TEXT_DEFAULTS = {
 	PhotoGallery = "", -- Photoshop's saved photos of places (PhotoshopServer)
 	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
 	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
+	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
 }
 local TEXT_MAX_LENGTH = 200
+-- fields that need more room than the rest
+local TEXT_LENGTHS = { Challenges = QuestConfig.MaxSaveLength }
 
 local PlayerStats = {}
 
@@ -171,7 +175,7 @@ local function load(player)
 	end
 	for field, default in pairs(TEXT_DEFAULTS) do
 		local value = saved[field]
-		if typeof(value) ~= "string" or #value > TEXT_MAX_LENGTH then
+		if typeof(value) ~= "string" or #value > (TEXT_LENGTHS[field] or TEXT_MAX_LENGTH) then
 			value = default
 		end
 		player:SetAttribute(field, value)
@@ -373,6 +377,7 @@ function PlayerStats.ResetProgress(player)
 	for field, default in pairs(DEFAULTS) do
 		player:SetAttribute(field, default)
 	end
+	player:SetAttribute("Challenges", TEXT_DEFAULTS.Challenges)
 	updatePoints(player)
 	applyHealth(player, false)
 	return true

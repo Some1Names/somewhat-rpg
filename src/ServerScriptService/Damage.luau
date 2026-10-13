@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Guard = require(script.Parent:WaitForChild("Guard"))
+local HeadhunterConfig = require(ReplicatedStorage:WaitForChild("HeadhunterConfig"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Passives = require(script.Parent:WaitForChild("Passives"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
@@ -24,6 +25,21 @@ local Damage = {}
 local lastAttacker = setmetatable({}, { __mode = "k" })
 local lastHit = setmetatable({}, { __mode = "k" }) -- humanoid -> { at, skillSet, skill }
 
+-- Functions told about every kill someone gets credit for, as (killer, the
+-- victim's character, that last hit (Damage.LastHit), whether the victim was
+-- a player). An NPC's killer is whoever hit it last, like its payout; a
+-- player's only if that hit was within the kill feed's credit time.
+local killListeners = {}
+function Damage.OnKill(listener)
+	table.insert(killListeners, listener)
+	return function()
+		local index = table.find(killListeners, listener)
+		if index then
+			table.remove(killListeners, index)
+		end
+	end
+end
+
 local function payOutOnDeath(humanoid)
 	humanoid.Died:Once(function()
 		local killer = lastAttacker[humanoid]
@@ -32,6 +48,13 @@ local function payOutOnDeath(humanoid)
 			return
 		end
 		Overcharge.AddKill(killer)
+		local hit = lastHit[humanoid]
+		local victimIsPlayer = Players:GetPlayerFromCharacter(character) ~= nil
+		if not victimIsPlayer or (hit and os.clock() - hit.at <= HeadhunterConfig.CreditTime) then
+			for _, listener in ipairs(table.clone(killListeners)) do
+				task.spawn(listener, killer, character, hit, victimIsPlayer)
+			end
+		end
 		-- only NPC kills pay, so players can't farm each other
 		if not Players:GetPlayerFromCharacter(character) then
 			-- its own reward if it has one, else what its level pays
