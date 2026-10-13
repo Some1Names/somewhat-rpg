@@ -348,6 +348,32 @@ function effects.FistHit(position, direction, critical, color)
 	end
 end
 
+-- Block (Guard): a blocked hit. Guard/Block when the pack prefab exists, a
+-- small white spark burst where the hit landed until then
+function effects.Block(character, point)
+	if VFX.Find("Guard/Block") then
+		VFX.Play("Guard/Block", point)
+	else
+		VFX.Play("Shared/Sparks", point, { color = WHITE, scale = 0.6 })
+	end
+end
+
+-- GuardBreak (Guard): the block cracks open. Guard/GuardBreak, else a red
+-- burst on the body and a light shake near it
+local GUARD_BREAK_COLOR = Color3.fromRGB(230, 60, 50)
+function effects.GuardBreak(character)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	if VFX.Find("Guard/GuardBreak") then
+		VFX.Play("Guard/GuardBreak", root.Position)
+	else
+		VFX.Play("Shared/BigImpact", root.Position, { color = GUARD_BREAK_COLOR, scale = 0.8 })
+	end
+	VFX.Shake(root.Position, "Light", 40)
+end
+
 -- Mandela Z, Axe Boomerang: a copy of the caster's worn axe flies the same
 -- path the server uses, spinning like a wheel turned to face this client's
 -- camera (so everyone sees the blade, not its edge): out to `to` (easing to
