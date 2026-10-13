@@ -48,8 +48,10 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## Combat depth ("deeper than Blox Fruits, simpler than Deepwoken")
 
-- **Block, parry and posture** on E: **designed**, spec `docs/superpowers/specs/2026-10-09-block-parry-design.md`,
-  plan `docs/superpowers/plans/2026-10-09-block-parry.md` (not built yet).
+- **Block and posture** on E (parry dropped for now): **code built** on `claude/vigilant-rubin-ckqtnn`, spec
+  `docs/superpowers/specs/2026-10-09-block-parry-design.md`, plan `docs/superpowers/plans/2026-10-09-block-parry.md`.
+  Waiting on the Studio apply and a two-player playtest with
+  `docs/superpowers/specs/2026-10-09-block-parry-checklist.md`. Later: a parry layer in `Guard.Resolve`.
 - **Death stakes and the Headhunter** (dropped yen, the kill leader mark): **built and in Studio**
   (checked solo); the 2–3 player half of `docs/superpowers/specs/2026-10-09-death-stakes-checklist.md`
   needs a live server.
