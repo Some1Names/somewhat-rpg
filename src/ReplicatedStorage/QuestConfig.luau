@@ -4,16 +4,18 @@
 -- QuestGiver, one at a time, paid on the spot) and mastery challenges (per
 -- skill set, each done once, paying mastery XP, saved as text).
 -- Givers: id (the NPC's GiverId attribute) -> { name, quests = { { id,
--- title, level, enemyType, count } } }. A kill counts for a bounty when the
--- model's EnemyType attribute matches.
+-- title, level, enemyType, plural?, count } } }. A kill counts for a bounty
+-- when the model's EnemyType attribute matches; `plural` is how the texts
+-- name them ("Henchmen"; otherwise the type with an s).
 -- Challenges: set name -> list of { id, text, kind, skill / event, min,
 -- count, reward, gate }. `kind`: "hits" (land `count` hits with `skill`:
--- a skill key, "ranged" or "dash"), "kills" (the same, kills) or "event"
+-- a skill key, "ranged" or "dash"), "kills" (the same, kills), "event"
 -- (a move's script reports `event` through Quests.Report, with an amount
--- that must reach `min` when there is one; it takes `count` of them).
+-- that must reach `min` when there is one; it takes `count` of them) or
+-- "total" (the amounts reported for `event` add up to `count`).
 -- `gate`: the skill key whose mastery unlocks it (nil: always available).
 -- Saved text: "Mandela.1=7;Mandela.2=done" (see encode/decode).
-local StatConfig = if script then require(script.Parent.StatConfig) else require("./StatConfig")
+local StatConfig = if script then require(script.Parent:WaitForChild("StatConfig")) else require("./StatConfig")
 
 local QuestConfig = {}
 
@@ -27,7 +29,7 @@ QuestConfig.Givers = {
 	Sample = {
 		name = "Bounty Hunter",
 		quests = {
-			{ id = "dummies", title = "Dummy Practice", level = 0, enemyType = "Dummy", count = 3 },
+			{ id = "dummies", title = "Dummy Practice", level = 0, enemyType = "Dummy", plural = "Dummies", count = 3 },
 		},
 	},
 }
@@ -44,7 +46,7 @@ QuestConfig.Challenges = {
 		{ id = 1, text = "Land 20 Light Shots", kind = "hits", skill = "ranged", count = 20, reward = 150 },
 		{ id = 2, text = "Hit 3 enemies with one Prism Shot", kind = "event", event = "PrismShotHits", min = 3, count = 1, reward = 400, gate = "Z" },
 		{ id = 3, text = "Flash through 10 enemies with Lightstep", kind = "hits", skill = "dash", count = 10, reward = 600 },
-		{ id = 4, text = "Stay in the air 90 s without landing", kind = "event", event = "FlightTime", min = 90, count = 1, reward = 1200 },
+		{ id = 4, text = "Fly for 60 s in total", kind = "total", event = "FlightTime", count = 60, reward = 1200 },
 		{ id = 5, text = "Hit a Sunmarked target with Solar Lance, 5 times", kind = "event", event = "MarkedLance", count = 5, reward = 1000, gate = "V" },
 	},
 	Photoshop = {
@@ -59,6 +61,11 @@ QuestConfig.Challenges = {
 		{ id = 2, text = "Kill 3 enemies with Dead Eye", kind = "kills", skill = "X", count = 3, reward = 400, gate = "X" },
 	},
 }
+
+-- what a bounty's texts call its enemies ("Henchmen", "Workers")
+function QuestConfig.plural(quest)
+	return quest.plural or quest.enemyType .. "s"
+end
 
 -- the giver id and quest a taken bounty's id ("giverId/questId", the
 -- player's QuestId attribute) names; nil if it names nothing
@@ -130,11 +137,23 @@ function QuestConfig.decode(text)
 end
 
 -- A challenge's progress after one more of it. `current` is a count, "done"
--- or nil; `amount` is the size of an event (a hit or a kill is always one).
+-- or nil; `amount` is the size of an event (a hit or a kill is always one;
+-- a total adds it up, rounded to a whole number).
 -- Returns the new progress and whether this is the moment it was completed.
 function QuestConfig.advance(challenge, current, amount)
 	if current == "done" then
 		return "done", false
+	end
+	if challenge.kind == "total" then
+		local add = type(amount) == "number" and amount == amount and math.floor(amount + 0.5) or 0
+		if add <= 0 then
+			return current or 0, false
+		end
+		current = (current or 0) + add
+		if current >= challenge.count then
+			return "done", true
+		end
+		return current, false
 	end
 	current = current or 0
 	if challenge.kind == "event" and challenge.min and (amount or 1) < challenge.min then

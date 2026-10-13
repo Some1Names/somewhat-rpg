@@ -57,10 +57,6 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
-local function plural(name)
-	return string.sub(name, -1) == "s" and name or name .. "s"
-end
-
 -- "IridescentRequiem" as "Iridescent Requiem"
 local function setLabel(setName)
 	return (string.gsub(setName, "(%l)(%u)", "%1 %2"))
@@ -218,7 +214,7 @@ local function showBounty()
 	make("UIPadding", { Parent = frame, PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
 	label(frame, { Text = quest.title, Font = Enum.Font.GothamBold, TextSize = 15, Size = UDim2.new(1, 0, 0, 18) })
 	label(frame, {
-		Text = string.format("Defeat %d %s  ·  Lv. %d", quest.count, plural(quest.enemyType), quest.level),
+		Text = string.format("Defeat %d %s  ·  Lv. %d", quest.count, QuestConfig.plural(quest), quest.level),
 		TextSize = 12,
 		TextColor3 = MUTED,
 		Position = UDim2.fromOffset(0, 22),
@@ -226,7 +222,7 @@ local function showBounty()
 	})
 	progressBar(frame, progress / quest.count, GOLD, UDim2.fromOffset(0, 44), UDim2.new(1, 0, 0, 8))
 	label(frame, {
-		Text = string.format("%s %d/%d", plural(quest.enemyType), progress, quest.count),
+		Text = string.format("%s %d/%d", QuestConfig.plural(quest), progress, quest.count),
 		TextSize = 12,
 		Position = UDim2.fromOffset(0, 56),
 		Size = UDim2.new(1, 0, 0, 14),

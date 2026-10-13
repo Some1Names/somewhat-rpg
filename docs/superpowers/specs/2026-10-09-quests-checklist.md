@@ -42,7 +42,7 @@ attribute.
       Tornado kills 3 enemies at once, 5 times; the axe finisher on someone Z's pull left exposed
       (the "exposed" link), 5 times.
 - [ ] Iridescent Requiem: 20 Light Shots; hit 3 with one Prism Shot; 10 enemies flashed through with
-      Lightstep; 90 s of flight without landing (it counts when you land); 5 Solar Lances on a
+      Lightstep; 60 s of flight in total (each flight adds its length when you land; the bar fills a few seconds at a time); 5 Solar Lances on a
       Sunmarked target.
 - [ ] Photoshop: 10 Snapshots that frame someone; Step In with all 3 punches landing, 5 times; Cut &
       Paste an enemy 5 times; Undo 10 times healing at least 20 each time; catch someone in Iris

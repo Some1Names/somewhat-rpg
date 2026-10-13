@@ -60,10 +60,6 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
-local function plural(name)
-	return string.sub(name, -1) == "s" and name or name .. "s"
-end
-
 local function rewardText(quest)
 	local xp, yen = QuestConfig.reward(quest.count, quest.level)
 	return string.format("+%d XP   +¥%d", xp, yen)
@@ -106,7 +102,7 @@ local function updateTracker()
 	tracker.Visible = quest ~= nil
 	if quest then
 		trackerTitle.Text = quest.title
-		trackerCount.Text = string.format("%s %d/%d", plural(quest.enemyType), player:GetAttribute("QuestProgress") or 0, quest.count)
+		trackerCount.Text = string.format("%s %d/%d", QuestConfig.plural(quest), player:GetAttribute("QuestProgress") or 0, quest.count)
 	end
 end
 
@@ -179,7 +175,7 @@ local function card(giverId, quest, order)
 	local dim = locked and MUTED or TEXT
 	label(frame, { Text = quest.title, Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = dim, Size = UDim2.new(1, -70, 0, 16) })
 	label(frame, {
-		Text = string.format("Defeat %d %s", quest.count, plural(quest.enemyType)),
+		Text = string.format("Defeat %d %s", quest.count, QuestConfig.plural(quest)),
 		TextSize = 12,
 		TextColor3 = MUTED,
 		Position = UDim2.fromOffset(0, 20),

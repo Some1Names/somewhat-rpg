@@ -165,7 +165,7 @@ function Quests.Report(player, setName, event, amount)
 		return
 	end
 	for _, challenge in ipairs(QuestConfig.Challenges[setName] or {}) do
-		if challenge.kind == "event" and challenge.event == event then
+		if (challenge.kind == "event" or challenge.kind == "total") and challenge.event == event then
 			bump(player, setName, challenge, amount)
 		end
 	end

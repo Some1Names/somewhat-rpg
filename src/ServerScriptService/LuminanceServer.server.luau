@@ -104,7 +104,7 @@ task.spawn(function()
 			if root and humanoid.Health > 0 then
 				local setName, set = luminanceSet(character)
 				local flying = character:GetAttribute(FLYING) == true
-				-- a flight that ends reports how long it lasted (the challenge wants 90 s)
+				-- a flight that ends reports how long it lasted (the flight challenge adds them up)
 				local flight = flights[player]
 				if flying then
 					if not flight then

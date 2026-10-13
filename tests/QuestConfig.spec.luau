@@ -28,6 +28,11 @@ check("parse a bounty id", giverId == "Sample" and quest ~= nil and quest.id == 
 check("parse bad bounty ids", QuestConfig.parseQuestId("Sample/nope") == nil and QuestConfig.parseQuestId("Nobody/x") == nil
 	and QuestConfig.parseQuestId("nonsense") == nil and QuestConfig.parseQuestId(nil) == nil and QuestConfig.parseQuestId(42) == nil)
 
+-- what a bounty calls its enemies: its own plural, else the type with an s
+check("plural field wins", QuestConfig.plural({ enemyType = "Henchman", plural = "Henchmen" }) == "Henchmen")
+check("plural defaults to adding s", QuestConfig.plural({ enemyType = "Worker" }) == "Workers")
+check("the sample bounty says Dummies", QuestConfig.plural(QuestConfig.Givers.Sample.quests[1]) == "Dummies")
+
 -- the saved text
 check("encode empty", QuestConfig.encode({}) == "")
 local sample = { ["Mandela.1"] = 7, ["Mandela.2"] = "done" }
@@ -75,6 +80,23 @@ check("an event without min counts on its own", value == 5 and done == false)
 value, done = QuestConfig.advance(plain, "done", 99)
 check("done ignores events too", value == "done" and done == false)
 
+-- a total adds up the sizes of what's reported (the flight challenge: seconds in the air)
+local fly = { kind = "total", event = "FlightTime", count = 60 }
+value, done = QuestConfig.advance(fly, nil, 6.4)
+check("a total adds the amount, rounded", value == 6 and done == false)
+value, done = QuestConfig.advance(fly, 55, 6)
+check("a total reaching the count is done", value == "done" and done == true)
+value, done = QuestConfig.advance(fly, 10, 0.3)
+check("a tiny amount adds nothing", value == 10 and done == false)
+value, done = QuestConfig.advance(fly, 10, nil)
+check("a total without an amount adds nothing", value == 10 and done == false)
+value, done = QuestConfig.advance(fly, 10, -5)
+check("a negative amount adds nothing", value == 10 and done == false)
+value, done = QuestConfig.advance(fly, "done", 30)
+check("a done total stays done", value == "done" and done == false)
+check("the flight challenge is a total", QuestConfig.Challenges.IridescentRequiem[4].kind == "total"
+	and QuestConfig.Challenges.IridescentRequiem[4].count == 60)
+
 -- the data
 check("every challenge has an id, kind, count and reward", (function()
 	for _, list in pairs(QuestConfig.Challenges) do
@@ -82,10 +104,10 @@ check("every challenge has an id, kind, count and reward", (function()
 			if challenge.id ~= i or not challenge.kind or not challenge.count or not challenge.reward or not challenge.text then
 				return false
 			end
-			if challenge.kind == "event" and not challenge.event then
+			if (challenge.kind == "event" or challenge.kind == "total") and not challenge.event then
 				return false
 			end
-			if challenge.kind ~= "event" and not challenge.skill then
+			if (challenge.kind == "hits" or challenge.kind == "kills") and not challenge.skill then
 				return false
 			end
 		end

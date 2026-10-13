@@ -42,8 +42,9 @@ them try every move; adding a quest is one config line plus a giver in Studio.
 - Per set, each **done once**, paying **mastery XP** to that set. A challenge appears once the
   move it's about is unlocked (its skill's mastery level; feature unlocks if the mastery-unlocks
   plan is built). Progress is **saved**.
-- Kinds: `hits` (land N hits with a move), `kills` (get N kills with a move), and `event` (a move's
-  script reports an event, optionally with an amount that must reach `min`; N of them).
+- Kinds: `hits` (land N hits with a move), `kills` (get N kills with a move), `event` (a move's
+  script reports an event, optionally with an amount that must reach `min`; N of them) and
+  `total` (the reported amounts add up to N).
 
 | Set | # | Challenge | Kind | Reward |
 |---|---|---|---|---|
@@ -55,7 +56,7 @@ them try every move; adding a quest is one config line plus a giver in Studio.
 | Iridescent Requiem | 1 | Land 20 Light Shots | hits ranged, 20 | 150 |
 | | 2 | Hit 3 enemies with one Prism Shot | event `PrismShotHits` min 3, 1 | 400 |
 | | 3 | Flash through 10 enemies with Lightstep | hits dash, 10 | 600 |
-| | 4 | Stay in the air 90 s without landing | event `FlightTime` min 90, 1 | 1,200 |
+| | 4 | Fly for 60 s in total (changed 2026-10-14: one flight lasts at most ~6.7 s) | total `FlightTime`, 60 | 1,200 |
 | | 5 | Hit a Sunmarked target with Solar Lance, 5 times | event `MarkedLance`, 5 | 1,000 |
 | Photoshop | 1 | Frame 10 enemies with Snapshot | event `Framed`, 10 | 150 |
 | | 2 | Land all 3 punches of the Step In combo, 5 times | event `StepInCombo` min 3, 5 | 600 |
