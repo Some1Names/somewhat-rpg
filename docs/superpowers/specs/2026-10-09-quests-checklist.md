@@ -3,8 +3,9 @@
 Not run in-game yet. `tests/run.sh` (Lune) passes QuestConfig's rules (bounty reward, the saved
 challenge text, how challenges advance, bounty ids) and the Keybinds rules with J removed. Everything
 below needs Studio. Bounty Hunters are NPCs tagged `QuestGiver` with a `GiverId` and a ProximityPrompt
-(`ObjectText` "Bounty Hunter"), placed on the `QuestSpawn` parts; enemies carry an `EnemyType`
-attribute.
+(`ObjectText` "Bounty Hunter"), standing on the three `QuestSpawn` parts (GiverIds Training near the
+start, Frontier, Outpost); enemies carry an `EnemyType` attribute (Dummy, StrongDummy, Worker, Henchman,
+Bodyguard, EvilBoss; the Boss Dummy and Player Dummy have none).
 
 ## Bounties (level quests)
 - [ ] Walk up to a Bounty Hunter: the prompt shows "Bounty Hunter". E (out of combat) opens a small

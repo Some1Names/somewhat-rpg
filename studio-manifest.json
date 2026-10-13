@@ -1408,5 +1408,75 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/QuestConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "QuestConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Quests.luau",
+  "names": [
+   "ServerScriptService",
+   "Quests"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/QuestServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "QuestServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/QuestBoard.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "QuestBoard"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Quests.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Quests"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

@@ -244,7 +244,7 @@ local function showBounty()
 	end)
 end
 
--- the sets the player owns that have challenges, the held one first
+-- the sets the player owns that have challenges, by name (the held one is picked first)
 local function challengeSets()
 	local owned = {}
 	local list = player:GetAttribute(SkillSetConfig.OwnedSetsAttribute) or ""
