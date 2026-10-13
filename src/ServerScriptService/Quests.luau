@@ -41,21 +41,7 @@ local SAVED_ATTRIBUTE = "Challenges"
 
 -- the giver and quest the player has taken, if any
 function Quests.Current(player)
-	local id = player:GetAttribute(ID_ATTRIBUTE)
-	if typeof(id) ~= "string" then
-		return nil
-	end
-	local giverId, questId = string.match(id, "^(.-)/(.+)$")
-	local giver = giverId and QuestConfig.Givers[giverId]
-	if not giver then
-		return nil
-	end
-	for _, quest in ipairs(giver.quests) do
-		if quest.id == questId then
-			return giverId, quest
-		end
-	end
-	return nil
+	return QuestConfig.parseQuestId(player:GetAttribute(ID_ATTRIBUTE))
 end
 
 local function clear(player)

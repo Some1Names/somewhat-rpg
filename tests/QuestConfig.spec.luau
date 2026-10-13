@@ -22,6 +22,12 @@ check("reward numbers", xp == 1710 and yen == 855)
 local xp0, yen0 = QuestConfig.reward(3, 0)
 check("level 0 reward", xp0 == math.floor(1.5 * 3 * StatConfig.EnemyXP(0)) and yen0 == math.floor(1.5 * 3 * StatConfig.EnemyYen(0)))
 
+-- a taken bounty's id, "giver/quest", as the player attribute holds it
+local giverId, quest = QuestConfig.parseQuestId("Sample/dummies")
+check("parse a bounty id", giverId == "Sample" and quest ~= nil and quest.id == "dummies" and quest.enemyType == "Dummy")
+check("parse bad bounty ids", QuestConfig.parseQuestId("Sample/nope") == nil and QuestConfig.parseQuestId("Nobody/x") == nil
+	and QuestConfig.parseQuestId("nonsense") == nil and QuestConfig.parseQuestId(nil) == nil and QuestConfig.parseQuestId(42) == nil)
+
 -- the saved text
 check("encode empty", QuestConfig.encode({}) == "")
 local sample = { ["Mandela.1"] = 7, ["Mandela.2"] = "done" }

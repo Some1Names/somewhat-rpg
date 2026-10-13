@@ -60,6 +60,22 @@ QuestConfig.Challenges = {
 	},
 }
 
+-- the giver id and quest a taken bounty's id ("giverId/questId", the
+-- player's QuestId attribute) names; nil if it names nothing
+function QuestConfig.parseQuestId(id)
+	if typeof(id) ~= "string" then
+		return nil
+	end
+	local giverId, questId = string.match(id, "^(.-)/(.+)$")
+	local giver = giverId and QuestConfig.Givers[giverId]
+	for _, quest in ipairs(giver and giver.quests or {}) do
+		if quest.id == questId then
+			return giverId, quest
+		end
+	end
+	return nil
+end
+
 -- the saved id of a challenge: "Mandela.1"
 local known = {}
 for setName, list in pairs(QuestConfig.Challenges) do
