@@ -57,7 +57,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `effects[kind](...)`. A player's own instant visuals go through the `LocalSkillEffect` bindable.
   `VFX.Play(path, where, { scale, color, ... })` plays prefabs from `VFXPrefabs` (they exist only
   in Studio; attributes EmitCount/EmitDuration/Tint on their emitters drive them).
-- **Combat systems**: `Damage` (stat scaling, kill credit, `LastAttacker`/`LastHit`, `OnDealt`),
+- **Combat systems**: `Damage` (stat scaling, kill credit, `LastAttacker`/`LastHit`, `OnDealt`,
+  `OnKill`, and skill-set mastery from hits, kills and training dummies via `MasteryRules`),
   `CrowdControl` (PvP hold protection and immunity; ask `CanControl` before moving or stunning a
   player), `Guard` (block and posture: every hit on a player goes through `Guard.Resolve`; tag a
   damage call's `options.guard`), `ActionLock` (can't act: rewinding, blocking, stunned),
