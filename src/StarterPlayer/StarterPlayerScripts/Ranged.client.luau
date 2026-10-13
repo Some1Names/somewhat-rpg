@@ -17,6 +17,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local fireRanged = ReplicatedStorage:WaitForChild("FireRanged")
@@ -228,12 +229,12 @@ local function updateAssist(active, character, ranged, color)
 	end
 end
 
--- the set in hand and its ranged move, while alive (and not being rewound
--- by Photoshop's Undo)
+-- the set in hand and its ranged move, while alive (and not locked: rewound
+-- by Photoshop's Undo, blocking, stunned)
 local function heldSet()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or not humanoid.RootPart or character:GetAttribute("Rewinding") then
+	if not humanoid or humanoid.Health <= 0 or not humanoid.RootPart or ActionLock.Locked(character) then
 		return nil
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Projectiles = require(ServerScriptService:WaitForChild("Projectiles"))
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local fireRanged = ReplicatedStorage:WaitForChild("FireRanged")
 local skillModules = ServerScriptService:WaitForChild("Skills")
@@ -113,8 +114,8 @@ fireRanged.OnServerEvent:Connect(function(player, action, origin, direction, id,
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	-- (Rewinding: Photoshop's Undo is carrying her back, PhotoshopServer)
-	if not root or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
+	-- (ActionLock: Photoshop's Undo carrying her back, a block, a stun)
+	if not root or humanoid.Health <= 0 or ActionLock.Locked(character) then
 		return
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

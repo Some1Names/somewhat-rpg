@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local punchEvent = ReplicatedStorage:WaitForChild("Punch")
 local player = Players.LocalPlayer
@@ -94,7 +95,7 @@ local function tryAttack()
 		or humanoid.Sit
 		or player:GetAttribute("Dashing")
 		or player:GetAttribute("RangedReady")
-		or character:GetAttribute("Rewinding") -- Photoshop's Undo carrying her back
+		or ActionLock.Locked(character) -- Undo carrying her back, a block, a stun
 	then
 		return
 	end

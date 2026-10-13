@@ -13,6 +13,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
 local SkillCooldowns = require(ServerScriptService:WaitForChild("SkillCooldowns"))
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
@@ -209,8 +210,8 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 	end
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	-- (Rewinding: Photoshop's Undo is carrying her back, PhotoshopServer)
-	if not humanoid or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
+	-- (ActionLock: Photoshop's Undo carrying her back, a block, a stun)
+	if not humanoid or humanoid.Health <= 0 or ActionLock.Locked(character) then
 		return
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

@@ -29,6 +29,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
@@ -440,12 +441,12 @@ local function stopAiming()
 	AimIndicator.Hide()
 end
 
--- the equipped set, while the character is alive (and not being rewound by
--- Photoshop's Undo)
+-- the equipped set, while the character is alive (and not locked: rewound by
+-- Photoshop's Undo, blocking, stunned)
 local function activeSet()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or character:GetAttribute("Rewinding") then
+	if not humanoid or humanoid.Health <= 0 or ActionLock.Locked(character) then
 		return nil
 	end
 	return equippedSet()
