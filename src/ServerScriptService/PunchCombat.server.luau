@@ -20,6 +20,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -258,6 +259,7 @@ local function land(player, character, weapon, finisher)
 			local hitDamage = damage
 			if finisher and links and Damage.ConsumeExposed(player, model) then
 				hitDamage *= 1 + links.exposedFinisherBonus
+				Quests.Report(player, weapon.skillSet, "ExposedFinisher")
 			end
 			local landed = Damage.Deal(player, target, hitDamage, options)
 			dealt += landed

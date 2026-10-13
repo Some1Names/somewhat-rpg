@@ -19,6 +19,7 @@ local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Framed = require(ServerScriptService:WaitForChild("Framed"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -95,6 +96,7 @@ end
 -- Step In's punches, each ComboInterval after the last, while she's still
 -- standing with Photoshop out
 local function combo(player, character, humanoid)
+	local landedCount = 0 -- punches that hit, for the Step In challenge (Quests)
 	for i, amount in ipairs(CONFIG.ComboHits) do
 		task.wait(CONFIG.ComboInterval)
 		local root = humanoid.RootPart
@@ -108,6 +110,9 @@ local function combo(player, character, humanoid)
 			local direction = look.Magnitude > 0.1 and look.Unit or Vector3.new(0, 0, -1)
 			skillEffects:FireAllClients("PhotoshopPunchHit", target.RootPart.Position - direction * 0.8, last)
 			local landed = Damage.Deal(player, target, amount, { stat = "Superliminal", skillSet = "Photoshop", melee = true, critical = last, skill = "Z" })
+			if landed > 0 then
+				landedCount += 1
+			end
 			-- a hit a passive erased doesn't throw them; players only without hold protection
 			if last and landed > 0 and target.Health > 0 and not target.RootPart.Anchored and CrowdControl.CanControl(model) then
 				knockBack(target.RootPart, direction)
@@ -115,6 +120,7 @@ local function combo(player, character, humanoid)
 			end
 		end
 	end
+	Quests.Report(player, "Photoshop", "StepInCombo", landedCount)
 end
 
 local Snapshot = {}
@@ -135,6 +141,7 @@ function Snapshot.Cast(player, character, aim)
 	Damage.Deal(player, model:FindFirstChildOfClass("Humanoid"), CONFIG.Damage, DAMAGE_OPTIONS)
 	if Framed.Mark(player, model) then
 		watchFrame(player, model)
+		Quests.Report(player, "Photoshop", "Framed")
 	end
 	return true
 end

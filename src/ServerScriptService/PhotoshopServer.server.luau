@@ -25,6 +25,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
@@ -182,6 +183,7 @@ undoRemote.OnServerEvent:Connect(function(player)
 			if heal > 0 then
 				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + heal)
 			end
+			Quests.Report(player, "Photoshop", "UndoHeal", heal)
 		end
 		character:SetAttribute("Rewinding", nil)
 		task.delay(CONFIG.RewindGrace, function()

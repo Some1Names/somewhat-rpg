@@ -10,6 +10,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Kaleidoscope = require(ServerScriptService:WaitForChild("Skills"):WaitForChild("Kaleidoscope"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local Sunmark = require(ServerScriptService:WaitForChild("Sunmark"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
@@ -89,6 +90,7 @@ local function fire(player, character, aim, inForm)
 	local count = inForm and CONFIG.FormCount or CONFIG.Count
 	local spread = inForm and CONFIG.FormSpread or CONFIG.Spread
 	local tips = {}
+	local hitAll, hitCount = {}, 0 -- different targets one cast hit (Quests)
 	for i = 1, count do
 		local turn = math.rad((i - (count + 1) / 2) * spread)
 		local direction = (aimFrame * CFrame.Angles(0, turn, 0)).LookVector
@@ -98,6 +100,10 @@ local function fire(player, character, aim, inForm)
 		for struck in pairs(along(character, origin, tip)) do
 			if not Kaleidoscope.Reflect(struck, character, CONFIG.Damage) then
 				Damage.Deal(player, struck, CONFIG.Damage, DAMAGE_OPTIONS)
+				if not hitAll[struck] then
+					hitAll[struck] = true
+					hitCount += 1
+				end
 				if struck.Health > 0 then
 					Sunmark.Mark(player, struck.Parent)
 				end
@@ -105,6 +111,7 @@ local function fire(player, character, aim, inForm)
 		end
 	end
 	skillEffects:FireAllClients("PrismShot", origin, tips)
+	Quests.Report(player, "IridescentRequiem", "PrismShotHits", hitCount)
 end
 
 local PrismShot = {}

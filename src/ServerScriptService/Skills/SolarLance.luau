@@ -18,6 +18,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local StatusEffects = require(ServerScriptService:WaitForChild("StatusEffects"))
 local Sunmark = require(ServerScriptService:WaitForChild("Sunmark"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -170,6 +171,11 @@ local function strike(player, character, point, inForm, locked)
 				end
 			end
 		end
+	end
+	-- it landed on the Sunmarked target it was locked onto (Quests)
+	local lockedHumanoid = locked and locked:FindFirstChildOfClass("Humanoid")
+	if lockedHumanoid and struck[lockedHumanoid] then
+		Quests.Report(player, "IridescentRequiem", "MarkedLance")
 	end
 	if inForm then
 		burn(player, character, point, radius * CONFIG.PoolShare)

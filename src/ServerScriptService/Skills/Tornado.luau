@@ -18,6 +18,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 
 local skillEffects = game:GetService("ReplicatedStorage"):WaitForChild("SkillEffects")
 
@@ -154,6 +155,7 @@ local function runTornado(caster, casterCharacter, start, direction, settings, c
 	overlap.FilterDescendantsInstances = { model, casterCharacter }
 
 	local caught = {}
+	local hurt = {} -- everyone this tornado damaged, to count its kills (Quests)
 	local ok, err = pcall(function()
 		local startedAt = os.clock()
 		local nextDamageAt = startedAt + CONFIG.DamageInterval
@@ -224,9 +226,11 @@ local function runTornado(caster, casterCharacter, start, direction, settings, c
 				nextDamageAt += CONFIG.DamageInterval
 				for humanoid in pairs(caught) do
 					Damage.Deal(caster, humanoid, settings.damagePerTick, DAMAGE_OPTIONS)
+					hurt[humanoid] = true
 				end
 				for humanoid in pairs(grazing) do
 					Damage.Deal(caster, humanoid, settings.damagePerTick, DAMAGE_OPTIONS)
+					hurt[humanoid] = true
 				end
 			end
 			RunService.Heartbeat:Wait()
@@ -243,6 +247,7 @@ local function runTornado(caster, casterCharacter, start, direction, settings, c
 		local flung = false
 		if entry.root.Parent then
 			Damage.Deal(caster, humanoid, settings.burstDamage, DAMAGE_OPTIONS)
+			hurt[humanoid] = true
 			if not entry.root.Anchored then
 				fling(entry.root, finalBase, CONFIG.FlingSpeed, CONFIG.FlingLift, CONFIG.FlingTime)
 				flung = true
@@ -255,6 +260,14 @@ local function runTornado(caster, casterCharacter, start, direction, settings, c
 		end
 		claimed[humanoid] = nil
 	end
+	-- how many of them this tornado killed
+	local kills = 0
+	for humanoid in pairs(hurt) do
+		if humanoid.Health <= 0 and Damage.LastAttacker(humanoid) == caster then
+			kills += 1
+		end
+	end
+	Quests.Report(caster, "Mandela", "TornadoKills", kills)
 	task.wait(CONFIG.CleanupDelay)
 	model:Destroy()
 	if not ok then

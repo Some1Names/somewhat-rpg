@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local PlayerStats = require(ServerScriptService:WaitForChild("PlayerStats"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -53,6 +54,9 @@ end
 function behaviours.Misremembered(player, character, setName, set, amount, physical, fromPlayer, superliminal)
 	if superliminal or not spendMisremembered(player, character, setName, set) then
 		return amount
+	end
+	if fromPlayer then
+		Quests.Report(player, setName, "ErasedPlayerHit")
 	end
 	return 0
 end

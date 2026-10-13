@@ -13,7 +13,9 @@
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
@@ -23,6 +25,7 @@ local SUN_RAY_LENGTH = 1000 -- studs
 local SEE_THROUGH = 0.5 -- parts at least this transparent let the light through
 local FLYING = "Flying"
 local DESATURATED_DRAIN = 0.15 -- Luminance per second while Desaturated
+local flights = setmetatable({}, { __mode = "k" }) -- player -> { since, last }: how long this flight has lasted (Quests)
 
 -- the equipped set, if its passive is Luminance
 local function luminanceSet(character)
@@ -101,6 +104,18 @@ task.spawn(function()
 			if root and humanoid.Health > 0 then
 				local setName, set = luminanceSet(character)
 				local flying = character:GetAttribute(FLYING) == true
+				-- a flight that ends reports how long it lasted (the challenge wants 90 s)
+				local flight = flights[player]
+				if flying then
+					if not flight then
+						flight = { since = os.clock() }
+						flights[player] = flight
+					end
+					flight.last = os.clock()
+				elseif flight then
+					flights[player] = nil
+					Quests.Report(player, "IridescentRequiem", "FlightTime", flight.last - flight.since)
+				end
 				if not setName then
 					-- put away mid-air: back down
 					if flying then

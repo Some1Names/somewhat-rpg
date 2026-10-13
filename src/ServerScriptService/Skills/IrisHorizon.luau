@@ -21,6 +21,7 @@ local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Framed = require(ServerScriptService:WaitForChild("Framed"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -64,6 +65,7 @@ local function burst(id, player, character, center, target, caught)
 			if caught then
 				Damage.Deal(player, humanoid, CONFIG.TargetDamage, BURST_OPTIONS)
 				ground(target)
+				Quests.Report(player, "Photoshop", "IrisCaught")
 			else
 				Damage.Deal(player, humanoid, CONFIG.EscapedDamage, DAMAGE_OPTIONS)
 			end
