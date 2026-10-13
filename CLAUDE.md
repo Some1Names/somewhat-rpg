@@ -43,7 +43,9 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 
 ## Architecture (where things live)
 
-- **Config modules** (`src/ReplicatedStorage`): `SkillSetConfig` (every skill set: tier, keys,
+- **Config modules** (`src/ReplicatedStorage`): `DayCycleConfig` (the daylight cycle's numbers, hour
+  and lighting keyframes; the server's `DayClock` keeps the time anchor, `DayCycleClient` animates
+  `Lighting` from it, `SkyLight` says whether sun or moonlight reaches a point), `SkillSetConfig` (every skill set: tier, keys,
   cooldowns, aim specs, `handler` names, passives, flight, forms), `StatConfig` (levels, stats, HP
   per Vitality, enemy scaling), `PunchConfig` (melee weapons/combos), `ShopConfig`,
   `StatusConfig` (Burnt/Bleeding/Poisoned/Weakened), `VFX` (client effects toolkit).

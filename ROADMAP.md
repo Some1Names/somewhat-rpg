@@ -77,6 +77,13 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## World
 
+- **Daylight cycle** (20-minute day, moving sun, sky and lighting; moonlight charges Luminance slowly,
+  Solar Lance weaker at night; admin set/freeze time): **code built** on branch `daylight-cycle`, spec
+  `docs/superpowers/specs/2026-10-13-daylight-cycle-design.md`, plan
+  `docs/superpowers/plans/2026-10-13-daylight-cycle.md`. Waiting on the Studio apply, tuning the
+  keyframes (`DayCycleConfig.Keyframes`) and a playtest with
+  `docs/superpowers/specs/2026-10-13-daylight-cycle-checklist.md`. Later: night affecting enemies,
+  spawns, shops and quests (hook: the `Phase` attribute on `ReplicatedStorage`).
 - **Swimmable water parts:** plan `docs/superpowers/plans/2026-10-10-swimmable-water.md` (not done
   yet). The water stays Parts (tagged `Water`), with scripted swimming.
 
