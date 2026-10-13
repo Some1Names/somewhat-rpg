@@ -52,6 +52,11 @@ Use a second player, or an enemy with `FightsBack`, to hit you.
 - [ ] Switch tools, unequip, or reset while blocking: no stuck block or half speed.
 - [ ] Release E while Alt-tabbed or with the window unfocused: the block is off on return.
 - [ ] A player leaving mid-block leaves nothing in the output window.
+- [ ] **Guard-broken stun holds everyone still:** an Iridescent Requiem player hovers in place (no
+      flying), nobody can jump or double-jump, and Photoshop's Undo does nothing while she is
+      blocking or stunned.
+- [ ] A save with an action on E from before Block existed keeps all its keybinds (Block takes that
+      action's old key).
 - [ ] Photoshop's Undo still stops her acting; Lightstep's untouchable moment takes no posture.
 
 ## Output window

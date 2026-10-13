@@ -25,6 +25,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 
@@ -150,7 +151,8 @@ undoRemote.OnServerEvent:Connect(function(player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	if not root or humanoid.Health <= 0 or not holding(character) or CrowdControl.Held(character) then
+	-- (ActionLock: a block or a guard break's stun doesn't let her rewind out of it)
+	if not root or humanoid.Health <= 0 or not holding(character) or CrowdControl.Held(character) or ActionLock.Locked(character) then
 		return
 	end
 	if (player:GetAttribute(UNDO_READY) or 0) > workspace:GetServerTimeNow() then

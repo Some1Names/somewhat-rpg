@@ -58,6 +58,10 @@ local function tryDoubleJump()
 	if not root or humanoid.Health <= 0 or humanoid.Sit or character:GetAttribute("Flying") then
 		return
 	end
+	-- a guard break's stun holds you still
+	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() then
+		return
+	end
 	if humanoid.FloorMaterial ~= Enum.Material.Air then
 		return
 	end

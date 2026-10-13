@@ -15,6 +15,9 @@ local Keybinds = {}
 Keybinds.Attribute = "Keybinds" -- on the player, saved by PlayerStats
 Keybinds.MaxLength = 200 -- PlayerStats' longest saved text
 
+-- `yields`: added after players could already save keys; if a save has some
+-- other action on this one's default key, this one takes that action's old key
+-- (as Bind would) rather than the whole save being thrown out
 Keybinds.Actions = {
 	{ id = "SkillZ", label = "Skill 1", default = "Z" },
 	{ id = "SkillX", label = "Skill 2", default = "X" },
@@ -23,7 +26,7 @@ Keybinds.Actions = {
 	{ id = "SkillF", label = "Skill 5 (ultimate)", default = "F" },
 	{ id = "Special", label = "Overcharge / Flight / Undo", default = "G" },
 	{ id = "Dash", label = "Dash", default = "Q" },
-	{ id = "Block", label = "Block", default = "E" },
+	{ id = "Block", label = "Block", default = "E", yields = true },
 	{ id = "Reload", label = "Reload", default = "R" },
 	{ id = "Gallery", label = "Photo Gallery", default = "T" },
 }
@@ -99,9 +102,21 @@ function Keybinds.Parse(text)
 	if typeof(text) ~= "string" or #text > Keybinds.MaxLength then
 		return map
 	end
+	local saved = {}
 	for id, key in string.gmatch(text, "(%w+)=(%w+)") do
 		if byId[id] and Keybinds.Allowed[key] then
 			map[id] = key
+			saved[id] = true
+		end
+	end
+	for _, action in ipairs(Keybinds.Actions) do
+		if action.yields and not saved[action.id] then
+			for id, key in pairs(map) do
+				if id ~= action.id and key == map[action.id] then
+					map[action.id] = byId[id].default
+					break
+				end
+			end
 		end
 	end
 	if hasDouble(map) then

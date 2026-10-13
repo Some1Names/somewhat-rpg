@@ -106,6 +106,10 @@ RunService.RenderStepped:Connect(function()
 		direction = direction.Unit
 	end
 	local speed = flight.speed * (UserInputService:IsKeyDown(SPRINT_KEY) and flight.boostMultiplier or 1)
+	-- a guard break's stun holds you still in the air too
+	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() then
+		speed = 0
+	end
 	movers.velocity.VectorVelocity = direction * speed
 
 	local flatLook = Vector3.new(camera.LookVector.X, 0, camera.LookVector.Z)

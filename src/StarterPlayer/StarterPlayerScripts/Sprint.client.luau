@@ -65,6 +65,7 @@ RunService.Heartbeat:Connect(function(dt)
 	local sprinting = holding and moving and not stunned and not blocking and Stamina.Drain(DRAIN_PER_SECOND * dt)
 	if stunned then
 		humanoid.WalkSpeed = 0
+		humanoid.Jump = false
 	elseif blocking then
 		humanoid.WalkSpeed = WALK_SPEED * GuardConfig.BlockWalkShare
 	else
