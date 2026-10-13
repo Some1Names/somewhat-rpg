@@ -21,14 +21,13 @@ otherwise.
 | [Getting powers](2026-10-09-power-acquisition.md) | One saved power + 2 storage slots + lifetime Robux powers; new powers come as briefcases from the Power Dealer (S ¥500,000), map drops and a ¥25,000 gacha; selling; death drops; no starter power. Spec: `specs/2026-10-09-power-acquisition-design.md`. | Cloud for tasks 1–6, then Studio, a live server and **you** for task 7 (Robux products, spawn points, briefcase model) | `Run docs/superpowers/plans/2026-10-09-power-acquisition.md with superpowers:executing-plans, tasks 1–6. Read the spec first.` Then, in Studio: `Run task 7 of docs/superpowers/plans/2026-10-09-power-acquisition.md with me.` |
 | [Swimmable water parts](2026-10-10-swimmable-water.md) | The map's water parts (kept as parts) become swimmable: float at the surface, swim where the camera points, Space to rise and climb out, swim animation. Parts tagged `Water`. | Cloud for tasks 1–3, then Studio for task 4 (tag the parts, tune the feel) | `Run docs/superpowers/plans/2026-10-10-swimmable-water.md with superpowers:executing-plans, tasks 1–3.` Then, in Studio: `Run task 4 of docs/superpowers/plans/2026-10-10-swimmable-water.md with me.` |
 | [Photoshop revisual](2026-10-09-photoshop-revisual.md) | Photoshop's code-built looks replaced by imported VFX packs, one move at a time. You approve every pack before it's imported. | Studio | `Run docs/superpowers/plans/2026-10-09-photoshop-revisual.md with superpowers:executing-plans. Do one move per task, and stop for my OK on the packs and on the screenshots.` |
-| Studio sync | Brings everything pushed since the last sync into Studio. Waiting: Block and posture (see Done). Last sync 2026-10-10: Lightstep's trail, the Gallery waypoints, Undo's rewind and the Headhunter. | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
+| Studio sync | Brings everything pushed since the last sync into Studio. Nothing is waiting right now (last sync 2026-10-13: Block and posture). | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
 
 ## Done
 
-- [Block and posture](2026-10-09-block-parry.md): code built (parry dropped for now, 2026-10-13). Needs
-  the Studio sync (new: `GuardConfig`, `ActionLock`, `Guard`, `Block`; edits to Damage, EnemyAI,
-  the six lock sites, the ten tagged skills, Sprint, Dash, StatusHUD, OverheadHealth, SkillEffects,
-  Keybinds) and a playtest with `specs/2026-10-09-block-parry-checklist.md` (two players).
+- [Block and posture](2026-10-09-block-parry.md): built and in Studio (parry dropped for now, 2026-10-13); compile-checked,
+  and the server rules smoke-tested. Left: the playtest with `specs/2026-10-09-block-parry-checklist.md`
+  (two players).
 - [Death stakes and the Headhunter](2026-10-09-death-stakes.md): built and in Studio, checked
   solo. Left: the live-server half of `specs/2026-10-09-death-stakes-checklist.md` (2–3 players).
 - [Photoshop](2026-10-08-photoshop.md): built and in Studio. Playtest left:
