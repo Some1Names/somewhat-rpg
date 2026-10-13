@@ -9,11 +9,14 @@
 -- something stands between them and your camera. A target your Z left
 -- exposed (open to your axe finisher) shows red edges on its boxes.
 -- Status effects on them (Burnt, Bleeding...) show as icons above the name.
+-- A thin white posture bar (Guard) sits under the boxes while their Posture
+-- attribute is above 0, red and flashing while they're guard-broken.
 -- The Headhunter's name (ReplicatedStorage's Headhunter attribute) is red.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusIcons = require(ReplicatedStorage:WaitForChild("StatusIcons"))
 
@@ -36,6 +39,11 @@ local TRAIL_SPEED = 1.2 -- fractions of the whole bar per second
 local HIDE_AFTER = 2.5 -- seconds at full health before the boxes fade out
 local FADE_SPEED = 5 -- transparency per second
 local ALWAYS_SHOW_BOXES = false -- true keeps the boxes up even at full health
+local POSTURE_HEIGHT = 3 -- pixels
+local POSTURE_GAP = 2 -- pixels under the boxes
+local POSTURE_COLOR = Color3.new(1, 1, 1)
+local BROKEN_COLOR = Color3.fromRGB(230, 60, 50)
+local BROKEN_FLASH = 0.1 -- seconds between red and white while guard-broken
 local NAME_COLOR = Color3.new(1, 1, 1)
 local DANGER_COLOR = Color3.fromRGB(255, 80, 80) -- an enemy far above your level
 local OUTLINE_COLOR = Color3.fromRGB(255, 70, 80)
@@ -197,7 +205,7 @@ local function track(humanoid)
 	billboard.LightInfluence = 0
 	billboard.MaxDistance = MAX_DISTANCE
 	billboard.ResetOnSpawn = false
-	billboard.Size = UDim2.fromOffset(WIDTH, ICON_ROW + NAME_HEIGHT + ROW_GAP + BOX_SIZE + 2)
+	billboard.Size = UDim2.fromOffset(WIDTH, ICON_ROW + NAME_HEIGHT + ROW_GAP + BOX_SIZE + 2 + POSTURE_GAP + POSTURE_HEIGHT)
 
 	local icons = StatusIcons.new(billboard, Enum.HorizontalAlignment.Center)
 	billboard.StudsOffset = Vector3.new(0, HEIGHT_ABOVE_HEAD, 0)
@@ -232,6 +240,12 @@ local function track(humanoid)
 		local fill = frame(box, HP_COLOR, UDim2.fromScale(1, 1), UDim2.new())
 		boxes[i] = { fill = fill, trail = trail, stroke = stroke }
 	end
+	-- posture, under the boxes; shown on its own, whatever their health
+	local postureTrack = frame(billboard, Color3.new(0, 0, 0), UDim2.fromOffset(rowWidth, POSTURE_HEIGHT), UDim2.new(0.5, 0, 0, ICON_ROW + NAME_HEIGHT + ROW_GAP + BOX_SIZE + 2 + POSTURE_GAP))
+	postureTrack.AnchorPoint = Vector2.new(0.5, 0)
+	postureTrack.BackgroundTransparency = 0.5
+	postureTrack.Visible = false
+	local postureFill = frame(postureTrack, POSTURE_COLOR, UDim2.fromScale(0, 1), UDim2.new())
 	billboard.Parent = playerGui
 
 	-- enemies only: the outline that shows them through walls
@@ -260,6 +274,8 @@ local function track(humanoid)
 		billboard = billboard,
 		group = group,
 		boxes = boxes,
+		postureTrack = postureTrack,
+		postureFill = postureFill,
 		icons = icons,
 		last = fraction,
 		trailFraction = fraction,
@@ -311,6 +327,15 @@ RunService.RenderStepped:Connect(function(dt)
 		local target = (now - entry.lastChangeAt < HIDE_AFTER) and 0 or 1
 		entry.shown += math.clamp(target - entry.shown, -FADE_SPEED * dt, FADE_SPEED * dt)
 		entry.group.GroupTransparency = entry.shown
+		local posture = entry.model:GetAttribute("Posture") or 0
+		entry.postureTrack.Visible = posture > 0
+		if posture > 0 then
+			entry.postureFill.Size = UDim2.fromScale(math.clamp(posture / GuardConfig.MaxPosture, 0, 1), 1)
+			local serverNow = workspace:GetServerTimeNow()
+			local broken = (entry.model:GetAttribute("HitstunUntil") or 0) > serverNow or (entry.model:GetAttribute("GuardBrokenUntil") or 0) > serverNow
+			local red = broken and math.floor(now / BROKEN_FLASH) % 2 == 0
+			entry.postureFill.BackgroundColor3 = red and BROKEN_COLOR or POSTURE_COLOR
+		end
 		for i, box in ipairs(entry.boxes) do
 			box.fill.Size = UDim2.fromScale(boxShare(fraction, i), 1)
 			box.trail.Size = UDim2.fromScale(boxShare(entry.trailFraction, i), 1)
