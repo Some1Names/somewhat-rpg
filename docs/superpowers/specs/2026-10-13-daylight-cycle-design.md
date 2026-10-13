@@ -82,7 +82,8 @@ applies the values to the **existing** Lighting instances:
 - The ray rules are exactly the two existing copies: 1000-stud ray, characters ignored, parts at
   least 0.5 transparent let light through, up to four see-through parts.
 - `LuminanceServer.server.luau` (`inSunlight`) and `Skills/SolarLance.luau` (`underSky`) both call it.
-  This removes the duplicated ray check.
+  This removes the duplicated ray check. One side effect: Solar Lance's old check let nothing
+  through, so now parts at least 50% transparent no longer cover it (they never covered Luminance).
 
 ## Rules changed in existing code
 
@@ -99,7 +100,8 @@ applies the values to the **existing** Lighting instances:
 - `src/ReplicatedStorage/DayCycleConfig.luau`: `DayLength`, `StartHour`, `MoonShare`, `Phases`,
   `Keyframes`, and the pure helpers `HourAt(anchorTime, anchorServerTime, now, frozen)`,
   `PhaseAt(hour)` and `Sample(hour)` (interpolated look).
-- `src/ServerScriptService/DayCycle.server.luau`
+- `src/ServerScriptService/DayClock.luau` (the anchor, `Hour`, `SetHour`, `SetFrozen`; a module so
+  `AdminServer` can use it) and a tiny `DayCycle.server.luau` that starts it
 - `src/StarterPlayer/StarterPlayerScripts/DayCycleClient.client.luau`
 - `src/ServerScriptService/SkyLight.luau`
 - `tests/DayCycleConfig.spec.luau` (run by `tests/run.sh`; see Testing)
@@ -132,8 +134,8 @@ applies the values to the **existing** Lighting instances:
 ## Needed in Studio (not created by scripts)
 
 - Nothing new is required for the cycle to run.
-- For a visible moon and stars: the existing `Sky` needs its moon texture and star settings set
-  to the owner's look (the cycle only changes `StarCount`).
+- The existing `Sky` already has a moon texture and `StarCount 3000`; the cycle drives `StarCount`
+  (0 by day). Its look is for the owner to judge in Studio.
 - Map lights that should switch on at night (lamps, windows) are not part of this update.
 
 ## Not in scope
