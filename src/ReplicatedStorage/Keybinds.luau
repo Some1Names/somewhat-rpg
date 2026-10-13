@@ -1,5 +1,5 @@
 -- The rebindable keys: the fighting actions (a skill set's five skill slots,
--- its Special on G, the dash, reload, Photoshop's gallery), the key each is
+-- its Special on G, the dash, block, reload, Photoshop's gallery), the key each is
 -- on by default, and which keys a player may move them to (Allowed: never
 -- movement, menus, chat or the hotbar). A player's own bindings are the
 -- saved Keybinds attribute, "SkillZ=Q,Dash=Z", holding only the actions
@@ -23,6 +23,7 @@ Keybinds.Actions = {
 	{ id = "SkillF", label = "Skill 5 (ultimate)", default = "F" },
 	{ id = "Special", label = "Overcharge / Flight / Undo", default = "G" },
 	{ id = "Dash", label = "Dash", default = "Q" },
+	{ id = "Block", label = "Block", default = "E" },
 	{ id = "Reload", label = "Reload", default = "R" },
 	{ id = "Gallery", label = "Photo Gallery", default = "T" },
 }
