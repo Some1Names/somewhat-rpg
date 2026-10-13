@@ -11,6 +11,13 @@ local RunService = game:GetService("RunService")
 
 local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
 
+-- the instance class of each group's Lighting child, where it isn't the same name
+local CLASS_OF = {
+	ColorCorrection = "ColorCorrectionEffect",
+	Bloom = "BloomEffect",
+	SunRays = "SunRaysEffect",
+}
+
 -- {r, g, b} in 0 to 255 is a colour
 local function toValue(value)
 	if type(value) == "table" then
@@ -29,7 +36,7 @@ local function update()
 	Lighting.ClockTime = hour
 	for group, properties in pairs(DayCycleConfig.Sample(hour)) do
 		local target = if group == "Lighting" then Lighting else Lighting:FindFirstChild(group)
-		if target and target:IsA(group) then
+		if target and target:IsA(CLASS_OF[group] or group) then
 			for property, value in pairs(properties) do
 				target[property] = toValue(value)
 			end
