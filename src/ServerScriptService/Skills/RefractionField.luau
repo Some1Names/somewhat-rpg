@@ -29,7 +29,7 @@ local CONFIG = {
 	MaxChain = 6, -- targets one beam can jump through
 	Hover = 4, -- studs above the ground
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", skill = "C" }
 local COLOR = SkillSetConfig.Sets.IridescentRequiem.color
 
 local function flat(vector)

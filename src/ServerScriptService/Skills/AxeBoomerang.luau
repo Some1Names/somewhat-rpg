@@ -33,7 +33,7 @@ local CONFIG = {
 	DragTime = 0.2,
 	ReleaseDelay = 0.12, -- lines the throw up with the cast animation's release
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", skill = "Z" }
 local THROWN_ATTRIBUTE = "WeaponThrown"
 local RECALLED_ATTRIBUTE = "WeaponRecalled"
 local RECALL_ATTRIBUTE = SkillSetConfig.RecastAttribute("Mandela", "Z") -- on the player, for the skill bar

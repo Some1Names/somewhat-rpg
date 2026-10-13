@@ -19,7 +19,7 @@ local CONFIG = {
 	Damage = 60, -- before the shooter's Firearm bonus
 	Speed = 600, -- studs per second, twice his normal shots
 }
-local DAMAGE_OPTIONS = { stat = "Firearm", skillSet = "Revolver", melee = true, critical = true, guard = "ranged" }
+local DAMAGE_OPTIONS = { stat = "Firearm", skillSet = "Revolver", melee = true, critical = true, guard = "ranged", skill = "X" }
 local FLIGHT = SkillSetConfig.Sets.Revolver.ranged.projectile
 
 local shotCount = 0

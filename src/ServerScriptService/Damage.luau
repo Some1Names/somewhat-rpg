@@ -22,7 +22,7 @@ local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local Damage = {}
 
 local lastAttacker = setmetatable({}, { __mode = "k" })
-local lastHit = setmetatable({}, { __mode = "k" }) -- humanoid -> { at, skillSet }
+local lastHit = setmetatable({}, { __mode = "k" }) -- humanoid -> { at, skillSet, skill }
 
 local function payOutOnDeath(humanoid)
 	humanoid.Died:Once(function()
@@ -62,7 +62,8 @@ function Damage.LastAttacker(humanoid)
 end
 
 -- that last hit: { at = os.clock(), skillSet = the set it came from (or the
--- one the attacker was holding), if any } (KillFeed)
+-- one the attacker was holding), if any, skill = its options.skill } (KillFeed,
+-- Quests)
 function Damage.LastHit(humanoid)
 	return lastHit[humanoid]
 end
@@ -91,6 +92,9 @@ end
 -- options.unerasable: no passive can erase it, like a Superliminal hit
 -- options.dot: a status effect's damage over time tick (StatusEffects): never
 --   blocked, and not combat
+-- options.skill: the move it came from, for quests (Quests): a skill key
+--   ("Z".."F"), "ranged", "dash" or "melee"; left out, it counts for no
+--   hits or kills challenge
 -- options.guard: how a block treats it, "melee", "ranged", "skill" or
 --   "unblockable" (ultimates, grabs); default "melee" with options.melee, else "skill"
 -- Returns the health it actually took.
@@ -136,7 +140,7 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 		end
 		lastAttacker[humanoid] = attacker
 		local _, holding = SkillSetConfig.Equipped(attacker.Character)
-		lastHit[humanoid] = { at = os.clock(), skillSet = options.skillSet or holding }
+		lastHit[humanoid] = { at = os.clock(), skillSet = options.skillSet or holding, skill = options.skill }
 	end
 	if options.critical then
 		-- HitFeedback shows the health drop that follows as a critical hit

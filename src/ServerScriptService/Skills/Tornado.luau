@@ -58,7 +58,7 @@ local OVERCHARGED = {
 	BlastLift = 50,
 	BlastTime = 0.3,
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable", skill = "C" }
 local SPIN_SIGN = 1 -- matches the spin of the template's layers
 
 local template = ServerStorage:WaitForChild("SkillSets"):WaitForChild("Mandela"):WaitForChild("Tornado")

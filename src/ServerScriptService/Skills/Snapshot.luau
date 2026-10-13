@@ -39,7 +39,7 @@ local CONFIG = {
 	ComboKnockback = 40, -- studs per second the last punch throws them
 	ComboKnockbackTime = 0.3, -- seconds the throw lasts
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "Z" }
 local RECAST = SkillSetConfig.RecastAttribute("Photoshop", "Z")
 
 local watching = setmetatable({}, { __mode = "k" }) -- player -> the frame being watched
@@ -107,7 +107,7 @@ local function combo(player, character, humanoid)
 			local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
 			local direction = look.Magnitude > 0.1 and look.Unit or Vector3.new(0, 0, -1)
 			skillEffects:FireAllClients("PhotoshopPunchHit", target.RootPart.Position - direction * 0.8, last)
-			local landed = Damage.Deal(player, target, amount, { stat = "Superliminal", skillSet = "Photoshop", melee = true, critical = last })
+			local landed = Damage.Deal(player, target, amount, { stat = "Superliminal", skillSet = "Photoshop", melee = true, critical = last, skill = "Z" })
 			-- a hit a passive erased doesn't throw them; players only without hold protection
 			if last and landed > 0 and target.Health > 0 and not target.RootPart.Anchored and CrowdControl.CanControl(model) then
 				knockBack(target.RootPart, direction)

@@ -28,7 +28,7 @@ local CONFIG = {
 	Width = 4, -- studs either side of the path that it burns
 	TrailCheckInterval = 0.1, -- seconds between checks for someone walking into a lingering trail
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = SET_NAME }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = SET_NAME, skill = "dash" }
 
 local untouchableUntil = setmetatable({}, { __mode = "k" }) -- character -> os.clock()
 local trails = setmetatable({}, { __mode = "k" }) -- player -> his lingering trails, oldest first

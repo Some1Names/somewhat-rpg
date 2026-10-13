@@ -25,7 +25,7 @@ local CONFIG = {
 	Damage = 9, -- per beam, before the caster's Superliminal bonus
 	ReleaseDelay = 0.12, -- lines the beams up with the cast animation
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", skill = "Z" }
 
 local function flat(vector)
 	return Vector3.new(vector.X, 0, vector.Z)

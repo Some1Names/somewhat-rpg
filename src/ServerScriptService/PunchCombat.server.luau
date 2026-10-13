@@ -202,7 +202,7 @@ local function spikeBurst(player, character, center, weapon)
 	local overlap = OverlapParams.new()
 	overlap.FilterType = Enum.RaycastFilterType.Exclude
 	overlap.FilterDescendantsInstances = { character }
-	local options = { stat = weapon.stat or DEFAULT_STAT, skillSet = weapon.skillSet, melee = true }
+	local options = { stat = weapon.stat or DEFAULT_STAT, skillSet = weapon.skillSet, melee = true, skill = "melee" }
 	local dealt = 0
 	local struck = {}
 	for _, part in ipairs(workspace:GetPartBoundsInRadius(center, settings.spikeRadius, overlap)) do
@@ -229,7 +229,7 @@ local function land(player, character, weapon, finisher)
 	local box = root.CFrame * CFrame.new(0, 0, -weapon.hitboxForward)
 
 	local damage = weapon.baseDamage * (finisher and PunchConfig.CritMultiplier or 1)
-	local options = { stat = weapon.stat or DEFAULT_STAT, critical = finisher, skillSet = weapon.skillSet, melee = true }
+	local options = { stat = weapon.stat or DEFAULT_STAT, critical = finisher, skillSet = weapon.skillSet, melee = true, skill = "melee" }
 	local look = root.CFrame.LookVector
 	local direction = Vector3.new(look.X, 0, look.Z).Unit
 

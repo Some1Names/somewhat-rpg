@@ -85,7 +85,7 @@ local function countHit(player, humanoid)
 	end
 end
 -- a weapon hit, so physical
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", melee = true, guard = "ranged" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", melee = true, guard = "ranged", skill = "ranged" }
 local FLIGHT = SkillSetConfig.Sets.Mandela.ranged.projectile
 
 local KnifeThrow = {}

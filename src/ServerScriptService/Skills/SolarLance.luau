@@ -47,8 +47,8 @@ local CONFIG = {
 	PoolHeight = 6, -- studs above the ground it reaches
 	PoolBurnInterval = 1, -- seconds between Burnt stacks for someone standing in it
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true }
-local POOL_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true, skill = "V" }
+local POOL_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", skill = "V" }
 local LUMINANCE = SkillSetConfig.LuminanceAttribute("IridescentRequiem")
 
 local function flat(vector)

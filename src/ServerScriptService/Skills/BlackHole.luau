@@ -64,7 +64,7 @@ local VARIANTS = {
 		damagePerSecond = 27,
 	},
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable", skill = "X" }
 local START_SCALE_FRACTION = 0.05
 local TRAIL_COLORS = {
 	normal = ColorSequence.new(Color3.fromRGB(150, 255, 190), Color3.fromRGB(20, 80, 40)),

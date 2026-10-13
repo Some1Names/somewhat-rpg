@@ -38,8 +38,8 @@ local CONFIG = {
 	EscapedDamage = 10, -- to a target who got out before it shut
 	EscapeMargin = 2, -- studs past the ring before they count as out (network jitter)
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
-local BURST_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", critical = true }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "V" }
+local BURST_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", critical = true, skill = "V" }
 
 local function flat(vector)
 	return Vector3.new(vector.X, 0, vector.Z)

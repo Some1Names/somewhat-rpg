@@ -30,7 +30,7 @@ local CONFIG = {
 	TickDamage = 4, -- per tick, before the caster's Superliminal bonus
 	Linger = 1, -- seconds Desaturated lasts after the last tick on them
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "C" }
 local STATUS_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", duration = CONFIG.Linger }
 
 -- whether Desaturated would take anything from them: a set with Luminance,

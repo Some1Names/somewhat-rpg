@@ -15,7 +15,7 @@ local CONFIG = {
 	Spread = 7, -- degrees either side a shot may stray
 	Damage = 10, -- per bullet, before the shooter's Firearm bonus
 }
-local DAMAGE_OPTIONS = { stat = "Firearm", skillSet = "Revolver", melee = true, guard = "ranged" }
+local DAMAGE_OPTIONS = { stat = "Firearm", skillSet = "Revolver", melee = true, guard = "ranged", skill = "Z" }
 local FLIGHT = SkillSetConfig.Sets.Revolver.ranged.projectile
 
 local shotCount = 0

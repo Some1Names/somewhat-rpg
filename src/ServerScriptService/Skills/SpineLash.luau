@@ -32,7 +32,7 @@ local CONFIG = {
 	ReleaseDelay = 0.1, -- lines the whip up with the cast animation's lash
 	AutoAimCone = 30, -- degrees either side of the aim it locks onto a target in
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable", skill = "Z" }
 local COLOR = SkillSetConfig.Sets.Mandela.overcharge.color
 local LINKS = SkillSetConfig.Sets.Mandela.links
 

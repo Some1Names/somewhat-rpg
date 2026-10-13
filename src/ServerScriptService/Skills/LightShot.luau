@@ -18,7 +18,7 @@ local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 local CONFIG = {
 	Damage = 8, -- before the shooter's Superliminal bonus
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", guard = "ranged" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", guard = "ranged", skill = "ranged" }
 local RANGE = SkillSetConfig.Sets.IridescentRequiem.ranged.beam.range
 
 local LightShot = {}

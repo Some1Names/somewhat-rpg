@@ -19,7 +19,7 @@ local CONFIG = {
 	Damage = 9, -- before the shooter's Superliminal bonus
 	FrameExtend = 1.5, -- seconds a flash adds to her frame on them
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", guard = "ranged" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", guard = "ranged", skill = "ranged" }
 local RANGE = SkillSetConfig.Sets.Photoshop.ranged.beam.range
 
 local Shutter = {}
