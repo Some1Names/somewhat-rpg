@@ -48,10 +48,10 @@ local VERSIONS = {
 		BurstDamage = 40, -- the finale, to everyone in the Radius
 	},
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem" }
-local LANCE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem" }
-local MARKED_LANCE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true }
-local BURST_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", guard = "unblockable" }
+local LANCE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", guard = "unblockable" }
+local MARKED_LANCE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true, guard = "unblockable" }
+local BURST_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true, guard = "unblockable" }
 local SET_NAME = "IridescentRequiem"
 local LUMINANCE = SkillSetConfig.LuminanceAttribute(SET_NAME)
 

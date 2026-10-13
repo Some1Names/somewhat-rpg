@@ -11,7 +11,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local CONFIG = {
 	Damage = 20, -- before the shooter's Firearm bonus
 }
-local DAMAGE_OPTIONS = { stat = "Firearm", skillSet = "Revolver", melee = true }
+local DAMAGE_OPTIONS = { stat = "Firearm", skillSet = "Revolver", melee = true, guard = "ranged" }
 local FLIGHT = SkillSetConfig.Sets.Revolver.ranged.projectile
 
 local RevolverShot = {}

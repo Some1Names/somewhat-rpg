@@ -40,7 +40,7 @@ local CONFIG = {
 }
 local WALL_TAG = "RewriteWall"
 local SET = SkillSetConfig.Sets.Mandela
-local REWRITE_OPTIONS = { skillSet = "Mandela", critical = true, unerasable = true, rewrite = true }
+local REWRITE_OPTIONS = { skillSet = "Mandela", critical = true, unerasable = true, rewrite = true, guard = "unblockable" }
 
 local castCount = 0
 

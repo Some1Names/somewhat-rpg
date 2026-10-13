@@ -26,7 +26,7 @@ local CONFIG = {
 	HitDamage = 7, -- per mirror hit, before the caster's Superliminal bonus
 	FramedHits = 2, -- mirror hits per tick on someone she's Framed
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", guard = "unblockable" }
 
 local active = setmetatable({}, { __mode = "k" }) -- player -> { character, center, endsAt }
 
