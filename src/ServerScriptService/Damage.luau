@@ -30,41 +30,9 @@ local Damage = {}
 local lastAttacker = setmetatable({}, { __mode = "k" })
 local lastHit = setmetatable({}, { __mode = "k" }) -- humanoid -> { at, skillSet, skill }
 
--- mastery XP a player earned from damaging each other player: attacker ->
--- victim -> { { at = os.clock(), xp }, ... }, trimmed to MasteryRules.PvPWindow
-local pvpEarned = setmetatable({}, { __mode = "k" })
-
-local function pvpEarnedFrom(attacker, victim)
-	local victims = pvpEarned[attacker]
-	local list = victims and victims[victim]
-	if not list then
-		return 0
-	end
-	local cutoff = os.clock() - MasteryRules.PvPWindow
-	local kept, total = {}, 0
-	for _, entry in ipairs(list) do
-		if entry.at >= cutoff then
-			table.insert(kept, entry)
-			total += entry.xp
-		end
-	end
-	victims[victim] = kept
-	return total
-end
-
-local function notePvPEarned(attacker, victim, xp)
-	local victims = pvpEarned[attacker]
-	if not victims then
-		victims = setmetatable({}, { __mode = "k" })
-		pvpEarned[attacker] = victims
-	end
-	local list = victims[victim]
-	if not list then
-		list = {}
-		victims[victim] = list
-	end
-	table.insert(list, { at = os.clock(), xp = xp })
-end
+-- mastery XP each player earned from damaging each other player, by UserId
+-- (MasteryRules.newLedger: the cap holds across a rejoin)
+local pvpLedger = MasteryRules.newLedger()
 
 -- Functions told about every kill someone gets credit for, as (killer, the
 -- victim's character, that last hit (Damage.LastHit), whether the victim was
@@ -232,9 +200,10 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 			-- a player: half the rate, at most PvPCap from one victim per PvPWindow, and
 			-- nothing from someone this attacker killed within the repeat window
 			if victim ~= attacker and not KillRecords.IsRepeat(attacker, victim) then
-				local xp = MasteryRules.pvpXP(dealt, perDamage, pvpEarnedFrom(attacker, victim))
+				local now = os.clock()
+				local xp = MasteryRules.pvpXP(dealt, perDamage, pvpLedger.earned(attacker.UserId, victim.UserId, now))
 				if xp > 0 then
-					notePvPEarned(attacker, victim, xp)
+					pvpLedger.add(attacker.UserId, victim.UserId, xp, now)
 					PlayerStats.AddMasteryXP(attacker, options.skillSet, xp)
 				end
 			end

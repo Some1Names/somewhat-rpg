@@ -42,6 +42,66 @@ function MasteryRules.dummyXP(damage, perDamage, mastery)
 	return amountOf(damage) * perDamage
 end
 
+-- A ledger of the PvP mastery XP each player has earned from damaging each
+-- other player in the last PvPWindow seconds. Keyed by UserId, so a victim
+-- who leaves and rejoins doesn't clear what their attacker has earned from
+-- them. `earned(attackerId, victimId, now)` is the total still in the window;
+-- `add(attackerId, victimId, xp, now)` records some. `now` is any clock in
+-- seconds (os.clock()).
+function MasteryRules.newLedger()
+	local byAttacker = {} -- attackerId -> victimId -> { list = { { at, xp } }, total }
+	local ledger = {}
+
+	-- drops what's older than the window; returns what's left
+	local function trimmed(entry, now)
+		local list = entry.list
+		local cutoff = now - MasteryRules.PvPWindow
+		local drop = 0
+		while drop < #list and list[drop + 1].at < cutoff do
+			entry.total -= list[drop + 1].xp
+			drop += 1
+		end
+		if drop > 0 then
+			local kept = {}
+			for i = drop + 1, #list do
+				kept[#kept + 1] = list[i]
+			end
+			entry.list = kept
+		end
+		if #entry.list == 0 then
+			entry.total = 0
+		end
+		return entry
+	end
+
+	function ledger.earned(attackerId, victimId, now)
+		local victims = byAttacker[attackerId]
+		local entry = victims and victims[victimId]
+		if not entry then
+			return 0
+		end
+		return math.max(trimmed(entry, now).total, 0)
+	end
+
+	function ledger.add(attackerId, victimId, xp, now)
+		local victims = byAttacker[attackerId]
+		if not victims then
+			victims = {}
+			byAttacker[attackerId] = victims
+		end
+		local entry = victims[victimId]
+		if not entry then
+			entry = { list = {}, total = 0 }
+			victims[victimId] = entry
+		end
+		trimmed(entry, now)
+		table.insert(entry.list, { at = now, xp = xp })
+		entry.total += xp
+	end
+
+	return ledger
+end
+
 -- A set's level and the XP into it after `amount` more XP. `costOf(level)` is
 -- the XP to go from that level to the next. Past `maxLevel`, XP is banked up
 -- to one level's worth. With `capLevel`, nothing is gained at or above it, and

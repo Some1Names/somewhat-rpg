@@ -13,6 +13,8 @@ per point of damage to an NPC. You can watch a set's mastery in the Inventory (B
       minutes, then nothing until old gains age out of the window.
 - [ ] Burnt / Bleeding ticks on a player count like any other damage.
 - [ ] Hitting yourself (or a hit with no set, bare hands) earns nothing.
+- [ ] **Rejoining doesn't reset it:** have the victim leave and rejoin (same account) during the 10 minutes: the
+      500 cap and the 5-minute repeat-kill block still hold (they're kept by UserId).
 - [ ] **Repeat kill:** kill the same player and keep hitting them after they respawn: for the next 5
       minutes you earn no mastery from them. They can still earn from you (only the killer is
       blocked).

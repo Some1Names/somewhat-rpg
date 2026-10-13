@@ -37,6 +37,29 @@ check("dummy past the cap", MasteryRules.dummyXP(100, 0.25, 40) == 0)
 check("dummy counts the damage, however big", MasteryRules.dummyXP(1e9, 0.25, 1) == 2.5e8)
 check("dummy ignores a NaN hit", MasteryRules.dummyXP(0 / 0, 0.25, 1) == 0)
 
+-- the ledger of PvP mastery earned from each victim, by UserId (so a victim
+-- leaving and rejoining doesn't clear it)
+local ledger = MasteryRules.newLedger()
+check("ledger starts empty", ledger.earned(1, 2, 0) == 0)
+ledger.add(1, 2, 100, 0)
+ledger.add(1, 2, 50.5, 30)
+check("ledger adds up what's earned in the window", ledger.earned(1, 2, 60) == 150.5)
+check("ledger is per victim", ledger.earned(1, 3, 60) == 0)
+check("ledger is per attacker", ledger.earned(2, 1, 60) == 0)
+check("ledger keeps an entry until the window passes", ledger.earned(1, 2, 599) == 150.5)
+check("ledger drops the oldest first", ledger.earned(1, 2, 601) == 50.5)
+check("ledger empties once everything is old", ledger.earned(1, 2, 700) == 0)
+ledger.add(5, 6, 499, 0)
+check("a victim who rejoins is the same UserId: the cap still holds", MasteryRules.pvpXP(100, 0.25, ledger.earned(5, 6, 10)) == 1)
+ledger.add(5, 6, 1, 10)
+check("at the cap there is nothing more", MasteryRules.pvpXP(100, 0.25, ledger.earned(5, 6, 20)) == 0)
+check("the cap is freed when the window passes", MasteryRules.pvpXP(100, 0.25, ledger.earned(5, 6, 700)) == 12.5)
+local many = MasteryRules.newLedger()
+for i = 1, 5000 do
+	many.add(1, 2, 0.125, i * 0.01)
+end
+check("lots of small hits add up", math.abs(many.earned(1, 2, 51) - 625) < 1e-6)
+
 -- XP into levels, with a cost per level like SkillSetConfig.MasteryToLevelUp
 local function cost(level)
 	return 40 + 20 * (level - 1)
