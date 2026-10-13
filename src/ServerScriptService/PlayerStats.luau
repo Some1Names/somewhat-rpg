@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -282,26 +283,21 @@ function PlayerStats.BeforeLeave(callback)
 	table.insert(leaveCallbacks, callback)
 end
 
--- Skill-set mastery, earned by dealing damage with the set. Like levels, XP
--- past the top mastery is banked up to one level's worth.
-function PlayerStats.AddMasteryXP(player, setName, amount)
+-- Skill-set mastery, earned by dealing damage with the set (and the other
+-- sources in MasteryRules). Like levels, XP past the top mastery is banked up
+-- to one level's worth. With `capLevel` (training dummies), nothing is gained
+-- at or above that level and reaching it leaves no XP.
+function PlayerStats.AddMasteryXP(player, setName, amount, capLevel)
 	local levelKey = SkillSetConfig.MasteryAttribute(setName)
 	local xpKey = SkillSetConfig.MasteryXPAttribute(setName)
 	local level = player:GetAttribute(levelKey)
 	local xp = player:GetAttribute(xpKey)
 	-- kept fractional: small hits earn a fraction of a point
-	if not level or not xp or amount <= 0 then
+	if not level or not xp or amount ~= amount or amount <= 0 then
 		return
 	end
-	xp += amount
 	local startLevel = level
-	while level < SkillSetConfig.MaxMastery and xp >= SkillSetConfig.MasteryToLevelUp(level) do
-		xp -= SkillSetConfig.MasteryToLevelUp(level)
-		level += 1
-	end
-	if level >= SkillSetConfig.MaxMastery then
-		xp = math.min(xp, SkillSetConfig.MasteryToLevelUp(level))
-	end
+	level, xp = MasteryRules.addXP(level, xp, amount, capLevel, SkillSetConfig.MaxMastery, SkillSetConfig.MasteryToLevelUp)
 	player:SetAttribute(xpKey, xp)
 	if level > startLevel then
 		player:SetAttribute(levelKey, level)
