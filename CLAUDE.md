@@ -46,7 +46,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 - **Config modules** (`src/ReplicatedStorage`): `SkillSetConfig` (every skill set: tier, keys,
   cooldowns, aim specs, `handler` names, passives, flight, forms), `StatConfig` (levels, stats, HP
   per Vitality, enemy scaling), `PunchConfig` (melee weapons/combos), `ShopConfig`,
-  `StatusConfig` (Burnt/Bleeding/Poisoned/Weakened), `VFX` (client effects toolkit).
+  `StatusConfig` (Burnt/Bleeding/Poisoned/Weakened), `QuestConfig` (bounties, mastery challenges,
+  their saved text), `GuardConfig` (block and posture numbers), `VFX` (client effects toolkit).
 - **Skills**: each skill's server logic is a ModuleScript in `ServerScriptService/Skills` with
   `Cast(player, character, aim)` (and optional `Recast`), named by `handler` in SkillSetConfig.
   `SkillSetServer` validates casts (mastery, cooldowns via `SkillCooldowns`, `overchargedOnly`,
@@ -58,11 +59,19 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   in Studio; attributes EmitCount/EmitDuration/Tint on their emitters drive them).
 - **Combat systems**: `Damage` (stat scaling, kill credit, `LastAttacker`/`LastHit`, `OnDealt`),
   `CrowdControl` (PvP hold protection and immunity; ask `CanControl` before moving or stunning a
-  player), `StatusEffects`, `Passives`, `Overcharge`, `Projectiles`, `Sunmark`, `Ragdoll`.
+  player), `Guard` (block and posture: every hit on a player goes through `Guard.Resolve`; tag a
+  damage call's `options.guard`), `ActionLock` (can't act: rewinding, blocking, stunned),
+  `StatusEffects`, `Passives`, `Overcharge`, `Projectiles`, `Sunmark`, `Ragdoll`.
 - **Player data**: `PlayerStats` (attributes, DataStore save/load; Studio can't reach DataStores),
   `Loadout` (owned/equipped sets), `ShopServer`, `KillFeed`.
+- **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
+  attribute; enemies carry an `EnemyType`), and per-set mastery challenges saved in the `Challenges`
+  text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so
+  hits and kills know their move; moves report other things with `Quests.Report(player, set,
+  event, amount)`. New givers/quests/challenges are data in `QuestConfig`.
 - **Client UI**: `SkillBar`, `Inventory`, `StatsMenu`, `AdminPanel`, `ShopMenu`, `StatusHUD`,
-  `OverheadHealth`, `Hotbar`, `KillFeed`.
+  `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker, popups),
+  `Quests` (the J menu), `Block` (E).
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
   orange #FF9A3C / cyan #3CE0E6, Luminance passive, flight, Prism Form), Revolver (B weapon).
 
