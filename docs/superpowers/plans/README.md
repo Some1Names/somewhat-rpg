@@ -19,13 +19,15 @@ otherwise.
 | [Getting powers](2026-10-09-power-acquisition.md) | One saved power + 2 storage slots + lifetime Robux powers; new powers come as briefcases from the Power Dealer (S ¥500,000), map drops and a ¥25,000 gacha; selling; death drops; no starter power. Spec: `specs/2026-10-09-power-acquisition-design.md`. | Cloud for tasks 1–6, then Studio, a live server and **you** for task 7 (Robux products, spawn points, briefcase model) | `Run docs/superpowers/plans/2026-10-09-power-acquisition.md with superpowers:executing-plans, tasks 1–6. Read the spec first.` Then, in Studio: `Run task 7 of docs/superpowers/plans/2026-10-09-power-acquisition.md with me.` |
 | [Swimmable water parts](2026-10-10-swimmable-water.md) | The map's water parts (kept as parts) become swimmable: float at the surface, swim where the camera points, Space to rise and climb out, swim animation. Parts tagged `Water`. | Cloud for tasks 1–3, then Studio for task 4 (tag the parts, tune the feel) | `Run docs/superpowers/plans/2026-10-10-swimmable-water.md with superpowers:executing-plans, tasks 1–3.` Then, in Studio: `Run task 4 of docs/superpowers/plans/2026-10-10-swimmable-water.md with me.` |
 | [Photoshop revisual](2026-10-09-photoshop-revisual.md) | Photoshop's code-built looks replaced by imported VFX packs, one move at a time. You approve every pack before it's imported. | Studio | `Run docs/superpowers/plans/2026-10-09-photoshop-revisual.md with superpowers:executing-plans. Do one move per task, and stop for my OK on the packs and on the screenshots.` |
-| Studio sync | Brings everything pushed since the last sync into Studio. Nothing is waiting right now (last sync 2026-10-14: Quests). | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
+| Studio sync | Brings everything pushed since the last sync into Studio. Nothing is waiting right now (last sync 2026-10-14: Mastery sources). | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
 
 ## Done
 
-- [More ways to earn mastery](2026-10-09-mastery-sources.md): code built (PvP half rate with a cap, a kill
-  bonus, training dummies to mastery 10). Needs the Studio sync, the `TrainingDummy` tag on the training
-  dummies, and a playtest with `specs/2026-10-09-mastery-sources-checklist.md` (two players for PvP).
+- [More ways to earn mastery](2026-10-09-mastery-sources.md): built and in Studio (2026-10-14): PvP at half rate with a
+  cap, a kill bonus, training dummies to mastery 10 (the Dummy, both Strong Dummies and the Boss Dummy are
+  tagged `TrainingDummy`). Checked solo: dummy rate, infinite health, the cap at 10, the NPC kill bonus.
+  Left: PvP and the kill bonus on players, which need two players
+  (`specs/2026-10-09-mastery-sources-checklist.md`).
 - [Quests](2026-10-09-quests.md): built and in Studio (2026-10-14): three Bounty Hunters on the
   `QuestSpawn` parts (Training, Frontier, Outpost), `EnemyType` on the enemies. The quest flow was
   checked in a solo playtest (accept, 3 kills, payout, a challenge). Left: the UI by eye and the rest

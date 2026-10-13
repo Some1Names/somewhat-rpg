@@ -55,11 +55,10 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **Death stakes and the Headhunter** (dropped yen, the kill leader mark): **built and in Studio**
   (checked solo); the 2–3 player half of `docs/superpowers/specs/2026-10-09-death-stakes-checklist.md`
   needs a live server.
-- **More ways to earn mastery** (PvP, kill bonus, training dummies to 10): **code built**, spec
+- **More ways to earn mastery** (PvP, kill bonus, training dummies to 10): **built and in Studio**, spec
   `docs/superpowers/specs/2026-10-09-mastery-sources-design.md`, plan
   `docs/superpowers/plans/2026-10-09-mastery-sources.md`, checklist
-  `docs/superpowers/specs/2026-10-09-mastery-sources-checklist.md`. Needs the `TrainingDummy` tag on the
-  training dummies in Studio. Mastery challenges are the quest system's (built); boss mastery belongs to
+  `docs/superpowers/specs/2026-10-09-mastery-sources-checklist.md`. The training dummies carry the `TrainingDummy` tag. Mastery challenges are the quest system's (built); boss mastery belongs to
   the boss and enemy rework.
 - **Mastery unlocks per power** (own skill levels; passives, G, Lightstep, the Gallery by mastery):
   **designed**, spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan

@@ -1478,5 +1478,17 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/MasteryRules.luau",
+  "names": [
+   "ReplicatedStorage",
+   "MasteryRules"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
  }
 ]
