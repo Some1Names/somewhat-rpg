@@ -23,15 +23,15 @@ local xp0, yen0 = QuestConfig.reward(3, 0)
 check("level 0 reward", xp0 == math.floor(1.5 * 3 * StatConfig.EnemyXP(0)) and yen0 == math.floor(1.5 * 3 * StatConfig.EnemyYen(0)))
 
 -- a taken bounty's id, "giver/quest", as the player attribute holds it
-local giverId, quest = QuestConfig.parseQuestId("Sample/dummies")
-check("parse a bounty id", giverId == "Sample" and quest ~= nil and quest.id == "dummies" and quest.enemyType == "Dummy")
-check("parse bad bounty ids", QuestConfig.parseQuestId("Sample/nope") == nil and QuestConfig.parseQuestId("Nobody/x") == nil
+local giverId, quest = QuestConfig.parseQuestId("Training/dummies")
+check("parse a bounty id", giverId == "Training" and quest ~= nil and quest.id == "dummies" and quest.enemyType == "Dummy")
+check("parse bad bounty ids", QuestConfig.parseQuestId("Training/nope") == nil and QuestConfig.parseQuestId("Nobody/x") == nil
 	and QuestConfig.parseQuestId("nonsense") == nil and QuestConfig.parseQuestId(nil) == nil and QuestConfig.parseQuestId(42) == nil)
 
 -- what a bounty calls its enemies: its own plural, else the type with an s
 check("plural field wins", QuestConfig.plural({ enemyType = "Henchman", plural = "Henchmen" }) == "Henchmen")
 check("plural defaults to adding s", QuestConfig.plural({ enemyType = "Worker" }) == "Workers")
-check("the sample bounty says Dummies", QuestConfig.plural(QuestConfig.Givers.Sample.quests[1]) == "Dummies")
+check("the first bounty says Dummies", QuestConfig.plural(QuestConfig.Givers.Training.quests[1]) == "Dummies")
 
 -- the saved text
 check("encode empty", QuestConfig.encode({}) == "")
@@ -116,7 +116,19 @@ check("every challenge has an id, kind, count and reward", (function()
 end)())
 check("the spec's challenge counts", #QuestConfig.Challenges.Mandela == 5 and #QuestConfig.Challenges.IridescentRequiem == 5
 	and #QuestConfig.Challenges.Photoshop == 5 and #QuestConfig.Challenges.Revolver == 2)
-check("the sample giver exists", QuestConfig.Givers.Sample ~= nil and QuestConfig.Givers.Sample.quests[1].enemyType == "Dummy")
+check("the three givers exist", QuestConfig.Givers.Training ~= nil and QuestConfig.Givers.Frontier ~= nil and QuestConfig.Givers.Outpost ~= nil)
+check("every bounty has what the panel needs", (function()
+	local seen = {}
+	for _, giver in pairs(QuestConfig.Givers) do
+		for _, quest in ipairs(giver.quests) do
+			if seen[quest.id] or not quest.title or not quest.level or not quest.enemyType or not quest.count or quest.count < 1 then
+				return false
+			end
+			seen[quest.id] = true
+		end
+	end
+	return true
+end)())
 check("constants", QuestConfig.RewardShare == 1.5 and QuestConfig.GiverTag == "QuestGiver" and QuestConfig.MaxSaveLength == 1000)
 
 if failures > 0 then

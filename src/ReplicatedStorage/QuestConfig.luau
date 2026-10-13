@@ -24,12 +24,31 @@ QuestConfig.GiverTag = "QuestGiver"
 QuestConfig.MaxSaveLength = 1000 -- the saved Challenges text (PlayerStats)
 QuestConfig.GiverRange = 15 -- studs from the giver's model you must be within to accept
 
--- one test giver; the real ones are written in Studio with the owner
+-- The Bounty Hunters on the map's QuestSpawn parts. A bounty's level is the
+-- level you need and what its reward is worked out from; enemyType is the
+-- EnemyType attribute set on the enemy models in Studio (Dummy, StrongDummy,
+-- Worker, Henchman, Bodyguard, EvilBoss).
 QuestConfig.Givers = {
-	Sample = {
+	-- near the start: the training dummies
+	Training = {
 		name = "Bounty Hunter",
 		quests = {
 			{ id = "dummies", title = "Dummy Practice", level = 0, enemyType = "Dummy", plural = "Dummies", count = 3 },
+			{ id = "strong", title = "Tougher Dummies", level = 5, enemyType = "StrongDummy", plural = "Strong Dummies", count = 3 },
+		},
+	},
+	Frontier = {
+		name = "Bounty Hunter",
+		quests = {
+			{ id = "workers", title = "Clear the Workers", level = 5, enemyType = "Worker", count = 6 },
+			{ id = "henchmen", title = "Henchmen Trouble", level = 10, enemyType = "Henchman", plural = "Henchmen", count = 4 },
+		},
+	},
+	Outpost = {
+		name = "Bounty Hunter",
+		quests = {
+			{ id = "bodyguards", title = "Break the Guard", level = 15, enemyType = "Bodyguard", count = 3 },
+			{ id = "evilboss", title = "The Evil Boss", level = 40, enemyType = "EvilBoss", plural = "Evil Bosses", count = 1 },
 		},
 	},
 }
