@@ -4,15 +4,20 @@
 -- remembers which player hit each target last, gives that player XP and yen
 -- when an NPC dies, tops up their overcharge on any kill (players too), and
 -- turns damage dealt with a skill set into its mastery
--- XP and overcharge stacks. Models with the Invulnerable attribute (like the
+-- XP (MasteryRules: NPCs, players at half rate with a cap per victim, training
+-- dummies up to mastery 10, and a bonus for finishing kills) and overcharge
+-- stacks. Models with the Invulnerable attribute (like the
 -- shopkeeper) can't be hurt, and a hit on a player goes past their set's
 -- passive first (Passives), after a block has cut it (Guard). Also keeps the
 -- combo-link marks (Expose).
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local HeadhunterConfig = require(ReplicatedStorage:WaitForChild("HeadhunterConfig"))
+local KillRecords = require(script.Parent:WaitForChild("KillRecords"))
+local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Passives = require(script.Parent:WaitForChild("Passives"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
@@ -24,6 +29,42 @@ local Damage = {}
 
 local lastAttacker = setmetatable({}, { __mode = "k" })
 local lastHit = setmetatable({}, { __mode = "k" }) -- humanoid -> { at, skillSet, skill }
+
+-- mastery XP a player earned from damaging each other player: attacker ->
+-- victim -> { { at = os.clock(), xp }, ... }, trimmed to MasteryRules.PvPWindow
+local pvpEarned = setmetatable({}, { __mode = "k" })
+
+local function pvpEarnedFrom(attacker, victim)
+	local victims = pvpEarned[attacker]
+	local list = victims and victims[victim]
+	if not list then
+		return 0
+	end
+	local cutoff = os.clock() - MasteryRules.PvPWindow
+	local kept, total = {}, 0
+	for _, entry in ipairs(list) do
+		if entry.at >= cutoff then
+			table.insert(kept, entry)
+			total += entry.xp
+		end
+	end
+	victims[victim] = kept
+	return total
+end
+
+local function notePvPEarned(attacker, victim, xp)
+	local victims = pvpEarned[attacker]
+	if not victims then
+		victims = setmetatable({}, { __mode = "k" })
+		pvpEarned[attacker] = victims
+	end
+	local list = victims[victim]
+	if not list then
+		list = {}
+		victims[victim] = list
+	end
+	table.insert(list, { at = os.clock(), xp = xp })
+end
 
 -- Functions told about every kill someone gets credit for, as (killer, the
 -- victim's character, that last hit (Damage.LastHit), whether the victim was
@@ -59,8 +100,15 @@ local function payOutOnDeath(humanoid)
 		if not Players:GetPlayerFromCharacter(character) then
 			-- its own reward if it has one, else what its level pays
 			local level = character:GetAttribute("Level")
-			PlayerStats.AddXP(killer, character:GetAttribute("XPReward") or (level and StatConfig.EnemyXP(level)) or StatConfig.KillXP)
+			local rewardXP = character:GetAttribute("XPReward") or (level and StatConfig.EnemyXP(level)) or StatConfig.KillXP
+			PlayerStats.AddXP(killer, rewardXP)
 			PlayerStats.AddYen(killer, character:GetAttribute("YenReward") or (level and StatConfig.EnemyYen(level)) or StatConfig.KillYen)
+			-- finishing it is worth mastery to the set of the killing hit (a training
+			-- dummy only up to mastery DummyCap); none for a bare-handed kill
+			if hit and hit.skillSet then
+				local cap = CollectionService:HasTag(character, MasteryRules.DummyTag) and MasteryRules.DummyCap or nil
+				PlayerStats.AddMasteryXP(killer, hit.skillSet, MasteryRules.killXP(rewardXP), cap)
+			end
 		end
 	end)
 end
@@ -172,11 +220,30 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	local healthBefore = humanoid.Health
 	humanoid:TakeDamage(amount)
 	local dealt = healthBefore - humanoid.Health
+	-- an infinite-health dummy takes the hit without losing any health (inf - inf)
+	if dealt ~= dealt then
+		dealt = amount
+	end
 	if attacker and options.skillSet then
 		Overcharge.AddDamage(attacker, options.skillSet, dealt, options.melee)
-		-- mastery comes from NPCs only, like kill XP
-		if not Players:GetPlayerFromCharacter(humanoid.Parent) then
-			PlayerStats.AddMasteryXP(attacker, options.skillSet, dealt * SkillSetConfig.MasteryXPPerDamage)
+		local perDamage = SkillSetConfig.MasteryXPPerDamage
+		local victim = Players:GetPlayerFromCharacter(humanoid.Parent)
+		if victim then
+			-- a player: half the rate, at most PvPCap from one victim per PvPWindow, and
+			-- nothing from someone this attacker killed within the repeat window
+			if victim ~= attacker and not KillRecords.IsRepeat(attacker, victim) then
+				local xp = MasteryRules.pvpXP(dealt, perDamage, pvpEarnedFrom(attacker, victim))
+				if xp > 0 then
+					notePvPEarned(attacker, victim, xp)
+					PlayerStats.AddMasteryXP(attacker, options.skillSet, xp)
+				end
+			end
+		elseif CollectionService:HasTag(humanoid.Parent, MasteryRules.DummyTag) then
+			-- a training dummy teaches the basics: the hit's damage, not the health it took
+			local mastery = attacker:GetAttribute(SkillSetConfig.MasteryAttribute(options.skillSet)) or 1
+			PlayerStats.AddMasteryXP(attacker, options.skillSet, MasteryRules.dummyXP(amount, perDamage, mastery), MasteryRules.DummyCap)
+		else
+			PlayerStats.AddMasteryXP(attacker, options.skillSet, dealt * perDamage)
 		end
 	end
 	if dealt > 0 then

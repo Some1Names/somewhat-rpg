@@ -29,6 +29,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local HeadhunterConfig = require(ReplicatedStorage:WaitForChild("HeadhunterConfig"))
 local KillRecords = require(ServerScriptService:WaitForChild("KillRecords"))
+local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local PlayerStats = require(ServerScriptService:WaitForChild("PlayerStats"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 
@@ -95,6 +96,14 @@ local function onDeath(victim, humanoid)
 		KillRecords.Record(killer, victim)
 	end
 	local paid = killer ~= nil and not repeatKill
+	-- a paid kill of a player is also worth mastery to the set of the killing hit (the
+	-- victim's level decides how much); none for a bare-handed kill or a dummy
+	if paid and victim then
+		local hit = Damage.LastHit(humanoid)
+		if hit and hit.skillSet then
+			PlayerStats.AddMasteryXP(killer, hit.skillSet, MasteryRules.killXP(StatConfig.EnemyXP(victim:GetAttribute("Level") or 0)))
+		end
+	end
 	local wasHeadhunter = isHeadhunter(victim)
 
 	local yen = 0
