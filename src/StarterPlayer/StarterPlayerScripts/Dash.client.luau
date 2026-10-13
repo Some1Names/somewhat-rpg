@@ -18,6 +18,8 @@
 -- either one goes through the glass wall of Mandela's ultimate (tagged
 -- RewriteWall): a normal dash switches its collision off for us while it
 -- lasts, bursting the glass where we cross; Lightstep flashes past it.
+-- A dash drops a block you're holding (Guard), and a guard break's stun
+-- rules it out.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -31,6 +33,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local VFX = require(ReplicatedStorage:WaitForChild("VFX"))
 
+local blockRemote = ReplicatedStorage:WaitForChild("Block")
 local dashEffect = ReplicatedStorage:WaitForChild("DashEffect")
 local localSkillEffect = ReplicatedStorage:WaitForChild("LocalSkillEffect")
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
@@ -361,6 +364,12 @@ local function dash()
 	local root = humanoid and humanoid.RootPart
 	if not root or humanoid.Health <= 0 or humanoid.Sit then
 		return
+	end
+	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() then
+		return
+	end
+	if character:GetAttribute("Blocking") == true then
+		blockRemote:FireServer(false)
 	end
 	local spec, setName = setDash(character)
 	local flying = character:GetAttribute("Flying") == true

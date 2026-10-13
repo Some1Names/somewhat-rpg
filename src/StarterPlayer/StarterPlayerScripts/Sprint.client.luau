@@ -1,11 +1,13 @@
 -- Hold Left Shift to sprint while moving; sprinting drains stamina and swaps
--- the normal run for the SprintRun animation.
+-- the normal run for the SprintRun animation. Blocking (Guard) halves the walk
+-- and rules out sprinting; a guard break's stun holds you still.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local UserInputService = game:GetService("UserInputService")
 
+local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local sprintAnimation = ReplicatedStorage:WaitForChild("SprintAnimation")
 
@@ -58,8 +60,16 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	-- only drains while actually moving
 	local moving = humanoid.MoveDirection.Magnitude > 0.1
-	local sprinting = holding and moving and Stamina.Drain(DRAIN_PER_SECOND * dt)
-	humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
+	local stunned = (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
+	local blocking = character:GetAttribute("Blocking") == true
+	local sprinting = holding and moving and not stunned and not blocking and Stamina.Drain(DRAIN_PER_SECOND * dt)
+	if stunned then
+		humanoid.WalkSpeed = 0
+	elseif blocking then
+		humanoid.WalkSpeed = WALK_SPEED * GuardConfig.BlockWalkShare
+	else
+		humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
+	end
 
 	-- the sprint animation only shows while actually running fast on the ground
 	local track = sprintTrack(humanoid)
