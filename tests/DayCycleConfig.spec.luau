@@ -50,6 +50,11 @@ check("a string is refused", DayCycleConfig.CleanHour("7") == nil)
 check("nil is refused", DayCycleConfig.CleanHour(nil) == nil)
 check("a table is refused", DayCycleConfig.CleanHour({}) == nil)
 check("a boolean is refused", DayCycleConfig.CleanHour(true) == nil)
+check("1e34 is refused", DayCycleConfig.CleanHour(1e34) == nil)
+check("9e24 is refused", DayCycleConfig.CleanHour(9e24) == nil)
+check("a million and one hours is refused", DayCycleConfig.CleanHour(1e6 + 1) == nil)
+check("a million hours is fine", DayCycleConfig.CleanHour(1e6) == 1e6 % 24)
+check("a tiny negative stays below 24", DayCycleConfig.CleanHour(-1e-20) < 24)
 
 -- the keyframes themselves
 local keyframes = DayCycleConfig.Keyframes
