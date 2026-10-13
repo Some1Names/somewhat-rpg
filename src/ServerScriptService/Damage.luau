@@ -6,10 +6,12 @@
 -- turns damage dealt with a skill set into its mastery
 -- XP and overcharge stacks. Models with the Invulnerable attribute (like the
 -- shopkeeper) can't be hurt, and a hit on a player goes past their set's
--- passive first (Passives). Also keeps the combo-link marks (Expose).
+-- passive first (Passives), after a block has cut it (Guard). Also keeps the
+-- combo-link marks (Expose).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Guard = require(script.Parent:WaitForChild("Guard"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Passives = require(script.Parent:WaitForChild("Passives"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
@@ -87,12 +89,21 @@ end
 -- options.skillSet: the skill set this attack belongs to, for mastery XP
 -- options.melee: a weapon hit, which builds overcharge more slowly than skills
 -- options.unerasable: no passive can erase it, like a Superliminal hit
--- options.dot: a status effect's damage over time tick (StatusEffects)
+-- options.dot: a status effect's damage over time tick (StatusEffects): never
+--   blocked, and not combat
+-- options.guard: how a block treats it, "melee", "ranged", "skill" or
+--   "unblockable" (ultimates, grabs); default "melee" with options.melee, else "skill"
 -- Returns the health it actually took.
 function Damage.Deal(attacker, humanoid, baseAmount, options)
 	options = options or {}
 	if humanoid.Health <= 0 or (humanoid.Parent and humanoid.Parent:GetAttribute("Invulnerable")) then
 		return 0
+	end
+	-- (a status effect's tick is neither combat nor blockable)
+	local targetPlayer = Players:GetPlayerFromCharacter(humanoid.Parent)
+	if not options.dot then
+		Guard.MarkCombat(attacker and attacker.Character)
+		Guard.MarkCombat(targetPlayer and humanoid.Parent)
 	end
 	local amount = baseAmount
 	if attacker and options.stat then
@@ -106,9 +117,14 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	if attacker and attacker.Character then
 		amount *= StatusConfig.OutgoingMultiplier(attacker.Character)
 	end
-	-- a player's passive may erase the hit
-	local targetPlayer = Players:GetPlayerFromCharacter(humanoid.Parent)
 	if targetPlayer then
+		-- a block cuts it first
+		if not options.dot then
+			local kind = options.guard or (options.melee and "melee" or "skill")
+			local source = attacker and attacker.Character and attacker.Character:FindFirstChild("HumanoidRootPart")
+			amount = Guard.Resolve(humanoid.Parent, amount, kind, source and source.Position, attacker and attacker.Character)
+		end
+		-- a player's passive may erase the hit
 		amount = Passives.Absorb(targetPlayer, amount, options.melee == true, attacker ~= nil, options.stat == "Superliminal" or options.unerasable == true)
 		if amount <= 0 then
 			return 0
