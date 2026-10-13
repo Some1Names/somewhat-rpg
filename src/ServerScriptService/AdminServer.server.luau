@@ -1,12 +1,13 @@
 -- Server side of the admin panel: works out who is an admin and carries out
 -- their requests (XP, level, points, stats, mastery, cooldowns, heal,
--- respawn, status effects) on any player. Admins can also save their own key binds for
+-- respawn, status effects) on any player, and the world's time of day. Admins can also save their own key binds for
 -- panel actions (the AdminKeybinds attribute, saved by PlayerStats).
 -- Every request is checked here, so the panel itself grants nothing.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local DayClock = require(script.Parent:WaitForChild("DayClock"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Loadout = require(script.Parent:WaitForChild("Loadout"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
@@ -15,6 +16,7 @@ local StatusEffects = require(script.Parent:WaitForChild("StatusEffects"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
+local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
 local adminAction = ReplicatedStorage:WaitForChild("AdminAction")
 
 -- admins besides the game's owner, by UserId
@@ -256,6 +258,29 @@ function actions.ClearStatus(target)
 		return false, "Nobody to clear"
 	end
 	return true, "Cleared status effects on " .. table.concat(cleared, " and ")
+end
+
+local function clockText(hour)
+	return string.format("%02d:%02d", math.floor(hour), math.floor((hour % 1) * 60))
+end
+
+-- the time is the world's: the panel's target player doesn't matter
+function actions.SetTime(_, hour)
+	hour = DayCycleConfig.CleanHour(hour)
+	if not hour then
+		return false, "Enter an hour from 0 to 24"
+	end
+	DayClock.SetHour(hour)
+	return true, "Set the time to " .. clockText(hour)
+end
+
+function actions.FreezeTime()
+	local frozen = not DayClock.IsFrozen()
+	DayClock.SetFrozen(frozen)
+	if frozen then
+		return true, "Time frozen at " .. clockText(DayClock.Hour())
+	end
+	return true, "Time is running"
 end
 
 -- binds as "Action=KeyName" pairs separated by commas, e.g. "ResetCooldowns=H"
