@@ -126,6 +126,34 @@ local function setAura(character, setName, on)
 	light.Parent = aura
 end
 
+-- The set's own aura (ServerStorage.SkillSets.<Set>.Aura: a part of particles,
+-- beams and a light), welded to the character while its tool is held, seen by
+-- everyone. It goes when the tool is put away or another set is held.
+local POWER_AURA_NAME = "PowerAura"
+local function updatePowerAura(character, setName)
+	local worn = character:FindFirstChild(POWER_AURA_NAME)
+	local set = setName and assets:FindFirstChild(setName)
+	local template = set and set:FindFirstChild("Aura")
+	if worn and (not template or worn:GetAttribute("SkillSet") ~= setName) then
+		worn:Destroy()
+		worn = nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not template or not root or worn then
+		return
+	end
+	local aura = template:Clone()
+	aura.Name = POWER_AURA_NAME
+	aura:SetAttribute("SkillSet", setName)
+	aura.CFrame = root.CFrame
+	aura.Parent = character
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0 = root
+	weld.Part1 = aura
+	weld.Parent = aura
+	aura.Anchored = false
+end
+
 -- Shifts a worn piece marked TintWhenOvercharged (like the axe) to the
 -- overcharge colour, or back to how it came, emitters and all.
 local TINT_AMOUNT = 0.85
@@ -152,6 +180,7 @@ end
 local function updateWearables(character)
 	local player = Players:GetPlayerFromCharacter(character)
 	local _, setName = SkillSetConfig.Equipped(character)
+	updatePowerAura(character, setName)
 	local folder = character:FindFirstChild(WEARABLES_FOLDER)
 	if folder and folder:GetAttribute("SkillSet") ~= setName then
 		setAura(character, folder:GetAttribute("SkillSet"), false)
