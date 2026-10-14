@@ -66,7 +66,10 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   damage call's `options.guard`), `ActionLock` (can't act: rewinding, blocking, stunned),
   `StatusEffects`, `Passives`, `Overcharge`, `Projectiles`, `Sunmark`, `Ragdoll`.
 - **Player data**: `PlayerStats` (attributes, DataStore save/load; Studio can't reach DataStores),
-  `Loadout` (owned/equipped sets), `ShopServer`, `KillFeed`.
+  `Powers` (the one held power, 2 storage slots, Robux lifetime powers, briefcase Tools, death drops; saved
+  as `CurrentPower`/`PowerStorage`/`LifetimePowers`; numbers and pure rules in `PowerConfig`, Lune-tested;
+  `PowerSources` has the gacha, map drops and Robux receipts; Developer Products are the owner's to create),
+  `Loadout` (weapons, and who owns what), `ShopServer`, `KillFeed`.
 - **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
   attribute; enemies carry an `EnemyType`), and per-set mastery challenges saved in the `Challenges`
   text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so

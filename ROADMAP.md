@@ -3,7 +3,7 @@
 What's left, as of 2026-10-14. Plans ready to run are listed in `docs/superpowers/plans/README.md`. **Cloud** = code-only, a cloud session can do it.
 **Studio** = needs the local Studio connection (looking at effects, prefabs, uploads, playtests).
 
-## In progress: Iridescent Requiem revisual
+## Owner's VFX work: Iridescent Requiem revisual (and the Photoshop revisual)
 
 Done: X Prism Form, V Solar Lance, F Below the Stratus / Above the Cumulonimbus (with the new
 particle pack, `VFXPrefabs.Iridescent`). Left, one skill at a time, owner picks the look:
@@ -48,7 +48,7 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## Combat depth ("deeper than Blox Fruits, simpler than Deepwoken")
 
-- **Block and posture** on E (parry dropped for now): **built and in Studio** (synced 2026-10-13), spec
+- **Block and posture** on Alt (moved from E; parry dropped for now): **built and in Studio** (synced 2026-10-13), spec
   `docs/superpowers/specs/2026-10-09-block-parry-design.md`, plan `docs/superpowers/plans/2026-10-09-block-parry.md`.
   Waiting on a two-player playtest with
   `docs/superpowers/specs/2026-10-09-block-parry-checklist.md`. Later: a parry layer in `Guard.Resolve`.
@@ -72,12 +72,22 @@ and saved ownership + loadout (`Loadout` is session-only today).
   or weapon's own block (the `block` hook), NPCs that block. Other areas to deepen after it: builds
   (talents at level milestones), the world (quests, bosses).
 
+## Reforge and spawn
+
+- **Reforge** (smith NPC, level up to 10, reroll 2 modifier slots): **built and in Studio**, plan
+  `docs/superpowers/plans/2026-10-14-reforge.md`, checklist `docs/superpowers/specs/2026-10-14-reforge-checklist.md`.
+- **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **code in progress**
+  (`SpawnServer`, `SpawnNotice`, uncommitted); no plan or checklist yet.
+
 ## Getting powers
 
 - **Briefcases, storage, lifetime, drops, gacha, selling** (and saved powers, no starter power):
-  **designed**, spec `docs/superpowers/specs/2026-10-09-power-acquisition-design.md`, plan
-  `docs/superpowers/plans/2026-10-09-power-acquisition.md` (not built yet). Later: enemies dropping
-  briefcases, the stat rework, trading, storage upgrades.
+  **code built (tasks 1-6), not in Studio yet**, spec `docs/superpowers/specs/2026-10-09-power-acquisition-design.md`,
+  plan `docs/superpowers/plans/2026-10-09-power-acquisition.md`, checklist
+  `docs/superpowers/specs/2026-10-09-power-acquisition-checklist.md`. Left (task 7, Studio + you): the
+  `ServerStorage.Briefcase` tool, `BriefcaseSpawn` parts, the `PowerGacha` NPC and its roll panel (the
+  `RollGacha` remote is ready, no UI yet), Robux Developer Products in `PowerConfig.RobuxProducts`, the sync
+  and the playtest. Later: enemies dropping briefcases, the stat rework, trading, storage upgrades.
 
 ## World
 
@@ -93,7 +103,7 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## UI
 
-- **HUD layout pass** (top-right icon row, key hints, one menu at a time): **code built** (not in Studio yet: the Studio apply, screenshots at three sizes and icon images are task 6), spec
+- **HUD layout pass** (top-right icon row, key hints, one menu at a time): **built and in Studio** (synced 2026-10-14; left from task 6: screenshots at three sizes, icon images, the playtest), spec
   `docs/superpowers/specs/2026-10-09-hud-layout-design.md`, plan
   `docs/superpowers/plans/2026-10-09-hud-layout.md`, checklist
   `docs/superpowers/specs/2026-10-09-hud-layout-checklist.md`. The final visual design comes
