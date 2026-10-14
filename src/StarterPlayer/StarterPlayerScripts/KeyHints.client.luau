@@ -3,7 +3,8 @@
 -- (Keybinds, so a rebind updates it), and Dash the set's own dash name when
 -- the set in hand has one unlocked (Lightstep). RMB Aim shows only while
 -- holding a set with a ranged move. Space, Shift and Ctrl are fixed. The
--- Key hints setting (Preferences) turns the panel off. Touch-only devices
+-- Key hints setting (Preferences) turns the panel off. It hides while a menu
+-- is open (Menus), since the side menus cover its corner. Touch-only devices
 -- have no keys, so they don't get it.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,6 +13,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
@@ -113,10 +115,11 @@ local function hints()
 	return result
 end
 
+local menuOpen = false
 local shown -- the signature of the lines drawn, so they're rebuilt only when they change
 
 local function refresh()
-	local visible = Preferences.Get("KeyHints") and (UserInputService.KeyboardEnabled or not UserInputService.TouchEnabled)
+	local visible = Preferences.Get("KeyHints") and not menuOpen and (UserInputService.KeyboardEnabled or not UserInputService.TouchEnabled)
 	list.Visible = visible
 	if not visible then
 		return
@@ -141,6 +144,10 @@ local function refresh()
 	end
 end
 
+Menus.OnChange(function(openName)
+	menuOpen = openName ~= nil
+	refresh()
+end)
 Keybinds.Changed(refresh)
 Preferences.Changed(refresh)
 -- what's in hand changes with equipping, putting away and mastery: look now and then

@@ -23,8 +23,9 @@ local TOGGLE_KEY = Enum.KeyCode.M
 local AMOUNTS = { 1, 5, 10 } -- points added per click
 local PANEL_WIDTH = 300
 local PADDING = 14
+local PANEL_LEFT = 16 -- px from the left edge, where the panel sits
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
-local STAT_ROW_HEIGHT = 46
+local STAT_ROW_HEIGHT = 56
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
@@ -103,18 +104,13 @@ local function tabTitles(header, current)
 	end
 end
 
-local panel = make("ScrollingFrame", {
+local panel = make("Frame", {
 	Name = "Panel",
 	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, PANEL_LEFT, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollBarThickness = 4,
-	ScrollBarImageColor3 = MUTED,
-	ScrollingDirection = Enum.ScrollingDirection.Y,
-	BorderSizePixel = 0,
+	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
@@ -127,8 +123,7 @@ make("UIPadding", {
 	PaddingLeft = UDim.new(0, PADDING),
 	PaddingRight = UDim.new(0, PADDING),
 })
-make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
-Menus.Fit(panel)
+make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
 
 -- header: title, level and close button
 local header = section(1, 22)
@@ -271,12 +266,12 @@ for i, stat in ipairs(StatConfig.Stats) do
 		Position = UDim2.new(1, -42, 0, 0),
 		Size = UDim2.fromOffset(48, 18),
 	})
-	local effect = label(rowFrame, { TextSize = 12, Position = UDim2.fromOffset(0, 17), Size = UDim2.new(1, -42, 0, 14) })
+	local effect = label(rowFrame, { TextSize = 12, Position = UDim2.fromOffset(0, 21), Size = UDim2.new(1, -42, 0, 15) })
 	local upcoming = label(rowFrame, {
 		TextSize = 11,
 		TextColor3 = MUTED,
-		Position = UDim2.fromOffset(0, 32),
-		Size = UDim2.new(1, -42, 0, 13),
+		Position = UDim2.fromOffset(0, 38),
+		Size = UDim2.new(1, -42, 0, 14),
 	})
 	local plus = make("TextButton", {
 		Parent = rowFrame,
@@ -353,18 +348,13 @@ local INFO_BAR_HEIGHT = 22
 local INFO_AT_WIDTH = 70 -- the milestone column inside a bar
 local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 
-local infoPanel = make("ScrollingFrame", {
+local infoPanel = make("Frame", {
 	Name = "InfoPanel",
 	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, PANEL_LEFT, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollBarThickness = 4,
-	ScrollBarImageColor3 = MUTED,
-	ScrollingDirection = Enum.ScrollingDirection.Y,
-	BorderSizePixel = 0,
+	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
@@ -378,7 +368,6 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = infoPanel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-Menus.Fit(infoPanel)
 
 local infoHeader = section(1, 22)
 infoHeader.Parent = infoPanel

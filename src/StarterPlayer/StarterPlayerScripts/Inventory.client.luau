@@ -19,6 +19,7 @@ local player = Players.LocalPlayer
 
 local TOGGLE_KEY = Enum.KeyCode.B
 local PANEL_SIZE = Vector2.new(840, 460)
+local SCREEN_MARGIN = 16 -- the panel shrinks to keep this much screen round it
 local PADDING = 14
 local COLUMN_PADDING = 10
 local GAP = 12 -- between the columns
@@ -132,7 +133,13 @@ outline(panel, 0.6)
 padding(panel, PADDING)
 
 -- smaller screens get a smaller panel, so all three columns stay in view
-Menus.Place(panel, PANEL_SIZE)
+local panelScale = make("UIScale", { Parent = panel })
+local function rescale()
+	local viewport = workspace.CurrentCamera.ViewportSize
+	panelScale.Scale = math.min(1, (viewport.X - 2 * SCREEN_MARGIN) / PANEL_SIZE.X, (viewport.Y - 2 * SCREEN_MARGIN) / PANEL_SIZE.Y)
+end
+rescale()
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
 
 -- header: title and close button
 local header = make("Frame", { Parent = panel, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })

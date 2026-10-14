@@ -14,7 +14,6 @@ local Menus = {}
 
 local FIT_TOP = 12 -- px from the top of the screen below the top bar (the icon row is up in the bar)
 local FIT_BOTTOM = 272 -- the skill bar's top edge (116 px up, 96 px tall, its header)
-local FIT_MIN_SCALE = 0.4 -- Place never shrinks a panel below this
 local FIT_MIN_HEIGHT = 160 -- a panel never gets shorter than this, however short the screen
 
 local openName, openClose
@@ -103,25 +102,6 @@ function Menus.Fit(panel, rightEdge)
 		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)
 	end
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update)
-	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
-	update()
-end
-
--- Places a fixed-size menu panel (`natural` is its size in pixels) at the top
--- of the free space, above the skill bar, and shrinks it with a UIScale when
--- the screen is too small for it. Call once after making the panel; Inventory
--- and Quests use it.
-function Menus.Place(panel, natural)
-	local scale = Instance.new("UIScale")
-	scale.Parent = panel
-	local gui = panel:FindFirstAncestorOfClass("ScreenGui")
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	local function update()
-		local available = screenHeight(gui) - FIT_TOP - FIT_BOTTOM
-		local width = gui.AbsoluteSize.X > 0 and gui.AbsoluteSize.X or workspace.CurrentCamera.ViewportSize.X
-		scale.Scale = math.clamp(math.min((width - 2 * HudConfig.EdgeMargin) / natural.X, available / natural.Y), FIT_MIN_SCALE, 1)
-		panel.Position = UDim2.new(0.5, 0, 0, FIT_TOP + available / 2)
-	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
 	update()
 end
