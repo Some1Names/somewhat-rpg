@@ -246,8 +246,8 @@ local function refresh()
 end
 
 -- fills the reel with random tier cards (the result's among them, and more often than not a
--- better tier right before it: a near miss), then plays the spin: it speeds up, rushes past,
--- slows almost to a stop on the card before the result, holds, and creeps onto the result.
+-- better tier right before it: a near miss), then plays the spin: it speeds up, rushes past
+-- and slows to a stop on the result.
 -- The marker and the panel's outline take the colour of whichever card is under the marker.
 local function spin(setName)
 	local resultTier = SkillSetConfig.Sets[setName].tier
@@ -339,10 +339,9 @@ local function spin(setName)
 	end
 	strip.Position = UDim2.fromOffset(0, 0)
 	slide(positionFor(14), 1.0, Enum.EasingStyle.Quad, Enum.EasingDirection.In) -- picks up speed
-	slide(positionFor(RESULT_CELL - 1), 4.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out) -- rushes, then crawls
-	task.wait(0.8) -- holds on the card before the result
+	-- rushes, then slows to a stop a few pixels off the card's centre so it never lands dead centre
 	local jitter = Random.new():NextInteger(-CELL_WIDTH // 4, CELL_WIDTH // 4)
-	slide(positionFor(RESULT_CELL) + jitter, 1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut) -- creeps onto it
+	slide(positionFor(RESULT_CELL) + jitter, 5.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
 	follow:Disconnect()
 	marker.Size = UDim2.new(0, 2, 1, 0)
 end

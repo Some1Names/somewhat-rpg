@@ -25,7 +25,7 @@ PowerConfig.Gacha = {
 	pity = 60, -- after this many rolls without an S, the next roll is S
 	tag = "PowerGacha", -- CollectionService tag on the gacha NPC
 	range = 14, -- studs from the NPC
-	claimTimeout = 14, -- seconds after a roll before the briefcase is handed over even if the reel never reports done (the reel runs about 8)
+	claimTimeout = 14, -- seconds after a roll before the briefcase is handed over even if the reel never reports done (the reel runs about 7)
 }
 
 PowerConfig.Drop = {

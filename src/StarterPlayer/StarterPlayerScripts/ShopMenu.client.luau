@@ -24,7 +24,6 @@ local PANEL_WIDTH = 360
 local PADDING = 14
 local ITEM_HEIGHT = 70
 local EXTRA_HEIGHT = 34 -- a briefcase row's strip of SELL / LIFETIME buttons
-local MAX_LIST_HEIGHT = 420 -- past this the list scrolls
 local BADGE_SIZE = 30 -- a set's tier letter
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
@@ -158,25 +157,19 @@ local closeButton = make("TextButton", {
 	Modal = true,
 })
 
--- the items, scrolling once there are more than fit
+-- the items; the panel itself scrolls when the screen is too short for them (one scroll bar)
 order += 1
-local list = make("ScrollingFrame", {
+local list = make("Frame", {
 	Parent = panel,
 	LayoutOrder = order,
 	Size = UDim2.new(1, 0, 0, 0),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollBarThickness = 4,
-	ScrollBarImageColor3 = MUTED,
-	ScrollingDirection = Enum.ScrollingDirection.Y,
-	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 })
 local listLayout = make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
--- only as tall as the items need, up to the cap
+-- as tall as the items need
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	list.Size = UDim2.new(1, 0, 0, math.min(listLayout.AbsoluteContentSize.Y, MAX_LIST_HEIGHT))
+	list.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y)
 end)
 
 local status = label(section(14), { Text = "", TextSize = 11, TextColor3 = MUTED, Size = UDim2.fromScale(1, 1) })
@@ -411,7 +404,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		buildRows(shopId)
 		setStatus("")
 		refresh()
-		list.CanvasPosition = Vector2.zero
+		panel.CanvasPosition = Vector2.zero
 		Menus.Open("Shop", close)
 		gui.Enabled = true
 	end
