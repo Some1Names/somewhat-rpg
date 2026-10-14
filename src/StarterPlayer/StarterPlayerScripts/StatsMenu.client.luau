@@ -1,35 +1,34 @@
--- Stats menu: press M or the top bar's Stats icon (TopBar) to spend stat
--- points on Vitality, Strength, Superliminal and Firearm, and see when the
--- next stamina box unlocks. Its MILESTONES tab shows the milestones and their
--- rewards as bars. Opening it closes any other menu (Menus). Also pops up XP
+-- The hub's Stats tab (M, or the hub's nav): spend stat points on Vitality,
+-- Strength, Superliminal and Firearm, and see when the next stamina box
+-- unlocks. Its MILESTONES sub-tab shows the milestones and their rewards as
+-- bars. Unspent points show as a badge in the hub's nav. Also pops up XP
 -- gains and level ups. The numbers come from the player attributes the
 -- server keeps (see PlayerStats).
 local Debris = game:GetService("Debris")
-local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
-local Menus = require(script.Parent:WaitForChild("Menus"))
+local Hub = require(script.Parent:WaitForChild("Hub"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
 local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 
 local player = Players.LocalPlayer
 
-local TOGGLE_KEY = Enum.KeyCode.M
 local AMOUNTS = { 1, 5, 10 } -- points added per click
-local PANEL_WIDTH = 300
+local PANEL_WIDTH = 460
 local PADDING = 14
-local PANEL_LEFT = 16 -- px from the left edge, where the panel sits
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local STAT_ROW_HEIGHT = 40
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
-local TEXT = Color3.new(1, 1, 1)
-local MUTED = Color3.fromRGB(165, 165, 180)
-local GOLD = Color3.fromRGB(255, 205, 60) -- same as critical hit numbers
+local BACKGROUND = Hub.Theme.Paper -- text on ink buttons
+local TEXT = Hub.Theme.Ink
+local MUTED = Hub.Theme.Muted
+local BAR_BACK = Hub.Theme.BarBack
+local WHITE = Color3.new(1, 1, 1)
+local GOLD = Color3.fromRGB(255, 205, 60) -- same as critical hit numbers: the popups
+local NEXT = Color3.fromRGB(190, 130, 0) -- the milestone you're working towards: gold dark enough for the paper
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -69,12 +68,7 @@ local function section(order, height)
 	})
 end
 
-local gui = make("ScreenGui", {
-	Name = "StatsMenu",
-	ResetOnSpawn = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	Parent = player:WaitForChild("PlayerGui"),
-})
+local tabFrame = Hub.Tab("Stats", { order = 4, title = "STATS", key = Enum.KeyCode.M, pose = "Guard" })
 
 -- the popups get a full-screen gui (no top inset), so their heights are fractions of the real screen
 local popupGui = make("ScreenGui", {
@@ -114,21 +108,17 @@ end
 
 local panel = make("ScrollingFrame", {
 	Name = "Panel",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, PANEL_LEFT, 0.5, 0),
-	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
+	Parent = tabFrame,
+	Size = UDim2.new(0, PANEL_WIDTH, 1, 0),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
 	ScrollBarImageColor3 = MUTED,
 	ScrollingDirection = Enum.ScrollingDirection.Y,
 	BorderSizePixel = 0,
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.15,
+	BackgroundTransparency = 1,
 	Visible = false,
 })
-outline(panel, 0.6)
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -137,9 +127,8 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-Menus.Fit(panel, "left")
 
--- header: title, level and close button
+-- header: the two sub-tabs and the level
 local header = section(1, 22)
 header.Parent = panel
 tabTitles(header, "STATS")
@@ -148,19 +137,8 @@ local levelLabel = label(header, {
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -30, 0, 0),
-	Size = UDim2.fromOffset(70, 22),
-})
-local closeButton = make("TextButton", {
-	Parent = header,
-	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(22, 22),
-	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
-	Text = "×",
-	TextSize = 20,
-	TextColor3 = MUTED,
+	Size = UDim2.fromOffset(70, 22),
 })
 
 -- XP bar
@@ -169,8 +147,7 @@ xpSection.Parent = panel
 local xpTrack = make("Frame", {
 	Parent = xpSection,
 	Size = UDim2.new(1, 0, 0, 6),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.5,
+	BackgroundColor3 = BAR_BACK,
 	BorderSizePixel = 0,
 })
 local xpFill = make("Frame", {
@@ -346,21 +323,17 @@ local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 
 local infoPanel = make("ScrollingFrame", {
 	Name = "InfoPanel",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, PANEL_LEFT, 0.5, 0),
-	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
+	Parent = tabFrame,
+	Size = UDim2.new(0, PANEL_WIDTH, 1, 0),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
 	ScrollBarImageColor3 = MUTED,
 	ScrollingDirection = Enum.ScrollingDirection.Y,
 	BorderSizePixel = 0,
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.15,
+	BackgroundTransparency = 1,
 	Visible = false,
 })
-outline(infoPanel, 0.6)
 make("UIPadding", {
 	Parent = infoPanel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -369,22 +342,10 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = infoPanel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-Menus.Fit(infoPanel, "left")
 
 local infoHeader = section(1, 22)
 infoHeader.Parent = infoPanel
 tabTitles(infoHeader, "MILESTONES")
-local infoClose = make("TextButton", {
-	Parent = infoHeader,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(22, 22),
-	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
-	Text = "×",
-	TextSize = 20,
-	TextColor3 = MUTED,
-})
 
 -- the list scrolls, so the panel never runs off a short screen
 local infoBody = make("ScrollingFrame", {
@@ -442,20 +403,20 @@ local function infoMilestones(entries, current, base)
 		local reached = current >= entry.at
 		local isNext = not reached and not nextFound
 		nextFound = nextFound or isNext
-		local color = reached and TEXT or isNext and GOLD or MUTED
+		local color = reached and TEXT or isNext and NEXT or MUTED
 		local share = math.clamp((current - from) / math.max(entry.at - from, 1), 0, 1)
 		from = entry.at
 
 		local bar = infoLine(INFO_BAR_HEIGHT)
-		bar.BackgroundColor3 = Color3.new(0, 0, 0)
-		bar.BackgroundTransparency = 0.5
+		bar.BackgroundColor3 = BAR_BACK
+		bar.BackgroundTransparency = 0
 		bar.BorderSizePixel = 0
 		local stroke = outline(bar, isNext and 0.3 or 0.85)
-		stroke.Color = isNext and GOLD or TEXT
+		stroke.Color = isNext and NEXT or TEXT
 		make("Frame", {
 			Parent = bar,
 			Size = UDim2.fromScale(share, 1),
-			BackgroundColor3 = isNext and GOLD or TEXT,
+			BackgroundColor3 = isNext and NEXT or TEXT,
 			BackgroundTransparency = isNext and 0.6 or 0.8,
 			BorderSizePixel = 0,
 		})
@@ -479,7 +440,7 @@ local function infoMilestones(entries, current, base)
 			Text = isNext and string.format("%d/%d", current, entry.at) or "",
 			Font = Enum.Font.GothamBold,
 			TextSize = 11,
-			TextColor3 = GOLD,
+			TextColor3 = NEXT,
 			TextXAlignment = Enum.TextXAlignment.Right,
 			AnchorPoint = Vector2.new(1, 0),
 			Position = UDim2.new(1, -8, 0, 0),
@@ -548,22 +509,13 @@ end
 
 -- kept current while it's open
 player.AttributeChanged:Connect(function(name)
-	if infoPanel.Visible and (name == "Level" or StatConfig.Get(name) ~= nil) then
+	if infoPanel.Visible and Hub.IsOpen("Stats") and (name == "Level" or StatConfig.Get(name) ~= nil) then
 		buildInfo()
 	end
 end)
 
-local function closeMenu()
-	panel.Visible = false
-	infoPanel.Visible = false
-	Menus.Close("Stats")
-end
-
--- shows the STATS or MILESTONES panel, opening the menu (and closing any other) if it's shut
+-- shows the STATS or MILESTONES panel
 function showTab(name)
-	if not Menus.IsOpen("Stats") then
-		Menus.Open("Stats", closeMenu)
-	end
 	if name == "MILESTONES" then
 		buildInfo()
 	end
@@ -571,24 +523,21 @@ function showTab(name)
 	infoPanel.Visible = name == "MILESTONES"
 end
 
-local function toggleMenu()
-	if Menus.IsOpen("Stats") then
-		closeMenu()
-	else
-		showTab("STATS")
-	end
-end
-
-Menus.Register("Stats", toggleMenu)
-closeButton.Activated:Connect(closeMenu)
-infoClose.Activated:Connect(closeMenu)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
-		toggleMenu()
-	end
+-- the hub always opens it on STATS
+Hub.OnShown("Stats", function()
+	showTab("STATS")
 end)
--- Esc opens Roblox's own menu: close this one
-GuiService.MenuOpened:Connect(closeMenu)
+
+-- the XP bar in the accent; unspent points as a badge in the hub's nav
+Hub.OnAccent(function(_, ink)
+	xpFill.BackgroundColor3 = ink
+end)
+local function showBadge()
+	local points = player:GetAttribute("StatPoints") or 0
+	Hub.Badge("Stats", points > 0 and tostring(points) or nil)
+end
+player:GetAttributeChangedSignal("StatPoints"):Connect(showBadge)
+showBadge()
 
 -- a line of text that drifts up and fades, for XP and level ups
 local function popup(text, color, size, height, lifetime, xOffset)
@@ -614,7 +563,7 @@ end
 
 progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained)
 	if xpGained > 0 then
-		popup(string.format("+%d XP", xpGained), TEXT, 18, 0.62, 1.2, POPUP_OFFSET)
+		popup(string.format("+%d XP", xpGained), WHITE, 18, 0.62, 1.2, POPUP_OFFSET)
 	end
 	if yenGained and yenGained > 0 then
 		popup("+" .. formatYen(yenGained), GOLD, 18, 0.66, 1.2, POPUP_OFFSET)
