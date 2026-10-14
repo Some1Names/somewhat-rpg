@@ -25,11 +25,14 @@ local TEXT = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 60)
 local STROKE = Color3.new(0, 0, 0)
 local STROKE_TRANSPARENCY = 0.4
--- Roblox's own top-bar buttons: their height, colour, and the gap between them
+-- Roblox's own top-bar buttons (read from its TopBarApp): their size, colour,
+-- distance from the top of the screen, the gap between them and the screen's edge
 local BUTTON_HEIGHT = 44
 local BUTTON_COLOR = Color3.fromRGB(18, 18, 21)
-local BUTTON_TRANSPARENCY = 0.3
-local BUTTON_GAP = 12
+local BUTTON_TRANSPARENCY = 0.08
+local BUTTON_TOP = 12
+local BUTTON_GAP = 8
+local BUTTON_EDGE = 16
 
 -- left to right within each group (`top` = beside Roblox's buttons at the top
 -- left, else the top-right row); Admin appears only for admins
@@ -114,15 +117,14 @@ local menuSlot = pill(make("Frame", {
 	AnchorPoint = Vector2.new(0, 0.5),
 	Size = UDim2.fromOffset(BUTTON_HEIGHT, BUTTON_HEIGHT),
 }))
--- both sit in the middle of Roblox's bar: Menu after its buttons, the pill at the far right
+-- in line with Roblox's buttons: Menu just after them, the pill at the far right
 local function placeButtons()
 	local inset = GuiService.TopbarInset
 	local left = inset.Min.X > 0 and inset.Min.X or MENU_FALLBACK_X
 	local right = inset.Max.X > 0 and inset.Max.X or workspace.CurrentCamera.ViewportSize.X
-	local height = inset.Height > 0 and inset.Height or GuiService:GetGuiInset().Y
-	local middle = inset.Min.Y + height / 2
+	local middle = inset.Min.Y + BUTTON_TOP + BUTTON_HEIGHT / 2
 	menuSlot.Position = UDim2.fromOffset(left + BUTTON_GAP, middle)
-	row.Position = UDim2.fromOffset(right - BUTTON_GAP, middle)
+	row.Position = UDim2.fromOffset(right - BUTTON_EDGE, middle)
 end
 placeButtons()
 GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(placeButtons)
