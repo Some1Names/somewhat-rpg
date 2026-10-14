@@ -4,7 +4,9 @@
 -- ROLL asks the RollGacha remote (PowerSources decides everything); the reply
 -- plays a reel: a strip of tier cards that rushes past and slows onto the
 -- power you got, then names it. The reel only shows what the server already
--- decided. Closes when you walk away or another menu opens (Menus).
+-- decided. The briefcase reaches your inventory when the reel ends (the
+-- ClaimGacha remote; the server hands it over anyway after a few seconds).
+-- Closes when you walk away or another menu opens (Menus).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -16,6 +18,7 @@ local Menus = require(script.Parent:WaitForChild("Menus"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local rollRemote = ReplicatedStorage:WaitForChild("RollGacha")
+local claimRemote = ReplicatedStorage:WaitForChild("ClaimGacha")
 local player = Players.LocalPlayer
 
 local PANEL_WIDTH = 380
@@ -327,6 +330,7 @@ local function roll()
 		return
 	end
 	spin(setName)
+	claimRemote:FireServer() -- the reel is done: the briefcase goes in the hotbar
 	reveal(setName)
 	setStatus(message)
 	spinning = false

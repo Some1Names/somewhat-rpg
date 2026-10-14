@@ -3,7 +3,9 @@
 --    once per PowerConfig.Gacha.cooldown per player and for
 --    PowerConfig.Gacha.price yen any other time, with pity;
 --    the RollGacha remote asks, the server decides everything and returns
---    ok, message, the power's name.
+--    ok, message, the power's name. The briefcase is handed over when the
+--    client's roll animation ends (ClaimGacha), or after claimTimeout seconds
+--    if it never says so, so a roll is never lost.
 --  * map drops: every PowerConfig.Drop.interval seconds a briefcase appears at
 --    a random part tagged "BriefcaseSpawn" (none placed = no drops), one at a
 --    time, gone after PowerConfig.Drop.lifetime seconds; the kill feed says so.
@@ -38,6 +40,7 @@ end
 
 local rollGacha = remote("RemoteFunction", "RollGacha")
 local buyLifetime = remote("RemoteEvent", "BuyLifetime")
+local claimGacha = remote("RemoteEvent", "ClaimGacha")
 local killFeed = ReplicatedStorage:WaitForChild("KillFeed")
 
 -- the powers available to rolls and drops, by tier
@@ -70,6 +73,31 @@ end
 
 -- the gacha -------------------------------------------------------------------
 
+local pendingRoll = {} -- player -> the power rolled whose briefcase isn't handed over yet
+
+-- hands over the pending briefcase (once); tries again while the player has no backpack
+local function grantPending(player, attempt)
+	local setName = pendingRoll[player]
+	if not setName then
+		return
+	end
+	if Powers.GiveBriefcase(player, setName) then
+		pendingRoll[player] = nil
+	elseif player.Parent and (attempt or 1) < 15 then
+		task.delay(1, grantPending, player, (attempt or 1) + 1)
+	else
+		pendingRoll[player] = nil
+	end
+end
+
+claimGacha.OnServerEvent:Connect(function(player)
+	grantPending(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	pendingRoll[player] = nil
+end)
+
 rollGacha.OnServerInvoke = function(player)
 	local gacha = PowerConfig.Gacha
 	local readyAt = player:GetAttribute("GachaReadyAt")
@@ -80,6 +108,9 @@ rollGacha.OnServerInvoke = function(player)
 	end
 	if not humanoid or humanoid.Health <= 0 or not player:FindFirstChildOfClass("Backpack") then
 		return false, "Not now"
+	end
+	if pendingRoll[player] then
+		return false, "Wait for your roll to finish"
 	end
 	if not near(player.Character, gacha.tag, gacha.range) then
 		return false, "Too far from the gacha"
@@ -102,7 +133,8 @@ rollGacha.OnServerInvoke = function(player)
 		end
 		return false, "Nothing to roll"
 	end
-	Powers.GiveBriefcase(player, setName)
+	pendingRoll[player] = setName
+	task.delay(gacha.claimTimeout, grantPending, player)
 	player:SetAttribute("GachaPity", PowerConfig.nextPity(pity, tier))
 	if free then
 		player:SetAttribute("GachaReadyAt", os.time() + gacha.cooldown)
