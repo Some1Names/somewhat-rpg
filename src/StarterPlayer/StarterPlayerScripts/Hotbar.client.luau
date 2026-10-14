@@ -1,5 +1,5 @@
 -- The hotbar, in place of Roblox's own. Bottom left, three tall cards for what
--- you carry, like Elden Ring's equipment slots: POWER (key 1), WEAPON (2) and
+-- you carry (with the yen and the Quests / Stats / Inventory icons above them, TopBar), like Elden Ring's equipment slots: POWER (key 1), WEAPON (2) and
 -- MELEE (3, coming), each outlined in the colour of its skill set's tier
 -- (SkillSetConfig.Tiers: purple S, red A, blue B, green C) with the set's name
 -- and your mastery in it. Bottom right, the other tools (anything that isn't a
@@ -23,7 +23,7 @@ local SLOT_GAP = HudConfig.SideGap
 local GRID_COLUMNS = 2
 local GRID_SLOTS = 6
 local CARD_WIDTH = HudConfig.CardWidth
-local CARD_HEIGHT = HudConfig.SideHeight
+local CARD_HEIGHT = HudConfig.CardHeight
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local HELD_BACKGROUND = Color3.fromRGB(44, 44, 58)
 local TEXT = Color3.new(1, 1, 1)

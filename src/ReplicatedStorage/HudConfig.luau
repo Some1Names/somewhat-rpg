@@ -21,6 +21,9 @@ HudConfig.SideHeight = 3 * HudConfig.SlotHeight + 2 * HudConfig.SideGap
 HudConfig.CardWidth = (HudConfig.SideWidth - 2 * HudConfig.SideGap) / 3
 -- px from the screen's bottom to the bottom of the cards and grid: the key hints line plus a gap
 HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 18
+-- the left column is the yen, the Quests / Stats / Inventory icons, then the cards, topping out level with the grid
+HudConfig.YenHeight = 22
+HudConfig.CardHeight = HudConfig.SideHeight - (HudConfig.YenHeight + HudConfig.IconSizeOpen + 2 * HudConfig.SideGap)
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },

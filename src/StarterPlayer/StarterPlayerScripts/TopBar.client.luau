@@ -1,8 +1,8 @@
--- The top bar: a row of plain icons at the top right, right to left Settings
--- (P), Inventory (B), Stats (M), Quests (J), and Admin (`) for admins, with
--- the player's yen as gold text at the left end. No boxes: white icons with a
--- dark stroke, the one whose menu is open a little larger, a label with its
--- key under whichever is hovered (or held, on touch). Each icon toggles its
+-- The HUD's plain icons. Top right, right to left: Settings (P), and Admin (`)
+-- for admins. Bottom left, above the Hotbar's equipment cards: the player's
+-- yen as gold text, and under it Quests (J), Stats (M) and Inventory (B). No
+-- boxes: white icons with a dark stroke, the one whose menu is open a little
+-- larger, a label with its key beside whichever is hovered (or held, on touch). Each icon toggles its
 -- menu through Menus exactly as the key does; the menus register themselves
 -- there. Icon images come from HudConfig.Icons; until the owner picks them
 -- each shows its text glyph. A gold number on Stats counts unspent points.
@@ -21,13 +21,14 @@ local GOLD = Color3.fromRGB(255, 205, 60)
 local STROKE = Color3.new(0, 0, 0)
 local STROKE_TRANSPARENCY = 0.4
 
--- left to right; Quests and Admin appear only when they apply
+-- left to right within each group (`left` = the bottom-left cluster, else the top-right row);
+-- Quests and Admin appear only when they apply
 local ICONS = {
 	{ name = "Admin", title = "Admin", key = "`" },
-	{ name = "Quests", title = "Quests", key = "J" },
-	{ name = "Stats", title = "Stats", key = "M" },
-	{ name = "Inventory", title = "Inventory", key = "B" },
 	{ name = "Settings", title = "Settings", key = "P" },
+	{ name = "Quests", title = "Quests", key = "J", left = true },
+	{ name = "Stats", title = "Stats", key = "M", left = true },
+	{ name = "Inventory", title = "Inventory", key = "B", left = true },
 }
 
 local function make(className, props)
@@ -67,6 +68,31 @@ make("UIListLayout", {
 	Padding = UDim.new(0, ICON_GAP),
 })
 
+-- bottom left, above the cards: the yen, and the three menu icons under it
+local cluster = make("Frame", {
+	Parent = gui,
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.SideGap)),
+	Size = UDim2.fromOffset(0, 0),
+	AutomaticSize = Enum.AutomaticSize.XY,
+	BackgroundTransparency = 1,
+})
+make("UIListLayout", { Parent = cluster, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, HudConfig.SideGap) })
+local leftRow = make("Frame", {
+	Parent = cluster,
+	LayoutOrder = 2,
+	Size = UDim2.fromOffset(0, HudConfig.IconSizeOpen),
+	AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundTransparency = 1,
+})
+make("UIListLayout", {
+	Parent = leftRow,
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, ICON_GAP),
+})
+
 local function formatYen(amount)
 	local digits = tostring(math.floor(amount))
 	local grouped = digits:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
@@ -74,18 +100,18 @@ local function formatYen(amount)
 end
 
 local yenLabel = make("TextLabel", {
-	Parent = row,
-	LayoutOrder = 0,
-	Size = UDim2.fromOffset(0, HudConfig.IconSizeOpen),
+	Parent = cluster,
+	LayoutOrder = 1,
+	Size = UDim2.fromOffset(0, HudConfig.YenHeight),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
 	Font = Enum.Font.GothamBold,
 	TextSize = YEN_TEXT_SIZE,
 	TextColor3 = GOLD,
+	TextXAlignment = Enum.TextXAlignment.Left,
 	TextStrokeTransparency = STROKE_TRANSPARENCY,
 	TextStrokeColor3 = STROKE,
 })
-make("UIPadding", { Parent = yenLabel, PaddingRight = UDim.new(0, 6) })
 
 local holders = {} -- name -> { holder, glyph, image, label }
 
@@ -94,7 +120,7 @@ for order, icon in ipairs(ICONS) do
 	-- a fixed-size slot, so a growing icon doesn't push its neighbours
 	local holder = make("TextButton", {
 		Name = icon.name,
-		Parent = row,
+		Parent = icon.left and leftRow or row,
 		LayoutOrder = order,
 		Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
 		BackgroundTransparency = 1,
@@ -128,12 +154,13 @@ for order, icon in ipairs(ICONS) do
 		})
 	end
 
-	-- the hover label hangs under the icon, ending at its right edge so it stays on screen
+	-- the hover label hangs under a top-right icon, ending at its right edge so it stays on screen;
+	-- over a bottom-left icon it sits above it
 	local hover = make("TextLabel", {
 		Parent = holder,
 		Visible = false,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 1, 2),
+		AnchorPoint = icon.left and Vector2.new(0, 1) or Vector2.new(1, 0),
+		Position = icon.left and UDim2.new(0, 0, 0, -2) or UDim2.new(1, 0, 1, 2),
 		Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
