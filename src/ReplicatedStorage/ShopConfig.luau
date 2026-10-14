@@ -87,11 +87,11 @@ ShopConfig.Items = {
 	},
 	{
 		id = "AidoPower",
-		name = "Aido — ???",
+		name = "Deus Ex Machina",
 		shop = "Powers",
 		tier = "S",
 		comingSoon = true,
-		description = "Aido's power. ???",
+		description = "Furukiwa Aido's power. ???",
 	},
 	{
 		id = "Eventide",

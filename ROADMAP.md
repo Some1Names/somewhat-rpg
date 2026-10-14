@@ -26,7 +26,7 @@ reuse `FORM_*` textures, `sunShaft`, `lyingFlat` and pack prefabs, check with fr
 Design with the owner first (questions, then a written spec), then build. (Cloud for design and
 server code; Studio for visuals, animations, models.)
 
-1. **Aido** (Furukiwa Aido, The Director; S power, red, atomic): **designed**, spec
+1. **Aido** (Furukiwa Aido, The Director; his power is named **Deus Ex Machina**; S power, red, atomic): **designed**, spec
    `docs/superpowers/specs/2026-10-09-aido-design.md`, plan `docs/superpowers/plans/2026-10-09-aido.md`
    (not built yet). Fuse, Z Catastrophe, X Collapse, C Total Destruction, V Ground Zero, F Final Cut
    (dragon form), G Chain Reaction, passive Half-Life (Fallout, Burnt). Later in Studio: the dragon
