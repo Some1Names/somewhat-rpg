@@ -5,7 +5,7 @@ M switches tabs, M again closes, B opens Backpack; the R15 clone is posed (Anima
 
 Try in-game:
 
-- [ ] The Menu icon (bottom left, by the yen) opens the hub on Profile; it shows the gold
+- [ ] The Menu icon (top left, right of Roblox's chat button; stays over the hub) opens the hub on Profile; it shows the gold
       unspent-points number.
 - [ ] B / J / M open Backpack / Quests / Stats; the same key closes; another switches; Esc, × and
       ESC / CLOSE close. Typing b, j or m in chat does nothing.

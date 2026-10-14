@@ -1,6 +1,7 @@
 -- The HUD's plain icons. Top right, right to left: Settings (P), and Admin (`)
--- for admins. Bottom left, above the Hotbar's equipment cards: the Menu icon
--- with the player's yen as gold text to its right; Menu opens the hub (Hub) on
+-- for admins. Top left, in Roblox's bar just right of its chat button: the
+-- Menu icon (its own gui, above the hub, so it can close it too). Bottom left,
+-- above the Hotbar's equipment cards: the player's yen as gold text. Menu opens the hub (Hub) on
 -- Profile; B, J and M open it on Backpack, Quests and Stats. No boxes: white
 -- icons with a dark stroke, the one whose menu is open a little larger, a
 -- label with its key beside whichever is hovered (or held, on touch). Each
@@ -9,6 +10,7 @@
 -- owner picks them each shows its text glyph. A gold number on Menu counts
 -- unspent stat points.
 local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
@@ -23,12 +25,12 @@ local GOLD = Color3.fromRGB(255, 205, 60)
 local STROKE = Color3.new(0, 0, 0)
 local STROKE_TRANSPARENCY = 0.4
 
--- left to right within each group (`left` = the bottom-left cluster, else the
--- top-right row); Admin appears only for admins
+-- left to right within each group (`top` = beside Roblox's buttons at the top
+-- left, else the top-right row); Admin appears only for admins
 local ICONS = {
 	{ name = "Admin", title = "Admin", key = "`" },
 	{ name = "Settings", title = "Settings", key = "P" },
-	{ name = "Hub", title = "Menu", left = true }, -- no key of its own: B, J and M open its tabs
+	{ name = "Hub", title = "Menu", top = true }, -- no key of its own: B, J and M open its tabs
 }
 
 local function make(className, props)
@@ -68,7 +70,7 @@ make("UIListLayout", {
 	Padding = UDim.new(0, ICON_GAP),
 })
 
--- bottom left, above the cards: the Menu icon, and the yen to its right
+-- bottom left, above the cards: the yen
 local cluster = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
@@ -84,20 +86,31 @@ make("UIListLayout", {
 	SortOrder = Enum.SortOrder.LayoutOrder,
 	Padding = UDim.new(0, ICON_GAP),
 })
-local leftRow = make("Frame", {
-	Parent = cluster,
-	LayoutOrder = 1,
-	Size = UDim2.fromOffset(0, HudConfig.IconSizeOpen),
-	AutomaticSize = Enum.AutomaticSize.X,
+
+-- the Menu icon: in Roblox's bar right of its buttons, in a gui of its own drawn
+-- over the hub (DisplayOrder 8), so it shows and closes the hub while it's open
+local MENU_FALLBACK_X = 220 -- where Roblox's buttons end, if it hasn't said yet
+local menuGui = make("ScreenGui", {
+	Name = "MenuButton",
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	DisplayOrder = 9,
+	Parent = player:WaitForChild("PlayerGui"),
+})
+local menuSlot = make("Frame", {
+	Parent = menuGui,
+	AnchorPoint = Vector2.new(0, 0.5),
+	Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", {
-	Parent = leftRow,
-	FillDirection = Enum.FillDirection.Horizontal,
-	VerticalAlignment = Enum.VerticalAlignment.Center,
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, ICON_GAP),
-})
+local function placeMenu()
+	local inset = GuiService.TopbarInset
+	local left = inset.Min.X > 0 and inset.Min.X or MENU_FALLBACK_X
+	local height = inset.Height > 0 and inset.Height or GuiService:GetGuiInset().Y
+	menuSlot.Position = UDim2.fromOffset(left + ICON_GAP, inset.Min.Y + height / 2)
+end
+placeMenu()
+GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(placeMenu)
 
 local function formatYen(amount)
 	local digits = tostring(math.floor(amount))
@@ -107,7 +120,7 @@ end
 
 local yenLabel = make("TextLabel", {
 	Parent = cluster,
-	LayoutOrder = 2,
+	LayoutOrder = 1,
 	Size = UDim2.fromOffset(0, HudConfig.YenHeight),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
@@ -126,7 +139,7 @@ for order, icon in ipairs(ICONS) do
 	-- a fixed-size slot, so a growing icon doesn't push its neighbours
 	local holder = make("TextButton", {
 		Name = icon.name,
-		Parent = icon.left and leftRow or row,
+		Parent = icon.top and menuSlot or row,
 		LayoutOrder = order,
 		Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
 		BackgroundTransparency = 1,
@@ -160,13 +173,13 @@ for order, icon in ipairs(ICONS) do
 		})
 	end
 
-	-- the hover label hangs under a top-right icon, ending at its right edge so it stays on screen;
-	-- over a bottom-left icon it sits above it
+	-- the hover label hangs under its icon: ending at a top-right icon's right edge so it
+	-- stays on screen, starting at the Menu icon's left edge
 	local hover = make("TextLabel", {
 		Parent = holder,
 		Visible = false,
-		AnchorPoint = icon.left and Vector2.new(0, 1) or Vector2.new(1, 0),
-		Position = icon.left and UDim2.new(0, 0, 0, -2) or UDim2.new(1, 0, 1, 2),
+		AnchorPoint = icon.top and Vector2.new(0, 0) or Vector2.new(1, 0),
+		Position = icon.top and UDim2.new(0, 0, 1, 2) or UDim2.new(1, 0, 1, 2),
 		Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,

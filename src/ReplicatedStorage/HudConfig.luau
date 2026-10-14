@@ -22,11 +22,11 @@ HudConfig.CardWidth = HudConfig.SlotWidth
 HudConfig.CardHeight = HudConfig.SideHeight
 -- px from the screen's bottom to the bottom of the cards and grid: the key hints line plus a gap
 HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 18
--- above the cards sit the Menu icon (the hub) and the yen, side by side
+-- above the cards sits the yen
 HudConfig.YenHeight = 22
-HudConfig.ClusterGap = 14 -- px between those icons and the cards
+HudConfig.ClusterGap = 14 -- px between the yen and the cards
 -- px from the screen's bottom to the top of that left column: panels that open on the left stay above it
-HudConfig.LeftReserve = HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap + math.max(HudConfig.YenHeight, HudConfig.IconSizeOpen) + 10
+HudConfig.LeftReserve = HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap + HudConfig.YenHeight + 10
 
 -- the hub menu (Hub and its tabs): grey paper, black ink, one accent (the held
 -- power's colour; NoPower when there's none), square everything

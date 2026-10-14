@@ -659,6 +659,7 @@ local function hoverLine(button)
 	if button:FindFirstChild("HoverLine") or button:FindFirstChildWhichIsA("UIGridStyleLayout") then
 		return
 	end
+	button.AutoButtonColor = false -- the line is the hover; no darkening as well
 	local line = make("Frame", {
 		Name = "HoverLine",
 		Parent = button,

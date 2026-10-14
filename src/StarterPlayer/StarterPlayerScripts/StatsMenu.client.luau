@@ -333,7 +333,6 @@ local function refresh()
 		local cap = StatConfig.StatCap(row.stat.key)
 		row.effect.Text = value >= cap and "MAX" or ""
 		local canAdd = points > 0 and value < cap
-		row.plus.AutoButtonColor = canAdd
 		row.plus.BackgroundTransparency = canAdd and 0 or 0.8
 		row.plus.TextTransparency = canAdd and 0 or 0.5
 	end
