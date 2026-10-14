@@ -3,10 +3,11 @@
 Code is written (`PowerConfig`, `Powers`, `PowerSources`, Loadout/Shop/Inventory changes). Not played yet.
 `tests/PowerConfig.spec.luau` logic passed in Studio on 2026-10-14 (Lune isn't installed here).
 Before the first run, in Studio:
-- a **Tool** named `Briefcase` in `ServerStorage` (until then a plain coloured box is used);
-- parts tagged **`BriefcaseSpawn`** around the map (no parts = no map drops);
-- an NPC model tagged **`PowerGacha`** with a ProximityPrompt (the prompt only needs to be there;
-  `RollGacha` has no UI panel yet, so fire it from a small panel or the command bar for now);
+- `ServerStorage.TestBriefcase` (a Tool made from the Workspace `TestBriefcase` part) is the briefcase for now; a final
+  Tool named `Briefcase` can replace it later (TestBriefcase is looked up first);
+- parts tagged **`BriefcaseSpawn`** around the map (none yet: no map drops until then);
+- the **`Power Gacha`** NPC (Workspace, next to the Power Dealer, tagged `PowerGacha`, prompt "Roll a power"); its panel
+  and reel are `Gacha.client.luau`;
 - a Power Dealer: a model tagged `Shop` with attribute `ShopId = Powers` (as before);
 - Developer Products (Creator Dashboard) and their ids in `PowerConfig.RobuxProducts`, `{ Mandela = 123, ... }`.
 For testing set `SkillSetConfig.OwnAllSets = false`, otherwise every power is lifetime. Saving needs a live server.

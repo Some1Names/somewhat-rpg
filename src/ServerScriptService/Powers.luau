@@ -6,9 +6,8 @@
 -- PowerSet attribute mirrors CurrentPower for the older scripts that read it.
 --
 -- A new power arrives as a briefcase: a Tool with the PowerBriefcase attribute
--- (from ServerStorage.Briefcase when the owner has added it, else a plain
--- box). A briefcase is one Tool; it's destroyed the moment it's used, stored,
--- sold or dropped, in the same step as the check, so remotes racing each other
+-- (from ServerStorage.TestBriefcase, later Briefcase, else a plain box). A
+-- briefcase is one Tool; it's destroyed the moment it's used, stored, sold or dropped, in the same step as the check, so remotes racing each other
 -- can't spend it twice. Carried briefcases aren't saved: on death they drop
 -- where you died for PowerConfig.DeathDropTime seconds, on leaving they're
 -- lost. The inventory acts through the PowerAction remote; each action
@@ -137,12 +136,13 @@ end
 
 local function makeBriefcase(setName)
 	local name = Powers.DisplayName(setName) .. " Briefcase"
-	local template = ServerStorage:FindFirstChild("Briefcase")
+	-- the owner's models: TestBriefcase for now, Briefcase when the final one is made
+	local template = ServerStorage:FindFirstChild("TestBriefcase") or ServerStorage:FindFirstChild("Briefcase")
 	local tool
 	if template and template:IsA("Tool") then
 		tool = template:Clone()
 	else
-		-- placeholder until the owner adds ServerStorage.Briefcase
+		-- placeholder until the owner adds a Tool named TestBriefcase or Briefcase to ServerStorage
 		tool = Instance.new("Tool")
 		local handle = Instance.new("Part")
 		handle.Name = "Handle"
