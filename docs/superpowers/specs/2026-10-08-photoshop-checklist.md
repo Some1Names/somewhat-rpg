@@ -53,8 +53,17 @@ diff is applied to Studio.
       in a **live** server: lag doesn't show in Studio.
 - [ ] **F Kaleidoscope**: a dome of pink/blue mirror shards around you for 5 s, with mirror hits
       on everyone inside every half second (Framed targets take two).
-- [ ] **G Undo**: walk away for a few seconds, take some damage, press G. You snap back to where
-      you were about 3 s ago and get half that damage back. The meter shows the 18 s recharge.
+- [ ] **G Undo**: walk away for a few seconds, take some damage, press G. You're carried back
+      along the way you walked, backwards, in about 0.6 s (blue copies of you left along the way,
+      a thin blue line down the path), land where you were about 3 s ago and get half that damage
+      back. The meter shows the 18 s recharge.
+- [ ] **The rewind's animations:** your run/walk plays backwards on the way back (a moonwalk), and
+      once you land you move and animate normally again (no stuck walk or frozen pose). If the
+      backwards animation looks wrong, note how: the fallback is gliding back in one pose.
+- [ ] During the rewind: you can't be hurt (the dummy's hits, a second player's skills), and Z/X/
+      C/V/F, Shutter and punches do nothing. A second player sees you slide back smoothly.
+- [ ] Undo, then die during the 0.6 s (e.g. rewind off a ledge into the void): no errors; you
+      respawn normally.
 - [ ] Undo while caught in Event Horizon's pull or a knife pin: nothing happens.
 - [ ] **T Gallery**: T opens a square 3-slot panel. SAVE fills a slot with your position. GO
       (after 8 s without fighting) shows a photo developing over your head for 2 s, then you're
@@ -62,6 +71,11 @@ diff is applied to Studio.
 - [ ] GO, then get hit during the 2 s: the photo spoils and you stay put.
 - [ ] GO right after dealing or taking damage: nothing happens.
 - [ ] SAVE while jumping or falling: nothing is saved.
+- [ ] **Waypoints:** with Photoshop out, each saved photo's spot shows a square pink marker with its
+      number (matching PHOTO 1–3 in the panel) and the distance in m, visible through walls and
+      from far away. Empty slots show none. SAVE over a slot moves its marker at once.
+- [ ] Put Photoshop away (or hold another set): the markers hide; take it out again: they're back.
+      Respawn: they're still there. A second player never sees your markers.
 - [ ] Unequip with the panel open: it closes.
 
 ## The triangle (needs two players)
@@ -87,6 +101,21 @@ diff is applied to Studio.
   - A flying Iridescent player inside Event Horizon takes damage but isn't pulled.
   - A Tornado doesn't carry him while flying.
   - Taking off while caught drops him out of the pull or carry.
+
+## Punches and the Step In combo (`2026-10-09-photoshop-punches.md`)
+- [x] Left click with Photoshop out throws 4 punches (12, 12, 12, then a 30 critical that knocks
+      back). Checked in Studio on a dummy.
+- [x] Punch damage grows with Superliminal (20 points: 24/24/24/60), not Strength. Checked.
+- [x] Right click held + left click shoots Shutter, not a punch. Checked with real mouse input.
+- [x] Mandela's axe (14/14/14/35) and bare fists (10/10/10/25) are unchanged. Checked.
+- [x] Punches earn Photoshop mastery XP. Checked.
+- [x] Z then Z: she lands behind the target and throws 3 punches (8, 8, 14) about 0.15 s apart;
+      the last knocks back, and her arms play the punches. Checked.
+- [x] The target dashes off right after Step In: the later punches miss. Checked.
+- [x] She dies mid-combo: no errors and no more hits. Checked.
+- [x] Mashing Z during the combo starts no second Step In. Checked.
+- [ ] **Two players:** the last combo punch on a player under hold protection still deals damage
+      but doesn't knock back. Not checked (needs two real players).
 
 ## Things that might break (from the plan's Review Focus)
 - [ ] Die (or reset) while Iris Horizon is closing: the ring disappears and no burst follows.

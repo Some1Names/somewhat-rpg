@@ -4,29 +4,43 @@
 -- still framed, Z again is Step In (Recast): she's cut out of where she
 -- stands and pasted BehindDistance studs behind them, facing them, or in
 -- front of them when a wall is at their back. Over a drop, or beside
--- someone flying, she's put at their height rather than at the bottom. Clients draw it from the
--- SkillEffects "Snapshot" and "StepIn" events. SkillSetServer checks the
--- tool, mastery and cooldown before calling Cast.
+-- someone flying, she's put at their height rather than at the bottom.
+-- Landing, she throws three quick punches (ComboHits) at whoever is in front
+-- of her at each one, so a target who dashes off makes the rest miss; the
+-- last knocks back. Clients draw it from the SkillEffects "Snapshot",
+-- "StepIn" and "PhotoshopPunchHit" events, and the caster's arms from
+-- "StepInCombo". SkillSetServer checks the tool, mastery and cooldown
+-- before calling Cast.
+local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Framed = require(ServerScriptService:WaitForChild("Framed"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Range = 50, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
+	Range = 100, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
 	Cone = 30, -- degrees either side of the aim it locks onto a target in
 	Damage = 12, -- before the caster's Superliminal bonus
-	StepRange = 60, -- studs from her a framed target can be for Step In
+	StepRange = 110, -- studs from her a framed target can be for Step In (past Range, so anyone she framed)
 	BehindDistance = 4, -- studs behind them she lands
 	MaxDrop = 6, -- studs below them the ground there may be; past that (a cliff edge, a flier) she stays at their height
 	WatchInterval = 0.1, -- seconds between checks that the frame is still on
+	-- Step In's punches, before the Superliminal bonus; the last is a critical
+	ComboHits = { 8, 8, 14 },
+	ComboInterval = 0.15, -- seconds before each punch
+	ComboReach = 6, -- studs in front of her a punch reaches
+	ComboWidth = 5, -- studs across
+	ComboKnockback = 40, -- studs per second the last punch throws them
+	ComboKnockbackTime = 0.3, -- seconds the throw lasts
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "Z" }
 local RECAST = SkillSetConfig.RecastAttribute("Photoshop", "Z")
 
 local watching = setmetatable({}, { __mode = "k" }) -- player -> the frame being watched
@@ -47,6 +61,68 @@ local function watchFrame(player, model)
 	end)
 end
 
+-- the first living character in front of her, within a punch's reach
+local function inFront(character, root)
+	local overlap = OverlapParams.new()
+	overlap.FilterType = Enum.RaycastFilterType.Exclude
+	overlap.FilterDescendantsInstances = { character }
+	local box = root.CFrame * CFrame.new(0, 0, -CONFIG.ComboReach / 2)
+	for _, part in ipairs(workspace:GetPartBoundsInBox(box, Vector3.new(CONFIG.ComboWidth, 6, CONFIG.ComboReach), overlap)) do
+		local model = part:FindFirstAncestorOfClass("Model")
+		local target = model and model:FindFirstChildOfClass("Humanoid")
+		if target and target.Health > 0 and target.RootPart then
+			return model, target
+		end
+	end
+	return nil
+end
+
+-- thrown along `direction` for a moment (a constraint, so it moves players too)
+local function knockBack(root, direction)
+	local attachment = Instance.new("Attachment")
+	attachment.Name = "StepInKnockback"
+	attachment.Parent = root
+	local velocity = Instance.new("LinearVelocity")
+	velocity.Name = "StepInKnockback"
+	velocity.Attachment0 = attachment
+	velocity.RelativeTo = Enum.ActuatorRelativeTo.World
+	velocity.MaxForce = math.huge
+	velocity.VectorVelocity = direction * CONFIG.ComboKnockback
+	velocity.Parent = root
+	Debris:AddItem(velocity, CONFIG.ComboKnockbackTime)
+	Debris:AddItem(attachment, CONFIG.ComboKnockbackTime)
+end
+
+-- Step In's punches, each ComboInterval after the last, while she's still
+-- standing with Photoshop out
+local function combo(player, character, humanoid)
+	local landedCount = 0 -- punches that hit, for the Step In challenge (Quests)
+	for i, amount in ipairs(CONFIG.ComboHits) do
+		task.wait(CONFIG.ComboInterval)
+		local root = humanoid.RootPart
+		if not root or not PhotoshopUtil.alive(player, character, humanoid) then
+			return
+		end
+		local last = i == #CONFIG.ComboHits
+		local model, target = inFront(character, root)
+		if target then
+			local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+			local direction = look.Magnitude > 0.1 and look.Unit or Vector3.new(0, 0, -1)
+			skillEffects:FireAllClients("PhotoshopPunchHit", target.RootPart.Position - direction * 0.8, last)
+			local landed = Damage.Deal(player, target, amount, { stat = "Superliminal", skillSet = "Photoshop", melee = true, critical = last, skill = "Z" })
+			if landed > 0 then
+				landedCount += 1
+			end
+			-- a hit a passive erased doesn't throw them; players only without hold protection
+			if last and landed > 0 and target.Health > 0 and not target.RootPart.Anchored and CrowdControl.CanControl(model) then
+				knockBack(target.RootPart, direction)
+				CrowdControl.Apply(model, CONFIG.ComboKnockbackTime)
+			end
+		end
+	end
+	Quests.Report(player, "Photoshop", "StepInCombo", landedCount)
+end
+
 local Snapshot = {}
 
 -- returns false with nobody to lock onto, so no cooldown is spent
@@ -65,6 +141,7 @@ function Snapshot.Cast(player, character, aim)
 	Damage.Deal(player, model:FindFirstChildOfClass("Humanoid"), CONFIG.Damage, DAMAGE_OPTIONS)
 	if Framed.Mark(player, model) then
 		watchFrame(player, model)
+		Quests.Report(player, "Photoshop", "Framed")
 	end
 	return true
 end
@@ -115,6 +192,9 @@ function Snapshot.Recast(player, character)
 	skillEffects:FireAllClients("StepIn", character, from, landing)
 	watching[player] = nil
 	player:SetAttribute(RECAST, nil)
+	-- her arms throw the punches on her own screen
+	skillEffects:FireClient(player, "StepInCombo", character, #CONFIG.ComboHits, CONFIG.ComboInterval)
+	task.spawn(combo, player, character, humanoid)
 end
 
 return Snapshot

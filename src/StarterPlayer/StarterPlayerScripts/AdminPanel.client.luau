@@ -1,9 +1,9 @@
 -- Admin panel, shown only to admins (the AdminServer script decides who and
--- checks every request). Press ` or click ADMIN to change any player's XP,
+-- checks every request). Press ` or the top bar's Admin icon (TopBar) to change any player's XP,
 -- level, stat points, stats and mastery, reset their skill cooldowns, give
 -- them a skill set, heal or respawn them, or put status effects on them (or
--- the NPC nearest them). The overcharge and reset
--- cooldowns buttons each have a key box: click it and press a key, and that
+-- the NPC nearest them), or set and freeze the world's time of day. The
+-- overcharge and reset cooldowns buttons each have a key box: click it and press a key, and that
 -- key does the action on yourself from then on, panel open or not
 -- (Backspace clears it, Escape cancels). Binds are kept in the saved
 -- AdminKeybinds attribute.
@@ -11,6 +11,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
@@ -94,28 +95,12 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- ADMIN button under the STATS, INFO (StatsMenu) and INVENTORY (Inventory) buttons
-local toggle = make("TextButton", {
-	Name = "Toggle",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, 108),
-	Size = UDim2.fromOffset(64, 28),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
-	Font = Enum.Font.GothamBold,
-	Text = "ADMIN",
-	TextSize = 11,
-	TextColor3 = TEXT,
-})
-outline(toggle, 0.5)
-
--- on the right, so it can sit open next to the stats menu
+-- centred like the other menus (only one is open at a time)
 local panel = make("Frame", {
 	Name = "Panel",
 	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -16, 0.5, 0),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
@@ -298,6 +283,25 @@ for setName in pairs(SkillSetConfig.Sets) do
 		run("SetMastery", setName, value)
 	end, SkillSetConfig.MaxMastery)
 end
+
+heading("WORLD")
+inputRow("Time (0-24)", "Set", function(value)
+	run("SetTime", value)
+end)
+local freezeButton = button(section(ROW_HEIGHT), "Freeze time", {
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	TextColor3 = TEXT,
+})
+outline(freezeButton, 0.5)
+local function showFrozen()
+	freezeButton.Text = ReplicatedStorage:GetAttribute("DayFrozen") and "Resume time" or "Freeze time"
+end
+showFrozen()
+ReplicatedStorage:GetAttributeChangedSignal("DayFrozen"):Connect(showFrozen)
+freezeButton.Activated:Connect(function()
+	run("FreezeTime")
+end)
 
 -- Key binds: bind id ("ResetCooldowns", "Overcharge:Mandela") -> key name,
 -- read from and saved to the AdminKeybinds attribute as "id=Key,id=Key"
@@ -534,8 +538,15 @@ selectTarget(player)
 
 local function setOpen(open)
 	panel.Visible = open
+	if open then
+		Menus.Open("Admin", function()
+			setOpen(false)
+		end)
+	else
+		Menus.Close("Admin")
+	end
 end
-toggle.Activated:Connect(function()
+Menus.Register("Admin", function()
 	setOpen(not panel.Visible)
 end)
 closeButton.Activated:Connect(function()

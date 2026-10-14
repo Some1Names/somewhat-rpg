@@ -4,12 +4,16 @@
 -- Diamonds after the stamina boxes show the dodge charges (Q dodge and double
 -- jump), each filling as it recharges. Under the stamina, icons for any
 -- status effects on you (Burnt, Bleeding...).
+-- While you hold a block, a white posture bar (Guard) takes the stamina boxes'
+-- place, filling as hits wear the guard down; a guard break flashes it red and
+-- shakes it for the length of the stun, then the stamina boxes come back.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 
+local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
@@ -38,6 +42,11 @@ local STAMINA_COLOR = Color3.fromRGB(55, 138, 221)
 local STAMINA_TRAIL = Color3.fromRGB(133, 183, 235)
 local EXHAUSTED_COLOR = Color3.fromRGB(240, 196, 60)
 local DODGE_COLOR = Color3.new(1, 1, 1)
+local POSTURE_COLOR = Color3.new(1, 1, 1)
+local BROKEN_COLOR = Color3.fromRGB(230, 60, 50)
+local BROKEN_FLASH = 0.1 -- seconds between red and white while guard-broken
+local BROKEN_SHAKE = 0.3 -- seconds the broken bar shakes for
+local SHAKE_PIXELS = 3
 local DODGE_SIZE = 10 -- side of the dodge square before it's turned into a diamond
 local DODGE_GAP = 10 -- space between the stamina boxes and the dodge diamonds
 local DODGE_STEP = BOX_SIZE + 6 -- from one diamond to the next, leaving room for the link
@@ -169,6 +178,15 @@ for i = 1, MAX_BOXES do
 	stamina.boxes[i] = { box = box, fill = fill, trail = trail }
 end
 
+-- posture, in the stamina boxes' place while blocking (sized to their row each frame)
+local postureTrack = frame(stamina.group, Color3.new(0, 0, 0), UDim2.fromOffset(boxesWidth(BASE_BOXES), BOX_SIZE),
+	UDim2.fromOffset(ICON_WIDTH, (ROW_HEIGHT - BOX_SIZE) / 2))
+postureTrack.BackgroundTransparency = 0.65
+postureTrack.Visible = false
+outline(postureTrack)
+local postureFill = frame(postureTrack, POSTURE_COLOR, UDim2.fromScale(0, 1), UDim2.new())
+local shakeUntil = 0
+
 -- dodge diamonds, one per charge: solid when ready, filling out from the
 -- middle while it recharges
 local dodges = {}
@@ -233,6 +251,12 @@ local function onCharacter(character)
 	for _, m in ipairs({ hp, stamina }) do
 		m.last, m.trailFraction = 1, 1
 	end
+	shakeUntil = 0
+	character:GetAttributeChangedSignal("GuardBrokenUntil"):Connect(function()
+		if (character:GetAttribute("GuardBrokenUntil") or 0) > workspace:GetServerTimeNow() then
+			shakeUntil = os.clock() + BROKEN_SHAKE
+		end
+	end)
 end
 if player.Character then
 	task.spawn(onCharacter, player.Character)
@@ -253,15 +277,27 @@ RunService.RenderStepped:Connect(function(dt)
 	hp.fill.Size = UDim2.fromScale(hpFraction, 1)
 	hp.trail.Size = UDim2.fromScale(hp.trailFraction, 1)
 
-	updateMeter(stamina, Stamina.Get() / Stamina.Max, dt, false)
+	-- posture takes the stamina row's place while blocking, and through a guard break's stun
+	local broken = (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
+	local showPosture = character:GetAttribute("Blocking") == true or broken
+	updateMeter(stamina, Stamina.Get() / Stamina.Max, dt, showPosture)
 	local fillColor = Stamina.IsExhausted() and EXHAUSTED_COLOR or STAMINA_COLOR
 	stamina.icon.TextColor3 = Stamina.IsExhausted() and EXHAUSTED_COLOR or Color3.new(1, 1, 1)
 	local boxCount = math.clamp(math.round(Stamina.Max / StatConfig.StaminaPerBox), 1, MAX_BOXES)
 	for i, box in ipairs(stamina.boxes) do
-		box.box.Visible = i <= boxCount
+		box.box.Visible = i <= boxCount and not showPosture
 		box.fill.Size = UDim2.fromScale(1, boxShare(stamina.last, i, boxCount))
 		box.trail.Size = UDim2.fromScale(1, boxShare(stamina.trailFraction, i, boxCount))
 		box.fill.BackgroundColor3 = fillColor
+	end
+	postureTrack.Visible = showPosture
+	if showPosture then
+		postureTrack.Size = UDim2.fromOffset(boxesWidth(boxCount), BOX_SIZE)
+		local shake = os.clock() < shakeUntil and math.random(-SHAKE_PIXELS, SHAKE_PIXELS) or 0
+		postureTrack.Position = UDim2.fromOffset(ICON_WIDTH + shake, (ROW_HEIGHT - BOX_SIZE) / 2)
+		postureFill.Size = UDim2.fromScale(math.clamp((character:GetAttribute("Posture") or 0) / GuardConfig.MaxPosture, 0, 1), 1)
+		local red = broken and math.floor(os.clock() / BROKEN_FLASH) % 2 == 0
+		postureFill.BackgroundColor3 = red and BROKEN_COLOR or POSTURE_COLOR
 	end
 	local charges = DodgeCharges.Get()
 	local firstX = ICON_WIDTH + boxesWidth(boxCount) + DODGE_GAP + BOX_SIZE / 2

@@ -1,22 +1,23 @@
 -- Iridescent Requiem V, Solar Lance: after a moment's warning, a column of
 -- focused sunlight slams down where Ayato aimed (up to Range away), striking
 -- everyone inside it and throwing them up. The more Luminance he holds, the
--- wider and harder it hits; where the sun can't reach (indoors, under cover)
--- it's weaker still. Cast in Prism Form, it leaves a pool of burning light
--- that keeps hurting anyone standing in it and sets them Burnt, a stack a
--- second. Aimed near someone carrying the
+-- wider and harder it hits; where the sun can't reach (indoors, under cover,
+-- or at night: the moon doesn't count) it's weaker still. Cast in Prism Form,
+-- it leaves a pool of burning light that keeps hurting anyone standing in it
+-- and sets them Burnt, a stack a second. Aimed near someone carrying the
 -- caster's Sunmark (from Prism Shot or Refraction Field), it locks onto
 -- them instead: almost no warning, it follows them through it, hits
--- LockedBonus harder and uses the mark up. Clients draw it from the
+-- LockedBonus harder (none for now: the lock makes it land, not hurt more)
+-- and uses the mark up. Clients draw it from the
 -- SkillEffects "SolarLanceWarning", "SolarLance" and "SolarPool" events.
 local Debris = game:GetService("Debris")
-local Lighting = game:GetService("Lighting")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
+local SkyLight = require(ServerScriptService:WaitForChild("SkyLight"))
 local StatusEffects = require(ServerScriptService:WaitForChild("StatusEffects"))
 local Sunmark = require(ServerScriptService:WaitForChild("Sunmark"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -37,7 +38,7 @@ local CONFIG = {
 	-- locking onto a Sunmark
 	LockRadius = 18, -- studs round the aim point it looks for one
 	LockedWarningTime = 0.15, -- seconds
-	LockedBonus = 0.25, -- extra share of damage
+	LockedBonus = 0, -- extra share of damage (none: locking makes it land, not hit harder)
 	-- the pool it leaves in Prism Form
 	PoolShare = 0.75, -- of the strike's radius
 	PoolDuration = 4, -- seconds
@@ -46,8 +47,8 @@ local CONFIG = {
 	PoolHeight = 6, -- studs above the ground it reaches
 	PoolBurnInterval = 1, -- seconds between Burnt stacks for someone standing in it
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true }
-local POOL_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", critical = true, skill = "V" }
+local POOL_OPTIONS = { stat = "Superliminal", skillSet = "IridescentRequiem", skill = "V" }
 local LUMINANCE = SkillSetConfig.LuminanceAttribute("IridescentRequiem")
 
 local function flat(vector)
@@ -61,24 +62,6 @@ local function groundAt(position, ignore)
 	params.RespectCanCollide = true
 	local hit = workspace:Raycast(position + Vector3.new(0, 20, 0), Vector3.new(0, -200, 0), params)
 	return hit and hit.Position
-end
-
--- whether sunlight reaches this point (characters don't count as cover)
-local function underSky(position)
-	local sun = Lighting:GetSunDirection()
-	if sun.Y <= 0 then
-		return false
-	end
-	local ignore = {}
-	for _, other in ipairs(Players:GetPlayers()) do
-		if other.Character then
-			table.insert(ignore, other.Character)
-		end
-	end
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = ignore
-	return workspace:Raycast(position + Vector3.new(0, 2, 0), sun * 1000, params) == nil
 end
 
 local function launch(root)
@@ -131,7 +114,7 @@ local function strike(player, character, point, inForm, locked)
 	local luminance = player:GetAttribute(LUMINANCE) or 0
 	local radius = CONFIG.MinRadius + (CONFIG.MaxRadius - CONFIG.MinRadius) * luminance
 	local damage = CONFIG.MinDamage + (CONFIG.MaxDamage - CONFIG.MinDamage) * luminance
-	if not underSky(point) then
+	if SkyLight.Exposure(point + Vector3.new(0, 2, 0)) ~= "sun" then
 		radius *= CONFIG.CoveredShare
 		damage *= CONFIG.CoveredShare
 	end
@@ -169,6 +152,11 @@ local function strike(player, character, point, inForm, locked)
 				end
 			end
 		end
+	end
+	-- it landed on the Sunmarked target it was locked onto (Quests)
+	local lockedHumanoid = locked and locked:FindFirstChildOfClass("Humanoid")
+	if lockedHumanoid and struck[lockedHumanoid] then
+		Quests.Report(player, "IridescentRequiem", "MarkedLance")
 	end
 	if inForm then
 		burn(player, character, point, radius * CONFIG.PoolShare)

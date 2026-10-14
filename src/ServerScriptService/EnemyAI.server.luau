@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
+local Guard = require(ServerScriptService:WaitForChild("Guard"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
@@ -184,6 +185,9 @@ local function run(model)
 				local amount = attackDamage(model) * StatusConfig.OutgoingMultiplier(model) -- softer while Weakened
 				local victim = Players:GetPlayerFromCharacter(targetHumanoid.Parent)
 				if victim then
+					Guard.MarkCombat(victim.Character)
+					-- a block cuts it first, then the passive
+					amount = Guard.Resolve(victim.Character, amount, "melee", ownRoot.Position, model)
 					amount = Passives.Absorb(victim, amount, true) -- a swing is physical
 				end
 				if amount > 0 then

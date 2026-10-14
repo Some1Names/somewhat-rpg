@@ -1,7 +1,9 @@
 -- The death screen: when your character dies, a dark square band across the
 -- middle of the screen says YOU DIED, who killed you and with what (from the
 -- KillFeed message about you, or "You died" when no player gets the credit),
--- and counts down to the respawn (Players.RespawnTime). It goes when your
+-- the yen the death cost ("−1,240 ¥", from LastDeathYenLost, which
+-- ServerScriptService.Headhunter sets; nothing at 0), and counts down to the
+-- respawn (Players.RespawnTime). It goes when your
 -- new character arrives. With Quick respawn on (Preferences, set in
 -- Settings) the server respawns you at once instead, so it doesn't show.
 local Players = game:GetService("Players")
@@ -12,6 +14,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local player = Players.LocalPlayer
 
 local BAND_HEIGHT = 120
+local YEN_ROW = 22 -- pixels the yen line adds to the band
 local CAUSE_WAIT = 0.5 -- seconds to wait for the kill feed's word on who did it
 local TICK = 0.1 -- seconds between countdown updates
 local BACKGROUND = Color3.fromRGB(12, 10, 16)
@@ -52,7 +55,28 @@ end
 
 line("YOU DIED", Enum.Font.GothamBold, 36, DANGER, 14, 40)
 local cause = line("", Enum.Font.GothamMedium, 16, TEXT, 58, 20)
+local yenLost = line("", Enum.Font.GothamBold, 15, DANGER, 82, 18)
 local countdown = line("", Enum.Font.GothamMedium, 13, MUTED, 84, 18)
+
+-- 12345 -> "12,345"
+local function withCommas(number)
+	local text = tostring(math.floor(number))
+	local formatted
+	repeat
+		text, formatted = string.gsub(text, "^(-?%d+)(%d%d%d)", "%1,%2")
+	until formatted == 0
+	return text
+end
+
+-- the yen line under the cause, and room for it, only when the death cost some
+local function showYen(visible)
+	local lost = visible and player:GetAttribute("LastDeathYenLost") or 0
+	local shown = lost > 0
+	yenLost.Visible = shown
+	yenLost.Text = shown and ("−" .. withCommas(lost) .. " ¥") or ""
+	countdown.Position = UDim2.new(0.5, 0, 0, shown and 84 + YEN_ROW or 84)
+	band.Size = UDim2.new(1, 0, 0, shown and BAND_HEIGHT + YEN_ROW or BAND_HEIGHT)
+end
 
 -- the latest kill feed message about this player: { at, killerName, setName }
 local lastKill
@@ -80,6 +104,7 @@ local function show(diedAt)
 	showing = token
 	gui.Enabled = true
 	cause.Text = ""
+	showYen(false)
 	local respawnAt = diedAt + Players.RespawnTime
 	-- the kill feed message may come just before the death or just after it
 	task.spawn(function()
@@ -90,6 +115,7 @@ local function show(diedAt)
 		if showing == token then
 			local recent = lastKill and lastKill.at >= diedAt - CAUSE_WAIT and lastKill or nil
 			cause.Text = causeText(recent)
+			showYen(true)
 		end
 	end)
 	while showing == token do
@@ -122,6 +148,13 @@ local function watchCharacter(character)
 		show(os.clock())
 	end)
 end
+
+-- the server may set the loss just after the cause shows
+player:GetAttributeChangedSignal("LastDeathYenLost"):Connect(function()
+	if showing and cause.Text ~= "" then
+		showYen(true)
+	end
+end)
 
 player.CharacterAdded:Connect(watchCharacter)
 if player.Character then

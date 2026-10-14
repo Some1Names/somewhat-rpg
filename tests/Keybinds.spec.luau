@@ -44,6 +44,12 @@ check("parse_unknown_ignored", unknown.SkillZ == "K" and unknown.Bogus == nil)
 
 check("parse_double_falls_back", same(Keybinds.Parse("SkillZ=Q"), defaults))
 
+-- Block came after players could already save E for something else: it gives way
+-- (takes that action's old key) instead of the whole save being thrown out
+local onE = Keybinds.Parse("SkillZ=E,Dash=K")
+check("parse_old_save_on_e_keeps_bindings", onE.SkillZ == "E" and onE.Dash == "K" and onE.Block == "Z" and Keybinds.Valid(onE))
+check("parse_block_saved_on_e_stays", Keybinds.Parse("Block=E").Block == "E")
+
 check("parse_non_string_and_long", same(Keybinds.Parse(nil), defaults)
 	and same(Keybinds.Parse(42), defaults)
 	and same(Keybinds.Parse(string.rep("SkillZ=K,", 30)), defaults))
@@ -85,6 +91,10 @@ check("keypad_names_are_real", Keybinds.Allowed.KeypadOne and Keybinds.Allowed.K
 -- keys Roblox's own controls use: I and O zoom the camera, . opens emotes, , turns the camera
 check("roblox_keys_not_allowed", not Keybinds.Allowed.I and not Keybinds.Allowed.O
 	and not Keybinds.Allowed.Period and not Keybinds.Allowed.Comma)
+
+-- menu keys (B inventory, M stats, P settings, J quests) are never skill keys
+check("menu_keys_not_allowed", not Keybinds.Allowed.B and not Keybinds.Allowed.M and not Keybinds.Allowed.P and not Keybinds.Allowed.J)
+check("saved_j_is_ignored", Keybinds.Parse("SkillZ=J").SkillZ == "Z")
 
 -- every allowed key is a real Enum.KeyCode name (checked against Roblox's list)
 local REAL = {}

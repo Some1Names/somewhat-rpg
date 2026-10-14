@@ -18,7 +18,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Range = 40, -- studs
+	Range = 80, -- studs (SkillSetConfig's overchargedAim shows the same)
 	ExtendSpeed = 150, -- studs per second the whip shoots out
 	Width = 3.5, -- studs either side of the whip that it catches
 	MaxTargets = 3,
@@ -32,7 +32,7 @@ local CONFIG = {
 	ReleaseDelay = 0.1, -- lines the whip up with the cast animation's lash
 	AutoAimCone = 30, -- degrees either side of the aim it locks onto a target in
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable", skill = "Z" }
 local COLOR = SkillSetConfig.Sets.Mandela.overcharge.color
 local LINKS = SkillSetConfig.Sets.Mandela.links
 

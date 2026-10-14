@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local punchEvent = ReplicatedStorage:WaitForChild("Punch")
 local player = Players.LocalPlayer
@@ -88,7 +89,14 @@ end
 local function tryAttack()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or humanoid.Sit or player:GetAttribute("Dashing") or player:GetAttribute("RangedReady") then
+	if
+		not humanoid
+		or humanoid.Health <= 0
+		or humanoid.Sit
+		or player:GetAttribute("Dashing")
+		or player:GetAttribute("RangedReady")
+		or ActionLock.Locked(character) -- Undo carrying her back, a block, a stun
+	then
 		return
 	end
 	local name, weapon = PunchConfig.WeaponFor(character)

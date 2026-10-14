@@ -25,7 +25,10 @@ local flyTrack
 local function flightOf(character)
 	local _, setName = SkillSetConfig.Equipped(character)
 	local set = setName and SkillSetConfig.Sets[setName]
-	return set and set.flight, setName
+	if not (set and set.flight and SkillSetConfig.FeatureUnlocked(Players.LocalPlayer, setName, "flight")) then
+		return nil, setName
+	end
+	return set.flight, setName
 end
 
 local function land(character)
@@ -106,6 +109,10 @@ RunService.RenderStepped:Connect(function()
 		direction = direction.Unit
 	end
 	local speed = flight.speed * (UserInputService:IsKeyDown(SPRINT_KEY) and flight.boostMultiplier or 1)
+	-- a guard break's stun holds you still in the air too
+	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() then
+		speed = 0
+	end
 	movers.velocity.VectorVelocity = direction * speed
 
 	local flatLook = Vector3.new(camera.LookVector.X, 0, camera.LookVector.Z)

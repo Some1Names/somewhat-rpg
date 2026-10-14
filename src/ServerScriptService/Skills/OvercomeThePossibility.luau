@@ -42,8 +42,8 @@ local CONFIG = {
 	LaunchTime = 0.25,
 }
 local SET = SkillSetConfig.Sets.Mandela
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", critical = true }
-local TICK_OPTIONS = { stat = "Superliminal", skillSet = "Mandela" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", critical = true, skill = "V" }
+local TICK_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", skill = "V" }
 local FLYING = "Flying" -- LuminanceServer's attribute on a flying character
 
 local castCount = 0

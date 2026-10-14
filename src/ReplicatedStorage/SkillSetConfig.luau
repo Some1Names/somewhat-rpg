@@ -80,6 +80,13 @@ end
 -- rewinds the character instead (Photoshop's Undo, PhotoshopServer); a set
 -- has one of overcharge, flight or undo.
 --
+-- Features unlock by mastery too: `passive`, `overcharge`, `flight`, `dash`,
+-- `undo` and `gallery` may carry `mastery` (default 1, always on); use
+-- FeatureUnlocked rather than comparing numbers. Never gated: `ranged` and
+-- a `form`'s own table. While locked: the passive does nothing, overcharge
+-- builds no stacks, flight won't take off, the dash key does the normal
+-- dash, Undo and the Gallery do nothing.
+--
 -- `ranged`: the right-click/left-click move (client Ranged, RangedServer):
 -- holding right click readies it and left click fires, through `handler`
 -- (a module in ServerScriptService.Skills with Fire). `aims`: it goes where
@@ -95,7 +102,8 @@ end
 -- them and steers in, so it lands unless a wall gets in the way.
 --
 -- `overcharge`: damage dealt with the set builds stacks (melee hits only count
--- for meleeShare of their damage); at maxStacks it's ready, and pressing
+-- for meleeShare of their damage; damage taken while holding it counts
+-- takenShare); at maxStacks it's ready, and pressing
 -- OverchargeKey with the set equipped
 -- overcharges for `duration` seconds (its OverchargeOnly wearables appear and
 -- skills cast their overcharged forms), then the stacks are spent and it
@@ -110,7 +118,7 @@ SkillSetConfig.Sets = {
 		color = Color3.fromRGB(170, 255, 200),
 		-- Misremembered: the next hit you'd take is erased, unless it scales
 		-- with Superliminal (skills and ranged moves), then it recharges
-		passive = { name = "Misremembered", cooldown = 25, overchargedCooldown = 15 },
+		passive = { name = "Misremembered", mastery = 10, cooldown = 25, overchargedCooldown = 15 },
 		links = {
 			exposedDuration = 3, -- seconds someone stays exposed after Z pulls them in
 			exposedFinisherBonus = 0.5, -- extra share of damage on your next axe finisher against them
@@ -118,10 +126,12 @@ SkillSetConfig.Sets = {
 		},
 		overcharge = {
 			name = "Backbone Power",
+			mastery = 25,
 			color = Color3.fromRGB(255, 70, 80),
 			maxStacks = 10,
 			damagePerStack = 40,
 			meleeShare = 0.35,
+			takenShare = 0.5, -- damage he takes counts half as much as damage he deals
 			duration = 15,
 			cooldown = 30,
 			killRefill = 1.5,
@@ -152,7 +162,7 @@ SkillSetConfig.Sets = {
 				overchargedName = "Spine Lash",
 				overchargedHandler = "SpineLash",
 				aim = { kind = "line", length = 42 },
-				overchargedAim = { kind = "lock", range = 40, cone = 30 },
+				overchargedAim = { kind = "lock", range = 80, cone = 30 },
 			},
 			X = {
 				name = "Event Horizon",
@@ -166,7 +176,7 @@ SkillSetConfig.Sets = {
 			},
 			C = {
 				name = "Tornado",
-				mastery = 20,
+				mastery = 15,
 				cooldown = 14,
 				handler = "Tornado",
 				overcharged = true,
@@ -175,7 +185,7 @@ SkillSetConfig.Sets = {
 			},
 			V = {
 				name = "Overcome the Possibility",
-				mastery = 50,
+				mastery = 40,
 				cooldown = 60,
 				handler = "OvercomeThePossibility",
 				overcharged = true,
@@ -212,22 +222,24 @@ SkillSetConfig.Sets = {
 		passive = {
 			name = "Luminance",
 			physicalReduction = 0.15,
-			chargePerSecond = 0.08,
+			chargePerSecond = 0.1,
 			shadeDrainPerSecond = 0.06,
 			shadeCap = 0.5,
-			shadeChargePerSecond = 0.02,
+			shadeChargePerSecond = 0.025,
 			cloudHeight = 250, -- studs; the map tops out around 126
 			cloudMultiplier = 3,
 		},
 		-- flying burns Luminance (it needs minimumToStart to take off; sunlight
 		-- doesn't refill it in the air) and ends when it runs out; sprint flies
 		-- boostMultiplier times faster
-		flight = { speed = 40, boostMultiplier = 1.3, drainPerSecond = 0.15, minimumToStart = 0.2 },
+		flight = { mastery = 30, speed = 40, boostMultiplier = 1.3, drainPerSecond = 0.15, minimumToStart = 0.2 },
 		-- Q is Lightstep instead of the normal dash: a flash of light `range`
 		-- studs, untouchable for `travelTime`, hurting everyone it passes through
 		-- (Skills.Lightstep). It spends a dodge charge like the normal dash, but
-		-- no stamina.
-		dash = { name = "Lightstep", handler = "Lightstep", range = 28, travelTime = 0.1 },
+		-- no stamina. The light it leaves lingers for trailDuration seconds,
+		-- hurting anyone who walks into it once per trail; only maxTrails of his
+		-- trails last at a time (a new one ends the oldest).
+		dash = { name = "Lightstep", mastery = 15, handler = "Lightstep", range = 28, travelTime = 0.1, trailDuration = 3, maxTrails = 3 },
 		-- Prism Form, on X: it needs minimumToStart Luminance and costs entryCost,
 		-- then burns drainPerSecond (sunlight stops refilling it meanwhile) until
 		-- X is pressed again or the light runs out. Physical hits are cut by
@@ -262,7 +274,7 @@ SkillSetConfig.Sets = {
 				form = true, -- 7 beams
 				formAim = { kind = "fan", length = 45, count = 7, spread = 8 },
 			},
-			X = { name = "Prism Form", mastery = 5, cooldown = 10, handler = "PrismForm", recast = "Revert" },
+			X = { name = "Prism Form", mastery = 10, cooldown = 10, handler = "PrismForm", recast = "Revert" },
 			C = {
 				name = "Refraction Field",
 				mastery = 20,
@@ -308,13 +320,14 @@ SkillSetConfig.Sets = {
 		-- History: where she's been and the damage she's taken lately is kept,
 		-- so Undo can take it back (PhotoshopServer). Mandela's damage can't be
 		-- undone.
-		passive = { name = "History" },
+		passive = { name = "History", mastery = 15 },
 		-- G, Undo: back to where she stood `rewind` seconds ago, healing
-		-- healShare of the damage taken since
-		undo = { name = "Undo", cooldown = 18, rewind = 3, healShare = 0.5 },
+		-- healShare of the damage taken since; she's carried back along the
+		-- way she came over rewindTime seconds, untouchable and unable to act
+		undo = { name = "Undo", mastery = 15, cooldown = 18, rewind = 3, healShare = 0.5, rewindTime = 0.6 },
 		-- `key` opens her saved photos of places, `slots` of them, to step
 		-- back into out of combat (PhotoshopServer, the PhotoGallery script)
-		gallery = { name = "Gallery", key = "T", slots = 3 },
+		gallery = { name = "Gallery", mastery = 30, key = "T", slots = 3 },
 		-- camera flashes at the mouse, from 3 charges; one on someone she's
 		-- Framed keeps the frame going
 		ranged = {
@@ -335,7 +348,7 @@ SkillSetConfig.Sets = {
 				handler = "Snapshot",
 				needsTarget = true,
 				recast = "Step In", -- behind whoever she's Framed
-				aim = { kind = "lock", range = 50, cone = 30 },
+				aim = { kind = "lock", range = 100, cone = 30 },
 			},
 			X = {
 				name = "Photo Teleport",
@@ -355,11 +368,11 @@ SkillSetConfig.Sets = {
 			},
 			V = {
 				name = "Iris Horizon",
-				mastery = 50,
+				mastery = 40,
 				cooldown = 35,
 				handler = "IrisHorizon",
 				needsTarget = true,
-				aim = { kind = "lock", range = 60, cone = 30 },
+				aim = { kind = "lock", range = 120, cone = 30 },
 			},
 			-- the ultimate; she has no overcharge, so it needs only the mastery
 			F = {
@@ -409,6 +422,23 @@ SkillSetConfig.Sets = {
 		},
 	},
 }
+
+-- the mastery a set's feature table (passive, overcharge, flight, dash, undo,
+-- gallery) unlocks at; no `mastery` field means it's on from 1
+function SkillSetConfig.FeatureMastery(set, feature)
+	local info = set and set[feature]
+	return info and info.mastery or 1
+end
+
+-- true if the set has that feature and the player's mastery in it is high enough
+function SkillSetConfig.FeatureUnlocked(player, setName, feature)
+	local set = SkillSetConfig.Sets[setName]
+	if not set or not set[feature] then
+		return false
+	end
+	local mastery = player:GetAttribute(SkillSetConfig.MasteryAttribute(setName)) or 1
+	return mastery >= SkillSetConfig.FeatureMastery(set, feature)
+end
 
 -- the attribute names a player's mastery in a set is kept under
 function SkillSetConfig.MasteryAttribute(setName)

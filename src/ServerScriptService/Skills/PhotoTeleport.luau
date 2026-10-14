@@ -16,6 +16,7 @@ local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Framed = require(ServerScriptService:WaitForChild("Framed"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -111,6 +112,7 @@ function PhotoTeleport.Recast(player, character)
 			CrowdControl.Apply(target, CONFIG.PasteHold)
 			skillEffects:FireAllClients("PhotoPaste", photo.id, target, from, photo.point)
 			endPhoto(player, photo)
+			Quests.Report(player, "Photoshop", "CutPaste")
 			return
 		end
 	end

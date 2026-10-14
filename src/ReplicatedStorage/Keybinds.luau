@@ -1,5 +1,5 @@
 -- The rebindable keys: the fighting actions (a skill set's five skill slots,
--- its Special on G, the dash, reload, Photoshop's gallery), the key each is
+-- its Special on G, the dash, block, reload, Photoshop's gallery), the key each is
 -- on by default, and which keys a player may move them to (Allowed: never
 -- movement, menus, chat or the hotbar). A player's own bindings are the
 -- saved Keybinds attribute, "SkillZ=Q,Dash=Z", holding only the actions
@@ -15,6 +15,9 @@ local Keybinds = {}
 Keybinds.Attribute = "Keybinds" -- on the player, saved by PlayerStats
 Keybinds.MaxLength = 200 -- PlayerStats' longest saved text
 
+-- `yields`: added after players could already save keys; if a save has some
+-- other action on this one's default key, this one takes that action's old key
+-- (as Bind would) rather than the whole save being thrown out
 Keybinds.Actions = {
 	{ id = "SkillZ", label = "Skill 1", default = "Z" },
 	{ id = "SkillX", label = "Skill 2", default = "X" },
@@ -23,6 +26,7 @@ Keybinds.Actions = {
 	{ id = "SkillF", label = "Skill 5 (ultimate)", default = "F" },
 	{ id = "Special", label = "Overcharge / Flight / Undo", default = "G" },
 	{ id = "Dash", label = "Dash", default = "Q" },
+	{ id = "Block", label = "Block", default = "E", yields = true },
 	{ id = "Reload", label = "Reload", default = "R" },
 	{ id = "Gallery", label = "Photo Gallery", default = "T" },
 }
@@ -33,12 +37,12 @@ for _, action in ipairs(Keybinds.Actions) do
 end
 
 -- every key an action may be put on (Enum.KeyCode names). Letters but
--- W A S D (movement), B and M (Inventory, Stats), P (Settings) and I and O
+-- W A S D (movement), B, M and J (Inventory, Stats, Quests), P (Settings) and I and O
 -- (Roblox's camera zoom); F1-F8 (F9 is the console, F11 fullscreen); the
 -- number pad (KeypadZero..KeypadNine); some punctuation, not . (emotes) or
 -- , (camera turning)
 Keybinds.Allowed = {}
-for letter in string.gmatch("CEFGHJKLNQRTUVXYZ", ".") do
+for letter in string.gmatch("CEFGHKLNQRTUVXYZ", ".") do
 	Keybinds.Allowed[letter] = true
 end
 for i = 1, 8 do
@@ -98,9 +102,21 @@ function Keybinds.Parse(text)
 	if typeof(text) ~= "string" or #text > Keybinds.MaxLength then
 		return map
 	end
+	local saved = {}
 	for id, key in string.gmatch(text, "(%w+)=(%w+)") do
 		if byId[id] and Keybinds.Allowed[key] then
 			map[id] = key
+			saved[id] = true
+		end
+	end
+	for _, action in ipairs(Keybinds.Actions) do
+		if action.yields and not saved[action.id] then
+			for id, key in pairs(map) do
+				if id ~= action.id and key == map[action.id] then
+					map[action.id] = byId[id].default
+					break
+				end
+			end
 		end
 	end
 	if hasDouble(map) then

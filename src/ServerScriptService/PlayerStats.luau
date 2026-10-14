@@ -13,6 +13,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
+local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
+local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -48,8 +51,12 @@ local TEXT_DEFAULTS = {
 	PhotoGallery = "", -- Photoshop's saved photos of places (PhotoshopServer)
 	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
 	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
+	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
+	Reforge = "", -- each set's reforge level and modifiers (ReforgeRules, Reforge)
 }
 local TEXT_MAX_LENGTH = 200
+-- fields that need more room than the rest
+local TEXT_LENGTHS = { Challenges = QuestConfig.MaxSaveLength, Reforge = ReforgeConfig.MaxSaveLength }
 
 local PlayerStats = {}
 
@@ -171,7 +178,7 @@ local function load(player)
 	end
 	for field, default in pairs(TEXT_DEFAULTS) do
 		local value = saved[field]
-		if typeof(value) ~= "string" or #value > TEXT_MAX_LENGTH then
+		if typeof(value) ~= "string" or #value > (TEXT_LENGTHS[field] or TEXT_MAX_LENGTH) then
 			value = default
 		end
 		player:SetAttribute(field, value)
@@ -254,26 +261,45 @@ function PlayerStats.SpendYen(player, amount)
 	return true
 end
 
--- Skill-set mastery, earned by dealing damage with the set. Like levels, XP
--- past the top mastery is banked up to one level's worth.
-function PlayerStats.AddMasteryXP(player, setName, amount)
+-- takes `share` of the yen a player carries (rounded down) and returns how
+-- much; 0 while they're still loading (Headhunter: yen dropped on death)
+function PlayerStats.TakeYen(player, share)
+	local yen = player:GetAttribute("Yen")
+	if not yen or share <= 0 then
+		return 0
+	end
+	-- a little slack so a share like 0.29 × 100 isn't floored to 28
+	local amount = math.clamp(math.floor(yen * share + 1e-9), 0, yen)
+	if amount > 0 then
+		player:SetAttribute("Yen", yen - amount)
+	end
+	return amount
+end
+
+-- functions run as a player leaves, just before their data is saved, so what
+-- they change is kept; not while the server is shutting down (Headhunter:
+-- leaving mid-fight)
+local leaveCallbacks = {}
+local closing = false
+function PlayerStats.BeforeLeave(callback)
+	table.insert(leaveCallbacks, callback)
+end
+
+-- Skill-set mastery, earned by dealing damage with the set (and the other
+-- sources in MasteryRules). Like levels, XP past the top mastery is banked up
+-- to one level's worth. With `capLevel` (training dummies), nothing is gained
+-- at or above that level and reaching it leaves no XP.
+function PlayerStats.AddMasteryXP(player, setName, amount, capLevel)
 	local levelKey = SkillSetConfig.MasteryAttribute(setName)
 	local xpKey = SkillSetConfig.MasteryXPAttribute(setName)
 	local level = player:GetAttribute(levelKey)
 	local xp = player:GetAttribute(xpKey)
 	-- kept fractional: small hits earn a fraction of a point
-	if not level or not xp or amount <= 0 then
+	if not level or not xp or amount ~= amount or amount <= 0 then
 		return
 	end
-	xp += amount
 	local startLevel = level
-	while level < SkillSetConfig.MaxMastery and xp >= SkillSetConfig.MasteryToLevelUp(level) do
-		xp -= SkillSetConfig.MasteryToLevelUp(level)
-		level += 1
-	end
-	if level >= SkillSetConfig.MaxMastery then
-		xp = math.min(xp, SkillSetConfig.MasteryToLevelUp(level))
-	end
+	level, xp = MasteryRules.addXP(level, xp, amount, capLevel, SkillSetConfig.MaxMastery, SkillSetConfig.MasteryToLevelUp)
 	player:SetAttribute(xpKey, xp)
 	if level > startLevel then
 		player:SetAttribute(levelKey, level)
@@ -349,6 +375,8 @@ function PlayerStats.ResetProgress(player)
 	for field, default in pairs(DEFAULTS) do
 		player:SetAttribute(field, default)
 	end
+	player:SetAttribute("Challenges", TEXT_DEFAULTS.Challenges)
+	player:SetAttribute("Reforge", TEXT_DEFAULTS.Reforge)
 	updatePoints(player)
 	applyHealth(player, false)
 	return true
@@ -391,10 +419,19 @@ function PlayerStats.Start()
 		task.spawn(onPlayerAdded, player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
+		if not closing then
+			for _, callback in ipairs(leaveCallbacks) do
+				local ok, err = pcall(callback, player)
+				if not ok then
+					warn("[PlayerStats] a leave callback failed for " .. player.Name .. ": " .. tostring(err))
+				end
+			end
+		end
 		save(player)
 		canSave[player] = nil
 	end)
 	game:BindToClose(function()
+		closing = true
 		local pending = 0
 		for _, player in ipairs(Players:GetPlayers()) do
 			pending += 1

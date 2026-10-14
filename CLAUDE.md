@@ -36,13 +36,20 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 - All player damage goes through `ServerScriptService/Damage.luau` (`Damage.Deal`).
 - Any upload to the owner's Roblox account (images, animations) needs their OK first.
 - Match the surrounding code: comment density, naming, and the existing helpers.
+- Top-of-screen UI is plain icons and text (no boxes or borders), white with a dark stroke, like the top bar.
+- Real VFX come from imported effect/particle packs (or assets from VFX websites), set up as
+  prefabs in `ReplicatedStorage.VFXPrefabs` and played with `VFX.Play`. Don't design final
+  visuals from Roblox's stock particles or parts built in code; those are placeholders only,
+  until the pack prefab exists.
 
 ## Architecture (where things live)
 
 - **Config modules** (`src/ReplicatedStorage`): `SkillSetConfig` (every skill set: tier, keys,
   cooldowns, aim specs, `handler` names, passives, flight, forms), `StatConfig` (levels, stats, HP
   per Vitality, enemy scaling), `PunchConfig` (melee weapons/combos), `ShopConfig`,
-  `StatusConfig` (Burnt/Bleeding/Poisoned/Weakened), `VFX` (client effects toolkit).
+  `StatusConfig` (Burnt/Bleeding/Poisoned/Weakened), `QuestConfig` (bounties, mastery challenges,
+  their saved text), `GuardConfig` (block and posture numbers), `Water` (is a point inside a part tagged `Water`;
+  the water is parts, so `Swim` scripts the swimming), `VFX` (client effects toolkit).
 - **Skills**: each skill's server logic is a ModuleScript in `ServerScriptService/Skills` with
   `Cast(player, character, aim)` (and optional `Recast`), named by `handler` in SkillSetConfig.
   `SkillSetServer` validates casts (mastery, cooldowns via `SkillCooldowns`, `overchargedOnly`,
@@ -52,13 +59,31 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `effects[kind](...)`. A player's own instant visuals go through the `LocalSkillEffect` bindable.
   `VFX.Play(path, where, { scale, color, ... })` plays prefabs from `VFXPrefabs` (they exist only
   in Studio; attributes EmitCount/EmitDuration/Tint on their emitters drive them).
-- **Combat systems**: `Damage` (stat scaling, kill credit, `LastAttacker`/`LastHit`, `OnDealt`),
+- **Combat systems**: `Damage` (stat scaling, kill credit, `LastAttacker`/`LastHit`, `OnDealt`,
+  `OnKill`, and skill-set mastery from hits, kills and training dummies via `MasteryRules`),
   `CrowdControl` (PvP hold protection and immunity; ask `CanControl` before moving or stunning a
-  player), `StatusEffects`, `Passives`, `Overcharge`, `Projectiles`, `Sunmark`, `Ragdoll`.
+  player), `Guard` (block and posture: every hit on a player goes through `Guard.Resolve`; tag a
+  damage call's `options.guard`), `ActionLock` (can't act: rewinding, blocking, stunned),
+  `StatusEffects`, `Passives`, `Overcharge`, `Projectiles`, `Sunmark`, `Ragdoll`.
 - **Player data**: `PlayerStats` (attributes, DataStore save/load; Studio can't reach DataStores),
   `Loadout` (owned/equipped sets), `ShopServer`, `KillFeed`.
-- **Client UI**: `SkillBar`, `Inventory`, `StatsMenu`, `AdminPanel`, `ShopMenu`, `StatusHUD`,
-  `OverheadHealth`, `Hotbar`, `KillFeed`.
+- **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
+  attribute; enemies carry an `EnemyType`), and per-set mastery challenges saved in the `Challenges`
+  text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so
+  hits and kills know their move; moves report other things with `Quests.Report(player, set,
+  event, amount)`. New givers/quests/challenges are data in `QuestConfig`.
+- **Reforge**: a smith (a model tagged `Smith`) takes drop materials (`Mat_<key>`) and yen to level
+  up (to 10) and reroll the two modifier slots of any owned skill set. Numbers in `ReforgeConfig`,
+  pure rules in `ReforgeRules` (Lune-tested), per-player state and checked actions in the `Reforge`
+  module (saved as the `Reforge` text, mirrored as `Reforge_<Set>` attributes), the smith's remote in
+  `ReforgeServer`. `Damage.Deal` and `SkillSetServer` read the bonuses; status procs and lifesteal
+  run from a `Damage.OnDealt` listener in `ReforgeServer`.
+- **Client UI**: `SkillBar`, `Inventory`, `StatsMenu` (with a Milestones tab), `AdminPanel`, `ShopMenu`,
+  `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
+  popups), `Quests` (the J menu), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row and yen, no side
+  buttons), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
+  every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
+  `HudConfig`).
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
   orange #FF9A3C / cyan #3CE0E6, Luminance passive, flight, Prism Form), Revolver (B weapon).
 

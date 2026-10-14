@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local PlayerStats = require(ServerScriptService:WaitForChild("PlayerStats"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -54,6 +55,9 @@ function behaviours.Misremembered(player, character, setName, set, amount, physi
 	if superliminal or not spendMisremembered(player, character, setName, set) then
 		return amount
 	end
+	if fromPlayer then
+		Quests.Report(player, setName, "ErasedPlayerHit")
+	end
 	return 0
 end
 
@@ -69,6 +73,9 @@ function Passives.ResistEdit(player)
 	if not set or not set.passive or set.passive.name ~= "Misremembered" then
 		return false
 	end
+	if not SkillSetConfig.FeatureUnlocked(player, setName, "passive") then
+		return false
+	end
 	return spendMisremembered(player, character, setName, set)
 end
 
@@ -80,7 +87,7 @@ function Passives.Absorb(player, amount, physical, fromPlayer, superliminal)
 	local _, setName = SkillSetConfig.Equipped(character)
 	local set = setName and SkillSetConfig.Sets[setName]
 	local behaviour = set and set.passive and behaviours[set.passive.name]
-	if not behaviour or amount <= 0 then
+	if not behaviour or amount <= 0 or not SkillSetConfig.FeatureUnlocked(player, setName, "passive") then
 		return amount
 	end
 	return behaviour(player, character, setName, set, amount, physical, fromPlayer, superliminal)

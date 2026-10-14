@@ -21,11 +21,12 @@ local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Framed = require(ServerScriptService:WaitForChild("Framed"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Range = 60, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
+	Range = 120, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
 	Cone = 30, -- degrees either side of the aim it locks onto a target in
 	RingRadius = 8, -- studs (16 across) when it forms
 	CloseTime = 1.5, -- seconds to shut
@@ -38,8 +39,8 @@ local CONFIG = {
 	EscapedDamage = 10, -- to a target who got out before it shut
 	EscapeMargin = 2, -- studs past the ring before they count as out (network jitter)
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop" }
-local BURST_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", critical = true }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "V" }
+local BURST_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", critical = true, skill = "V" }
 
 local function flat(vector)
 	return Vector3.new(vector.X, 0, vector.Z)
@@ -64,6 +65,7 @@ local function burst(id, player, character, center, target, caught)
 			if caught then
 				Damage.Deal(player, humanoid, CONFIG.TargetDamage, BURST_OPTIONS)
 				ground(target)
+				Quests.Report(player, "Photoshop", "IrisCaught")
 			else
 				Damage.Deal(player, humanoid, CONFIG.EscapedDamage, DAMAGE_OPTIONS)
 			end

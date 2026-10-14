@@ -1,7 +1,8 @@
 -- Each player's ON/OFF settings from the Settings menu: Quick respawn
 -- (SettingsServer respawns them the moment they die, skipping the death
 -- screen), Camera shake and Flashes & impact frames (VFX and SkillEffects
--- skip them when off), and Damage numbers (HitFeedback). They're the saved
+-- skip them when off), Damage numbers (HitFeedback) and Key hints (the
+-- bottom-left panel, KeyHints). They're the saved
 -- Preferences attribute, "QuickRespawn=1,CameraShake=0", holding only the
 -- ones off their default; Settings changes it and SettingsServer checks and
 -- stores it, as with Keybinds.
@@ -18,6 +19,7 @@ Preferences.Options = {
 	{ id = "CameraShake", label = "Camera shake", section = "EFFECTS", default = true },
 	{ id = "Flashes", label = "Flashes & impact frames", section = "EFFECTS", default = true },
 	{ id = "DamageNumbers", label = "Damage numbers", section = "EFFECTS", default = true },
+	{ id = "KeyHints", label = "Key hints", section = "INTERFACE", default = true },
 }
 
 local byId = {}

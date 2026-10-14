@@ -2,7 +2,10 @@
 -- (fast travel on T). While the set is equipped, where she stands is
 -- recorded every SampleInterval and kept for the set's undo.rewind seconds,
 -- along with every bit of health she loses. Undo (the Undo remote, sent by
--- the skill bar) puts her back where she stood that long ago and heals
+-- the skill bar) carries her back the way she came, over undo.rewindTime
+-- (her own client moves her, the SkillEffects "Undo" event; meanwhile she's
+-- Invulnerable and Rewinding, which stops her acting), puts her exactly where
+-- she stood that long ago and heals
 -- undo.healShare of what she lost since, less anything Mandela dealt
 -- (reality he rewrote can't be undone) and cut by healing cuts like
 -- Poisoned. It can't slip a hold (CrowdControl.Held) and recharges for
@@ -22,8 +25,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
+local Water = require(ReplicatedStorage:WaitForChild("Water"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -37,6 +43,7 @@ local CONFIG = {
 	GallerySlots = SkillSetConfig.Sets[SET_NAME].gallery.slots,
 	CombatLock = 8, -- seconds without dealing or taking damage before travelling
 	DevelopTime = 2, -- seconds the photo develops before she steps in
+	RewindGrace = 0.1, -- extra seconds untouchable after Undo lands her
 }
 
 local undoRemote = Instance.new("RemoteEvent")
@@ -129,7 +136,7 @@ task.spawn(function()
 		for _, player in ipairs(Players:GetPlayers()) do
 			local character = player.Character
 			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-			if humanoid and humanoid.Health > 0 and humanoid.RootPart and holding(character) then
+			if humanoid and humanoid.Health > 0 and humanoid.RootPart and holding(character) and SkillSetConfig.FeatureUnlocked(player, SET_NAME, "passive") then
 				samples[player] = samples[player] or {}
 				table.insert(samples[player], { at = now, pivot = character:GetPivot() })
 				trim(samples[player], since)
@@ -146,7 +153,12 @@ undoRemote.OnServerEvent:Connect(function(player)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	if not root or humanoid.Health <= 0 or not holding(character) or CrowdControl.Held(character) then
+	-- (ActionLock: a block or a guard break's stun doesn't let her rewind out of it)
+	if not root or humanoid.Health <= 0 or not holding(character) or CrowdControl.Held(character) or ActionLock.Locked(character) then
+		return
+	end
+	-- (History records nothing below its mastery, so there'd be nothing to rewind to)
+	if not SkillSetConfig.FeatureUnlocked(player, SET_NAME, "undo") then
 		return
 	end
 	if (player:GetAttribute(UNDO_READY) or 0) > workspace:GetServerTimeNow() then
@@ -158,15 +170,31 @@ undoRemote.OnServerEvent:Connect(function(player)
 	end
 	local lost = total(losses[player], oldest.at) - total(rewritten[player], oldest.at)
 	local heal = math.max(lost, 0) * UNDO.healShare * StatusConfig.HealMultiplier(character)
-	local from = root.Position
-	root.AssemblyLinearVelocity = Vector3.zero
-	character:PivotTo(oldest.pivot)
-	if heal > 0 then
-		humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + heal)
+	-- the way back: where she is now, then her History newest first
+	local path = { character:GetPivot() }
+	for i = #samples[player], 1, -1 do
+		table.insert(path, samples[player][i].pivot)
 	end
 	forget(player)
 	player:SetAttribute(UNDO_READY, workspace:GetServerTimeNow() + UNDO.cooldown)
-	skillEffects:FireAllClients("Undo", character, from, oldest.pivot.Position)
+	character:SetAttribute("Rewinding", true)
+	character:SetAttribute("Invulnerable", true)
+	skillEffects:FireAllClients("Undo", character, path, UNDO.rewindTime)
+	task.delay(UNDO.rewindTime, function()
+		-- she lands exactly where she stood, whatever her client did on the way
+		if character.Parent and humanoid.Health > 0 then
+			root.AssemblyLinearVelocity = Vector3.zero
+			character:PivotTo(oldest.pivot)
+			if heal > 0 then
+				humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + heal)
+			end
+			Quests.Report(player, "Photoshop", "UndoHeal", heal)
+		end
+		character:SetAttribute("Rewinding", nil)
+		task.delay(CONFIG.RewindGrace, function()
+			character:SetAttribute("Invulnerable", nil)
+		end)
+	end)
 end)
 
 -- the saved photos: a Vector3 or false per slot (a bad entry is an empty slot)
@@ -223,11 +251,15 @@ galleryRemote.OnServerEvent:Connect(function(player, action, slot)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	if not root or humanoid.Health <= 0 or not holding(character) then
+	if not root or humanoid.Health <= 0 or not holding(character) or not SkillSetConfig.FeatureUnlocked(player, SET_NAME, "gallery") then
 		return
 	end
 	local slots = readGallery(player)
 	if action == "save" then
+		-- no photo while swimming: there's no footing in water (a Water part)
+		if Water.IsIn(character) then
+			return
+		end
 		-- only a spot she's standing on, so travel never drops her into the air
 		local ground = PhotoshopUtil.groundAt(root.Position, { character })
 		if not ground or root.Position.Y - ground.Y > STANDING_SLACK then

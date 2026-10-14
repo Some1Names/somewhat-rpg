@@ -17,6 +17,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -64,7 +65,7 @@ local VARIANTS = {
 		damagePerSecond = 27,
 	},
 }
-local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela" }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Mandela", guard = "unblockable", skill = "X" }
 local START_SCALE_FRACTION = 0.05
 local TRAIL_COLORS = {
 	normal = ColorSequence.new(Color3.fromRGB(150, 255, 190), Color3.fromRGB(20, 80, 40)),
@@ -235,6 +236,7 @@ local function runBlackHole(caster, casterCharacter, center, launchFrom, travelT
 	overlap.FilterDescendantsInstances = { model, casterCharacter }
 
 	local pulls = {}
+	local pulledCount, everPulled = 0, {} -- how many different targets it dragged in (Quests)
 	local state = { detonate = false, center = center, radius = variant.radius }
 	active[caster] = state
 	caster:SetAttribute(DETONATE_ATTRIBUTE, true)
@@ -257,6 +259,10 @@ local function runBlackHole(caster, casterCharacter, center, launchFrom, travelT
 			for humanoid, root in pairs(targets) do
 				if not pulls[humanoid] and not flying(humanoid.Parent) and CrowdControl.CanControl(humanoid.Parent) then
 					pulls[humanoid] = attachPull(root, TRAIL_COLORS[variantName])
+					if not everPulled[humanoid] then
+						everPulled[humanoid] = true
+						pulledCount += 1
+					end
 					CrowdControl.Begin(humanoid.Parent)
 				end
 				if pulls[humanoid] then
@@ -288,6 +294,7 @@ local function runBlackHole(caster, casterCharacter, center, launchFrom, travelT
 	active[caster] = nil
 	if caster.Parent then
 		caster:SetAttribute(DETONATE_ATTRIBUTE, nil)
+		Quests.Report(caster, "Mandela", "EventHorizonPull", pulledCount)
 	end
 	local thrown = {}
 	if ok and state.detonate and timeLeft > 0 then

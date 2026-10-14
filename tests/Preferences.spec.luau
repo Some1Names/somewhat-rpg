@@ -29,7 +29,11 @@ end
 local defaults = Preferences.Defaults()
 
 check("defaults", defaults.QuickRespawn == false and defaults.CameraShake == true
-	and defaults.Flashes == true and defaults.DamageNumbers == true)
+	and defaults.Flashes == true and defaults.DamageNumbers == true and defaults.KeyHints == true)
+
+check("key_hints_parse_serialize", Preferences.Parse("KeyHints=0").KeyHints == false
+	and Preferences.Serialize(Preferences.Parse("KeyHints=0")) == "KeyHints=0"
+	and Preferences.Serialize(Preferences.Parse("KeyHints=1")) == "")
 
 check("parse_nil_is_defaults", same(Preferences.Parse(nil), defaults)
 	and same(Preferences.Parse(""), defaults) and same(Preferences.Parse(5), defaults))
@@ -55,7 +59,8 @@ check("valid", Preferences.Valid(Preferences.Defaults()) and not Preferences.Val
 	and not Preferences.Valid(wrongType) and not Preferences.Valid(extra))
 
 check("options_order", Preferences.Options[1].id == "QuickRespawn" and Preferences.Options[1].section == "GAMEPLAY"
-	and Preferences.Options[4].id == "DamageNumbers" and Preferences.Options[4].section == "EFFECTS")
+	and Preferences.Options[4].id == "DamageNumbers" and Preferences.Options[4].section == "EFFECTS"
+	and Preferences.Options[5].id == "KeyHints" and Preferences.Options[5].section == "INTERFACE")
 
 if failures > 0 then
 	error(string.format("%d check(s) failed", failures))

@@ -29,7 +29,10 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
+local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
@@ -40,6 +43,15 @@ local undoRemote = ReplicatedStorage:WaitForChild("Undo") -- made by PhotoshopSe
 local masteryEvent = ReplicatedStorage:WaitForChild("MasteryUp")
 local player = Players.LocalPlayer
 
+-- a skill's cooldown with the set's Swift reforge modifier, as the server uses it
+local function cooldownOf(setName, skill)
+	local text = player:GetAttribute(ReforgeConfig.SetAttribute(setName))
+	if not text then
+		return skill.cooldown
+	end
+	return skill.cooldown * ReforgeRules.CooldownMultiplier(ReforgeRules.DecodeState(text))
+end
+
 local SLOT_SIZE = 58
 local SLOT_GAP = 8
 local HEADER_HEIGHT = 38
@@ -47,7 +59,7 @@ local STACK_ROW_Y = 23
 local STACK_HEIGHT = 8
 local STACK_LABEL_WIDTH = 96
 local STACK_GAP = 2
-local BOTTOM_MARGIN = 100 -- pixels, keeps it above the default hotbar
+local BOTTOM_MARGIN = 116 -- pixels, keeps it above the default hotbar with room to spare
 local AIM_DISTANCE = 1000
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
@@ -440,11 +452,12 @@ local function stopAiming()
 	AimIndicator.Hide()
 end
 
--- the equipped set, while the character is alive
+-- the equipped set, while the character is alive (and not locked: rewound by
+-- Photoshop's Undo, blocking, stunned)
 local function activeSet()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
+	if not humanoid or humanoid.Health <= 0 or ActionLock.Locked(character) then
 		return nil
 	end
 	return equippedSet()
@@ -469,7 +482,7 @@ local function readyToCast(setName, key, skill)
 		and form.key == key
 		and (player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0) < form.minimumToStart
 	-- (a skill with charges: when all are back, so one is ready a few recharges sooner)
-	local readyIn = (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * skill.cooldown - os.clock()
+	local readyIn = (predictedReadyAt[setName .. "." .. key] or 0) - ((skill.charges or 1) - 1) * cooldownOf(setName, skill) - os.clock()
 	-- the first reason that applies, for the message above the bar
 	local name = shownName(skill, overcharged)
 	if not skill.handler then
@@ -512,7 +525,7 @@ local function cast(key)
 		return
 	end
 	local id = setName .. "." .. key
-	predictedReadyAt[id] = math.max(predictedReadyAt[id] or 0, os.clock()) + skill.cooldown
+	predictedReadyAt[id] = math.max(predictedReadyAt[id] or 0, os.clock()) + cooldownOf(setName, skill)
 	playCast(player.Character:FindFirstChildOfClass("Humanoid"), setName, key, overcharged)
 	useSkill:FireServer(key, castPoint(skill, overcharged, inForm))
 	pulse(slot)
@@ -556,6 +569,11 @@ local function tryOvercharge()
 	-- on a set with an Undo, the same key rewinds (once it's recharged)
 	local undo = setName and SkillSetConfig.Sets[setName].undo
 	if undo and humanoid and humanoid.Health > 0 then
+		if not SkillSetConfig.FeatureUnlocked(player, setName, "undo") then
+			overchargeDeniedUntil = os.clock() + 0.4
+			refuse(string.format("%s: needs mastery %d", undo.name, undo.mastery or 1))
+			return
+		end
 		local undoIn = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
 		if undoIn > 0 then
 			overchargeDeniedUntil = os.clock() + 0.4
@@ -568,6 +586,11 @@ local function tryOvercharge()
 	-- on a set that flies, the same key takes off or lands (it takes some light)
 	local flight = setName and SkillSetConfig.Sets[setName].flight
 	if flight and humanoid and humanoid.Health > 0 then
+		if not SkillSetConfig.FeatureUnlocked(player, setName, "flight") then
+			overchargeDeniedUntil = os.clock() + 0.4
+			refuse(string.format("Flight: needs mastery %d", flight.mastery or 1))
+			return
+		end
 		local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0
 		if not character:GetAttribute("Flying") and luminance < flight.minimumToStart then
 			overchargeDeniedUntil = os.clock() + 0.4
@@ -579,6 +602,11 @@ local function tryOvercharge()
 	end
 	local settings = setName and SkillSetConfig.Sets[setName].overcharge
 	if not settings or not humanoid or humanoid.Health <= 0 or SkillSetConfig.IsOvercharged(player, setName) then
+		return
+	end
+	if not SkillSetConfig.FeatureUnlocked(player, setName, "overcharge") then
+		overchargeDeniedUntil = os.clock() + 0.4
+		refuse(string.format("%s: needs mastery %d", settings.name, settings.mastery or 1))
 		return
 	end
 	local full = (player:GetAttribute(SkillSetConfig.StacksAttribute(setName)) or 0) >= settings.maxStacks
@@ -667,7 +695,19 @@ RunService.RenderStepped:Connect(function()
 	local luminancePassive = set.passive ~= nil and set.passive.name == "Luminance"
 	local undo = set.undo
 	stackRow.Visible = settings ~= nil or luminancePassive or undo ~= nil
-	if undo then
+	local lockedMastery = undo and not SkillSetConfig.FeatureUnlocked(player, setName, "undo") and (undo.mastery or 1)
+		or not luminancePassive and settings and not SkillSetConfig.FeatureUnlocked(player, setName, "overcharge") and (settings.mastery or 1)
+		or nil
+	if lockedMastery then
+		-- the feature isn't unlocked yet: the meter shows the lock, empty
+		buildStacks(undo and 1 or settings.maxStacks)
+		stackLabel.Text = string.format("MASTERY %d", lockedMastery)
+		stackLabel.TextColor3 = os.clock() < overchargeDeniedUntil and DENIED or MUTED
+		for _, segment in ipairs(stackSegments) do
+			segment.fill.Size = UDim2.fromScale(0, 1)
+			segment.track.BackgroundTransparency = TRACK_TRANSPARENCY
+		end
+	elseif undo then
 		-- one segment that fills back up as Undo recharges
 		buildStacks(1)
 		local left = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
@@ -751,6 +791,7 @@ RunService.RenderStepped:Connect(function()
 		if not skill then
 			continue
 		end
+		local skillCooldown = cooldownOf(setName, skill)
 		slot.empowered.Visible = overcharged and skill.overcharged == true or inForm and skill.form == true
 		if settings then
 			slot.empowered.BackgroundColor3 = settings.color
@@ -780,23 +821,23 @@ RunService.RenderStepped:Connect(function()
 			-- still out: the key does its recast now
 			slot.status.Text = string.upper(skill.recast)
 			slot.status.TextColor3 = GOLD
-			slot.cover.Size = UDim2.fromScale(1, remaining / skill.cooldown)
+			slot.cover.Size = UDim2.fromScale(1, remaining / skillCooldown)
 		elseif skill.charges then
 			-- charges ready, or the next one's refill when none are
-			local ready = skill.charges - math.ceil(remaining / skill.cooldown - 1e-6)
+			local ready = skill.charges - math.ceil(remaining / skillCooldown - 1e-6)
 			if ready >= 1 then
 				slot.status.Text = "x" .. ready
 				slot.cover.Size = UDim2.fromScale(1, 0)
 			else
-				local nextIn = remaining - (skill.charges - 1) * skill.cooldown
+				local nextIn = remaining - (skill.charges - 1) * skillCooldown
 				slot.status.Text = string.format("%.1f", nextIn)
-				slot.cover.Size = UDim2.fromScale(1, nextIn / skill.cooldown)
+				slot.cover.Size = UDim2.fromScale(1, nextIn / skillCooldown)
 			end
 			slot.status.TextColor3 = TEXT
 		else
 			slot.status.Text = remaining > 0 and string.format("%.1f", remaining) or ""
 			slot.status.TextColor3 = TEXT
-			slot.cover.Size = UDim2.fromScale(1, remaining / skill.cooldown)
+			slot.cover.Size = UDim2.fromScale(1, remaining / skillCooldown)
 		end
 		-- longer words like DETONATE shrink to fit
 		slot.status.TextSize = #slot.status.Text > 5 and 10 or 14
@@ -925,6 +966,15 @@ masteryEvent.OnClientEvent:Connect(function(setName, fromLevel, toLevel)
 		if skill and skill.handler and skill.mastery > fromLevel and skill.mastery <= toLevel then
 			line += 1
 			popup(string.format("%s (%s) unlocked", skill.name, Keybinds.Text("Skill" .. key)), GOLD, 16, 0.16 + 0.045 * line, 2.5)
+		end
+	end
+	-- the set's features (passive, overcharge, flight, dash, undo, gallery) unlock too
+	for _, feature in ipairs({ "passive", "overcharge", "flight", "dash", "undo", "gallery" }) do
+		local info = set[feature]
+		local at = info and info.mastery
+		if at and at > fromLevel and at <= toLevel then
+			line += 1
+			popup(string.format("%s unlocked", info.name or "Flight"), GOLD, 16, 0.16 + 0.045 * line, 2.5)
 		end
 	end
 end)

@@ -5,12 +5,12 @@ Lune (`tests/run.sh`). Every script passed the StyLua parse check and selene's u
 check. Nothing needs adding in Studio: the new scripts make their own remote.
 
 ## The menu
-- [ ] A square gear button sits at the right edge, centred vertically. Clicking it opens the
+- [ ] A square gear button sits at the top right, above the kill feed (not overlapping it or Roblox's player list). Clicking it opens the
       Settings panel, and clicking it again closes it.
 - [ ] P opens and closes the panel. P while typing in chat does nothing.
 - [ ] × and Esc close it. The mouse is free while it's open, even in shift lock.
-- [ ] The KEYBINDS list shows 9 rows: Skill 1–5, Overcharge / Flight / Undo, Dash, Reload,
-      Photo Gallery. On a fresh account they read Z X C V F G Q R T.
+- [ ] The KEYBINDS list shows 10 rows: Skill 1–5, Overcharge / Flight / Undo, Dash, Block, Reload,
+      Photo Gallery. On a fresh account they read Z X C V F G Q E R T.
 - [ ] The output window shows no errors from Settings, SettingsServer or Keybinds.
 
 ## Rebinding
