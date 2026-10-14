@@ -221,23 +221,6 @@ local function formatNumber(n)
 	return n % 1 == 0 and tostring(n) or string.format("%.1f", n)
 end
 
--- what a stat gives now, in one line (the Milestones tab has the rest)
-local describe = {
-	Vitality = function(points)
-		return string.format("%d max HP  ·  %s HP/s regen", StatConfig.MaxHealth(points), formatNumber(StatConfig.RegenPerSecond(points)))
-	end,
-	Strength = function(points)
-		local fists = PunchConfig.Weapons.Fists.baseDamage * StatConfig.DamageMultiplier("Strength", points)
-		return string.format("%s punch damage", formatNumber(fists))
-	end,
-	Superliminal = function(points)
-		return string.format("%d%% skill damage", math.round(StatConfig.DamageMultiplier("Superliminal", points) * 100))
-	end,
-	Firearm = function(points)
-		return string.format("%d%% gun damage", math.round(StatConfig.DamageMultiplier("Firearm", points) * 100))
-	end,
-}
-
 local rows = {}
 for i, stat in ipairs(StatConfig.Stats) do
 	local rowFrame = section(4 + i, STAT_ROW_HEIGHT)
@@ -346,11 +329,9 @@ local function refresh()
 	for _, row in ipairs(rows) do
 		local value = player:GetAttribute(row.stat.key) or 0
 		row.value.Text = tostring(value)
-		row.effect.Text = describe[row.stat.key](value)
+		-- what each stat gives is in the tiles above; a row only says when it's maxed
 		local cap = StatConfig.StatCap(row.stat.key)
-		if value >= cap then
-			row.effect.Text ..= "  ·  MAX"
-		end
+		row.effect.Text = value >= cap and "MAX" or ""
 		local canAdd = points > 0 and value < cap
 		row.plus.AutoButtonColor = canAdd
 		row.plus.BackgroundTransparency = canAdd and 0 or 0.8

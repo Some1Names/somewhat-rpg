@@ -1,8 +1,8 @@
--- The hub's Profile tab, its cover page: the power held (big, in caps), its
--- tier, mastery and reforge level, the bounty taken, level with an XP bar,
--- yen, and unspent
+-- The hub's Profile tab, its cover page: the player's name, level with an XP
+-- bar and yen, then the power held (big, in caps), its tier, mastery and
+-- reforge level, the bounty taken, and unspent
 -- stat points (a link to Stats). The right side is left to the posed character
--- (HubPose), with a huge faded "01" behind it and the player's name on a chip.
+-- (HubPose), with a huge faded "01" behind it.
 -- Everything comes from player attributes other systems keep.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,7 +18,7 @@ local player = Players.LocalPlayer
 local Theme = Hub.Theme
 local WHITE = Color3.new(1, 1, 1)
 
-local LEFT_SHARE = 0.62 -- the text column; the rest is the faded number and the name chip
+local LEFT_SHARE = 0.62 -- the text column; the rest is the faded number
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -68,7 +68,7 @@ end
 
 local frame = Hub.Tab("Profile", { order = 1, title = "PROFILE", pose = "Random" })
 
--- the faded number and the name chip, on the right
+-- the faded number, on the right
 label(frame, {
 	Text = "01",
 	Font = Theme.BodyFont,
@@ -81,9 +81,6 @@ label(frame, {
 	TextXAlignment = Enum.TextXAlignment.Right,
 	ZIndex = 0,
 })
-local nameChip = chip(frame, player.DisplayName)
-nameChip.AnchorPoint = Vector2.new(1, 1)
-nameChip.Position = UDim2.new(1, 0, 1, -8)
 
 local column = make("Frame", {
 	Parent = frame,
@@ -121,39 +118,55 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
--- level with its XP bar, and yen: a row each with an accent bar down the left edge
-local FIGURE_HEIGHT = 48
-local LEVEL_HEIGHT = 58
-local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, LEVEL_HEIGHT + FIGURE_HEIGHT + 6), BackgroundTransparency = 1 })
-make("UIListLayout", { Parent = figures, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
-local tileBars = {}
-local function figure(order, caption)
-	local row = make("Frame", { Parent = figures, LayoutOrder = order, Size = UDim2.new(1, 0, 0, FIGURE_HEIGHT), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
-	table.insert(tileBars, make("Frame", { Parent = row, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 }))
-	label(row, { Text = caption, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(0, 80, 1, 0) })
-	return label(row, {
-		Font = Theme.TitleFont,
-		TextSize = 26,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Position = UDim2.fromOffset(94, 0),
-		Size = UDim2.new(1, -108, 1, 0),
-	})
-end
--- the level row: LEVEL and the number on the left, the XP toward the next one as a bar
-local levelRow = make("Frame", { Parent = figures, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, LEVEL_HEIGHT), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
-table.insert(tileBars, make("Frame", { Parent = levelRow, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 }))
-label(levelRow, { Text = "LEVEL", TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(14, 8), Size = UDim2.fromOffset(80, 12) })
-local levelFigure = label(levelRow, { Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(14, 22), Size = UDim2.fromOffset(90, 28) })
-local levelLabel = label(levelRow, {
-	TextSize = 11,
+-- at the top: the player's name, then level (the XP toward the next one as a
+-- bar) and yen, plain on the paper
+local YEN_WIDTH = 150
+label(column, {
+	LayoutOrder = -3,
+	Text = string.upper(player.DisplayName),
+	Font = Theme.TitleFont,
+	TextSize = 30,
+	Size = UDim2.new(1, 0, 0, 32),
+	TextTruncate = Enum.TextTruncate.AtEnd,
+})
+label(column, { LayoutOrder = -2, Text = "@" .. player.Name, TextSize = 11, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 12) })
+local figures = make("Frame", { Parent = column, LayoutOrder = -1, Size = UDim2.new(1, 0, 0, 56), BackgroundTransparency = 1 })
+label(figures, { Text = "LEVEL", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(80, 12) })
+local levelFigure = label(figures, { Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(0, 20), Size = UDim2.fromOffset(90, 30) })
+local levelLabel = label(figures, {
+	TextSize = 10,
 	TextColor3 = Theme.Muted,
 	TextXAlignment = Enum.TextXAlignment.Right,
-	Position = UDim2.fromOffset(110, 8),
-	Size = UDim2.new(1, -124, 0, 12),
+	Position = UDim2.fromOffset(100, 6),
+	Size = UDim2.new(1, -(100 + YEN_WIDTH + 24), 0, 12),
 })
-local xpBack = make("Frame", { Parent = levelRow, Position = UDim2.fromOffset(110, 32), Size = UDim2.new(1, -124, 0, 8), BackgroundColor3 = Theme.BarBack, BorderSizePixel = 0 })
+local xpBack = make("Frame", {
+	Parent = figures,
+	Position = UDim2.fromOffset(100, 30),
+	Size = UDim2.new(1, -(100 + YEN_WIDTH + 24), 0, 8),
+	BackgroundColor3 = Theme.BarBack,
+	BorderSizePixel = 0,
+})
 local xpFill = make("Frame", { Parent = xpBack, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0 })
-local yenFigure = figure(2, "YEN")
+label(figures, {
+	Text = "YEN",
+	TextSize = 10,
+	TextColor3 = Theme.Muted,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, 6),
+	Size = UDim2.fromOffset(YEN_WIDTH, 12),
+})
+local yenFigure = label(figures, {
+	Font = Theme.TitleFont,
+	TextSize = 26,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.new(1, 0, 0, 20),
+	Size = UDim2.fromOffset(YEN_WIDTH, 30),
+})
+-- a gap before CURRENT POWER
+make("Frame", { Parent = column, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 6), BackgroundTransparency = 1 })
 local pointsButton = make("TextButton", {
 	Parent = column,
 	LayoutOrder = 8,
@@ -213,9 +226,6 @@ local function refresh()
 end
 
 Hub.OnAccent(function(_, ink)
-	for _, bar in ipairs(tileBars) do
-		bar.BackgroundColor3 = ink
-	end
 	masteryFill.BackgroundColor3 = ink
 	bountyBar.BackgroundColor3 = ink
 	xpFill.BackgroundColor3 = ink
