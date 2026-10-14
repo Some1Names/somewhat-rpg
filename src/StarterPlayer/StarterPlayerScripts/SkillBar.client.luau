@@ -48,7 +48,7 @@ local STACK_ROW_Y = 23
 local STACK_HEIGHT = 8
 local STACK_LABEL_WIDTH = 96
 local STACK_GAP = 2
-local BOTTOM_MARGIN = 46 -- pixels (HudConfig.BottomReserve): above the key hints line; the Hotbar's cards and grid sit at the sides
+local BOTTOM_MARGIN = 52 -- pixels (HudConfig.BottomReserve): above the key hints line; the Hotbar's cards and grid sit at the sides
 local AIM_DISTANCE = 1000
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
@@ -906,6 +906,8 @@ RunService.RenderStepped:Connect(function()
 			miniOffset += MINI_SLOT_SIZE + SLOT_GAP
 		end
 	end
+	-- the minis hang off the bar's left, so shift the bar right by half their width: the whole group stays centred
+	bar.Position = UDim2.new(0.5, (miniOffset - SLOT_GAP) / 2, 1, -BOTTOM_MARGIN)
 
 	-- the held skill's aim preview
 	local aimedSkill = aiming and set.skills[aiming]

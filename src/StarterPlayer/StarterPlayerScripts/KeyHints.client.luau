@@ -54,7 +54,7 @@ make("UIListLayout", {
 	HorizontalAlignment = Enum.HorizontalAlignment.Right,
 	VerticalAlignment = Enum.VerticalAlignment.Center,
 	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, 16),
+	Padding = UDim.new(0, 12),
 })
 
 local function line(order, key, name)
@@ -70,30 +70,30 @@ local function line(order, key, name)
 		FillDirection = Enum.FillDirection.Horizontal,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 8),
+		Padding = UDim.new(0, 6),
 	})
 	local cap = make("TextLabel", {
 		Parent = row,
 		LayoutOrder = 1,
-		Size = UDim2.fromOffset(0, 18),
+		Size = UDim2.fromOffset(0, 15),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundColor3 = TEXT,
 		BorderSizePixel = 0,
 		Font = Enum.Font.GothamBold,
 		Text = key,
-		TextSize = 11,
+		TextSize = 9,
 		TextColor3 = KEYCAP_TEXT,
 	})
-	make("UIPadding", { Parent = cap, PaddingLeft = UDim.new(0, 6), PaddingRight = UDim.new(0, 6) })
+	make("UIPadding", { Parent = cap, PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) })
 	make("TextLabel", {
 		Parent = row,
 		LayoutOrder = 2,
-		Size = UDim2.fromOffset(0, 18),
+		Size = UDim2.fromOffset(0, 15),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamMedium,
 		Text = name,
-		TextSize = 13,
+		TextSize = 11,
 		TextColor3 = TEXT,
 		TextStrokeTransparency = 0.4,
 		TextStrokeColor3 = Color3.new(0, 0, 0),

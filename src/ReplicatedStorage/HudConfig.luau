@@ -10,16 +10,17 @@ HudConfig.EdgeMargin = 16 -- px from the screen's edges
 HudConfig.IconSize = 28
 HudConfig.IconSizeOpen = 32 -- the icon whose menu is open
 HudConfig.KillFeedTop = 56 -- the kill feed starts under the icon row
-HudConfig.HintsHeight = 24 -- the key hints line along the bottom edge
--- the bottom-left cards and bottom-right grid share one footprint
+HudConfig.HintsHeight = 18 -- the key hints line along the bottom edge
+-- the bottom-left cards and bottom-right grid share one footprint: the grid is
+-- 2 columns of square slots by 3 rows, and the three tall cards fill the same box
 HudConfig.SideWidth = 168
-HudConfig.SideHeight = 168
 HudConfig.SideGap = 6
-HudConfig.CardWidth = (HudConfig.SideWidth - 2 * HudConfig.SideGap) / 3 -- three tall cards
-HudConfig.SlotWidth = (HudConfig.SideWidth - HudConfig.SideGap) / 2 -- a 2x3 grid
-HudConfig.SlotHeight = (HudConfig.SideHeight - 2 * HudConfig.SideGap) / 3
--- px from the screen's bottom to the top of the key hints line, below everything else
-HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 6
+HudConfig.SlotWidth = (HudConfig.SideWidth - HudConfig.SideGap) / 2
+HudConfig.SlotHeight = HudConfig.SlotWidth
+HudConfig.SideHeight = 3 * HudConfig.SlotHeight + 2 * HudConfig.SideGap
+HudConfig.CardWidth = (HudConfig.SideWidth - 2 * HudConfig.SideGap) / 3
+-- px from the screen's bottom to the bottom of the cards and grid: the key hints line plus a gap
+HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 18
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
