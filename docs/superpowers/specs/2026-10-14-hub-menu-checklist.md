@@ -1,7 +1,7 @@
 # Hub menu: playtest checklist
 
-Checked in Studio already: no console errors on load; the hub opens on Updates on join with a NEW
-badge; M switches to Stats, M again closes (NEW clears, the version is saved as seen), B opens Backpack.
+Checked in Studio already: no console errors on load; Updates gets a NEW badge on join (no auto-open);
+M switches tabs, M again closes, B opens Backpack; the R15 clone is posed (AnimationConstraint joints).
 
 Try in-game:
 

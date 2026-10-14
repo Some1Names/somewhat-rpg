@@ -26,7 +26,9 @@ local Theme = HudConfig.HubTheme
 local PAD = 16
 local NAV_PAD = 14
 local NAV_ROW = 30
-local NAV_TOP = 76 -- the first tab button, under the brand and file number
+local NAV_TOP = 58 -- the first tab button, this far under the brand
+-- the nav starts under Roblox's own buttons (top left), which sit over the hub
+local ROBLOX_BAR = math.max(GuiService:GetGuiInset().Y, 36)
 local SWATCH = 10
 local WHITE = Color3.new(1, 1, 1)
 
@@ -218,20 +220,20 @@ local brand = label(nav, {
 	TextSize = 16,
 	TextColor3 = Theme.NavText,
 	RichText = true,
-	Position = UDim2.fromOffset(NAV_PAD, 18),
+	Position = UDim2.fromOffset(NAV_PAD, ROBLOX_BAR + 12),
 	Size = UDim2.new(1, -2 * NAV_PAD, 0, 20),
 })
 label(nav, {
 	Text = "FILE NO. 049 / PLAYER",
 	TextSize = 10,
 	TextColor3 = Theme.Muted,
-	Position = UDim2.fromOffset(NAV_PAD, 40),
+	Position = UDim2.fromOffset(NAV_PAD, ROBLOX_BAR + 34),
 	Size = UDim2.new(1, -2 * NAV_PAD, 0, 12),
 })
 local navList = make("Frame", {
 	Parent = nav,
-	Position = UDim2.fromOffset(NAV_PAD, NAV_TOP),
-	Size = UDim2.new(1, -2 * NAV_PAD, 1, -(NAV_TOP + 60)),
+	Position = UDim2.fromOffset(NAV_PAD, ROBLOX_BAR + NAV_TOP),
+	Size = UDim2.new(1, -2 * NAV_PAD, 1, -(ROBLOX_BAR + NAV_TOP + 60)),
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = navList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })

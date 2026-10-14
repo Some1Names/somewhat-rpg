@@ -3,7 +3,9 @@
 -- the character (no scripts, tools or animator, every part anchored) sits in
 -- a ViewportFrame; each tab names a pose from HubPoses, and the parts are
 -- placed by walking the joints from the HumanoidRootPart, so nothing waits on
--- the physics. Rebuilt when the character spawns or its look loads.
+-- the physics. Works on R6 and R15, with Motor6D joints or the newer
+-- AnimationConstraint ones (accessories on RigidConstraints). Rebuilt when the
+-- character spawns or its look loads.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -37,11 +39,20 @@ camera.CFrame = CFrame.lookAt(Vector3.new(CAMERA_DISTANCE * math.sin(yaw), LOOK_
 camera.Parent = viewport
 viewport.CurrentCamera = camera
 
+-- HubPoses uses R6 joint names; an R15 joint turns with the R6 joint it stands for
+local R15_NAMES = {
+	Root = "RootJoint",
+	RightShoulder = "Right Shoulder",
+	LeftShoulder = "Left Shoulder",
+	RightHip = "Right Hip",
+	LeftHip = "Left Hip",
+}
+
 local world = Instance.new("WorldModel")
 world.Parent = viewport
 
 local clone -- the posed copy
-local links = {} -- { part0, part1, c0, c1, joint name }: every joint and weld in the clone, at rest
+local links = {} -- { part0, part1, c0, c1, pose name }: every joint and weld in the clone, at rest
 
 local function strip(model)
 	for _, item in ipairs(model:GetDescendants()) do
@@ -78,7 +89,13 @@ local function rebuild()
 		if item:IsA("BasePart") then
 			item.Anchored = true
 		elseif item:IsA("JointInstance") and item.Part0 and item.Part1 then
-			table.insert(links, { item.Part0, item.Part1, item.C0, item.C1, item.Name })
+			table.insert(links, { item.Part0, item.Part1, item.C0, item.C1, R15_NAMES[item.Name] or item.Name })
+		elseif (item:IsA("AnimationConstraint") or item:IsA("RigidConstraint")) and item.Attachment0 and item.Attachment1 then
+			-- the attachments sit at the joint: they play the part of C0 and C1
+			local a0, a1 = item.Attachment0, item.Attachment1
+			if a0.Parent:IsA("BasePart") and a1.Parent:IsA("BasePart") then
+				table.insert(links, { a0.Parent, a1.Parent, a0.CFrame, a1.CFrame, R15_NAMES[item.Name] or item.Name })
+			end
 		elseif item:IsA("WeldConstraint") and item.Part0 and item.Part1 then
 			-- keeps the offset it had: as a joint with that offset for C0
 			table.insert(links, { item.Part0, item.Part1, item.Part0.CFrame:ToObjectSpace(item.Part1.CFrame), CFrame.identity, item.Name })
@@ -107,8 +124,8 @@ local function pose(name)
 	while progress do
 		progress = false
 		for _, link in ipairs(links) do
-			local part0, part1, c0, c1, jointName = link[1], link[2], link[3], link[4], link[5]
-			local turn = angles[jointName]
+			local part0, part1, c0, c1, poseName = link[1], link[2], link[3], link[4], link[5]
+			local turn = angles[poseName]
 			if turn then
 				c0 = CFrame.new(c0.Position) * CFrame.Angles(math.rad(turn.X), math.rad(turn.Y), math.rad(turn.Z)) * c0.Rotation
 			end

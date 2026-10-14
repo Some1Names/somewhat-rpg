@@ -1,9 +1,9 @@
--- The hub's Updates tab, "What's new": the hub opens on it once, a moment after
--- a player's save loads, the first time they join after UpdateNotes.Version
--- changes, with a NEW badge in the nav until it's been read. Closing the hub
--- after it showed (×, Esc, Continue) tells UpdateNotesServer on the
--- SeenUpdateNotes remote, which saves the version as the player's SeenUpdate.
--- In Studio saves are off, so it shows on every playtest.
+-- The hub's Updates tab, "What's new". The first time a player joins after
+-- UpdateNotes.Version changes it gets a NEW badge in the hub's nav (it never
+-- opens by itself). Closing the hub after the tab showed (×, Esc, Continue)
+-- tells UpdateNotesServer on the SeenUpdateNotes remote, which saves the
+-- version as the player's SeenUpdate. In Studio saves are off, so the badge
+-- shows on every playtest.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -14,7 +14,6 @@ local player = Players.LocalPlayer
 
 local PANEL_WIDTH = 560
 local SECTION_GAP = 14 -- extra space above each topic after the first
-local SHOW_DELAY = 1.5 -- seconds after the save loads, so the screen has settled
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local WHITE = Color3.new(1, 1, 1)
@@ -148,6 +147,4 @@ end
 if player.Parent and player:GetAttribute("SeenUpdate") ~= UpdateNotes.Version then
 	unseen = true
 	Hub.Badge("Updates", "NEW")
-	task.wait(SHOW_DELAY)
-	Hub.Open("Updates")
 end
