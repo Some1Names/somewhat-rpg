@@ -223,8 +223,9 @@ end
 
 -- death drops ------------------------------------------------------------------
 
--- drops a pickup of the power at the position; ownerId can't take it for DeathPickupDelay seconds
-local function dropPickup(setName, position, ownerId)
+-- drops a pickup of the power at the position, gone after `lifetime` seconds
+-- (DeathDropTime if nil); ownerId (if any) can't take it for DeathPickupDelay seconds
+local function dropPickup(setName, position, ownerId, lifetime)
 	local part = Instance.new("Part")
 	part.Name = Powers.DisplayName(setName) .. " Briefcase"
 	part.Size = Vector3.new(1.6, 1.2, 0.6)
@@ -258,7 +259,7 @@ local function dropPickup(setName, position, ownerId)
 		Powers.GiveBriefcase(player, setName)
 	end)
 	part.Parent = workspace
-	Debris:AddItem(part, PowerConfig.DeathDropTime)
+	Debris:AddItem(part, lifetime or PowerConfig.DeathDropTime)
 	return part
 end
 

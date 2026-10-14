@@ -203,9 +203,18 @@ local function addHeadhunterLine(kind, nameA, nameB, xp, yen)
 	post(line)
 end
 
+-- a news line from the world (PowerSources: a briefcase has appeared)
+local function addBriefcaseLine(text)
+	local line = newLine(REWARD, 1)
+	label(line, text, REWARD, nil, 1)
+	post(line)
+end
+
 ReplicatedStorage:WaitForChild("KillFeed").OnClientEvent:Connect(function(first, ...)
 	if first == "Headhunter" then
 		addHeadhunterLine(...)
+	elseif first == "Briefcase" then
+		addBriefcaseLine(...)
 	else
 		addLine(first, ...)
 	end

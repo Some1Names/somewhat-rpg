@@ -9,7 +9,13 @@
 -- does). A `starter` item is one everyone already has (shown as owned), and
 -- a `comingSoon` one is a placeholder for a set not made yet: listed with
 -- its `tier`, never sold. Give it a `set` and a price and drop `comingSoon`
--- once the set exists.
+-- once the set exists. A `briefcase` item is a power sold by the Power Dealer:
+-- it can be bought again and again (the briefcase goes to the buyer's
+-- hotbar, see Powers), nothing is owned or saved, and its price comes from
+-- PowerConfig by the set's tier.
+local PowerConfig = require(script.Parent:WaitForChild("PowerConfig"))
+local SkillSetConfig = require(script.Parent:WaitForChild("SkillSetConfig"))
+
 local ShopConfig = {}
 
 ShopConfig.Range = 14 -- studs from a shopkeeper that buying works
@@ -46,22 +52,21 @@ ShopConfig.Items = {
 		description = "Refund every stat point you've spent, to put them somewhere else.",
 	},
 
-	-- the Power Dealer: every power, made or still to come (prices to be decided)
+	-- the Power Dealer: every power, made or still to come (briefcase prices by tier, PowerConfig)
 	{
 		id = "Mandela",
 		name = "Mandela",
 		shop = "Powers",
 		set = "Mandela",
-		price = 0,
-		starter = true,
-		description = "Everyone's first power. Axe Boomerang, Event Horizon, Tornado. Passive: Misremembered.",
+		briefcase = true,
+		description = "S-tier power. Axe Boomerang, Event Horizon, Tornado. Passive: Misremembered.",
 	},
 	{
 		id = "IridescentRequiem",
 		name = "Iridescent Requiem",
 		shop = "Powers",
 		set = "IridescentRequiem",
-		price = 25000,
+		briefcase = true,
 		description = "Ayato Yoji's light. Flight, Lightstep, Prism Form, Solar Lance. Passive: Luminance.",
 	},
 	{
@@ -69,7 +74,7 @@ ShopConfig.Items = {
 		name = "Photoshop",
 		shop = "Powers",
 		set = "Photoshop",
-		price = 25000,
+		briefcase = true,
 		description = "Nozomi's power. Snapshot, Photo Teleport, Desaturate, Iris Horizon, Kaleidoscope. G: Undo. T: photo gallery.",
 	},
 	{
@@ -106,6 +111,17 @@ ShopConfig.Items = {
 	},
 }
 
+-- a briefcase item's yen price: its set's tier price (nil if the dealer doesn't sell it)
+for _, item in ipairs(ShopConfig.Items) do
+	if item.briefcase then
+		local set = SkillSetConfig.Sets[item.set]
+		item.price = set and PowerConfig.price(item.set, set.tier)
+		if not item.price then
+			item.comingSoon = true
+		end
+	end
+end
+
 function ShopConfig.Get(id)
 	for _, item in ipairs(ShopConfig.Items) do
 		if item.id == id then
@@ -131,7 +147,7 @@ end
 
 -- whether buying the item gives the player something to own (and save)
 function ShopConfig.Ownable(item)
-	return not item.service and not item.starter and not item.comingSoon
+	return not item.service and not item.starter and not item.comingSoon and not item.briefcase
 end
 
 return ShopConfig

@@ -2,14 +2,25 @@
 -- with the buyer standing next to a shopkeeper (a model tagged "Shop") that
 -- runs the item's shop, and PlayerStats checks the yen and that it isn't
 -- already owned. Starter items and coming-soon placeholders aren't sold. A service
--- (like Reset Stats) is only paid for when it actually does something.
+-- (like Reset Stats) is only paid for when it actually does something. A
+-- briefcase (the Power Dealer's powers) is paid for in yen and handed over
+-- as a Tool (Powers); the dealer also buys carried briefcases back (SellItem).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
+local Powers = require(script.Parent:WaitForChild("Powers"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local buyItem = ReplicatedStorage:WaitForChild("BuyItem")
+local sellItem = ReplicatedStorage:FindFirstChild("SellItem")
+if not sellItem then
+	sellItem = Instance.new("RemoteFunction")
+	sellItem.Name = "SellItem"
+	sellItem.Parent = ReplicatedStorage
+end
 
 -- what each service does; returns whether it went through and what to say
 local services = {}
@@ -60,6 +71,19 @@ buyItem.OnServerInvoke = function(player, id)
 	if not nearShop(player.Character, ShopConfig.ShopOf(item)) then
 		return false, "Too far from the shopkeeper"
 	end
+	if item.briefcase then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if not humanoid or humanoid.Health <= 0 or not player:FindFirstChildOfClass("Backpack") then
+			return false, "Not now"
+		end
+		if not PlayerStats.SpendYen(player, item.price) then
+			local yen = player:GetAttribute("Yen")
+			return false, yen and string.format("You need ¥%d more", item.price - yen) or "Still loading"
+		end
+		Powers.GiveBriefcase(player, item.set)
+		print(string.format("[Shop] %s bought %s for ¥%d", player.Name, item.name, item.price))
+		return true, "Bought " .. item.name .. " Briefcase"
+	end
 	if item.service then
 		local run = services[item.id]
 		local yen = player:GetAttribute("Yen")
@@ -83,4 +107,26 @@ buyItem.OnServerInvoke = function(player, id)
 		print(string.format("[Shop] %s bought %s for ¥%d", player.Name, item.name, item.price))
 	end
 	return ok, message
+end
+
+-- sells a carried briefcase back to the Power Dealer: the briefcase is
+-- destroyed first, then the yen paid, so one can't be sold twice
+sellItem.OnServerInvoke = function(player, setName)
+	local set = typeof(setName) == "string" and SkillSetConfig.Sets[setName]
+	if not set or set.kind ~= "power" then
+		return false, "That can't be sold"
+	end
+	if not nearShop(player.Character, "Powers") then
+		return false, "Too far from the Power Dealer"
+	end
+	if not player:GetAttribute("Yen") then
+		return false, "Still loading"
+	end
+	if not Powers.TakeBriefcase(player, setName) then
+		return false, "You aren't carrying that briefcase"
+	end
+	local price = PowerConfig.sellPrice(setName, set.tier)
+	PlayerStats.AddYen(player, price)
+	print(string.format("[Shop] %s sold a %s briefcase for ¥%d", player.Name, setName, price))
+	return true, string.format("Sold for ¥%d", price)
 end
