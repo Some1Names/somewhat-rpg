@@ -20,6 +20,8 @@ otherwise.
 
 ## Done
 
+- [Hub menu](2026-10-14-hub-menu.md): built and in Studio (2026-10-14). Left: play
+  `specs/2026-10-14-hub-menu-checklist.md` and tune the poses in `HubPoses` by eye.
 - [Reforge](2026-10-14-reforge.md): built, merged and in Studio (synced 2026-10-14). Left: the checklist
   `specs/2026-10-14-reforge-checklist.md`, and [enemy drops](2026-10-14-enemy-drops.md) for the materials: built and in Studio (synced 2026-10-14;
   `DroppedItemOrb` moved to `VFXPrefabs`). Left: play `specs/2026-10-14-enemy-drops-checklist.md` (two players, UI by eye).

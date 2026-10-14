@@ -105,6 +105,11 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## UI
 
+- **Hub menu** (one full-screen menu: Profile, Backpack, Quests, Stats, Updates, locked slots; posed
+  character; accent from the held power): **built and in Studio** (2026-10-14; load, keys and the
+  Updates badge checked). Left: the playtest and pose tuning, checklist
+  `docs/superpowers/specs/2026-10-14-hub-menu-checklist.md` (spec `specs/2026-10-14-hub-menu-design.md`,
+  plan `plans/2026-10-14-hub-menu.md`).
 - **HUD layout pass** (top-right icon row, key hints, one menu at a time): **built and in Studio** (synced 2026-10-14; left from task 6: screenshots at three sizes, icon images, the playtest), spec
   `docs/superpowers/specs/2026-10-09-hud-layout-design.md`, plan
   `docs/superpowers/plans/2026-10-09-hud-layout.md`, checklist

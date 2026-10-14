@@ -86,10 +86,15 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `Damage.OnKill`, and runs the pickup loop; orbs are parts in `workspace.Drops` cloned from
   `VFXPrefabs.DroppedItemOrb`, owner-only for 30 s. The bag is the saved `Mat_<key>` attributes (Reforge spends
   them). `DropClient` hides others' orbs and pops up "+N".
-- **Client UI**: `SkillBar`, `Inventory`, `StatsMenu` (with a Milestones tab), `AdminPanel`, `ShopMenu`,
+- **Client UI**: `Hub` (module: the full-screen hub menu, LEGACY/Arknights editorial style; tabs
+  are scripts that call `Hub.Tab(name, opts)` and build in the frame it returns; pure rules in
+  `HubRules`, Lune-tested; the accent is the held power's colour), its tabs `HubProfile` (Profile),
+  `Inventory` (Backpack, B), `Quests` (J), `StatsMenu` (Stats, M, with a Milestones sub-tab) and
+  `UpdateNotes` (Updates), `HubPose` (the player's posed character over the hub; poses in
+  `HubPoses`), `SkillBar`, `AdminPanel`, `ShopMenu`,
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
-  popups), `Quests` (the J menu), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row and yen, no side
-  buttons), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
+  popups), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row, the yen and the
+  Menu icon), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
   every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
   `HudConfig`).
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
