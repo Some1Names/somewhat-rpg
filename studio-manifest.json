@@ -792,6 +792,32 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/ServerScriptService/Reforge.luau",
+  "names": [
+   "ServerScriptService",
+   "Reforge"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/ReforgeServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "ReforgeServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/StarterPlayer/StarterPlayerScripts/HitFeedback.client.luau",
   "names": [
    "StarterPlayer",
@@ -1392,6 +1418,22 @@
   "enabled": true
  },
  {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ReforgeMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ReforgeMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/StarterPlayer/StarterCharacterScripts/Health.server.luau",
   "names": [
    "StarterPlayer",
@@ -1628,22 +1670,6 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
-  "names": [
-   "ServerStorage",
-   "BlackHoleTemplate",
-   "ClientEffect"
-  ],
-  "classes": [
-   "ServerStorage",
-   "Model",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Client",
-  "enabled": true
- },
- {
   "file": "src/ReplicatedStorage/ReforgeConfig.luau",
   "names": [
    "ReplicatedStorage",
@@ -1668,45 +1694,19 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerScriptService/Reforge.luau",
+  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
   "names": [
-   "ServerScriptService",
-   "Reforge"
+   "ServerStorage",
+   "BlackHoleTemplate",
+   "ClientEffect"
   ],
   "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/ReforgeServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "ReforgeServer"
-  ],
-  "classes": [
-   "ServerScriptService",
+   "ServerStorage",
+   "Model",
    "Script"
   ],
   "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/ReforgeMenu.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "ReforgeMenu"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
+  "runContext": "Client",
   "enabled": true
  }
 ]

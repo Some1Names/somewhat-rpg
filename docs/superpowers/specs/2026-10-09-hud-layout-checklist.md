@@ -35,7 +35,19 @@ Spec: `2026-10-09-hud-layout-design.md`.
 - [ ] "RMB Aim" appears only holding a set with a ranged move (Revolver, Mandela, ...).
 - [ ] Settings > INTERFACE > Key hints OFF hides the panel; it stays off after rejoining.
 
-## Screen sizes (Studio Device emulator)
+## Layout as built (desktop only)
+- Top right: Settings, and Admin for admins. Bottom left, above the three cards: the yen, then M Stats and B Inventory.
+  Bottom right: J Quests on top of the bounty tracker (above the 3x2 tool grid when there is no bounty).
+  Along the bottom edge, one line of key hints (smaller, with a gap above it).
+- Cards (Power 1, Weapon 2, Melee 3) and the grid (keys 4-9, six slots always shown) are the same width.
+- Stats and Admin open at the left and right, Inventory and Quests in the middle; the Stats rows are one line each.
+- Admin hides the grid, bounty tracker and kill feed while open.
+- [ ] Press 1-9 in a real playtest (Studio's virtual input can't send them): 1-3 the cards, 4-9 the grid.
+- [ ] 1920x1080: Stats, Quests, Inventory, Admin and Settings fit without scrolling and don't cover the cards or skill bar.
+- [ ] Level-up, +XP/+yen, mastery and quest popups sit at the same height whatever the window size.
+- Phone sizes are not supported yet: the two 258 px blocks plus the skill bar need about 890 px, so below that they overlap.
+
+## Screen sizes (older notes)
 - [ ] 1920×1080, 1280×720 and a phone view: icon row, kill feed, key hints, hotbar, skill bar (with its Q
       and click mini slots) and the quest tracker don't overlap; the Inventory still shrinks to fit.
 - [ ] Skill bar sits 16 px higher than before, 48 px above the hotbar.

@@ -32,8 +32,15 @@ local function faceCamera()
 	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 	local humanoid = currentHumanoid()
 	local root = humanoid and humanoid.RootPart
+	if not root or humanoid.Health <= 0 or humanoid.Sit then
+		return
+	end
+	-- a swimmer lies along the water and turns the way they swim (Swim script);
+	-- standing them upright to face the camera would drop the swim pose
+	local swimming = humanoid.Parent:GetAttribute("Swimming") == true
+	humanoid.AutoRotate = swimming
 	-- a dash roll faces its own direction until it finishes
-	if not root or humanoid.Health <= 0 or humanoid.Sit or player:GetAttribute("Dashing") then
+	if swimming or player:GetAttribute("Dashing") then
 		return
 	end
 	local look = workspace.CurrentCamera.CFrame.LookVector
@@ -43,10 +50,19 @@ local function faceCamera()
 	end
 end
 
+-- Roblox's camera scripts set the mouse back to free at times (a right-click
+-- release, a menu closing); that is undone at once, not a frame later
+UserInputService:GetPropertyChangedSignal("MouseBehavior"):Connect(function()
+	if locked and UserInputService.MouseBehavior ~= Enum.MouseBehavior.LockCenter then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	end
+end)
+
 local function setLocked(value)
 	locked = value
 	applyToHumanoid(currentHumanoid())
 	if locked then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 		UserInputService.MouseIcon = CROSSHAIR
 		RunService:BindToRenderStep(RENDER_STEP_NAME, Enum.RenderPriority.Camera.Value + 1, faceCamera)
 	else

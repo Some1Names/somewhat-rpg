@@ -218,7 +218,17 @@ local function step()
 	flat = moving and flat.Magnitude > 0.01 and flat.Unit * math.min(direction.Magnitude, 1) or Vector3.zero
 	local lift = math.clamp((floatY - root.Position.Y) * SPRING, -Water.RiseSpeed, IDLE_RISE)
 	swim.velocity.VectorVelocity = flat * Water.SwimSpeed + Vector3.new(0, lift, 0)
+	swim.flat = flat
 end
+
+-- The Humanoid swims along the camera's full 3D direction (looking down dives)
+-- whatever the LinearVelocity says, so each frame, right after the controls
+-- set it, its own move direction is made level.
+RunService:BindToRenderStep("SwimLevel", Enum.RenderPriority.Input.Value + 1, function()
+	if swim and swim.flat and swim.velocity.Enabled and swim.humanoid.Parent then
+		swim.humanoid:Move(swim.flat, false)
+	end
+end)
 
 -- nobody sees under the water: a camera inside a water part is lifted to just
 -- above its surface (after the camera scripts have run each frame)
