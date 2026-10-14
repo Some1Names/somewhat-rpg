@@ -421,6 +421,15 @@ SkillSetConfig.Sets = {
 		placeholder = true,
 		skills = {},
 	},
+	-- Furukiwa Aido's power (the Aido plan builds it; rename this key if that plan uses another)
+	DeusExMachina = {
+		tool = "DeusExMachina",
+		kind = "power",
+		tier = "S",
+		color = Color3.fromRGB(220, 70, 60),
+		placeholder = true,
+		skills = {},
+	},
 	Kintsugi = {
 		tool = "Kintsugi",
 		kind = "power",

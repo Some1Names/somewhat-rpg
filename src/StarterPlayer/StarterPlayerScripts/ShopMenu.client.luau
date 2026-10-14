@@ -217,7 +217,7 @@ local function refresh()
 		local owned = owns(item)
 		local affordable = yen >= (item.price or 0)
 		if item.comingSoon then
-			row.buy.Text = "COMING SOON"
+			row.buy.Text = item.briefcase and "NOT FOR SALE" or "COMING SOON"
 		elseif owned then
 			row.buy.Text = "OWNED"
 		else
@@ -345,7 +345,7 @@ local function buildRows(shopId)
 				buy(item)
 			end)
 			local entry = { item = item, buy = button }
-			if item.briefcase and not item.comingSoon then
+			if item.briefcase then
 				-- under the text: sell a carried briefcase, and the Robux lifetime copy
 				local product = PowerConfig.RobuxProducts[item.set]
 				local set = SkillSetConfig.Sets[item.set]

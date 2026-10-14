@@ -89,9 +89,9 @@ ShopConfig.Items = {
 		id = "AidoPower",
 		name = "Deus Ex Machina",
 		shop = "Powers",
-		tier = "S",
-		comingSoon = true,
-		description = "Furukiwa Aido's power. ???",
+		set = "DeusExMachina",
+		briefcase = true,
+		description = "Furukiwa Aido's power. Not for sale: only the gacha and drops give it.",
 	},
 	{
 		id = "Eventide",

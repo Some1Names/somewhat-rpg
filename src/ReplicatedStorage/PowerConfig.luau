@@ -16,7 +16,7 @@ PowerConfig.SellShare = 0.3 -- the dealer buys a briefcase back at this share of
 -- per power: forSale = false keeps it out of the dealer's yen shop; sellPrice
 -- replaces the share of the price (for powers with no yen price)
 PowerConfig.Overrides = {
-	Aido = { forSale = false, sellPrice = 200000 },
+	DeusExMachina = { forSale = false, sellPrice = 200000 }, -- Aido's power
 }
 
 PowerConfig.Gacha = {
