@@ -1,8 +1,8 @@
--- The hub's Stats tab (M, or the hub's nav). Across the top, a row of tiles
--- with what the stats add up to (max HP, regen, damage, stamina, dodges);
--- under it STATS, to spend stat points on Vitality, Strength, Superliminal
--- and Firearm and see when the next stamina box unlocks, and beside it
--- MILESTONES, the milestones and their rewards as bars. Unspent points show as a badge in the hub's nav. Also pops up XP
+-- The hub's Stats tab (M, or the hub's nav), with two sub-tabs. STATS: a row
+-- of tiles with what the stats add up to (max HP, regen, damage, stamina,
+-- dodges), and under it the stat points to spend on Vitality, Strength,
+-- Superliminal and Firearm and when the next stamina box unlocks.
+-- MILESTONES: the milestones and their rewards as bars. Unspent points show as a badge in the hub's nav. Also pops up XP
 -- gains and level ups. The numbers come from the player attributes the
 -- server keeps (see PlayerStats).
 local Debris = game:GetService("Debris")
@@ -19,8 +19,9 @@ local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 local player = Players.LocalPlayer
 
 local AMOUNTS = { 1, 5, 10 } -- points added per click
-local PANEL_SHARE = 0.55 -- STATS' share of the tab's width; MILESTONES has the rest
-local TILES_HEIGHT = 92 -- the row of totals across the top, with the gap under it
+local PANEL_WIDTH = 560
+local SUBTABS_HEIGHT = 36 -- the STATS / MILESTONES titles, with the gap under them
+local TILES_HEIGHT = 92 -- the row of totals, with the gap under it
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local STAT_ROW_HEIGHT = 40
@@ -86,16 +87,34 @@ local function formatYen(amount)
 	return "¥" .. grouped
 end
 
--- a panel's title in its header
-local function tabTitles(header, title)
-	label(header, { Text = title, Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.fromOffset(200, 22) })
+-- the sub-tabs as plain titles, like the Quests tab's: the one showing in ink
+local showTab -- defined below
+local subTabs = {}
+local subTabRow = make("Frame", { Parent = tabFrame, Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
+make("UIListLayout", { Parent = subTabRow, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 22), SortOrder = Enum.SortOrder.LayoutOrder })
+for order, name in ipairs({ "STATS", "MILESTONES" }) do
+	subTabs[name] = make("TextButton", {
+		Parent = subTabRow,
+		LayoutOrder = order,
+		Size = UDim2.fromOffset(0, 26),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Font = Enum.Font.GothamBold,
+		Text = name,
+		TextSize = 14,
+		TextColor3 = MUTED,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	})
+	subTabs[name].Activated:Connect(function()
+		showTab(name)
+	end)
 end
 
 local panel = make("ScrollingFrame", {
 	Name = "Panel",
 	Parent = tabFrame,
-	Position = UDim2.fromOffset(0, TILES_HEIGHT),
-	Size = UDim2.new(PANEL_SHARE, -12, 1, -TILES_HEIGHT),
+	Position = UDim2.fromOffset(0, SUBTABS_HEIGHT + TILES_HEIGHT),
+	Size = UDim2.new(0, PANEL_WIDTH, 1, -(SUBTABS_HEIGHT + TILES_HEIGHT)),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
@@ -117,7 +136,6 @@ make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, P
 -- header: the two sub-tabs and the level
 local header = section(1, 22)
 header.Parent = panel
-tabTitles(header, "STATS")
 local levelLabel = label(header, {
 	Font = Enum.Font.GothamBold,
 	TextSize = 14,
@@ -251,9 +269,10 @@ end
 
 -- the totals: a row of tiles across the top, each a caption over a big number
 -- with an accent bar down its left edge
-local CURRENT = { "MAX HP", "HP REGEN / S", "MELEE DAMAGE", "SKILL DAMAGE", "GUN DAMAGE", "STAMINA BOXES", "DODGE CHARGES" }
+local CURRENT = { "MAX HP", "REGEN / S", "MELEE", "SKILL DMG", "GUN DMG", "STAMINA", "DODGES" }
 local tiles = make("Frame", {
 	Parent = tabFrame,
+	Position = UDim2.fromOffset(0, SUBTABS_HEIGHT),
 	Size = UDim2.new(1, 0, 0, TILES_HEIGHT - 16),
 	BackgroundTransparency = 1,
 })
@@ -353,8 +372,8 @@ local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 local infoPanel = make("ScrollingFrame", {
 	Name = "InfoPanel",
 	Parent = tabFrame,
-	Position = UDim2.new(PANEL_SHARE, 12, 0, TILES_HEIGHT),
-	Size = UDim2.new(1 - PANEL_SHARE, -12, 1, -TILES_HEIGHT),
+	Position = UDim2.fromOffset(0, SUBTABS_HEIGHT),
+	Size = UDim2.new(0, PANEL_WIDTH, 1, -SUBTABS_HEIGHT),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
@@ -373,9 +392,6 @@ make("UIPadding", {
 })
 make("UIListLayout", { Parent = infoPanel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
 
-local infoHeader = section(1, 22)
-infoHeader.Parent = infoPanel
-tabTitles(infoHeader, "MILESTONES")
 
 -- the list scrolls, so the panel never runs off a short screen
 local infoBody = make("ScrollingFrame", {
@@ -544,11 +560,22 @@ player.AttributeChanged:Connect(function(name)
 	end
 end)
 
--- STATS and MILESTONES side by side
+-- shows the STATS (tiles and points) or MILESTONES sub-tab
+function showTab(name)
+	if name == "MILESTONES" then
+		buildInfo()
+	end
+	for tabName, button in pairs(subTabs) do
+		button.TextColor3 = tabName == name and TEXT or MUTED
+	end
+	tiles.Visible = name == "STATS"
+	panel.Visible = name == "STATS"
+	infoPanel.Visible = name == "MILESTONES"
+end
+
+-- the hub always opens it on STATS
 Hub.OnShown("Stats", function()
-	buildInfo()
-	panel.Visible = true
-	infoPanel.Visible = true
+	showTab("STATS")
 end)
 
 -- the XP bar and the tiles' edges in the accent; unspent points as a badge in the hub's nav

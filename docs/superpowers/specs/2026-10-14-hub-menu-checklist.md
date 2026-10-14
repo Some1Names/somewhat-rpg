@@ -22,5 +22,5 @@ Try in-game:
 - [ ] Stats: spending points (x1/x5/x10), the MILESTONES sub-tab, XP / level-up popups still on the
       game screen.
 - [ ] Quests: BOUNTY (with Abandon) and CHALLENGES (set picker) as before.
-- [ ] Updates: CONTINUE closes; the NEW badge only appears on a new version.
+- [ ] Updates: the NEW badge only appears on a new version and clears after you look and close.
 - [ ] Readability on the grey paper (gold numbers, set colours, the tier chip) at 1280×720 and 1920×1080.

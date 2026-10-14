@@ -78,11 +78,14 @@ local body = make("Frame", {
 	BackgroundTransparency = 1,
 	ZIndex = 2,
 })
+-- the nav column's colour runs up through the band, behind Roblox's buttons
+local navCap = make("Frame", { Parent = gui, BackgroundColor3 = Theme.Nav, BorderSizePixel = 0, ZIndex = 2 })
 local function placeBody()
 	local band = GuiService:GetGuiInset().Y
 	band = band > 0 and band or ROBLOX_BAR_FALLBACK
 	body.Position = UDim2.fromOffset(0, band)
 	body.Size = UDim2.new(1, 0, 1, -band)
+	navCap.Size = UDim2.fromOffset(Theme.NavWidth, band)
 end
 placeBody()
 

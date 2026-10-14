@@ -1,6 +1,6 @@
 -- The hub's Updates tab, "What's new". The first time a player joins after
 -- UpdateNotes.Version changes it gets a NEW badge in the hub's nav (it never
--- opens by itself). Closing the hub after the tab showed (×, Esc, Continue)
+-- opens by itself). Closing the hub after the tab showed (×, Esc, a tab key)
 -- tells UpdateNotesServer on the SeenUpdateNotes remote, which saves the
 -- version as the player's SeenUpdate. In Studio saves are off, so the badge
 -- shows on every playtest.
@@ -108,19 +108,6 @@ if UpdateNotes.Footer then
 	label(panel, { LayoutOrder = nextOrder(), Text = UpdateNotes.Footer, TextSize = 12, TextColor3 = MUTED })
 end
 
-local continueButton = make("TextButton", {
-	Parent = panel,
-	LayoutOrder = nextOrder(),
-	Size = UDim2.new(1, 0, 0, 30),
-	BackgroundColor3 = TEXT,
-	BorderSizePixel = 0,
-	AutoButtonColor = true,
-	Font = Enum.Font.GothamBold,
-	Text = "CONTINUE",
-	TextSize = 12,
-	TextColor3 = WHITE,
-})
-
 local unseen = false -- this version hasn't been marked seen yet
 local shown = false -- the tab showed since then
 
@@ -138,7 +125,6 @@ Hub.OnClosed(function()
 		seenEvent:FireServer(UpdateNotes.Version)
 	end
 end)
-continueButton.Activated:Connect(Hub.Close)
 
 -- the saved attributes appear once the save has loaded (Level is one of them)
 while player.Parent and player:GetAttribute("Level") == nil do
