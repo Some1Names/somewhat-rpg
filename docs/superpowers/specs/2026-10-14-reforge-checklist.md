@@ -1,11 +1,14 @@
 # Reforge: in-game test checklist
 
 `tests/ReforgeRules.spec.luau` passes (costs, slots, rolls, the multipliers, the saved text and its clamping;
-run in Studio on 2026-10-14 because Lune isn't installed on this machine). Nothing else has been played.
-Needs in Studio first: the **`ReforgeAction`** RemoteFunction in `ReplicatedStorage`, and a **smith** model
-tagged **`Smith`** with a ProximityPrompt (like a shopkeeper). Materials come from enemy drops; until that's
-in, give yourself some: `player:SetAttribute("Mat_Scrap", 100)` (also `Mat_Core`, `Mat_Crystal`,
-`Mat_Essence`) and yen from the admin panel. The numbers are in `ReforgeConfig`.
+run in Studio on 2026-10-14 because Lune isn't installed on this machine). The scripts and the
+`ReforgeAction` RemoteFunction were synced to Studio the same day; one playtest only checked that it loads
+with no errors and that a server-side level-up spends 10 Scrap and ¥200 and mirrors `Reforge_Mandela`.
+The menu, the smith and everything below have not been played.
+Still needed in Studio: a **smith** model tagged **`Smith`** with a ProximityPrompt (like a shopkeeper).
+Materials come from enemy drops; until that's in, give yourself some **on the server** (server command
+bar; from a client it doesn't replicate): `player:SetAttribute("Mat_Scrap", 100)` (also `Mat_Core`,
+`Mat_Crystal`, `Mat_Essence`) and yen from the admin panel. The numbers are in `ReforgeConfig`.
 
 ## The smith
 - [ ] Press the smith's prompt: the SMITH menu opens, lists the powers and weapons you own (best tier
