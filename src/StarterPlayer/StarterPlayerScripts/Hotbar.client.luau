@@ -1,5 +1,5 @@
 -- The hotbar, in place of Roblox's own. Bottom left, three tall cards for what
--- you carry (with the yen and the Quests / Stats / Inventory icons above them, TopBar), like Elden Ring's equipment slots: POWER (key 1), WEAPON (2) and
+-- you carry (with the yen and the Menu icon above them, TopBar), like Elden Ring's equipment slots: POWER (key 1), WEAPON (2) and
 -- MELEE (3, coming), each outlined in the colour of its skill set's tier
 -- (SkillSetConfig.Tiers: purple S, red A, blue B, green C) with the set's name
 -- and your mastery in it. Bottom right, the other tools (anything that isn't a

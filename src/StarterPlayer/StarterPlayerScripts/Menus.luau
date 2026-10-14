@@ -1,5 +1,5 @@
--- The one-menu rule: Inventory, Stats, Settings, Shop, Gallery, Quests and
--- Admin register here when they open (Menus.Open(name, closeFn)), which
+-- The one-menu rule: the hub (Backpack, Quests, Stats and the rest are its
+-- tabs, Hub), Settings, Shop, Gallery and Admin register here when they open (Menus.Open(name, closeFn)), which
 -- closes whichever menu was open first. A menu calls Menus.Close(name)
 -- whenever it closes itself (key, ×, Esc), so the next open starts clean.
 -- The top bar's icons toggle a menu by name (Menus.Toggle) through the

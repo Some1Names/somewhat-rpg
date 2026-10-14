@@ -1,13 +1,13 @@
 -- The HUD's plain icons. Top right, right to left: Settings (P), and Admin (`)
 -- for admins. Bottom left, above the Hotbar's equipment cards: the player's
--- yen as gold text, and under it Stats (M) and Inventory (B). Bottom right,
--- Quests (J) sits on top of the bounty tracker (or just above the tool grid
--- when there is no bounty). No
--- boxes: white icons with a dark stroke, the one whose menu is open a little
--- larger, a label with its key beside whichever is hovered (or held, on touch). Each icon toggles its
--- menu through Menus exactly as the key does; the menus register themselves
--- there. Icon images come from HudConfig.Icons; until the owner picks them
--- each shows its text glyph. A gold number on Stats counts unspent points.
+-- yen as gold text, and under it the Menu icon, which opens the hub (Hub) on
+-- Profile; B, J and M open it on Backpack, Quests and Stats. No boxes: white
+-- icons with a dark stroke, the one whose menu is open a little larger, a
+-- label with its key beside whichever is hovered (or held, on touch). Each
+-- icon toggles its menu through Menus exactly as the key does; the menus
+-- register themselves there. Icon images come from HudConfig.Icons; until the
+-- owner picks them each shows its text glyph. A gold number on Menu counts
+-- unspent stat points.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -23,15 +23,12 @@ local GOLD = Color3.fromRGB(255, 205, 60)
 local STROKE = Color3.new(0, 0, 0)
 local STROKE_TRANSPARENCY = 0.4
 
--- left to right within each group (`left` = the bottom-left cluster, `right` = above the
--- bounty tracker at the bottom right, else the top-right row);
--- Quests and Admin appear only when they apply
+-- left to right within each group (`left` = the bottom-left cluster, else the
+-- top-right row); Admin appears only for admins
 local ICONS = {
 	{ name = "Admin", title = "Admin", key = "`" },
 	{ name = "Settings", title = "Settings", key = "P" },
-	{ name = "Quests", title = "Quests", key = "J", right = true },
-	{ name = "Stats", title = "Stats", key = "M", left = true },
-	{ name = "Inventory", title = "Inventory", key = "B", left = true },
+	{ name = "Hub", title = "Menu", key = "B / J / M", left = true },
 }
 
 local function make(className, props)
@@ -71,7 +68,7 @@ make("UIListLayout", {
 	Padding = UDim.new(0, ICON_GAP),
 })
 
--- bottom left, above the cards: the yen, and the three menu icons under it
+-- bottom left, above the cards: the yen, and the Menu icon under it
 local cluster = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
@@ -95,32 +92,6 @@ make("UIListLayout", {
 	SortOrder = Enum.SortOrder.LayoutOrder,
 	Padding = UDim.new(0, ICON_GAP),
 })
-
--- bottom right: Quests on top of the bounty tracker; placeRight() keeps it there
-local rightCluster = make("Frame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(1, 1),
-	Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
-	BackgroundTransparency = 1,
-})
-local tracker -- QuestBoard's bounty tracker, once it exists
-local function placeRight()
-	local offset = HudConfig.BottomReserve + HudConfig.SideHeight + HudConfig.ClusterGap
-	if tracker and tracker.Visible then
-		offset += HudConfig.SideGap + tracker.AbsoluteSize.Y
-	end
-	rightCluster.Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -offset)
-end
-placeRight()
-task.spawn(function()
-	local board = player:WaitForChild("PlayerGui"):WaitForChild("QuestBoard", 15)
-	tracker = board and board:WaitForChild("Tracker", 15)
-	if tracker then
-		tracker:GetPropertyChangedSignal("Visible"):Connect(placeRight)
-		tracker:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeRight)
-		placeRight()
-	end
-end)
 
 local function formatYen(amount)
 	local digits = tostring(math.floor(amount))
@@ -149,13 +120,13 @@ for order, icon in ipairs(ICONS) do
 	-- a fixed-size slot, so a growing icon doesn't push its neighbours
 	local holder = make("TextButton", {
 		Name = icon.name,
-		Parent = icon.left and leftRow or icon.right and rightCluster or row,
+		Parent = icon.left and leftRow or row,
 		LayoutOrder = order,
 		Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
 		BackgroundTransparency = 1,
 		Text = "",
 		AutoButtonColor = false,
-		Visible = icon.name ~= "Admin" and icon.name ~= "Quests",
+		Visible = icon.name ~= "Admin",
 	})
 	local glyph, image
 	if config.image ~= "" then
@@ -184,12 +155,12 @@ for order, icon in ipairs(ICONS) do
 	end
 
 	-- the hover label hangs under a top-right icon, ending at its right edge so it stays on screen;
-	-- over a bottom-left icon it sits above it; beside the bottom-right one it sits to its left
+	-- over a bottom-left icon it sits above it
 	local hover = make("TextLabel", {
 		Parent = holder,
 		Visible = false,
-		AnchorPoint = icon.left and Vector2.new(0, 1) or icon.right and Vector2.new(1, 0.5) or Vector2.new(1, 0),
-		Position = icon.left and UDim2.new(0, 0, 0, -2) or icon.right and UDim2.new(0, -6, 0.5, 0) or UDim2.new(1, 0, 1, 2),
+		AnchorPoint = icon.left and Vector2.new(0, 1) or Vector2.new(1, 0),
+		Position = icon.left and UDim2.new(0, 0, 0, -2) or UDim2.new(1, 0, 1, 2),
 		Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
@@ -234,18 +205,12 @@ local function showOpen(openName)
 		end
 	end
 end
-local adminOpen = false -- the Admin panel covers the right edge, so Quests steps aside
-local refresh -- defined below
-Menus.OnChange(function(openName)
-	showOpen(openName)
-	adminOpen = openName == "Admin"
-	refresh()
-end)
+Menus.OnChange(showOpen)
 showOpen(nil)
 
--- unspent stat points, as a gold count on the Stats icon
+-- unspent stat points, as a gold count on the Menu icon
 local badge = make("TextLabel", {
-	Parent = holders.Stats.holder,
+	Parent = holders.Hub.holder,
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(0, 14),
@@ -259,19 +224,12 @@ local badge = make("TextLabel", {
 })
 make("UIPadding", { Parent = badge, PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4) })
 
-function refresh()
+local function refresh()
 	yenLabel.Text = formatYen(player:GetAttribute("Yen") or 0)
 	local points = player:GetAttribute("StatPoints") or 0
 	badge.Visible = points > 0
 	badge.Text = points > 99 and "99+" or tostring(points)
 	holders.Admin.holder.Visible = player:GetAttribute("IsAdmin") == true
-	-- the Quests menu is built by Quests, which waits for the server's Quest remote
-	holders.Quests.holder.Visible = ReplicatedStorage:FindFirstChild("Quest") ~= nil and not adminOpen
 end
 refresh()
 player.AttributeChanged:Connect(refresh)
-ReplicatedStorage.ChildAdded:Connect(function(child)
-	if child.Name == "Quest" then
-		refresh()
-	end
-end)

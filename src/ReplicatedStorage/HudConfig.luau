@@ -22,7 +22,7 @@ HudConfig.CardWidth = HudConfig.SlotWidth
 HudConfig.CardHeight = HudConfig.SideHeight
 -- px from the screen's bottom to the bottom of the cards and grid: the key hints line plus a gap
 HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 18
--- above the cards sit the yen and the Quests / Stats / Inventory icons
+-- above the cards sit the yen and the Menu icon (the hub)
 HudConfig.YenHeight = 22
 HudConfig.ClusterGap = 14 -- px between those icons and the cards
 -- px from the screen's bottom to the top of that left column: panels that open on the left stay above it
@@ -51,9 +51,7 @@ HudConfig.HubTheme = {
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
-	Inventory = { image = "", glyph = "B" },
-	Stats = { image = "", glyph = "M" },
-	Quests = { image = "", glyph = "J" },
+	Hub = { image = "", glyph = "≡" },
 	Admin = { image = "", glyph = "A" },
 }
 
