@@ -1,25 +1,24 @@
--- What each player carries: one power and one weapon at most
--- (SkillSetConfig.CarryLimit), kept as the PowerSet and WeaponSet attributes
--- on the player. Their tools (from ServerStorage.SkillSetTools) are handed
--- out every spawn; everyone starts with DEFAULT_POWER. A set bought in the
--- shop (a ShopConfig item with `set`, like the Revolver) is carried as soon
--- as it's owned, unless something of its kind already is. Players swap sets
--- through the inventory (client Inventory -> EquipSet remote), only for sets
--- they own (Loadout.Owns); the OwnedSets attribute lists those for the
--- client. For now the choice lasts the session: saving it comes with
--- deciding how sets are earned (shop ownership itself is saved by
--- PlayerStats).
+-- What each player carries: one weapon here, and one power (SkillSetConfig.CarryLimit).
+-- Powers belong to the Powers module (the held power, storage, lifetime and
+-- briefcases, all saved); Loadout only hands out the weapon, kept as the
+-- WeaponSet attribute, and tells who owns what: the OwnedSets attribute lists
+-- the powers they hold, store or own for life and the weapons they've
+-- bought, for the client. A weapon bought in the shop (a ShopConfig item with
+-- `set`, like the Revolver) is carried as soon as it's owned, unless a
+-- weapon already is. Players swap weapons through the inventory (client
+-- Inventory -> EquipSet remote), only for weapons they own (Loadout.Owns).
+-- Its tools come from ServerStorage.SkillSetTools, handed out every spawn.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
+local Powers = require(script.Parent:WaitForChild("Powers"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local tools = ServerStorage:WaitForChild("SkillSetTools")
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
 
-local DEFAULT_POWER = "Mandela"
-local ATTRIBUTES = { power = "PowerSet", weapon = "WeaponSet" }
+local ATTRIBUTES = { weapon = "WeaponSet" }
 local EQUIP_INTERVAL = 0.3 -- seconds between a player's swaps
 
 local Loadout = {}
@@ -69,10 +68,14 @@ local function giveTool(player, setName)
 end
 
 -- swaps the player's power or weapon (whichever kind the set is) for this one
+-- (a power is held outright: the old one is lost unless owned for life)
 function Loadout.Give(player, setName)
 	local set = SkillSetConfig.Sets[setName]
 	if not set then
 		return false
+	end
+	if set.kind == "power" then
+		return Powers.AdminSet(player, setName)
 	end
 	removeKind(player, set.kind)
 	player:SetAttribute(ATTRIBUTES[set.kind], setName)
@@ -82,17 +85,26 @@ end
 
 -- empties the player's power or weapon slot
 function Loadout.Remove(player, kind)
+	if kind == "power" then
+		Powers.AdminSet(player, nil)
+		return
+	end
 	removeKind(player, kind)
 	player:SetAttribute(ATTRIBUTES[kind], nil)
 end
 
--- whether the player owns the set: the starting power, a set bought in the
--- shop, or any set while SkillSetConfig.OwnAllSets is on (testing)
+-- whether the player owns the set: a power held, stored or owned for life
+-- (Powers), a weapon bought in the shop, or any set while
+-- SkillSetConfig.OwnAllSets is on (testing)
 function Loadout.Owns(player, setName)
-	if not SkillSetConfig.Sets[setName] then
+	local set = SkillSetConfig.Sets[setName]
+	if not set then
 		return false
 	end
-	if SkillSetConfig.OwnAllSets or setName == DEFAULT_POWER then
+	if set.kind == "power" then
+		return Powers.Owns(player, setName)
+	end
+	if SkillSetConfig.OwnAllSets then
 		return true
 	end
 	for _, item in ipairs(ShopConfig.Items) do
@@ -124,7 +136,7 @@ local function onEquip(player, setName, kind)
 	end
 	lastEquip[player] = now
 	if setName == nil then
-		if typeof(kind) ~= "string" or not ATTRIBUTES[kind] then
+		if kind ~= "weapon" then
 			return false, "Unknown slot"
 		end
 		Loadout.Remove(player, kind)
@@ -132,6 +144,9 @@ local function onEquip(player, setName, kind)
 	end
 	if typeof(setName) ~= "string" or not Loadout.Owns(player, setName) then
 		return false, "You don't own that"
+	end
+	if SkillSetConfig.Sets[setName].kind ~= "weapon" then
+		return false, "Powers are managed in the inventory's power rows"
 	end
 	if player:GetAttribute(ATTRIBUTES[SkillSetConfig.Sets[setName].kind]) ~= setName then
 		Loadout.Give(player, setName)
@@ -143,7 +158,7 @@ end
 local function carryOwned(player)
 	for _, item in ipairs(ShopConfig.Items) do
 		local set = item.set and SkillSetConfig.Sets[item.set]
-		if set and player:GetAttribute(ShopConfig.OwnedAttribute(item.id)) == 1 and player:GetAttribute(ATTRIBUTES[set.kind]) == nil then
+		if set and set.kind == "weapon" and player:GetAttribute(ShopConfig.OwnedAttribute(item.id)) == 1 and player:GetAttribute(ATTRIBUTES[set.kind]) == nil then
 			Loadout.Give(player, item.set)
 		end
 	end
@@ -164,10 +179,12 @@ end
 
 function Loadout.Start()
 	local function onPlayerAdded(player)
-		if player:GetAttribute(ATTRIBUTES.power) == nil then
-			player:SetAttribute(ATTRIBUTES.power, DEFAULT_POWER)
+		-- ownership arrives when the save loads, or on buying it or finding a power
+		for _, attribute in ipairs({ "CurrentPower", "PowerStorage", "LifetimePowers" }) do
+			player:GetAttributeChangedSignal(attribute):Connect(function()
+				refreshOwned(player)
+			end)
 		end
-		-- ownership arrives when the save loads, or on buying it
 		for _, item in ipairs(ShopConfig.Items) do
 			if item.set then
 				player:GetAttributeChangedSignal(ShopConfig.OwnedAttribute(item.id)):Connect(function()
@@ -186,6 +203,7 @@ function Loadout.Start()
 		end
 	end
 	equipRemote.OnServerInvoke = onEquip
+	Powers.Start()
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player)
 		lastEquip[player] = nil

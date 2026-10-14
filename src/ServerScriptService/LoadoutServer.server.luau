@@ -1,2 +1,2 @@
--- Hands out every player's power and weapon each spawn (see Loadout).
+-- Hands out every player's power (Powers) and weapon (Loadout) each spawn.
 require(script.Parent:WaitForChild("Loadout")).Start()
