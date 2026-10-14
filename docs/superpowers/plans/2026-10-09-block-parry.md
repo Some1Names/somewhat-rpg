@@ -7,6 +7,8 @@
 > **Who runs it:** Tasks 1–8 are code only: a **cloud session** can do them. Task 9 needs
 > **Studio**. Branch `claude/vigilant-rubin-ckqtnn` (or a fresh branch off it). Read `CLAUDE.md`.
 
+> **HUD layout** (`2026-10-09-hud-layout.md`): no layout change needed here; the shop prompt still uses E, and the key hints panel shows the "Block / Parry" line from the `Block` keybind.
+
 **Goal:** Give every player a base defence on E: a front block that cuts damage by hit kind and a posture bar that guard-breaks, with the bars on the HUD and over every health bar.
 
 **Architecture:** Shared numbers and pure rules in `GuardConfig` (Lune-tested); a server `Guard` module that owns the state (character attributes) and resolves every hit on a player through `Guard.Resolve` (block cut, posture, guard break), called from `Damage.Deal` and EnemyAI's swing; existing skills tagged with `options.guard`; a shared `ActionLock` for "can't act right now"; a client `Block` script for E and the prompt rule; HUD bars and placeholder effects.

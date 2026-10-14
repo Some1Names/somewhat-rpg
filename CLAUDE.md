@@ -36,6 +36,7 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 - All player damage goes through `ServerScriptService/Damage.luau` (`Damage.Deal`).
 - Any upload to the owner's Roblox account (images, animations) needs their OK first.
 - Match the surrounding code: comment density, naming, and the existing helpers.
+- Top-of-screen UI is plain icons and text (no boxes or borders), white with a dark stroke, like the top bar.
 - Real VFX come from imported effect/particle packs (or assets from VFX websites), set up as
   prefabs in `ReplicatedStorage.VFXPrefabs` and played with `VFX.Play`. Don't design final
   visuals from Roblox's stock particles or parts built in code; those are placeholders only,
@@ -71,9 +72,12 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so
   hits and kills know their move; moves report other things with `Quests.Report(player, set,
   event, amount)`. New givers/quests/challenges are data in `QuestConfig`.
-- **Client UI**: `SkillBar`, `Inventory`, `StatsMenu`, `AdminPanel`, `ShopMenu`, `StatusHUD`,
-  `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker, popups),
-  `Quests` (the J menu), `Block` (E).
+- **Client UI**: `SkillBar`, `Inventory`, `StatsMenu` (with a Milestones tab), `AdminPanel`, `ShopMenu`,
+  `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
+  popups), `Quests` (the J menu), `Block` (E), `TopBar` (the top-right icon row and yen, no side
+  buttons), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
+  every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
+  `HudConfig`).
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
   orange #FF9A3C / cyan #3CE0E6, Luminance passive, flight, Prism Form), Revolver (B weapon).
 

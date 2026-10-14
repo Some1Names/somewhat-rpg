@@ -1,6 +1,6 @@
 # Roadmap
 
-What's left, as of 2026-10-09. Plans ready to run are listed in `docs/superpowers/plans/README.md`. **Cloud** = code-only, a cloud session can do it.
+What's left, as of 2026-10-14. Plans ready to run are listed in `docs/superpowers/plans/README.md`. **Cloud** = code-only, a cloud session can do it.
 **Studio** = needs the local Studio connection (looking at effects, prefabs, uploads, playtests).
 
 ## In progress: Iridescent Requiem revisual
@@ -61,9 +61,9 @@ and saved ownership + loadout (`Loadout` is session-only today).
   `docs/superpowers/specs/2026-10-09-mastery-sources-checklist.md`. The training dummies carry the `TrainingDummy` tag. Mastery challenges are the quest system's (built); boss mastery belongs to
   the boss and enemy rework.
 - **Mastery unlocks per power** (own skill levels; passives, G, Lightstep, the Gallery by mastery):
-  **code built** (not in Studio yet), spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
+  **built and in Studio** (synced 2026-10-14), spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
   `docs/superpowers/plans/2026-10-09-mastery-unlocks.md`, checklist `docs/superpowers/specs/2026-10-09-mastery-unlocks-checklist.md`.
-  Waiting on the Studio apply (task 5) and a playtest. Aido's numbers go in with the Aido build.
+  Waiting on a playtest. Aido's numbers go in with the Aido build.
 - **Quests** (bounties from Bounty Hunters, mastery challenges): **built and in Studio**, spec `docs/superpowers/specs/2026-10-09-quests-design.md`, plan
   `docs/superpowers/plans/2026-10-09-quests.md`, checklist `docs/superpowers/specs/2026-10-09-quests-checklist.md`.
   Three Bounty Hunters stand on the map's `QuestSpawn` parts (GiverIds Training, Frontier, Outpost;
@@ -81,15 +81,22 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## World
 
+- **Daylight cycle** (20-minute day, sun/moon, Luminance by moonlight, Solar Lance weaker at night,
+  admin set/freeze time): **built and in Studio** (synced 2026-10-14), spec
+  `docs/superpowers/specs/2026-10-13-daylight-cycle-design.md`, plan `docs/superpowers/plans/2026-10-13-daylight-cycle.md`.
+  Left: task 7's keyframe tuning by eye and the playtest (two players for "same time"). Later: night
+  affecting enemies, spawns, shops and quests (the `Phase` attribute is the hook).
+
 - **Swimmable water parts:** **built and in Studio**, plan `docs/superpowers/plans/2026-10-10-swimmable-water.md`,
   checklist `docs/superpowers/specs/2026-10-10-swimmable-water-checklist.md`. The water stays Parts
   (tagged `Water`), with scripted swimming. The map has no water parts yet: place and tag them.
 
 ## UI
 
-- **HUD layout pass** (top-right icon row, key hints, one menu at a time): **designed**, spec
+- **HUD layout pass** (top-right icon row, key hints, one menu at a time): **code built** (not in Studio yet: the Studio apply, screenshots at three sizes and icon images are task 6), spec
   `docs/superpowers/specs/2026-10-09-hud-layout-design.md`, plan
-  `docs/superpowers/plans/2026-10-09-hud-layout.md` (not built yet). The final visual design comes
+  `docs/superpowers/plans/2026-10-09-hud-layout.md`, checklist
+  `docs/superpowers/specs/2026-10-09-hud-layout-checklist.md`. The final visual design comes
   later; this fixes the layout.
 
 ## Settings

@@ -31,7 +31,7 @@ Bodyguard, EvilBoss; the Boss Dummy and Player Dummy have none).
       nothing.
 
 ## Mastery challenges
-- [ ] J (or the QUESTS button, left edge under INVENTORY / ADMIN) opens the Quests menu; J again or
+- [ ] J (or the Quests icon in the top bar) opens the Quests menu; J again or
       × closes it. The mouse is free while it's open. Esc-less, like the other menus.
 - [ ] J is no longer offered as a key in Settings → Keybinds.
 - [ ] CHALLENGES tab: a row of the sets you own (the held set is picked at first), each challenge with its
