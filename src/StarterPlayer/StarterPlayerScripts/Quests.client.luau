@@ -1,33 +1,29 @@
--- The Quests menu: press J or the top bar's Quests icon (TopBar). The BOUNTY tab shows the bounty
+-- The hub's Quests tab (J, or the hub's nav). The BOUNTY sub-tab shows the bounty
 -- you've taken (what to defeat, how far along, what it pays) with Abandon.
--- The CHALLENGES tab lists a skill set's mastery challenges (the one you
+-- The CHALLENGES sub-tab lists a skill set's mastery challenges (the one you
 -- hold, or pick another you own): each with its progress, its mastery XP
 -- reward and a tick once done; ones whose move isn't unlocked yet show the
 -- mastery it needs. The numbers come from QuestConfig and the player
 -- attributes Quests keeps (QuestId, QuestProgress, the saved Challenges).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
-local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
-local Menus = require(script.Parent:WaitForChild("Menus"))
+local Hub = require(script.Parent:WaitForChild("Hub"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local questRemote = ReplicatedStorage:WaitForChild("Quest")
 
 local player = Players.LocalPlayer
 
-local TOGGLE_KEY = Enum.KeyCode.J
-local PANEL_SIZE = Vector2.new(620, 460) -- wide like the Inventory, centred on screen
-local SCREEN_MARGIN = 16 -- the panel shrinks to keep this much screen round it
-local PADDING = 14
+local PANEL_WIDTH = 620
 local ROW_HEIGHT = 62
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
-local TEXT = Color3.new(1, 1, 1)
-local MUTED = Color3.fromRGB(165, 165, 180)
-local GOLD = Color3.fromRGB(255, 205, 60)
-local BAR_BACK = Color3.fromRGB(45, 45, 58)
-local LOCKED = Color3.fromRGB(70, 70, 82)
+local BACKGROUND = Hub.Theme.Paper -- text on gold buttons
+local TEXT = Hub.Theme.Ink
+local MUTED = Hub.Theme.Muted
+local GOLD = Color3.fromRGB(190, 130, 0) -- dark enough for the paper
+local BAR_BACK = Hub.Theme.BarBack
+local LOCKED = Color3.fromRGB(180, 180, 178)
+local CARD = Hub.Theme.Panel
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -63,68 +59,28 @@ local function setLabel(setName)
 	return (string.gsub(setName, "(%l)(%u)", "%1 %2"))
 end
 
-local gui = make("ScreenGui", {
-	Name = "Quests",
-	ResetOnSpawn = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	Parent = player:WaitForChild("PlayerGui"),
-})
+local tabFrame = Hub.Tab("Quests", { order = 3, title = "QUESTS", key = Enum.KeyCode.J, pose = "Wide" })
 
 local panel = make("Frame", {
 	Name = "Panel",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromOffset(PANEL_SIZE.X, PANEL_SIZE.Y),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.15,
-	Visible = false,
-})
-outline(panel, 0.6)
-make("UIPadding", {
-	Parent = panel,
-	PaddingTop = UDim.new(0, PADDING),
-	PaddingBottom = UDim.new(0, PADDING),
-	PaddingLeft = UDim.new(0, PADDING),
-	PaddingRight = UDim.new(0, PADDING),
-})
-
--- smaller screens get a smaller panel
-local panelScale = make("UIScale", { Parent = panel })
-local function rescale()
-	local viewport = workspace.CurrentCamera.ViewportSize
-	panelScale.Scale = math.min(1, (viewport.X - 2 * SCREEN_MARGIN) / PANEL_SIZE.X, (viewport.Y - 2 * SCREEN_MARGIN) / PANEL_SIZE.Y)
-end
-rescale()
-workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
-
-local header = make("Frame", { Parent = panel, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
-label(header, { Text = "QUESTS", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
-local closeButton = make("TextButton", {
-	Parent = header,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(22, 22),
+	Parent = tabFrame,
+	Size = UDim2.new(0, PANEL_WIDTH, 1, 0),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
-	Text = "×",
-	TextSize = 20,
-	TextColor3 = MUTED,
 })
 
 -- tabs
 local tab = "bounty"
 local pickedSet -- the set shown on the challenges tab, once chosen
 local tabs = {}
-local tabRow = make("Frame", { Parent = panel, Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
+local tabRow = make("Frame", { Parent = panel, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
 make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder })
 for order, entry in ipairs({ { "bounty", "BOUNTY" }, { "challenges", "CHALLENGES" } }) do
 	tabs[entry[1]] = make("TextButton", {
 		Parent = tabRow,
 		LayoutOrder = order,
 		Size = UDim2.new(0.5, -3, 1, 0),
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.7,
+		BackgroundColor3 = CARD,
+		BackgroundTransparency = 0,
 		Font = Enum.Font.GothamBold,
 		Text = entry[2],
 		TextSize = 11,
@@ -136,8 +92,8 @@ end
 -- the page under the tabs; rebuilt on every refresh
 local body = make("ScrollingFrame", {
 	Parent = panel,
-	Position = UDim2.fromOffset(0, 64),
-	Size = UDim2.new(1, 0, 1, -64),
+	Position = UDim2.fromOffset(0, 34),
+	Size = UDim2.new(1, 0, 1, -34),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	CanvasSize = UDim2.new(),
@@ -190,8 +146,8 @@ local function showBounty()
 		Parent = body,
 		LayoutOrder = nextOrder(),
 		Size = UDim2.new(1, 0, 0, 132),
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.7,
+		BackgroundColor3 = CARD,
+		BackgroundTransparency = 0,
 	})
 	outline(frame, 0.85)
 	make("UIPadding", { Parent = frame, PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
@@ -276,7 +232,7 @@ local function showChallenges()
 			Parent = picker,
 			LayoutOrder = index,
 			Size = UDim2.new(1 / #sets, -4, 1, 0),
-			BackgroundColor3 = chosen and GOLD or Color3.new(0, 0, 0),
+			BackgroundColor3 = chosen and GOLD or CARD,
 			BackgroundTransparency = chosen and 0 or 0.7,
 			Font = Enum.Font.GothamBold,
 			Text = setLabel(setName),
@@ -303,8 +259,8 @@ local function showChallenges()
 			Parent = body,
 			LayoutOrder = nextOrder(),
 			Size = UDim2.new(1, 0, 0, ROW_HEIGHT),
-			BackgroundColor3 = Color3.new(0, 0, 0),
-			BackgroundTransparency = 0.7,
+			BackgroundColor3 = CARD,
+			BackgroundTransparency = 0,
 		})
 		outline(row, 0.85)
 		make("UIPadding", { Parent = row, PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
@@ -353,35 +309,13 @@ function refresh()
 	end
 end
 
-local function setOpen(open)
-	panel.Visible = open
-	if open then
-		Menus.Open("Quests", function()
-			setOpen(false)
-		end)
-		refresh()
-	else
-		Menus.Close("Quests")
-	end
-end
-Menus.Register("Quests", function()
-	setOpen(not panel.Visible)
-end)
-
 for name, button in pairs(tabs) do
 	button.Activated:Connect(function()
 		tab = name
 		refresh()
 	end)
 end
-closeButton.Activated:Connect(function()
-	setOpen(false)
-end)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and not Keybinds.Capturing() and input.KeyCode == TOGGLE_KEY then
-		setOpen(not panel.Visible)
-	end
-end)
+Hub.OnShown("Quests", refresh)
 
 -- what changes what the menu shows: the bounty, the saved challenges, level,
 -- what's owned, and each set's mastery (which unlocks challenges)
@@ -390,7 +324,7 @@ for setName in pairs(SkillSetConfig.Sets) do
 	watched[SkillSetConfig.MasteryAttribute(setName)] = true
 end
 player.AttributeChanged:Connect(function(name)
-	if panel.Visible and watched[name] then
+	if Hub.IsOpen("Quests") and watched[name] then
 		refresh()
 	end
 end)
