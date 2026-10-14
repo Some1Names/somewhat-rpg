@@ -41,7 +41,7 @@
 - `src/ReplicatedStorage/DropConfig.luau`: numbers, `Tiers`, `Materials`, `Generic`, `Tables`, and the pure rules.
 - `tests/DropConfig.spec.luau`: Lune tests.
 - `src/ServerScriptService/Drops.luau`: the server logic as a module with `Drops.Start()`.
-- `src/ServerScriptService/Drops.server.luau`: starts it (like `DayCycle.server.luau`).
+- `src/ServerScriptService/DropsServer.server.luau`: starts it (named DropsServer because a script and a module can't share the name Drops).
 - `src/StarterPlayer/StarterPlayerScripts/DropClient.client.luau`: hiding others' orbs, "+N" pop-ups.
 - `docs/superpowers/specs/2026-10-14-enemy-drops-checklist.md`: the playtest list.
 
@@ -138,11 +138,11 @@ git commit -m "Enemy drops: saved Mat_ bag and an admin Materials +50 button"
 
 **Files:**
 - Create: `src/ServerScriptService/Drops.luau`
-- Create: `src/ServerScriptService/Drops.server.luau`
+- Create: `src/ServerScriptService/DropsServer.server.luau`
 
 **Interfaces:**
 - Consumes: `DropConfig` (all of it), `Damage.OnDealt(listener(attacker, humanoid, dealt, options))`, `Damage.OnKill(listener(killer, character, hit, victimIsPlayer))` from `ServerScriptService/Damage.luau`.
-- Produces: `Drops.Start()` (idempotent). Orbs are parts in `workspace.Drops` with attributes `OwnerUserId: number`, `Material: string`, `Amount: number`, `PublicAt: number`, `ExpiresAt: number` (both `workspace:GetServerTimeNow()` values), all set before the orb is parented, plus a `BillboardGui` child named `Label`. `Drops.server.luau` is just `require(script.Parent:WaitForChild("Drops")).Start()` with the header comment style of `DayCycle.server.luau`.
+- Produces: `Drops.Start()` (idempotent). Orbs are parts in `workspace.Drops` with attributes `OwnerUserId: number`, `Material: string`, `Amount: number`, `PublicAt: number`, `ExpiresAt: number` (both `workspace:GetServerTimeNow()` values), all set before the orb is parented, plus a `BillboardGui` child named `Label`. `DropsServer.server.luau` is just `require(script.Parent:WaitForChild("Drops")).Start()` with the header comment style of `DayCycle.server.luau`.
 - The client (Task 4) relies on exactly those attribute names and on the `Label` child.
 
 Internal functions (all local, in `Drops.luau`), with the decisions each needs:
@@ -153,7 +153,7 @@ Internal functions (all local, in `Drops.luau`), with the decisions each needs:
 - `tick()`: runs every `DropConfig.PickupInterval` in a `task.spawn`ed loop. Drop entries from `orbs` whose `Parent == nil`; destroy and drop those past `ExpiresAt`. For each player with a living character and root part, whose `Mat_` attributes are numbers (stats loaded), and each remaining orb: skip unless `DropConfig.CanPickUp(OwnerUserId, player.UserId, now, PublicAt)` and `DropConfig.InRange(flat distance, abs height difference)`. Then `taken, left = DropConfig.Fit(current, Amount)`; if `taken == 0` skip; if `left == 0` remove the orb from `orbs` and `Destroy` it first, otherwise set its `Amount` to `left` and update its label text; only then `SetAttribute(DropConfig.Attribute(material), current + taken)`. Re-check `orb.Parent` before each credit so a second player in the same tick can't take a destroyed orb.
 - `Start()`: create `workspace.Drops` (`Folder`, named `DropConfig.FolderName`) if missing, connect the two `Damage` listeners, start the loop. Expiry time: `PublicAt = now + OwnerWindow`, `ExpiresAt = PublicAt + PublicWindow`.
 
-- [ ] **Step 1: Write `Drops.luau` and `Drops.server.luau`** from the decisions above; keep each function short and comment only what isn't obvious (the defer, the destroy-before-credit order).
+- [ ] **Step 1: Write `Drops.luau` and `DropsServer.server.luau`** from the decisions above; keep each function short and comment only what isn't obvious (the defer, the destroy-before-credit order).
 - [ ] **Step 2: Re-read for syntax and the Review Focus items** (the defer on kill; `Fit` returning `taken == 0` leaves the orb; the `Parent` re-check; the weak ledger; `warn` once). No toolchain exists, so read the whole file once, top to bottom.
 - [ ] **Step 3: Run the unit tests** (nothing in this file is testable under Lune)
 
@@ -162,7 +162,7 @@ Expected: all `ok`.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/ServerScriptService/Drops.luau src/ServerScriptService/Drops.server.luau
+git add src/ServerScriptService/Drops.luau src/ServerScriptService/DropsServer.server.luau
 git commit -m "Enemy drops: per-helper rolls, orbs in workspace.Drops, pickup and expiry"
 ```
 

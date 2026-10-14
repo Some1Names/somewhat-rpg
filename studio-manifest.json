@@ -1808,5 +1808,59 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/DropConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "DropConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Drops.luau",
+  "names": [
+   "ServerScriptService",
+   "Drops"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/DropsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "DropsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DropClient.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DropClient"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

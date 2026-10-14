@@ -89,7 +89,7 @@ be tested without grinding. No other admin tools.
   pure helpers `DropConfig.Rolls(level, tableName, random)` (what a helper gets: a list of
   `{ material, amount }`) and `DropConfig.IsHelper(damage, maxHealth)`. Lune-tested.
 - `src/ServerScriptService/Drops.luau`: helper damage tracking, the roll-and-spawn on kill, pickup
-  loop, expiry. `Drops.server.luau` starts it, like `DayClock` and `DayCycle`.
+  loop, expiry. `DropsServer.server.luau` starts it, like `DayClock` and `DayCycle`.
 - `src/StarterPlayer/StarterPlayerScripts/DropClient.client.luau`: hiding others' orbs, "+N" pop-ups.
 - `tests/DropConfig.spec.luau`
 

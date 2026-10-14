@@ -77,9 +77,9 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **Reforge** (smith NPC, level up to 10, reroll 2 modifier slots): **built and in Studio**, plan
   `docs/superpowers/plans/2026-10-14-reforge.md`, checklist `docs/superpowers/specs/2026-10-14-reforge-checklist.md`.
 - **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **built and in Studio** (2026-10-14); no plan or checklist (needs a playtest and a `SpawnSetter` NPC placed on the map).
-- **Enemy drops** (materials as glowing orbs, per-player, saved bag; spent in Reforge): **code built, not in Studio yet**
+- **Enemy drops** (materials as glowing orbs, per-player, saved bag; spent in Reforge): **built and in Studio** (2026-10-14; a one-hit kill dropped orbs and walking onto them filled the bag)
   (plan `docs/superpowers/plans/2026-10-14-enemy-drops.md`, checklist `docs/superpowers/specs/2026-10-14-enemy-drops-checklist.md`).
-  Needs `DroppedItemOrb` moved to `ReplicatedStorage.VFXPrefabs` (the owner's model) before it drops anything.
+  `DroppedItemOrb` is in `ReplicatedStorage.VFXPrefabs`. Left: the checklist (two players, visuals, UI).
 
 ## Getting powers
 

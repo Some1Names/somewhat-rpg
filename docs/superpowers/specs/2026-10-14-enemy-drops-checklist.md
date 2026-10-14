@@ -5,10 +5,12 @@ Studio on 2026-10-14 because Lune isn't installed on this machine). The server (
 saved `Mat_<key>` defaults, the Inventory list and the admin button are written but **not played**.
 Spec: `specs/2026-10-14-enemy-drops-design.md`; plan: `plans/2026-10-14-enemy-drops.md`.
 
-## Studio setup first
-- [ ] Move `Workspace.DroppedItemOrb` to `ReplicatedStorage.VFXPrefabs.DroppedItemOrb` (it holds
-      `CommonOrb`, `RareOrb`, `GoldOrb` and two `DarkOrb` parts). Without it the server warns once and
-      drops nothing.
+Synced to Studio 2026-10-14, `DroppedItemOrb` already moved to `ReplicatedStorage.VFXPrefabs`. One
+server-side playtest checked: a one-hit kill of a level 10 Henchman dropped Scrap and Core owned by the
+killer with a 30 s window, and standing on them emptied the ground and raised the bag. Everything else
+below is unplayed.
+
+## Studio setup
 - [ ] The enemies you kill are tagged `Enemy` (they are, for `EnemyAI`). Optionally set the attribute
       `DropTable = "Wolf"` on one to test its extra drop (`WolfFang`).
 
