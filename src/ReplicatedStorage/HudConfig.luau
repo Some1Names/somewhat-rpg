@@ -51,7 +51,7 @@ HudConfig.HubTheme = {
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
-	Hub = { image = "", glyph = "≡" },
+	Hub = { image = "", glyph = "▦" }, -- not ≡: that is Roblox's own menu
 	Admin = { image = "", glyph = "A" },
 }
 

@@ -1,10 +1,11 @@
--- The HUD's plain icons. Top right, right to left: Settings (P), and Admin (`)
--- for admins. Top left, in Roblox's bar just right of its chat button: the
--- Menu icon (its own gui, above the hub, so it can close it too). Bottom left,
--- above the Hotbar's equipment cards: the player's yen as gold text. Menu opens the hub (Hub) on
--- Profile; B, J and M open it on Backpack, Quests and Stats. No boxes: white
--- icons with a dark stroke, the one whose menu is open a little larger, a
--- label with its key beside whichever is hovered (or held, on touch). Each
+-- The HUD's icons, up in Roblox's top bar and dressed like its own buttons
+-- (dark see-through pills, white icons). Top right, one pill: Settings (P),
+-- and Admin (`) for admins. Top left, just right of Roblox's chat button: the
+-- Menu button (its own gui, above the hub, so it can close it too). Bottom
+-- left, above the Hotbar's equipment cards: the player's yen as gold text.
+-- Menu opens the hub (Hub) on Profile; B, J and M open it on Backpack, Quests
+-- and Stats. The icon whose menu is open is a little larger, and a label with
+-- its key shows under whichever is hovered (or held, on touch). Each
 -- icon toggles its menu through Menus exactly as the key does; the menus
 -- register themselves there. Icon images come from HudConfig.Icons; until the
 -- owner picks them each shows its text glyph. A gold number on Menu counts
@@ -24,6 +25,11 @@ local TEXT = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 60)
 local STROKE = Color3.new(0, 0, 0)
 local STROKE_TRANSPARENCY = 0.4
+-- Roblox's own top-bar buttons: their height, colour, and the gap between them
+local BUTTON_HEIGHT = 44
+local BUTTON_COLOR = Color3.fromRGB(18, 18, 21)
+local BUTTON_TRANSPARENCY = 0.3
+local BUTTON_GAP = 12
 
 -- left to right within each group (`top` = beside Roblox's buttons at the top
 -- left, else the top-right row); Admin appears only for admins
@@ -52,22 +58,28 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- as wide as its contents, right-aligned; the layout skips hidden icons, so no gap is left
-local row = make("Frame", {
+-- a dark see-through pill like Roblox's buttons (the one place the HUD rounds its corners)
+local function pill(frame)
+	frame.BackgroundColor3 = BUTTON_COLOR
+	frame.BackgroundTransparency = BUTTON_TRANSPARENCY
+	frame.BorderSizePixel = 0
+	make("UICorner", { Parent = frame, CornerRadius = UDim.new(1, 0) })
+	return frame
+end
+
+-- one pill as wide as its icons, right-aligned; the layout skips hidden icons, so no gap is left
+local row = pill(make("Frame", {
 	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, HudConfig.TopMargin),
-	Size = UDim2.fromOffset(0, HudConfig.IconSizeOpen),
+	AnchorPoint = Vector2.new(1, 0.5),
+	Size = UDim2.fromOffset(0, BUTTON_HEIGHT),
 	AutomaticSize = Enum.AutomaticSize.X,
-	BackgroundTransparency = 1,
-})
+}))
 make("UIListLayout", {
 	Parent = row,
 	FillDirection = Enum.FillDirection.Horizontal,
 	HorizontalAlignment = Enum.HorizontalAlignment.Right,
 	VerticalAlignment = Enum.VerticalAlignment.Center,
 	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, ICON_GAP),
 })
 
 -- bottom left, above the cards: the yen
@@ -87,9 +99,9 @@ make("UIListLayout", {
 	Padding = UDim.new(0, ICON_GAP),
 })
 
--- the Menu icon: in Roblox's bar right of its buttons, in a gui of its own drawn
+-- the Menu button: in Roblox's bar right of its buttons, in a gui of its own drawn
 -- over the hub (DisplayOrder 8), so it shows and closes the hub while it's open
-local MENU_FALLBACK_X = 220 -- where Roblox's buttons end, if it hasn't said yet
+local MENU_FALLBACK_X = 164 -- where Roblox's buttons end, if it hasn't said yet
 local menuGui = make("ScreenGui", {
 	Name = "MenuButton",
 	ResetOnSpawn = false,
@@ -97,20 +109,24 @@ local menuGui = make("ScreenGui", {
 	DisplayOrder = 9,
 	Parent = player:WaitForChild("PlayerGui"),
 })
-local menuSlot = make("Frame", {
+local menuSlot = pill(make("Frame", {
 	Parent = menuGui,
 	AnchorPoint = Vector2.new(0, 0.5),
-	Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
-	BackgroundTransparency = 1,
-})
-local function placeMenu()
+	Size = UDim2.fromOffset(BUTTON_HEIGHT, BUTTON_HEIGHT),
+}))
+-- both sit in the middle of Roblox's bar: Menu after its buttons, the pill at the far right
+local function placeButtons()
 	local inset = GuiService.TopbarInset
 	local left = inset.Min.X > 0 and inset.Min.X or MENU_FALLBACK_X
+	local right = inset.Max.X > 0 and inset.Max.X or workspace.CurrentCamera.ViewportSize.X
 	local height = inset.Height > 0 and inset.Height or GuiService:GetGuiInset().Y
-	menuSlot.Position = UDim2.fromOffset(left + ICON_GAP, inset.Min.Y + height / 2)
+	local middle = inset.Min.Y + height / 2
+	menuSlot.Position = UDim2.fromOffset(left + BUTTON_GAP, middle)
+	row.Position = UDim2.fromOffset(right - BUTTON_GAP, middle)
 end
-placeMenu()
-GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(placeMenu)
+placeButtons()
+GuiService:GetPropertyChangedSignal("TopbarInset"):Connect(placeButtons)
+workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(placeButtons)
 
 local function formatYen(amount)
 	local digits = tostring(math.floor(amount))
@@ -141,7 +157,7 @@ for order, icon in ipairs(ICONS) do
 		Name = icon.name,
 		Parent = icon.top and menuSlot or row,
 		LayoutOrder = order,
-		Size = UDim2.fromOffset(HudConfig.IconSizeOpen, HudConfig.IconSizeOpen),
+		Size = UDim2.fromOffset(BUTTON_HEIGHT, BUTTON_HEIGHT),
 		BackgroundTransparency = 1,
 		Text = "",
 		AutoButtonColor = false,
@@ -168,8 +184,6 @@ for order, icon in ipairs(ICONS) do
 			Text = config.glyph,
 			TextSize = HudConfig.IconSize - 6,
 			TextColor3 = TEXT,
-			TextStrokeTransparency = STROKE_TRANSPARENCY,
-			TextStrokeColor3 = STROKE,
 		})
 	end
 

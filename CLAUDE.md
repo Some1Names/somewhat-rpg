@@ -31,12 +31,14 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 
 ## Owner's standing preferences
 
-- UI is square everywhere: no rounded corners (`UICorner`).
+- UI is square everywhere: no rounded corners (`UICorner`). The one exception: the buttons up in
+  Roblox's top bar (`TopBar`), which are dressed as Roblox's own rounded pills.
 - The owner playtests; don't claim something works in-game unless it was actually tested.
 - All player damage goes through `ServerScriptService/Damage.luau` (`Damage.Deal`).
 - Any upload to the owner's Roblox account (images, animations) needs their OK first.
 - Match the surrounding code: comment density, naming, and the existing helpers.
-- Top-of-screen UI is plain icons and text (no boxes or borders), white with a dark stroke, like the top bar.
+- Top-of-screen UI: buttons in Roblox's top bar look like Roblox's own (dark see-through pills, white
+  icons); other top-of-screen UI is plain icons and text, white with a dark stroke.
 - Real VFX come from imported effect/particle packs (or assets from VFX websites), set up as
   prefabs in `ReplicatedStorage.VFXPrefabs` and played with `VFX.Play`. Don't design final
   visuals from Roblox's stock particles or parts built in code; those are placeholders only,
