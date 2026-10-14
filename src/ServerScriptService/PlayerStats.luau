@@ -29,7 +29,7 @@ local LOAD_ATTEMPTS = 3
 local SAVE_IN_STUDIO = false -- Studio playtests load saves but never write them
 
 -- saved fields; BonusPoints may go below 0 when an admin takes points away
-local DEFAULTS = { Level = 0, XP = 0, BonusPoints = 0, Yen = 0 }
+local DEFAULTS = { Level = 0, XP = 0, BonusPoints = 0, Yen = 0, GachaReadyAt = 0, GachaPity = 0 }
 for _, stat in ipairs(StatConfig.Stats) do
 	DEFAULTS[stat.key] = 0
 end
@@ -53,6 +53,10 @@ local TEXT_DEFAULTS = {
 	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
 	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
 	Reforge = "", -- each set's reforge level and modifiers (ReforgeRules, Reforge)
+	CurrentPower = "", -- the one power the player holds (PowerConfig, Powers)
+	PowerStorage = "", -- the spare powers in storage, comma separated (Powers)
+	LifetimePowers = "", -- powers bought with Robux, comma separated (Powers)
+	SpawnPoint = "", -- where the player respawns, "x,y,z" set by a Spawn Keeper (SpawnServer)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
@@ -199,7 +203,7 @@ end
 
 local function save(player)
 	if not canSave[player] or (RunService:IsStudio() and not SAVE_IN_STUDIO) then
-		return
+		return false
 	end
 	local data = {}
 	for field in pairs(DEFAULTS) do
@@ -212,6 +216,18 @@ local function save(player)
 	if not ok then
 		warn("[PlayerStats] save failed for " .. player.Name .. ": " .. tostring(err))
 	end
+	return ok
+end
+
+-- saves now; whether it went through (false too in Studio, where nothing is
+-- written, and while the load hasn't finished)
+function PlayerStats.SaveNow(player)
+	return save(player)
+end
+
+-- whether the player's save has loaded (what Robux receipts wait for)
+function PlayerStats.IsLoaded(player)
+	return canSave[player] == true
 end
 
 function PlayerStats.AddXP(player, amount)
@@ -377,6 +393,9 @@ function PlayerStats.ResetProgress(player)
 	end
 	player:SetAttribute("Challenges", TEXT_DEFAULTS.Challenges)
 	player:SetAttribute("Reforge", TEXT_DEFAULTS.Reforge)
+	for _, field in ipairs({ "CurrentPower", "PowerStorage", "LifetimePowers" }) do
+		player:SetAttribute(field, TEXT_DEFAULTS[field])
+	end
 	updatePoints(player)
 	applyHealth(player, false)
 	return true
