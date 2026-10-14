@@ -7,7 +7,7 @@
 -- down dives), and Space rises. At the surface next to a ledge Space climbs
 -- out; with no ledge it just floats. The client runs its own character's
 -- physics, so everyone sees it swim. It leaves everything alone while the
--- character is flying (Iridescent Requiem), dead, or being held by a skill
+-- character is flying (Iridescent Requiem), dead, anchored, or being held by a skill
 -- (a mover with the Hold attribute): then it lets go for that moment and the
 -- skill moves them; a Dash drives the character itself, so this waits for it
 -- too. Leaving the water, dying and respawning give back normal physics and
@@ -24,8 +24,13 @@ local player = Players.LocalPlayer
 local controls = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule")):GetControls()
 
 local SWIM_ACCEL = 60 -- studs/s² the swim drive may apply (its force is this times the mass)
-local SPRING = 4 -- per second: how hard idle swimmers settle to the float height
-local FLOAT_BAND = 4 -- studs below the float height within which an idle swimmer rises to it
+local SPRING = 4 -- per second: how hard swimmers settle to the float height
+local UP_SPRING = 6 -- per second: the fastest rise allowed is this times the distance left to the float height
+local IDLE_RISE = 5 -- studs per second an idle swimmer's buoyancy lifts them, however deep
+local SPLASH_SPEED = 12 -- studs per second: the fastest a swimmer sinks when they hit the water
+local EXIT_GROW = 1.5 -- studs past the water's edge a swimmer is still counted in it, so skimming the surface doesn't flicker
+local SURFACE_ZONE = 2 -- studs below the float height within which swimming forward stays at the surface
+local DIVE_PITCH = 0.4 -- how steeply down (the camera's Y) you must look before swimming dives from the surface
 local STILL = 0.1 -- move input weaker than this counts as idle
 local LEDGE_REACH = 3.5 -- studs ahead at the surface where a ledge counts
 local LEDGE_HEIGHT = 4.2 -- studs above the surface of the highest ledge it climbs onto
@@ -76,6 +81,9 @@ local function stop(landingState)
 end
 
 local function start(humanoid, root)
+	-- hitting the water slows you: a fall in at speed doesn't plunge to the bottom
+	local entering = root.AssemblyLinearVelocity
+	root.AssemblyLinearVelocity = Vector3.new(entering.X * 0.5, math.max(entering.Y * 0.3, -SPLASH_SPEED), entering.Z * 0.5)
 	local attachment = Instance.new("Attachment")
 	attachment.Name = "SwimAttachment"
 	attachment.Parent = root
@@ -120,7 +128,14 @@ local function ledgeAhead(root, direction, surface)
 	flat = flat.Unit
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances = { root.Parent }
+	params.RespectCanCollide = true -- reeds and lily pads aren't ledges
+	local others = { root.Parent }
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other.Character then
+			table.insert(others, other.Character) -- nor are other swimmers
+		end
+	end
+	params.FilterDescendantsInstances = others
 	local origin = Vector3.new(root.Position.X, surface + 0.3, root.Position.Z)
 	local wall = workspace:Raycast(origin, flat * LEDGE_REACH, params)
 	if not wall then
@@ -143,7 +158,7 @@ local function step()
 		stop()
 		return
 	end
-	local part = Water.Find(root.Position)
+	local part = Water.Find(root.Position, swim and EXIT_GROW or nil)
 	if not part or os.clock() < noEntryUntil then
 		stop()
 		return
@@ -155,8 +170,9 @@ local function step()
 		start(humanoid, root)
 	end
 
-	-- a Dash drives itself; a skill's hold moves us: yield for now
-	if player:GetAttribute("Dashing") or heldBySkill(root) then
+	-- a Dash drives itself; a skill's hold moves us (and an anchored body, pinned
+	-- or pasted, isn't ours to move): yield for now
+	if player:GetAttribute("Dashing") or heldBySkill(root) or root.Anchored then
 		swim.velocity.Enabled = false
 		return
 	end
@@ -175,7 +191,8 @@ local function step()
 	if direction.Magnitude > 1 then
 		direction = direction.Unit
 	end
-	local jumping = not stunned and (humanoid.Jump or UserInputService:IsKeyDown(Enum.KeyCode.Space))
+	local typing = UserInputService:GetFocusedTextBox() ~= nil
+	local jumping = not stunned and (humanoid.Jump or (not typing and UserInputService:IsKeyDown(Enum.KeyCode.Space)))
 	humanoid.Jump = false
 	if humanoid:GetState() ~= Enum.HumanoidStateType.Swimming then
 		humanoid:ChangeState(Enum.HumanoidStateType.Swimming)
@@ -187,24 +204,38 @@ local function step()
 		local ahead = moving and direction or camera.LookVector
 		local flat, ledgeTop = ledgeAhead(root, ahead, surface)
 		if flat then
-			local rise = math.max(ledgeTop - root.Position.Y + CLIMB_EXTRA, 2)
+			-- the feet, not the root, have to clear the ledge
+			local feetY = root.Position.Y - (humanoid.HipHeight + root.Size.Y / 2)
+			local rise = math.max(ledgeTop - feetY + CLIMB_EXTRA, 2)
 			noEntryUntil = os.clock() + REENTER_DELAY
-			stop(Enum.HumanoidStateType.Jumping)
+			stop() -- our own velocity is the whole jump (the Jumping state would add its own)
 			root.AssemblyLinearVelocity = Vector3.new(flat.X * CLIMB_PUSH, math.sqrt(2 * workspace.Gravity * rise), flat.Z * CLIMB_PUSH)
 			return
 		end
 	end
 
-	local velocity = direction * Water.SwimSpeed
-	if jumping then
-		velocity += Vector3.new(0, Water.RiseSpeed, 0)
-	end
-	if not moving and not jumping and root.Position.Y > floatY - FLOAT_BAND then
-		-- idle near the top: settle to the float height
-		velocity = Vector3.new(0, math.clamp((floatY - root.Position.Y) * SPRING, -Water.RiseSpeed, Water.RiseSpeed), 0)
-	elseif root.Position.Y >= floatY and velocity.Y > 0 then
-		-- no swimming up out of the water; hold at the float height
-		velocity = Vector3.new(velocity.X, (floatY - root.Position.Y) * SPRING, velocity.Z)
+	local y = root.Position.Y
+	local velocity
+	if not moving and not jumping then
+		-- idle: buoyancy lifts a swimmer to the float height, however deep
+		velocity = Vector3.new(0, math.clamp((floatY - y) * SPRING, -Water.RiseSpeed, IDLE_RISE), 0)
+	else
+		if moving and y > floatY - SURFACE_ZONE and direction.Y > -DIVE_PITCH then
+			-- skimming the surface: a shallow camera pitch doesn't dive; swim level
+			local flat = Vector3.new(direction.X, 0, direction.Z)
+			local power = math.min(direction.Magnitude, 1)
+			flat = flat.Magnitude > 0.01 and flat.Unit * power or Vector3.zero
+			velocity = flat * Water.SwimSpeed + Vector3.new(0, math.clamp((floatY - y) * SPRING, -Water.RiseSpeed, Water.RiseSpeed), 0)
+		else
+			velocity = direction * Water.SwimSpeed
+		end
+		if jumping then
+			velocity += Vector3.new(0, Water.RiseSpeed, 0)
+		end
+		-- no swimming up out of the water: the rise tapers to nothing at the float height
+		if velocity.Y > 0 then
+			velocity = Vector3.new(velocity.X, math.min(velocity.Y, math.max((floatY - y) * UP_SPRING, 0)), velocity.Z)
+		end
 	end
 	swim.velocity.VectorVelocity = velocity
 end

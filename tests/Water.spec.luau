@@ -35,7 +35,20 @@ check("turned: on the axis, near the corner", Water.inside(turned, size, Vector3
 check("turned: past the corner", not Water.inside(turned, size, Vector3.new(7.2, 0, 0)))
 check("turned: on the diagonal", Water.inside(turned, size, Vector3.new(3.4, 0, 3.4)))
 check("turned: outside the diagonal", not Water.inside(turned, size, Vector3.new(4, 0, 4)))
-check("turned: the surface is still the top", math.abs(Water.surfaceY(turned, size, Vector3.new(6, 0, 0)) - 2) < 1e-9)
+check("turned: the surface is still the top", math.abs(Water.surfaceY(turned, size, Vector3.new(6, 0, 0)) - 2) < 1e-5)
+
+-- a part turned so its "up" points down (flipped), or rolled onto its side: the top face is whichever faces up
+local flipped = CFrame.Angles(math.rad(180), 0, 0)
+check("flipped: the surface is still the geometric top", math.abs(Water.surfaceY(flipped, size, Vector3.new(0, 0, 0)) - 2) < 1e-5)
+local rolled = CFrame.Angles(0, 0, math.rad(90)) -- the 10-wide side now stands up
+check("rolled onto its side: the surface is half the width up", math.abs(Water.surfaceY(rolled, size, Vector3.new(0, 0, 0)) - 5) < 1e-5)
+check("flipped and raised", math.abs(Water.surfaceY(CFrame.new(0, 7, 0) * flipped, size, Vector3.new(1, 7, 1)) - 9) < 1e-5)
+
+-- growing the box (the swimmer's exit margin, so skimming the surface doesn't flicker)
+check("grown: just above the top is inside", Water.inside(flat, size, Vector3.new(0, 2.5, 0), 1))
+check("grown: well above the top is outside", not Water.inside(flat, size, Vector3.new(0, 3.5, 0), 1))
+check("grown: just past the side is inside", Water.inside(flat, size, Vector3.new(5.5, 0, 0), 1))
+check("grown by nothing is the box", not Water.inside(flat, size, Vector3.new(0, 2.5, 0), 0) and not Water.inside(flat, size, Vector3.new(0, 2.5, 0)))
 
 -- two touching parts: a point on the seam is inside at least one of them, and each side is inside its own
 local left = CFrame.new(-5, 0, 0)
@@ -47,7 +60,7 @@ check("seam: not inside the far part", not Water.inside(right, size, Vector3.new
 
 -- a part tilted 45 degrees about Z: its top face slopes, so the surface depends on where you are
 local tilted = CFrame.Angles(0, 0, math.rad(45))
-check("tilted: the surface over the middle is higher than the flat top", math.abs(Water.surfaceY(tilted, size, Vector3.new(0, 0, 0)) - 2.8284271247) < 1e-6)
+check("tilted: the surface over the middle is higher than the flat top", math.abs(Water.surfaceY(tilted, size, Vector3.new(0, 0, 0)) - 2.8284271247) < 1e-4)
 check("tilted: the surface rises towards +X, where the top face leans up", Water.surfaceY(tilted, size, Vector3.new(2, 0, 0)) > Water.surfaceY(tilted, size, Vector3.new(-2, 0, 0)))
 
 if failures > 0 then

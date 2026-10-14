@@ -1,9 +1,14 @@
 # Swimmable water parts: in-game test checklist
 
-Not run in-game yet. `tests/run.sh` (Lune) passes `Water.inside` and `Water.surfaceY` (rotated, tilted
-and touching parts). Everything else needs Studio. Water parts must be tagged **`Water`** and have
-`CanCollide`, `CanQuery` and `CanTouch` off; the tuning numbers are `Water.SwimSpeed` (16),
-`Water.SurfaceOffset` (1.2) and `Water.RiseSpeed` (10).
+`tests/run.sh` (Lune) passes `Water.inside` and `Water.surfaceY` (rotated, tilted, flipped, rolled and
+touching parts). On 2026-10-14 the swimming was tried in Studio on a temporary test pool (since removed;
+the map has no water parts yet): falling in, floating at the surface, swimming along the surface with the
+default camera, buoyancy from the bottom, climbing onto a ledge 3 studs above the surface, a skill's
+hold mover, Dash, and dying in the water all worked. Not tried: Space-to-rise, diving, a second player
+watching, Lightstep, a real pull. Water parts must be **parts** tagged **`Water`** (not a model) with
+`CanCollide`, `CanQuery` and `CanTouch` off, and **deep enough to fill the swimmable depth** (a thin sheet
+over air can't be swum). The tuning numbers are `Water.SwimSpeed` (16), `Water.SurfaceOffset` (1.2) and
+`Water.RiseSpeed` (10).
 
 ## Swimming
 - [ ] Walk or jump into a water part: you sink in, then float at the surface with your head just
@@ -11,8 +16,8 @@ and touching parts). Everything else needs Studio. Water parts must be tagged **
       Swimming state).
 - [ ] The movement keys swim where the camera points; looking down and moving dives; Space rises.
       Speed is about 16 studs/s and Shift doesn't sprint in water.
-- [ ] Idle deep down: you hover there (no sinking, no drifting); idle near the top: you settle back to the
-      surface.
+- [ ] Idle at any depth: buoyancy lifts you (about 5 studs/s) to the float height; no drifting.
+- [ ] Swimming forward at the surface with the default camera stays at the surface; look steeply down to dive.
 - [ ] You can't swim up out of the water into the air: holding Space at the surface keeps you floating.
 - [ ] Leaving the water (swimming out over the edge, a skill throwing you out) gives normal physics at
       once: you walk or fall as usual, no floating on land.
