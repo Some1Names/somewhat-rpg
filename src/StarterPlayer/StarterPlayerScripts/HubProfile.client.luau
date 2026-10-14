@@ -99,8 +99,8 @@ local powerLabel = label(column, {
 	Font = Theme.TitleFont,
 	TextSize = 44,
 	Size = UDim2.new(1, 0, 0, 48),
-	TextScaled = false,
-	TextTruncate = Enum.TextTruncate.AtEnd,
+	AutomaticSize = Enum.AutomaticSize.Y, -- a long name wraps onto more lines
+	TextWrapped = true,
 })
 local tierRow = make("Frame", { Parent = column, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 16), BackgroundTransparency = 1 })
 make("UIListLayout", {

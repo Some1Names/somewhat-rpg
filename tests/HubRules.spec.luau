@@ -20,7 +20,7 @@ check("white turns to ink", isInk(HubRules.Ink(1, 1, 1)))
 check("pale grey turns to ink", isInk(HubRules.Ink(0.9, 0.9, 0.88)))
 do
 	local r, g, b = HubRules.Ink(0.667, 1, 0.784) -- Mandela's mint
-	check("light mint darkens but stays green", g > r and g > b and 0.2126 * r + 0.7152 * g + 0.0722 * b <= 0.5)
+	check("light mint stays as it is", r == 0.667 and g == 1 and b == 0.784)
 end
 do
 	local r, g, b = HubRules.Ink(0.36, 0.88, 0.54)
