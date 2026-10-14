@@ -1,5 +1,5 @@
--- The hub's Profile tab, its cover page: the player's name, level with an XP
--- bar and yen, then the power held (big, in caps), its tier, mastery and
+-- The hub's Profile tab, its cover page: the player's name with the level,
+-- an XP bar, yen, then the power held (big, in caps), its tier, mastery and
 -- reforge level, the bounty taken, and unspent
 -- stat points (a link to Stats). The right side is left to the posed character
 -- (HubPose), with a huge faded "01" behind it.
@@ -118,55 +118,53 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
--- at the top: the player's name, then level (the XP toward the next one as a
--- bar) and yen, plain on the paper
-local YEN_WIDTH = 150
-label(column, {
-	LayoutOrder = -3,
+-- at the top: the player's name with the level at the far right, the XP
+-- toward the next level as a bar, then yen; all plain on the paper
+local nameRow = make("Frame", { Parent = column, LayoutOrder = -5, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
+label(nameRow, {
 	Text = string.upper(player.DisplayName),
 	Font = Theme.TitleFont,
 	TextSize = 30,
-	Size = UDim2.new(1, 0, 0, 32),
+	TextYAlignment = Enum.TextYAlignment.Bottom,
+	Size = UDim2.new(1, -110, 1, 0),
 	TextTruncate = Enum.TextTruncate.AtEnd,
 })
-label(column, { LayoutOrder = -2, Text = "@" .. player.Name, TextSize = 11, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 12) })
-local figures = make("Frame", { Parent = column, LayoutOrder = -1, Size = UDim2.new(1, 0, 0, 56), BackgroundTransparency = 1 })
-label(figures, { Text = "LEVEL", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(80, 12) })
-local levelFigure = label(figures, { Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(0, 20), Size = UDim2.fromOffset(90, 30) })
-local levelLabel = label(figures, {
-	TextSize = 10,
-	TextColor3 = Theme.Muted,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Position = UDim2.fromOffset(100, 6),
-	Size = UDim2.new(1, -(100 + YEN_WIDTH + 24), 0, 12),
-})
-local xpBack = make("Frame", {
-	Parent = figures,
-	Position = UDim2.fromOffset(100, 30),
-	Size = UDim2.new(1, -(100 + YEN_WIDTH + 24), 0, 8),
-	BackgroundColor3 = Theme.BarBack,
-	BorderSizePixel = 0,
-})
-local xpFill = make("Frame", { Parent = xpBack, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0 })
-label(figures, {
-	Text = "YEN",
+label(nameRow, {
+	Text = "LEVEL",
 	TextSize = 10,
 	TextColor3 = Theme.Muted,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, 0, 0, 6),
-	Size = UDim2.fromOffset(YEN_WIDTH, 12),
+	Position = UDim2.fromScale(1, 0),
+	Size = UDim2.fromOffset(100, 12),
 })
-local yenFigure = label(figures, {
+local levelFigure = label(nameRow, {
 	Font = Theme.TitleFont,
 	TextSize = 26,
 	TextXAlignment = Enum.TextXAlignment.Right,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, 0, 0, 20),
-	Size = UDim2.fromOffset(YEN_WIDTH, 30),
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.fromScale(1, 1),
+	Size = UDim2.fromOffset(100, 30),
 })
+label(column, { LayoutOrder = -4, Text = "@" .. player.Name, TextSize = 11, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 12) })
+
+local xpRow = make("Frame", { Parent = column, LayoutOrder = -3, Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
+label(xpRow, { Text = "XP", TextSize = 10, TextColor3 = Theme.Muted, Size = UDim2.fromOffset(40, 12) })
+local levelLabel = label(xpRow, {
+	TextSize = 10,
+	TextColor3 = Theme.Muted,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Size = UDim2.new(1, 0, 0, 12),
+})
+local xpBack = make("Frame", { Parent = xpRow, Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 8), BackgroundColor3 = Theme.BarBack, BorderSizePixel = 0 })
+local xpFill = make("Frame", { Parent = xpBack, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0 })
+
+local yenRow = make("Frame", { Parent = column, LayoutOrder = -2, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
+label(yenRow, { Text = "YEN", TextSize = 10, TextColor3 = Theme.Muted, Size = UDim2.fromOffset(60, 12) })
+local yenFigure = label(yenRow, { Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(0, 14), Size = UDim2.new(1, 0, 0, 30) })
+
 -- a gap before CURRENT POWER
-make("Frame", { Parent = column, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 6), BackgroundTransparency = 1 })
+make("Frame", { Parent = column, LayoutOrder = -1, Size = UDim2.new(1, 0, 0, 6), BackgroundTransparency = 1 })
 local pointsButton = make("TextButton", {
 	Parent = column,
 	LayoutOrder = 8,
