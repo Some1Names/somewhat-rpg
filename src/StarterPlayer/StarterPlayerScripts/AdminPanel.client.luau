@@ -96,19 +96,23 @@ local gui = make("ScreenGui", {
 })
 
 -- at the right edge (it's too tall to centre above the skill bar); only one menu is open at a time
-local panel = make("Frame", {
+local panel = make("ScrollingFrame", {
 	Name = "Panel",
 	Parent = gui,
 	AnchorPoint = Vector2.new(1, 0.5),
 	Position = UDim2.new(1, -16, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = MUTED,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	BorderSizePixel = 0,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
 })
 outline(panel, 0.6)
-Menus.Fit(panel, true)
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -117,6 +121,7 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+Menus.Fit(panel, true)
 
 local order = 0
 local function section(height)

@@ -48,11 +48,11 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- as wide as its contents, right-aligned; the layout skips hidden icons, so no gap is left
+-- as wide as its contents, right-aligned just left of Roblox's player list; the layout skips hidden icons, so no gap is left
 local row = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, HudConfig.TopMargin),
+	Position = UDim2.new(1, -(HudConfig.EdgeMargin + HudConfig.LeaderboardClear), 0, HudConfig.TopMargin),
 	Size = UDim2.fromOffset(0, HudConfig.IconSizeOpen),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,

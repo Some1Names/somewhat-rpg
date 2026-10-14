@@ -103,19 +103,23 @@ local function tabTitles(header, current)
 	end
 end
 
-local panel = make("Frame", {
+local panel = make("ScrollingFrame", {
 	Name = "Panel",
 	Parent = gui,
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = MUTED,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	BorderSizePixel = 0,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
 })
 outline(panel, 0.6)
-Menus.Fit(panel)
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -124,6 +128,7 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+Menus.Fit(panel)
 
 -- header: title, level and close button
 local header = section(1, 22)
@@ -348,19 +353,23 @@ local INFO_BAR_HEIGHT = 22
 local INFO_AT_WIDTH = 70 -- the milestone column inside a bar
 local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 
-local infoPanel = make("Frame", {
+local infoPanel = make("ScrollingFrame", {
 	Name = "InfoPanel",
 	Parent = gui,
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = MUTED,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	BorderSizePixel = 0,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
 })
 outline(infoPanel, 0.6)
-Menus.Fit(infoPanel)
 make("UIPadding", {
 	Parent = infoPanel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -369,6 +378,7 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = infoPanel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+Menus.Fit(infoPanel)
 
 local infoHeader = section(1, 22)
 infoHeader.Parent = infoPanel

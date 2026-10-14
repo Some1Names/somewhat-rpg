@@ -13,7 +13,7 @@ local Menus = {}
 
 local FIT_TOP = HudConfig.KillFeedTop -- under the icon row
 local FIT_BOTTOM = 280 -- the skill bar's top edge (116 px up, 96 px tall, its header)
-local FIT_MIN_SCALE = 0.5
+local FIT_MIN_HEIGHT = 160 -- a panel never gets shorter than this, however short the screen
 
 local openName, openClose
 local togglers = {} -- name -> function that toggles that menu like its key does
@@ -72,33 +72,27 @@ function Menus.OnChange(callback)
 	table.insert(listeners, callback)
 end
 
--- Keeps a centred menu panel (automatic height) in the space between the icon
--- row and the skill bar, shrinking it on short screens so it never covers
--- the bar. Call once after making the panel. `rightEdge` is for a panel too
--- tall for that (Admin): it sits at the right edge, under the icon row and
--- the kill feed's top, and shrinks to the screen's height instead.
+-- Keeps a menu panel (a ScrollingFrame holding a UIListLayout, optionally a
+-- UIPadding, its width in Size.X.Offset) in the space between the icon row
+-- and the skill bar: as tall as its content, or, when the screen is too short
+-- for that, as tall as the space allows, and it scrolls. `rightEdge` puts it at
+-- the right edge instead of centred, and lets it run down to the screen's
+-- bottom edge (Admin, which is too tall to sit above the skill bar). Call once
+-- after making the panel.
 function Menus.Fit(panel, rightEdge)
-	local scale = Instance.new("UIScale")
-	scale.Parent = panel
-	panel.AnchorPoint = rightEdge and Vector2.new(1, 0.5) or Vector2.new(0.5, 0.5)
+	local layout = panel:FindFirstChildOfClass("UIListLayout")
+	local padding = panel:FindFirstChildOfClass("UIPadding")
+	local width = panel.Size.X.Offset
 	local gui = panel:FindFirstAncestorOfClass("ScreenGui")
+	panel.AnchorPoint = rightEdge and Vector2.new(1, 0.5) or Vector2.new(0.5, 0.5)
 	local function update()
-		local natural = panel.AbsoluteSize.Y / scale.Scale
-		if natural <= 0 then
-			return
-		end
+		local extra = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
 		local available = gui.AbsoluteSize.Y - FIT_TOP - (rightEdge and HudConfig.EdgeMargin or FIT_BOTTOM)
-		local fitted = math.clamp(available / natural, FIT_MIN_SCALE, 1)
-		if math.abs(fitted - scale.Scale) > 0.001 then
-			scale.Scale = fitted
-		end
-		if rightEdge then
-			panel.Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, FIT_TOP + available / 2)
-		else
-			panel.Position = UDim2.new(0.5, 0, 0, FIT_TOP + available / 2)
-		end
+		panel.Size = UDim2.fromOffset(width, math.min(layout.AbsoluteContentSize.Y + extra, math.max(available, FIT_MIN_HEIGHT)))
+		local x = rightEdge and UDim2.new(1, -HudConfig.EdgeMargin, 0, 0) or UDim2.fromScale(0.5, 0)
+		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)
 	end
-	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update)
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
 	update()
 end
