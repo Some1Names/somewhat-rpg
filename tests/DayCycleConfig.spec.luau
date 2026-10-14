@@ -125,6 +125,18 @@ local wrap = DayCycleConfig.Sample((last.hour + 24) / 2)
 check("midway across midnight is the mean", near(wrap.Lighting.Brightness, (last.Lighting.Brightness + first.Lighting.Brightness) / 2))
 check("-1 is the same as 23", near(DayCycleConfig.Sample(-1).Lighting.Brightness, DayCycleConfig.Sample(23).Lighting.Brightness))
 
+-- the sky change's fade through black: out, hold, back
+local fade = DayCycleConfig.SkyFade
+local total = fade.out + fade.hold + fade.back
+check("fade starts clear", select(1, DayCycleConfig.FadeAt(0)) == 0)
+check("fade is half dark halfway out", near(select(1, DayCycleConfig.FadeAt(fade.out / 2)), 0.5))
+check("fade is fully dark when out ends", select(1, DayCycleConfig.FadeAt(fade.out)) == 1)
+check("fade stays dark through the hold", select(1, DayCycleConfig.FadeAt(fade.out + fade.hold / 2)) == 1)
+check("fade is half dark halfway back", near(select(1, DayCycleConfig.FadeAt(fade.out + fade.hold + fade.back / 2)), 0.5))
+check("fade isn't finished before the end", not select(2, DayCycleConfig.FadeAt(total - 0.01)))
+check("fade is clear and finished at the end", select(1, DayCycleConfig.FadeAt(total)) == 0 and select(2, DayCycleConfig.FadeAt(total)))
+check("a negative time is clear", select(1, DayCycleConfig.FadeAt(-1)) == 0)
+
 if failures > 0 then
 	error(failures .. " failed")
 end

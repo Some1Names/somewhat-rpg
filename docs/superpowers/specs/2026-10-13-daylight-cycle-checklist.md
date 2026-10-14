@@ -21,6 +21,14 @@ admin panel (`) and use the WORLD section: **Set** an hour, **Freeze time** / **
 - [ ] In the Explorer, `ReplicatedStorage` has the attribute `Phase`: Dawn 5–7, Day 7–17,
       Dusk 17–19, Night 19–5.
 
+## Sky changes (needs `ReplicatedStorage.Skies` with Dawn, Day, Dusk, Night)
+
+- [ ] Joining at any hour shows that phase's sky at once, with no fade.
+- [ ] Letting time pass through 5:00, 7:00, 17:00 and 19:00 fades the screen to black and back (about
+      1.6 s), swapping the sky textures in the dark; the HUD and menus stay visible above the fade.
+- [ ] Setting the time with the admin panel to another phase fades once and lands on the right sky.
+- [ ] A phase whose Sky is missing from `Skies` keeps the current sky, with no fade.
+
 ## Powers (Iridescent Requiem)
 
 - [ ] Outside by day: Luminance fills as before.

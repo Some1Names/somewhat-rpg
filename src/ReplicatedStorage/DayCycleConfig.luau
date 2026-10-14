@@ -12,6 +12,10 @@ local DayCycleConfig = {
 	DayLength = 1200, -- real seconds for one 24 hour day
 	StartHour = 7, -- the hour a new server starts at
 	MoonShare = 0.25, -- of the sun's Luminance charge, under open sky at night
+	-- the sky change when the phase changes (DayCycleClient): the screen fades to
+	-- black over `out` seconds, the textures swap while it's dark for `hold`, then
+	-- it fades back over `back`
+	SkyFade = { out = 0.6, hold = 0.15, back = 0.9 },
 	-- start (inclusive) and end (exclusive) hours; any other hour is Night
 	Phases = {
 		Dawn = { 5, 7 },
@@ -117,6 +121,22 @@ function DayCycleConfig.CleanHour(value)
 		hour = 0 -- a tiny negative rounds up to exactly 24
 	end
 	return hour
+end
+
+-- how dark the fade is (0 clear, 1 black) `elapsed` seconds after it started,
+-- and whether it has finished. The textures swap when `elapsed` reaches `out`.
+function DayCycleConfig.FadeAt(elapsed)
+	local fade = DayCycleConfig.SkyFade
+	if elapsed <= 0 then
+		return 0, false
+	elseif elapsed < fade.out then
+		return elapsed / fade.out, false
+	elseif elapsed < fade.out + fade.hold then
+		return 1, false
+	elseif elapsed < fade.out + fade.hold + fade.back then
+		return 1 - (elapsed - fade.out - fade.hold) / fade.back, false
+	end
+	return 0, true
 end
 
 local function blend(from, to, t)

@@ -41,6 +41,15 @@ The server owns a **time anchor**; clients compute the time from it.
 - **Admin:** `SetTime` writes a new anchor and `FreezeTime` toggles `DayFrozen` (freezing re-anchors at
   the current hour first). Both are global; the admin panel's player target is ignored.
 
+## Sky changes by phase
+
+Four `Sky` objects, `ReplicatedStorage.Skies.Dawn/Day/Dusk/Night` (made in Studio), hold each phase's
+textures. When the phase changes the client fades the screen through black (`DayCycleConfig.SkyFade`:
+0.6 s out, 0.15 s hold, 0.9 s back; `FadeAt` is pure and tested), swaps the six face textures and the
+sun and moon textures from that phase's Sky while it's dark, and fades back. The first sky on joining
+is set at once; a phase with no Sky keeps the current one. Stars, brightness and tint still blend
+smoothly as before.
+
 ## Phases
 
 `Phase` (a `ReplicatedStorage` string attribute): **Dawn** 5:00–7:00, **Day** 7:00–17:00,
