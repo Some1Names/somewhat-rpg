@@ -14,6 +14,19 @@ below is unplayed.
 - [ ] The enemies you kill are tagged `Enemy` (they are, for `EnemyAI`). Optionally set the attribute
       `DropTable = "Wolf"` on one to test its extra drop (`WolfFang`).
 
+## Test dummies
+Six dummies stand in a row 14 studs west of the old `Dummy` (the front row of training dummies), tagged
+`Enemy` + `Respawns` (not `TrainingDummy`), 100 health, and respawn after 3 s:
+- `Drop Test - Scrap`, `- Core`, `- Crystal`, `- Essence`, `- Wolf Fang`: always drop exactly 1 of that
+  material (`DropTable` = `TestScrap` ... `TestWolfFang`, `exclusive`, so nothing else rolls).
+  Essence is a red or a purple orb (3 in 4 red).
+- `Drop Test - Real Rates`: level 50 with `DropTable = "Wolf"`, so every material can drop at the real
+  chances (Scrap 40%, Core 12%, Crystal 3%, Essence 0.5%, Wolf Fang 10%).
+Checked in a server playtest: each of the five guaranteed ones dropped exactly one orb of its material.
+The real training dummies (`Dummy`, both `Strong Dummy`, `Boss Dummy`) are also tagged `Enemy`, so the
+server skips anything tagged `TrainingDummy`; checked: `Dummy` and `Strong Dummy` dropped nothing.
+(`Player Dummy` is not a training dummy and does drop.)
+
 ## Solo
 - [ ] Kill a level 1 enemy: a grey orb with "Scrap xN" floats about 2 studs over the ground near where it
       died; walking within 6 studs takes it and "+N Scrap" pops up. Kill a few: Scrap is about 40%.

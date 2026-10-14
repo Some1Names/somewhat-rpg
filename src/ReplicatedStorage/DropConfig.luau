@@ -78,9 +78,16 @@ DropConfig.Generic = {
 	{ material = "Essence", minLevel = 50, chance = 0.005, min = 1, max = 1 },
 }
 
--- extra rolls for an enemy whose DropTable attribute names one
+-- extra rolls for an enemy whose DropTable attribute names one; a table with
+-- `exclusive = true` replaces the generic rolls instead of adding to them
 DropConfig.Tables = {
 	Wolf = { { material = "WolfFang", chance = 0.1, min = 1, max = 1 } },
+	-- the test dummies in the map ("Drop Test - <material>"): always that one material
+	TestScrap = { exclusive = true, { material = "Scrap", chance = 1, min = 1, max = 1 } },
+	TestCore = { exclusive = true, { material = "Core", chance = 1, min = 1, max = 1 } },
+	TestCrystal = { exclusive = true, { material = "Crystal", chance = 1, min = 1, max = 1 } },
+	TestEssence = { exclusive = true, { material = "Essence", chance = 1, min = 1, max = 1 } },
+	TestWolfFang = { exclusive = true, { material = "WolfFang", chance = 1, min = 1, max = 1 } },
 }
 
 -- the player attribute holding a material (same as ReforgeConfig.MaterialAttribute)
@@ -100,12 +107,15 @@ function DropConfig.Rolls(level, tableName, random)
 			table.insert(rolls, { material = entry.material, amount = amount })
 		end
 	end
-	for _, entry in ipairs(DropConfig.Generic) do
-		if level >= entry.minLevel then
-			roll(entry)
+	local extra = tableName and DropConfig.Tables[tableName] or {}
+	if not extra.exclusive then
+		for _, entry in ipairs(DropConfig.Generic) do
+			if level >= entry.minLevel then
+				roll(entry)
+			end
 		end
 	end
-	for _, entry in ipairs(tableName and DropConfig.Tables[tableName] or {}) do
+	for _, entry in ipairs(extra) do
 		roll(entry)
 	end
 	return rolls

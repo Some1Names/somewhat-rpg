@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Damage = require(script.Parent:WaitForChild("Damage"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 
 local Drops = {}
 
@@ -27,8 +28,12 @@ local function warnOnce(reason)
 	end
 end
 
+-- training dummies are tagged Enemy too (for EnemyAI) but drop nothing
 local function isEnemy(model)
-	return model ~= nil and CollectionService:HasTag(model, DropConfig.EnemyTag) and Players:GetPlayerFromCharacter(model) == nil
+	return model ~= nil
+		and CollectionService:HasTag(model, DropConfig.EnemyTag)
+		and not CollectionService:HasTag(model, MasteryRules.DummyTag)
+		and Players:GetPlayerFromCharacter(model) == nil
 end
 
 local function track(attacker, humanoid, dealt)

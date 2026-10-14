@@ -69,6 +69,14 @@ check("Dark rolls purple from 0.75", DropConfig.Variant("Dark", 0.75).part == "D
 check("roll 0 is red, a roll just under 1 is purple", DropConfig.Variant("Dark", 0).part == "DarkOrbRed" and DropConfig.Variant("Dark", 0.9999).part == "DarkOrbPurple")
 check("a variant carries a label colour", #DropConfig.Variant("Dark", 0).rgb == 3)
 
+-- the test dummies' tables: one guaranteed material, no generic rolls, even at level 50
+local always = function() return 0.999 end
+check("TestScrap always drops exactly 1 Scrap", same(DropConfig.Rolls(1, "TestScrap", always), { { "Scrap", 1 } }))
+check("TestCore at level 50 drops only Core", same(DropConfig.Rolls(50, "TestCore", always), { { "Core", 1 } }))
+check("TestCrystal drops 1 Crystal", same(DropConfig.Rolls(1, "TestCrystal", always), { { "Crystal", 1 } }))
+check("TestEssence drops 1 Essence", same(DropConfig.Rolls(1, "TestEssence", always), { { "Essence", 1 } }))
+check("TestWolfFang drops 1 Wolf Fang", same(DropConfig.Rolls(1, "TestWolfFang", always), { { "WolfFang", 1 } }))
+
 -- helpers: at least a tenth of the enemy's max health
 check("10 of 100 is a helper", DropConfig.IsHelper(10, 100))
 check("9.99 of 100 is not", not DropConfig.IsHelper(9.99, 100))
