@@ -72,9 +72,15 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so
   hits and kills know their move; moves report other things with `Quests.Report(player, set,
   event, amount)`. New givers/quests/challenges are data in `QuestConfig`.
+- **Reforge**: a smith (a model tagged `Smith`) takes drop materials (`Mat_<key>`) and yen to level
+  up (to 10) and reroll the two modifier slots of any owned skill set. Numbers in `ReforgeConfig`,
+  pure rules in `ReforgeRules` (Lune-tested), per-player state and checked actions in the `Reforge`
+  module (saved as the `Reforge` text, mirrored as `Reforge_<Set>` attributes), the smith's remote in
+  `ReforgeServer`. `Damage.Deal` and `SkillSetServer` read the bonuses; status procs and lifesteal
+  run from a `Damage.OnDealt` listener in `ReforgeServer`.
 - **Client UI**: `SkillBar`, `Inventory`, `StatsMenu` (with a Milestones tab), `AdminPanel`, `ShopMenu`,
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
-  popups), `Quests` (the J menu), `Block` (E), `TopBar` (the top-right icon row and yen, no side
+  popups), `Quests` (the J menu), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row and yen, no side
   buttons), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
   every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
   `HudConfig`).
