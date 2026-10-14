@@ -25,7 +25,10 @@ local flyTrack
 local function flightOf(character)
 	local _, setName = SkillSetConfig.Equipped(character)
 	local set = setName and SkillSetConfig.Sets[setName]
-	return set and set.flight, setName
+	if not (set and set.flight and SkillSetConfig.FeatureUnlocked(Players.LocalPlayer, setName, "flight")) then
+		return nil, setName
+	end
+	return set.flight, setName
 end
 
 local function land(character)

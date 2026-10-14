@@ -54,7 +54,7 @@ end
 
 -- the player pressed the overcharge key; returns whether it went off
 function Overcharge.Activate(player, setName)
-	if not Overcharge.IsReady(player, setName) then
+	if not Overcharge.IsReady(player, setName) or not SkillSetConfig.FeatureUnlocked(player, setName, "overcharge") then
 		return false
 	end
 	start(player, setName)
@@ -66,6 +66,10 @@ end
 function Overcharge.AddDamage(player, setName, damage, melee)
 	local settings = settingsFor(setName)
 	if not settings or damage <= 0 or Overcharge.IsActive(player, setName) then
+		return
+	end
+	-- locked below the unlock mastery: no stacks build (one already overcharged keeps running)
+	if not SkillSetConfig.FeatureUnlocked(player, setName, "overcharge") then
 		return
 	end
 	if melee then

@@ -45,7 +45,8 @@ dashEffect.OnServerEvent:Connect(function(player, from, to)
 	end
 	local _, setName = SkillSetConfig.Equipped(character)
 	local dash = setName and SkillSetConfig.Sets[setName].dash
-	if dash then
+	-- a set dash that is still locked (mastery) is the normal dash
+	if dash and SkillSetConfig.FeatureUnlocked(player, setName, "dash") then
 		if isPoint(from) and isPoint(to) then
 			require(skillModules:WaitForChild(dash.handler)).Dash(player, character, from, to)
 		end

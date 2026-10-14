@@ -84,7 +84,7 @@ toggleFlight.OnServerEvent:Connect(function(player)
 		return
 	end
 	local setName, set = luminanceSet(character)
-	if not set or not set.flight or desaturated(character) then
+	if not set or not set.flight or desaturated(character) or not SkillSetConfig.FeatureUnlocked(player, setName, "flight") then
 		return
 	end
 	-- it takes some light to get off the ground

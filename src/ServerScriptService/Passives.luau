@@ -73,6 +73,9 @@ function Passives.ResistEdit(player)
 	if not set or not set.passive or set.passive.name ~= "Misremembered" then
 		return false
 	end
+	if not SkillSetConfig.FeatureUnlocked(player, setName, "passive") then
+		return false
+	end
 	return spendMisremembered(player, character, setName, set)
 end
 
@@ -84,7 +87,7 @@ function Passives.Absorb(player, amount, physical, fromPlayer, superliminal)
 	local _, setName = SkillSetConfig.Equipped(character)
 	local set = setName and SkillSetConfig.Sets[setName]
 	local behaviour = set and set.passive and behaviours[set.passive.name]
-	if not behaviour or amount <= 0 then
+	if not behaviour or amount <= 0 or not SkillSetConfig.FeatureUnlocked(player, setName, "passive") then
 		return amount
 	end
 	return behaviour(player, character, setName, set, amount, physical, fromPlayer, superliminal)

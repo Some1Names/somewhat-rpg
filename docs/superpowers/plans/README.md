@@ -14,7 +14,6 @@ otherwise.
 | Plan | What it builds | Where | Paste this |
 |---|---|---|---|
 | [Aido](2026-10-09-aido.md) | Aido's whole kit: Half-Life, Chain Reaction, Fuse, Catastrophe, Collapse, Total Destruction, Ground Zero, Final Cut (dragon form, works without the model). Placeholder visuals. Spec: `specs/2026-10-09-aido-design.md`. | Cloud for tasks 1–10, then Studio for task 11 | `Run docs/superpowers/plans/2026-10-09-aido.md with superpowers:executing-plans, tasks 1–10. Read the spec first.` Then, in Studio: `Run task 11 of docs/superpowers/plans/2026-10-09-aido.md.` |
-| [Mastery unlocks per power](2026-10-09-mastery-unlocks.md) | Each power's own skill unlock levels, plus passives, G features, Lightstep and the Gallery unlocking through mastery, with "Mastery N" locks and unlock popups. Spec: `specs/2026-10-09-mastery-unlocks-design.md`. | Cloud for tasks 1–4, then Studio for task 5 | `Run docs/superpowers/plans/2026-10-09-mastery-unlocks.md with superpowers:executing-plans, tasks 1–4. Read the spec first.` Then, in Studio: `Run task 5 of docs/superpowers/plans/2026-10-09-mastery-unlocks.md.` |
 | [HUD layout pass](2026-10-09-hud-layout.md) | A minimal top-right icon row (Settings, Inventory, Stats, Quests, Admin, yen) replacing the left buttons, key hints at the bottom left (with a setting), a less crowded bottom centre, one menu at a time. Spec: `specs/2026-10-09-hud-layout-design.md`. | Cloud for tasks 1–5, then Studio for task 6 (screen sizes; icon images with you) | `Run docs/superpowers/plans/2026-10-09-hud-layout.md with superpowers:executing-plans, tasks 1–5. Read the spec first.` Then, in Studio: `Run task 6 of docs/superpowers/plans/2026-10-09-hud-layout.md with me.` |
 | [Getting powers](2026-10-09-power-acquisition.md) | One saved power + 2 storage slots + lifetime Robux powers; new powers come as briefcases from the Power Dealer (S ¥500,000), map drops and a ¥25,000 gacha; selling; death drops; no starter power. Spec: `specs/2026-10-09-power-acquisition-design.md`. | Cloud for tasks 1–6, then Studio, a live server and **you** for task 7 (Robux products, spawn points, briefcase model) | `Run docs/superpowers/plans/2026-10-09-power-acquisition.md with superpowers:executing-plans, tasks 1–6. Read the spec first.` Then, in Studio: `Run task 7 of docs/superpowers/plans/2026-10-09-power-acquisition.md with me.` |
 | [Photoshop revisual](2026-10-09-photoshop-revisual.md) | Photoshop's code-built looks replaced by imported VFX packs, one move at a time. You approve every pack before it's imported. | Studio | `Run docs/superpowers/plans/2026-10-09-photoshop-revisual.md with superpowers:executing-plans. Do one move per task, and stop for my OK on the packs and on the screenshots.` |
@@ -22,6 +21,9 @@ otherwise.
 
 ## Done
 
+- [Mastery unlocks per power](2026-10-09-mastery-unlocks.md): code built (tasks 1–4). Left: apply to Studio (task 5:
+  `Run task 5 of docs/superpowers/plans/2026-10-09-mastery-unlocks.md.`) and the playtest with
+  `specs/2026-10-09-mastery-unlocks-checklist.md`.
 - [Swimmable water parts](2026-10-10-swimmable-water.md): built and in Studio (2026-10-14): the `Water` module, the `Swim`
   client script, no Gallery saves in water. Tried on a temporary pool (swim, float, buoyancy, climb a
   ledge, a pull, Dash, dying in water). **The map has no water parts yet:** build them as parts, tag each

@@ -61,8 +61,9 @@ and saved ownership + loadout (`Loadout` is session-only today).
   `docs/superpowers/specs/2026-10-09-mastery-sources-checklist.md`. The training dummies carry the `TrainingDummy` tag. Mastery challenges are the quest system's (built); boss mastery belongs to
   the boss and enemy rework.
 - **Mastery unlocks per power** (own skill levels; passives, G, Lightstep, the Gallery by mastery):
-  **designed**, spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
-  `docs/superpowers/plans/2026-10-09-mastery-unlocks.md` (not built yet).
+  **code built** (not in Studio yet), spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
+  `docs/superpowers/plans/2026-10-09-mastery-unlocks.md`, checklist `docs/superpowers/specs/2026-10-09-mastery-unlocks-checklist.md`.
+  Waiting on the Studio apply (task 5) and a playtest. Aido's numbers go in with the Aido build.
 - **Quests** (bounties from Bounty Hunters, mastery challenges): **built and in Studio**, spec `docs/superpowers/specs/2026-10-09-quests-design.md`, plan
   `docs/superpowers/plans/2026-10-09-quests.md`, checklist `docs/superpowers/specs/2026-10-09-quests-checklist.md`.
   Three Bounty Hunters stand on the map's `QuestSpawn` parts (GiverIds Training, Frontier, Outpost;

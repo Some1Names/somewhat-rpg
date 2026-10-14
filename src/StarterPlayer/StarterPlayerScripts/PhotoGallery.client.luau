@@ -52,11 +52,11 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
--- the set in hand, if it has a gallery
+-- the set in hand, if it has a gallery its mastery unlocks
 local function gallerySet()
 	local _, setName = SkillSetConfig.Equipped(player.Character)
 	local set = setName and SkillSetConfig.Sets[setName]
-	return set and set.gallery and set or nil
+	return set and set.gallery and SkillSetConfig.FeatureUnlocked(player, setName, "gallery") and set or nil
 end
 
 -- the saved photos, as PhotoshopServer writes them: "x,y,z" or "" per slot

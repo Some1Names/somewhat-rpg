@@ -558,6 +558,11 @@ local function tryOvercharge()
 	-- on a set with an Undo, the same key rewinds (once it's recharged)
 	local undo = setName and SkillSetConfig.Sets[setName].undo
 	if undo and humanoid and humanoid.Health > 0 then
+		if not SkillSetConfig.FeatureUnlocked(player, setName, "undo") then
+			overchargeDeniedUntil = os.clock() + 0.4
+			refuse(string.format("%s: needs mastery %d", undo.name, undo.mastery or 1))
+			return
+		end
 		local undoIn = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
 		if undoIn > 0 then
 			overchargeDeniedUntil = os.clock() + 0.4
@@ -570,6 +575,11 @@ local function tryOvercharge()
 	-- on a set that flies, the same key takes off or lands (it takes some light)
 	local flight = setName and SkillSetConfig.Sets[setName].flight
 	if flight and humanoid and humanoid.Health > 0 then
+		if not SkillSetConfig.FeatureUnlocked(player, setName, "flight") then
+			overchargeDeniedUntil = os.clock() + 0.4
+			refuse(string.format("Flight: needs mastery %d", flight.mastery or 1))
+			return
+		end
 		local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0
 		if not character:GetAttribute("Flying") and luminance < flight.minimumToStart then
 			overchargeDeniedUntil = os.clock() + 0.4
@@ -581,6 +591,11 @@ local function tryOvercharge()
 	end
 	local settings = setName and SkillSetConfig.Sets[setName].overcharge
 	if not settings or not humanoid or humanoid.Health <= 0 or SkillSetConfig.IsOvercharged(player, setName) then
+		return
+	end
+	if not SkillSetConfig.FeatureUnlocked(player, setName, "overcharge") then
+		overchargeDeniedUntil = os.clock() + 0.4
+		refuse(string.format("%s: needs mastery %d", settings.name, settings.mastery or 1))
 		return
 	end
 	local full = (player:GetAttribute(SkillSetConfig.StacksAttribute(setName)) or 0) >= settings.maxStacks
@@ -669,7 +684,19 @@ RunService.RenderStepped:Connect(function()
 	local luminancePassive = set.passive ~= nil and set.passive.name == "Luminance"
 	local undo = set.undo
 	stackRow.Visible = settings ~= nil or luminancePassive or undo ~= nil
-	if undo then
+	local lockedMastery = undo and not SkillSetConfig.FeatureUnlocked(player, setName, "undo") and (undo.mastery or 1)
+		or not luminancePassive and settings and not SkillSetConfig.FeatureUnlocked(player, setName, "overcharge") and (settings.mastery or 1)
+		or nil
+	if lockedMastery then
+		-- the feature isn't unlocked yet: the meter shows the lock, empty
+		buildStacks(undo and 1 or settings.maxStacks)
+		stackLabel.Text = string.format("MASTERY %d", lockedMastery)
+		stackLabel.TextColor3 = os.clock() < overchargeDeniedUntil and DENIED or MUTED
+		for _, segment in ipairs(stackSegments) do
+			segment.fill.Size = UDim2.fromScale(0, 1)
+			segment.track.BackgroundTransparency = TRACK_TRANSPARENCY
+		end
+	elseif undo then
 		-- one segment that fills back up as Undo recharges
 		buildStacks(1)
 		local left = (player:GetAttribute(SkillSetConfig.UndoReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
@@ -927,6 +954,15 @@ masteryEvent.OnClientEvent:Connect(function(setName, fromLevel, toLevel)
 		if skill and skill.handler and skill.mastery > fromLevel and skill.mastery <= toLevel then
 			line += 1
 			popup(string.format("%s (%s) unlocked", skill.name, Keybinds.Text("Skill" .. key)), GOLD, 16, 0.16 + 0.045 * line, 2.5)
+		end
+	end
+	-- the set's features (passive, overcharge, flight, dash, undo, gallery) unlock too
+	for _, feature in ipairs({ "passive", "overcharge", "flight", "dash", "undo", "gallery" }) do
+		local info = set[feature]
+		local at = info and info.mastery
+		if at and at > fromLevel and at <= toLevel then
+			line += 1
+			popup(string.format("%s unlocked", info.name or "Flight"), GOLD, 16, 0.16 + 0.045 * line, 2.5)
 		end
 	end
 end)

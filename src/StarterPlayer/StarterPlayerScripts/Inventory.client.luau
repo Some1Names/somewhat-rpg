@@ -546,28 +546,37 @@ local function showDetails()
 		Size = UDim2.new(1, 0, 0, 14),
 	})
 
+	local level = mastery(selected)
+	-- a feature that isn't unlocked yet is dimmed with its mastery, like a locked skill
+	local function featureRow(key, feature, name, note)
+		local at = set[feature].mastery
+		if at and level < at then
+			detailRow(key, name, "Mastery " .. at, true)
+		else
+			detailRow(key, name, note)
+		end
+	end
 	if set.passive then
-		detailRow("PASSIVE", set.passive.name)
+		featureRow("PASSIVE", "passive", set.passive.name)
 	end
 	if set.ranged then
 		detailRow(set.ranged.primary and "LMB" or "RMB+LMB", set.ranged.name)
 	end
 	if set.dash then
-		detailRow(Keybinds.Text("Dash"), set.dash.name)
+		featureRow(Keybinds.Text("Dash"), "dash", set.dash.name)
 	end
 	if set.overcharge then
-		detailRow(Keybinds.Text("Special"), set.overcharge.name, "overcharge")
+		featureRow(Keybinds.Text("Special"), "overcharge", set.overcharge.name, "overcharge")
 	end
 	if set.flight then
-		detailRow(Keybinds.Text("Special"), "Flight")
+		featureRow(Keybinds.Text("Special"), "flight", "Flight")
 	end
 	if set.undo then
-		detailRow(Keybinds.Text("Special"), set.undo.name)
+		featureRow(Keybinds.Text("Special"), "undo", set.undo.name)
 	end
 	if set.gallery then
-		detailRow(Keybinds.Text("Gallery"), set.gallery.name)
+		featureRow(Keybinds.Text("Gallery"), "gallery", set.gallery.name)
 	end
-	local level = mastery(selected)
 	for _, key in ipairs(SkillSetConfig.Keys) do
 		local skill = set.skills and set.skills[key]
 		if skill then

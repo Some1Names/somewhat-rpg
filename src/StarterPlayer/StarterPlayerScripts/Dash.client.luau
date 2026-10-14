@@ -275,11 +275,15 @@ local function breakFree(root)
 	end
 end
 
--- the equipped set's own dash, if it has one
+-- the equipped set's own dash, if it has one and its mastery unlocks it
+-- (before that the key does the normal dash)
 local function setDash(character)
 	local _, setName = SkillSetConfig.Equipped(character)
 	local set = setName and SkillSetConfig.Sets[setName]
-	return set and set.dash, setName
+	if not (set and set.dash and SkillSetConfig.FeatureUnlocked(Players.LocalPlayer, setName, "dash")) then
+		return nil, setName
+	end
+	return set.dash, setName
 end
 
 -- the ultimate's glass panes, which dashes go through (a solid part can't be

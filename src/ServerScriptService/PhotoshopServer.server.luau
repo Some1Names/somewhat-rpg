@@ -136,7 +136,7 @@ task.spawn(function()
 		for _, player in ipairs(Players:GetPlayers()) do
 			local character = player.Character
 			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-			if humanoid and humanoid.Health > 0 and humanoid.RootPart and holding(character) then
+			if humanoid and humanoid.Health > 0 and humanoid.RootPart and holding(character) and SkillSetConfig.FeatureUnlocked(player, SET_NAME, "passive") then
 				samples[player] = samples[player] or {}
 				table.insert(samples[player], { at = now, pivot = character:GetPivot() })
 				trim(samples[player], since)
@@ -155,6 +155,10 @@ undoRemote.OnServerEvent:Connect(function(player)
 	local root = humanoid and humanoid.RootPart
 	-- (ActionLock: a block or a guard break's stun doesn't let her rewind out of it)
 	if not root or humanoid.Health <= 0 or not holding(character) or CrowdControl.Held(character) or ActionLock.Locked(character) then
+		return
+	end
+	-- (History records nothing below its mastery, so there'd be nothing to rewind to)
+	if not SkillSetConfig.FeatureUnlocked(player, SET_NAME, "undo") then
 		return
 	end
 	if (player:GetAttribute(UNDO_READY) or 0) > workspace:GetServerTimeNow() then
@@ -247,7 +251,7 @@ galleryRemote.OnServerEvent:Connect(function(player, action, slot)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	if not root or humanoid.Health <= 0 or not holding(character) then
+	if not root or humanoid.Health <= 0 or not holding(character) or not SkillSetConfig.FeatureUnlocked(player, SET_NAME, "gallery") then
 		return
 	end
 	local slots = readGallery(player)
