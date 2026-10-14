@@ -72,7 +72,7 @@ make("UIListLayout", {
 local cluster = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.SideGap)),
+	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap)),
 	Size = UDim2.fromOffset(0, 0),
 	AutomaticSize = Enum.AutomaticSize.XY,
 	BackgroundTransparency = 1,

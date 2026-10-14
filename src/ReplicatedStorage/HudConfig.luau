@@ -24,6 +24,7 @@ HudConfig.CardHeight = HudConfig.SideHeight
 HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 18
 -- above the cards sit the yen and the Quests / Stats / Inventory icons
 HudConfig.YenHeight = 22
+HudConfig.ClusterGap = 14 -- px between those icons and the cards
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
