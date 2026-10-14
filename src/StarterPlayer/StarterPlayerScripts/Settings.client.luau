@@ -98,7 +98,6 @@ end
 
 local header = section(22)
 label(header, { Text = "SETTINGS", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -24, 1, 0) })
--- Modal frees the mouse while the menu is open, even in shift lock
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
@@ -109,7 +108,6 @@ local closeButton = make("TextButton", {
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
-	Modal = true,
 })
 
 label(section(16), { Text = "KEYBINDS", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = ACCENT, Size = UDim2.fromScale(1, 1) })

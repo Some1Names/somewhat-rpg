@@ -100,7 +100,6 @@ workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale
 
 local header = make("Frame", { Parent = panel, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
 label(header, { Text = "QUESTS", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
--- Modal frees the mouse while the menu is open, even in shift lock
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
@@ -111,7 +110,6 @@ local closeButton = make("TextButton", {
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
-	Modal = true,
 })
 
 -- tabs

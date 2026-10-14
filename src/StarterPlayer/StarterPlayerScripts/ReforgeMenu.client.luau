@@ -164,7 +164,6 @@ local balance = label(header, {
 	Position = UDim2.new(1, -30, 0, 0),
 	Size = UDim2.new(0.6, -30, 1, 0),
 })
--- Modal frees the mouse while the menu is open, even in shift lock
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
@@ -175,7 +174,6 @@ local closeButton = make("TextButton", {
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
-	Modal = true,
 })
 
 -- the sets you own, scrolling once there are more than fit

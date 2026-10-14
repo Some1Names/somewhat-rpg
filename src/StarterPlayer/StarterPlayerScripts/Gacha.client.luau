@@ -122,7 +122,6 @@ local balance = label(header, {
 	Position = UDim2.new(1, -30, 0, 0),
 	Size = UDim2.new(0.5, -30, 1, 0),
 })
--- Modal frees the mouse while the panel is open, even in shift lock
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
@@ -133,7 +132,6 @@ local closeButton = make("TextButton", {
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
-	Modal = true,
 })
 
 -- the reel: a window with the cards sliding behind a marker in the middle
