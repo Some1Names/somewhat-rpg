@@ -9,9 +9,13 @@
 -- "Hub", so opening Settings or the Shop closes it and the other way round.
 -- The accent is the held power's colour (white with none); on the paper it's
 -- drawn through HubRules.Ink so a light one stays visible. Square everything.
+-- Motion: the nav slides in on open; on each tab the page eases up into place,
+-- the title fades in and its bar sweeps across. Hover: nav entries nudge right,
+-- the × turns, and every text-only button in a tab gets an accent underline.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local HubRules = require(ReplicatedStorage:WaitForChild("HubRules"))
@@ -35,8 +39,20 @@ local TITLE_WIDTH = 330 -- the #TITLE's room, so the bar after it starts in the 
 local CLOSE_ROOM = 48 -- the header stops short of the × at the top right
 local WHITE = Color3.new(1, 1, 1)
 
+local OPEN_TIME = 0.35 -- the nav sliding in
+local PAGE_TIME = 0.3 -- a tab easing up into place, its title fading in
+local BAR_TIME = 0.45 -- the title's bar sweeping across
+local HOVER_TIME = 0.15
+local PAGE_DROP = 18 -- px a tab starts below its place
+
 local Hub = {}
 Hub.Theme = Theme
+
+local function tween(instance, time, props)
+	local tweenObject = TweenService:Create(instance, TweenInfo.new(time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
+	tweenObject:Play()
+	return tweenObject
+end
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -377,6 +393,14 @@ local function show(name)
 	end
 	paintNav()
 	paintHeader()
+	-- the page eases up, the title fades in, its bar sweeps across
+	tab.frame.Position = UDim2.fromOffset(0, PAGE_DROP)
+	tween(tab.frame, PAGE_TIME, { Position = UDim2.new() })
+	titleLabel.TextTransparency, numberLabel.TextTransparency = 1, 1
+	tween(titleLabel, PAGE_TIME, { TextTransparency = 0 })
+	tween(numberLabel, PAGE_TIME, { TextTransparency = 0 })
+	titleBar.Size = UDim2.new(0, 0, 0, 8)
+	tween(titleBar, BAR_TIME, { Size = UDim2.new(1, 0, 0, 8) })
 	for _, fn in ipairs(shownListeners[name] or {}) do
 		task.spawn(fn)
 	end
@@ -405,6 +429,8 @@ function Hub.Open(name)
 		placeBody()
 		gui.Enabled = true
 		Menus.Open("Hub", close)
+		nav.Position = UDim2.fromOffset(-Theme.NavWidth, 0)
+		tween(nav, OPEN_TIME, { Position = UDim2.new() })
 	end
 	show(name)
 end
@@ -505,6 +531,7 @@ function Hub.Tab(name, opts)
 		Text = "",
 		AutoButtonColor = false,
 	})
+	local hoverPad = make("UIPadding", { Parent = tab.button })
 	make("UIListLayout", {
 		Parent = tab.button,
 		FillDirection = Enum.FillDirection.Horizontal,
@@ -567,6 +594,15 @@ function Hub.Tab(name, opts)
 		tab.button.Activated:Connect(function()
 			show(name)
 		end)
+		-- hover: the entry nudges right and takes the accent
+		tab.button.MouseEnter:Connect(function()
+			tween(hoverPad, HOVER_TIME, { PaddingLeft = UDim.new(0, 6) })
+			tab.nameLabel.TextColor3 = accent
+		end)
+		tab.button.MouseLeave:Connect(function()
+			tween(hoverPad, HOVER_TIME, { PaddingLeft = UDim.new(0, 0) })
+			paintNav()
+		end)
 	end
 	tabs[name] = tab
 	paintNav()
@@ -604,6 +640,50 @@ end)
 GuiService.MenuOpened:Connect(Hub.Close)
 closeButton.Activated:Connect(Hub.Close)
 escButton.Activated:Connect(Hub.Close)
+closeButton.MouseEnter:Connect(function()
+	tween(closeButton, HOVER_TIME, { Rotation = 90 })
+end)
+closeButton.MouseLeave:Connect(function()
+	tween(closeButton, HOVER_TIME, { Rotation = 0 })
+end)
+escButton.MouseEnter:Connect(function()
+	escButton.TextColor3 = Theme.NavText
+end)
+escButton.MouseLeave:Connect(function()
+	escButton.TextColor3 = Theme.Muted
+end)
+
+-- every text-only button in a tab (sub-tabs, filters, links) gets an accent
+-- underline that sweeps in on hover; buttons with a fill darken by themselves
+local function hoverLine(button)
+	if button.BackgroundTransparency < 1 or button:FindFirstChild("HoverLine") or button:FindFirstChildWhichIsA("UIGridStyleLayout") then
+		return
+	end
+	local line = make("Frame", {
+		Name = "HoverLine",
+		Parent = button,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(0, 0, 0, 2),
+		BorderSizePixel = 0,
+	})
+	button.MouseEnter:Connect(function()
+		line.BackgroundColor3 = ink
+		tween(line, HOVER_TIME, { Size = UDim2.new(1, 0, 0, 2) })
+	end)
+	button.MouseLeave:Connect(function()
+		tween(line, HOVER_TIME, { Size = UDim2.new(0, 0, 0, 2) })
+	end)
+end
+content.DescendantAdded:Connect(function(item)
+	if item:IsA("GuiButton") then
+		task.defer(function()
+			if item.Parent then
+				hoverLine(item)
+			end
+		end)
+	end
+end)
 
 -- the top bar's Menu icon: opens on Profile (or the first open tab), closes if open
 Menus.Register("Hub", function()

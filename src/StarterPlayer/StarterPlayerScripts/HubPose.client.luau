@@ -9,6 +9,7 @@
 -- character spawns or its look loads.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local HubPoses = require(ReplicatedStorage:WaitForChild("HubPoses"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
@@ -172,8 +173,17 @@ local function pose(name)
 	end
 end
 
+-- each tab's pose slides in from the right and fades up
+local SLIDE = 40 -- px it starts to the right
+local SLIDE_TIME = 0.45
 Hub.OnTabChanged(function(name)
 	pose(Hub.PoseFor(name) or "Idle")
+	viewport.Position = UDim2.new(1, SLIDE, 0, 0)
+	viewport.ImageTransparency = 1
+	TweenService:Create(viewport, TweenInfo.new(SLIDE_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+		Position = UDim2.fromScale(1, 0),
+		ImageTransparency = FADE,
+	}):Play()
 end)
 
 local function onCharacter(character)
