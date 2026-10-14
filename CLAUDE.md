@@ -47,7 +47,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   cooldowns, aim specs, `handler` names, passives, flight, forms), `StatConfig` (levels, stats, HP
   per Vitality, enemy scaling), `PunchConfig` (melee weapons/combos), `ShopConfig`,
   `StatusConfig` (Burnt/Bleeding/Poisoned/Weakened), `QuestConfig` (bounties, mastery challenges,
-  their saved text), `GuardConfig` (block and posture numbers), `VFX` (client effects toolkit).
+  their saved text), `GuardConfig` (block and posture numbers), `Water` (is a point inside a part tagged `Water`;
+  the water is parts, so `Swim` scripts the swimming), `VFX` (client effects toolkit).
 - **Skills**: each skill's server logic is a ModuleScript in `ServerScriptService/Skills` with
   `Cast(player, character, aim)` (and optional `Recast`), named by `handler` in SkillSetConfig.
   `SkillSetServer` validates casts (mastery, cooldowns via `SkillCooldowns`, `overchargedOnly`,

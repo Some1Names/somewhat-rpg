@@ -29,6 +29,7 @@ local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
+local Water = require(ReplicatedStorage:WaitForChild("Water"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -251,6 +252,10 @@ galleryRemote.OnServerEvent:Connect(function(player, action, slot)
 	end
 	local slots = readGallery(player)
 	if action == "save" then
+		-- no photo while swimming: there's no footing in water (a Water part)
+		if Water.IsIn(character) then
+			return
+		end
 		-- only a spot she's standing on, so travel never drops her into the air
 		local ground = PhotoshopUtil.groundAt(root.Position, { character })
 		if not ground or root.Position.Y - ground.Y > STANDING_SLACK then

@@ -80,8 +80,9 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## World
 
-- **Swimmable water parts:** plan `docs/superpowers/plans/2026-10-10-swimmable-water.md` (not done
-  yet). The water stays Parts (tagged `Water`), with scripted swimming.
+- **Swimmable water parts:** **code built**, plan `docs/superpowers/plans/2026-10-10-swimmable-water.md`,
+  checklist `docs/superpowers/specs/2026-10-10-swimmable-water-checklist.md`. The water stays Parts
+  (tagged `Water`), with scripted swimming; the parts get tagged in Studio.
 
 ## UI
 
