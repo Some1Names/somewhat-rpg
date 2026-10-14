@@ -158,7 +158,6 @@ local function column(position, size, anchor, title)
 		Size = size,
 		BackgroundTransparency = 1,
 	})
-	outline(frame, 0.85)
 	padding(frame, COLUMN_PADDING)
 	label(frame, {
 		Text = title,
@@ -178,6 +177,10 @@ local middleColumn = column(
 	"OWNED"
 )
 local rightColumn = column(UDim2.fromScale(1, 0), UDim2.new(0, RIGHT_WIDTH, 1, 0), Vector2.new(1, 0), "INFO")
+-- one thin rule in each gap between the columns
+for _, x in ipairs({ UDim.new(0, LEFT_WIDTH + GAP / 2), UDim.new(1, -(RIGHT_WIDTH + GAP / 2)) }) do
+	make("Frame", { Parent = body, Position = UDim2.new(x, UDim.new()), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = TEXT, BackgroundTransparency = 0.85, BorderSizePixel = 0 })
+end
 
 -- left: the carry slots, then the materials you hold
 local SLOTS_HEIGHT = #SLOTS * SLOT_HEIGHT + (#SLOTS - 1) * SLOT_GAP

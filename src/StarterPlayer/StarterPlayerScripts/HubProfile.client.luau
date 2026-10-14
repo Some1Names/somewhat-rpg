@@ -121,20 +121,27 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
--- level, yen and XP: tiles like the Stats tab's, a caption over a big number
--- with an accent bar down the left edge
-local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 76), BackgroundTransparency = 1 })
-make("UIGridLayout", { Parent = figures, CellSize = UDim2.new(1 / 3, -6, 1, 0), CellPadding = UDim2.fromOffset(6, 0), SortOrder = Enum.SortOrder.LayoutOrder })
+-- level, yen and XP: a row each, the caption on the left and the number big
+-- on the right, with an accent bar down the left edge
+local FIGURE_HEIGHT = 48
+local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 3 * FIGURE_HEIGHT + 2 * 6), BackgroundTransparency = 1 })
+make("UIListLayout", { Parent = figures, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 local tileBars = {}
-local function figure(order, caption, size)
-	local tile = make("Frame", { Parent = figures, LayoutOrder = order, BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
-	table.insert(tileBars, make("Frame", { Parent = tile, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 }))
-	label(tile, { Text = caption, TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -18, 0, 12) })
-	return label(tile, { Font = Theme.TitleFont, TextSize = size, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -18, 0, 36), TextTruncate = Enum.TextTruncate.AtEnd })
+local function figure(order, caption)
+	local row = make("Frame", { Parent = figures, LayoutOrder = order, Size = UDim2.new(1, 0, 0, FIGURE_HEIGHT), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
+	table.insert(tileBars, make("Frame", { Parent = row, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 }))
+	label(row, { Text = caption, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(14, 0), Size = UDim2.new(0, 80, 1, 0) })
+	return label(row, {
+		Font = Theme.TitleFont,
+		TextSize = 26,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Position = UDim2.fromOffset(94, 0),
+		Size = UDim2.new(1, -108, 1, 0),
+	})
 end
-local levelFigure = figure(1, "LEVEL", 30)
-local yenFigure = figure(2, "YEN", 30)
-local levelLabel = figure(3, "XP", 20)
+local levelFigure = figure(1, "LEVEL")
+local yenFigure = figure(2, "YEN")
+local levelLabel = figure(3, "XP")
 local pointsButton = make("TextButton", {
 	Parent = column,
 	LayoutOrder = 8,

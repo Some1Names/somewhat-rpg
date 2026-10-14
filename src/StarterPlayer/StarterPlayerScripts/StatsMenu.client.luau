@@ -1,4 +1,4 @@
--- The hub's Stats tab (M, or the hub's nav), with two sub-tabs. STATS: a row
+-- The hub's Stats tab (M, or the hub's nav), with two sub-tabs. STATS: a grid
 -- of tiles with what the stats add up to (max HP, regen, damage, stamina,
 -- dodges), and under it the stat points to spend on Vitality, Strength,
 -- Superliminal and Firearm and when the next stamina box unlocks.
@@ -21,7 +21,9 @@ local player = Players.LocalPlayer
 local AMOUNTS = { 1, 5, 10 } -- points added per click
 local PANEL_WIDTH = 560
 local SUBTABS_HEIGHT = 36 -- the STATS / MILESTONES titles, with the gap under them
-local TILES_HEIGHT = 92 -- the row of totals, with the gap under it
+local TILE_HEIGHT = 76
+local TILE_COLUMNS = 4
+local TILES_HEIGHT = 2 * TILE_HEIGHT + 6 + 16 -- the grid of totals (two rows), with the gap under it
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local STAT_ROW_HEIGHT = 40
@@ -267,7 +269,7 @@ for i, stat in ipairs(StatConfig.Stats) do
 	rows[i] = { stat = stat, value = value, effect = effect, plus = plus }
 end
 
--- the totals: a row of tiles across the top, each a caption over a big number
+-- the totals: a grid of tiles across the top, four to a row, each a caption over a big number
 -- with an accent bar down its left edge
 local CURRENT = { "MAX HP", "REGEN / S", "MELEE", "SKILL DMG", "GUN DMG", "STAMINA", "DODGES" }
 local tiles = make("Frame", {
@@ -278,8 +280,8 @@ local tiles = make("Frame", {
 })
 make("UIGridLayout", {
 	Parent = tiles,
-	CellSize = UDim2.new(1 / #CURRENT, -6, 1, 0),
-	CellPadding = UDim2.fromOffset(6, 0),
+	CellSize = UDim2.new(1 / TILE_COLUMNS, -6, 0, TILE_HEIGHT),
+	CellPadding = UDim2.fromOffset(6, 6),
 	SortOrder = Enum.SortOrder.LayoutOrder,
 })
 local currentValues = {}
