@@ -362,8 +362,13 @@ render = function()
 		label(row, { Text = "Old: " .. (candidate.old and describe(candidate.old) or "empty"), TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(10, 22), Size = UDim2.new(1, -20, 0, 16) })
 		label(row, { Text = "New: " .. describe(candidate.new), TextSize = 11, Position = UDim2.fromOffset(10, 38), Size = UDim2.new(1, -20, 0, 16) })
 		local function resolve(keep)
-			request("resolve", selected, keep)
-			candidate = nil
+			-- (a refused keep leaves the paid roll waiting on the server: ask for it again)
+			if request("resolve", selected, keep) then
+				candidate = nil
+			else
+				local _, waiting = request("pending", selected)
+				candidate = waiting
+			end
 			render()
 		end
 		local keepNew = button(row, "KEEP NEW", true, function()
@@ -379,8 +384,19 @@ render = function()
 	end
 end
 
-player.AttributeChanged:Connect(function()
-	if gui.Enabled then
+-- (only what the menu shows: other attributes tick all the time, and rebuilding the rows drops clicks)
+local MATERIAL_PREFIX = ReforgeConfig.MaterialAttribute("")
+local REFORGE_PREFIX = ReforgeConfig.SetAttribute("")
+player.AttributeChanged:Connect(function(name)
+	if
+		gui.Enabled
+		and (
+			name == "Yen"
+			or name == SkillSetConfig.OwnedSetsAttribute
+			or string.sub(name, 1, #MATERIAL_PREFIX) == MATERIAL_PREFIX
+			or string.sub(name, 1, #REFORGE_PREFIX) == REFORGE_PREFIX
+		)
+	then
 		render()
 	end
 end)

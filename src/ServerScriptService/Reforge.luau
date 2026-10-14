@@ -198,12 +198,14 @@ function Reforge.Resolve(player, setName, keep)
 	if not candidate then
 		return false, "Nothing to keep"
 	end
-	pending[player][setName] = nil
 	if not keep then
+		pending[player][setName] = nil
 		return true, "Kept your old roll"
 	end
+	-- (a refused keep leaves the paid roll waiting, except one that can never apply)
 	local state = Reforge.Get(player, setName)
 	if candidate.slot > ReforgeRules.SlotsUnlocked(state.level) then
+		pending[player][setName] = nil
 		return false, "That slot is locked"
 	end
 	local mods = table.clone(state.mods)
@@ -212,6 +214,7 @@ function Reforge.Resolve(player, setName, keep)
 	if not text then
 		return false, "Too many reforged sets to save"
 	end
+	pending[player][setName] = nil
 	player:SetAttribute(ReforgeConfig.Attribute, text)
 	return true, "New roll kept"
 end
