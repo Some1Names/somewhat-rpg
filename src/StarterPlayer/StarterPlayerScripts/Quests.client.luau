@@ -19,7 +19,6 @@ local player = Players.LocalPlayer
 
 local TOGGLE_KEY = Enum.KeyCode.J
 local PANEL_SIZE = Vector2.new(380, 460)
-local SCREEN_MARGIN = 24
 local PADDING = 14
 local ROW_HEIGHT = 62
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
@@ -90,13 +89,7 @@ make("UIPadding", {
 })
 
 -- smaller screens get a smaller panel
-local panelScale = make("UIScale", { Parent = panel })
-local function rescale()
-	local viewport = workspace.CurrentCamera.ViewportSize
-	panelScale.Scale = math.min(1, (viewport.X - 2 * SCREEN_MARGIN) / PANEL_SIZE.X, (viewport.Y - 2 * SCREEN_MARGIN) / PANEL_SIZE.Y)
-end
-rescale()
-workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
+Menus.Place(panel, PANEL_SIZE)
 
 local header = make("Frame", { Parent = panel, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
 label(header, { Text = "QUESTS", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })

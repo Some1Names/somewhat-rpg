@@ -65,12 +65,16 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
-local panel = make("Frame", {
+local panel = make("ScrollingFrame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = MUTED,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.1,
 	BorderSizePixel = 0,
@@ -84,6 +88,7 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
+Menus.Fit(panel)
 
 local order = 0
 local function section(height)
