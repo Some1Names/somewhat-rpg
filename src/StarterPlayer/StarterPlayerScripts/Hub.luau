@@ -27,8 +27,9 @@ local PAD = 16
 local NAV_PAD = 14
 local NAV_ROW = 30
 local NAV_TOP = 58 -- the first tab button, this far under the brand
--- the nav starts under Roblox's own buttons (top left), which sit over the hub
-local ROBLOX_BAR = math.max(GuiService:GetGuiInset().Y, 36)
+-- Roblox's own buttons sit in a band across the top: the hub leaves it empty paper.
+-- Its height is read on each open (it's often still 0 while the game loads).
+local ROBLOX_BAR_FALLBACK = 58
 local SWATCH = 10
 local TITLE_WIDTH = 330 -- the #TITLE's room, so the bar after it starts in the same place on every tab
 local CLOSE_ROOM = 48 -- the header stops short of the × at the top right
@@ -70,11 +71,25 @@ local gui = make("ScreenGui", {
 -- back to front: paper, the pose strip, the main column with the header and
 -- footer (both always the full width, so they don't move between tabs), the nav, the ×
 make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BorderSizePixel = 0, ZIndex = 1 })
+-- everything else, below Roblox's band
+local body = make("Frame", {
+	Name = "Body",
+	Parent = gui,
+	BackgroundTransparency = 1,
+	ZIndex = 2,
+})
+local function placeBody()
+	local band = GuiService:GetGuiInset().Y
+	band = band > 0 and band or ROBLOX_BAR_FALLBACK
+	body.Position = UDim2.fromOffset(0, band)
+	body.Size = UDim2.new(1, 0, 1, -band)
+end
+placeBody()
 
 -- between the header and the footer, so the character never covers the top
 local poseStrip = make("Frame", {
 	Name = "PoseStrip",
-	Parent = gui,
+	Parent = body,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, 0, 0, Theme.HeaderHeight),
 	Size = UDim2.new(Theme.PoseShare, 0, 1, -(Theme.HeaderHeight + Theme.FooterHeight)),
@@ -85,14 +100,14 @@ Hub.PoseStrip = poseStrip
 
 local main = make("Frame", {
 	Name = "Main",
-	Parent = gui,
+	Parent = body,
 	Position = UDim2.fromOffset(Theme.NavWidth, Theme.HeaderHeight),
 	BackgroundTransparency = 1,
 	ZIndex = 3,
 })
 local top = make("Frame", {
 	Name = "Header",
-	Parent = gui,
+	Parent = body,
 	Position = UDim2.fromOffset(Theme.NavWidth, 0),
 	Size = UDim2.new(1, -(Theme.NavWidth + CLOSE_ROOM), 0, Theme.HeaderHeight),
 	BackgroundTransparency = 1,
@@ -165,7 +180,7 @@ local content = make("Frame", {
 
 -- footer: a rule, the record line, and #SOMEWHAT on an accent chip
 local footer = make("Frame", {
-	Parent = gui,
+	Parent = body,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, Theme.NavWidth + PAD, 1, 0),
 	Size = UDim2.new(1, -(Theme.NavWidth + 2 * PAD), 0, Theme.FooterHeight),
@@ -210,7 +225,7 @@ footerChip.BackgroundTransparency = 0
 -- the nav column
 local nav = make("Frame", {
 	Name = "Nav",
-	Parent = gui,
+	Parent = body,
 	Size = UDim2.new(0, Theme.NavWidth, 1, 0),
 	BackgroundColor3 = Theme.Nav,
 	BorderSizePixel = 0,
@@ -221,20 +236,20 @@ local brand = label(nav, {
 	TextSize = 16,
 	TextColor3 = Theme.NavText,
 	RichText = true,
-	Position = UDim2.fromOffset(NAV_PAD, ROBLOX_BAR + 12),
+	Position = UDim2.fromOffset(NAV_PAD, 12),
 	Size = UDim2.new(1, -2 * NAV_PAD, 0, 20),
 })
 label(nav, {
 	Text = "FILE NO. 049 / PLAYER",
 	TextSize = 10,
 	TextColor3 = Theme.Muted,
-	Position = UDim2.fromOffset(NAV_PAD, ROBLOX_BAR + 34),
+	Position = UDim2.fromOffset(NAV_PAD, 34),
 	Size = UDim2.new(1, -2 * NAV_PAD, 0, 12),
 })
 local navList = make("Frame", {
 	Parent = nav,
-	Position = UDim2.fromOffset(NAV_PAD, ROBLOX_BAR + NAV_TOP),
-	Size = UDim2.new(1, -2 * NAV_PAD, 1, -(ROBLOX_BAR + NAV_TOP + 60)),
+	Position = UDim2.fromOffset(NAV_PAD, NAV_TOP),
+	Size = UDim2.new(1, -2 * NAV_PAD, 1, -(NAV_TOP + 60)),
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = navList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
@@ -269,7 +284,7 @@ local escButton = make("TextButton", {
 })
 
 local closeButton = make("TextButton", {
-	Parent = gui,
+	Parent = body,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -PAD, 0, 8),
 	Size = UDim2.fromOffset(28, 28),
@@ -384,6 +399,7 @@ end
 function Hub.Open(name)
 	name = name or HubRules.FirstOpen(tabList())
 	if not gui.Enabled then
+		placeBody()
 		gui.Enabled = true
 		Menus.Open("Hub", close)
 	end
