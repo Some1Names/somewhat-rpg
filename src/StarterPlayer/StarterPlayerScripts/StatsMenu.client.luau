@@ -24,7 +24,7 @@ local AMOUNTS = { 1, 5, 10 } -- points added per click
 local PANEL_WIDTH = 300
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
-local STAT_ROW_HEIGHT = 56
+local STAT_ROW_HEIGHT = 46
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
@@ -127,7 +127,7 @@ make("UIPadding", {
 	PaddingLeft = UDim.new(0, PADDING),
 	PaddingRight = UDim.new(0, PADDING),
 })
-make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
 Menus.Fit(panel)
 
 -- header: title, level and close button
@@ -271,12 +271,12 @@ for i, stat in ipairs(StatConfig.Stats) do
 		Position = UDim2.new(1, -42, 0, 0),
 		Size = UDim2.fromOffset(48, 18),
 	})
-	local effect = label(rowFrame, { TextSize = 12, Position = UDim2.fromOffset(0, 21), Size = UDim2.new(1, -42, 0, 15) })
+	local effect = label(rowFrame, { TextSize = 12, Position = UDim2.fromOffset(0, 17), Size = UDim2.new(1, -42, 0, 14) })
 	local upcoming = label(rowFrame, {
 		TextSize = 11,
 		TextColor3 = MUTED,
-		Position = UDim2.fromOffset(0, 38),
-		Size = UDim2.new(1, -42, 0, 14),
+		Position = UDim2.fromOffset(0, 32),
+		Size = UDim2.new(1, -42, 0, 13),
 	})
 	local plus = make("TextButton", {
 		Parent = rowFrame,
