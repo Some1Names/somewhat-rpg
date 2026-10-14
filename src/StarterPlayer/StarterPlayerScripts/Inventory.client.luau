@@ -1,10 +1,14 @@
 -- Inventory: press B or the top bar's Inventory icon (TopBar). Three columns: on the left what you
 -- carry (a power, a weapon, and a melee slot kept for melee weapons still to
 -- come), in the middle every set you own with ALL/POWER/WEAPON tabs, on the
--- right the selected set's info with EQUIP/UNEQUIP. Cards show the set's
--- tier and your mastery in it. The owned list is the OwnedSets attribute the
--- server keeps; equipping goes through the EquipSet remote, which checks
--- ownership (see Loadout).
+-- right the selected set's info with its buttons. Cards show the set's
+-- tier and your mastery in it. Powers are the held one, the ones in storage,
+-- the lifetime ones and the briefcases you carry (cards tagged HELD, STORED,
+-- LIFETIME, BRIEFCASE); their buttons (USE, STORE, SWAP, TAKE OUT, SWITCH)
+-- go through the PowerAction remote (Powers), and one that would lose a power
+-- asks CONFIRM first. Weapons come from the OwnedSets attribute the server
+-- keeps; equipping goes through the EquipSet remote, which checks ownership
+-- (see Loadout).
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,8 +16,10 @@ local UserInputService = game:GetService("UserInputService")
 
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
+local powerAction = ReplicatedStorage:WaitForChild("PowerAction")
 
 local player = Players.LocalPlayer
 
@@ -221,7 +227,7 @@ make("UIListLayout", {
 })
 local grid = scroller(middleColumn, {
 	Position = UDim2.fromOffset(0, HEADING_HEIGHT + 4),
-	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 4)),
+	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 4 + 18)), -- room under it for the briefcase warning
 })
 make("UIGridLayout", {
 	Parent = grid,
@@ -240,56 +246,91 @@ local emptyLabel = label(middleColumn, {
 	Visible = false,
 })
 
--- right: the selected set's info, with EQUIP at the bottom
+-- right: the selected set's info, with its buttons at the bottom
 local details = scroller(rightColumn, {
 	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
-	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + BUTTON_HEIGHT + 24)),
+	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 2 * BUTTON_HEIGHT + 40)),
 })
 make("UIListLayout", { Parent = details, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) })
 local message = label(rightColumn, {
 	Text = "",
 	TextSize = 11,
 	TextColor3 = DANGER,
+	TextWrapped = true,
+	TextYAlignment = Enum.TextYAlignment.Bottom,
 	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 0, 1, -(BUTTON_HEIGHT + 4)),
-	Size = UDim2.new(1, 0, 0, 16),
+	Position = UDim2.new(0, 0, 1, -(2 * BUTTON_HEIGHT + 10)),
+	Size = UDim2.new(1, 0, 0, 28),
 })
-local equipButton = make("TextButton", {
-	Parent = rightColumn,
+local function makeButton(offset)
+	local button = make("TextButton", {
+		Parent = rightColumn,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -offset),
+		Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT),
+		BackgroundColor3 = TEXT,
+		Font = Enum.Font.GothamBold,
+		TextSize = 13,
+		TextColor3 = BACKGROUND,
+		Text = "",
+		Visible = false,
+	})
+	return button, outline(button, 0.5)
+end
+local equipButton, equipStroke = makeButton(0) -- the main action
+local altButton, altStroke = makeButton(BUTTON_HEIGHT + 6) -- a second one, for powers
+
+-- a note under the grid while briefcases are carried (they aren't saved)
+local warning = label(middleColumn, {
+	Text = "Unstored briefcases are lost when you leave.",
+	TextSize = 11,
+	TextColor3 = DANGER,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.fromScale(0, 1),
-	Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT),
-	BackgroundColor3 = TEXT,
-	Font = Enum.Font.GothamBold,
-	TextSize = 13,
-	TextColor3 = BACKGROUND,
-	Text = "EQUIP",
+	Size = UDim2.new(1, 0, 0, 16),
+	Visible = false,
 })
-local equipStroke = outline(equipButton, 0.5)
 
-local selected -- set name
+local selected -- the selected card's key: a set name, or "briefcase:<set>"
 local tab = "all"
 local busy = false
+local pending -- { action, set }: a power action waiting for CONFIRM
+local primaryAction, altAction -- what the two buttons do now
 local refresh -- defined below; cards and tabs call it
 
-local function ownedSets()
-	local owned = {}
-	local list = player:GetAttribute(SkillSetConfig.OwnedSetsAttribute) or ""
-	for setName in string.gmatch(list, "[^,]+") do
-		if SkillSetConfig.Sets[setName] then
-			table.insert(owned, setName)
+local BRIEFCASE_PREFIX = "briefcase:"
+
+local function powerList(attribute)
+	return PowerConfig.decodeList(player:GetAttribute(attribute), function(name)
+		local set = SkillSetConfig.Sets[name]
+		return set ~= nil and set.kind == "power"
+	end)
+end
+
+local function heldPower()
+	local name = player:GetAttribute("CurrentPower")
+	local set = typeof(name) == "string" and SkillSetConfig.Sets[name]
+	return set and set.kind == "power" and name or nil
+end
+
+local function isLifetime(setName)
+	return SkillSetConfig.OwnAllSets or table.find(powerList("LifetimePowers"), setName) ~= nil
+end
+
+-- the power sets of the briefcases being carried
+local function carriedBriefcases()
+	local found, seen = {}, {}
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	for _, container in ipairs({ player.Character, backpack }) do
+		for _, tool in ipairs(container and container:GetChildren() or {}) do
+			local setName = tool:IsA("Tool") and tool:GetAttribute(PowerConfig.BriefcaseAttribute)
+			if setName and SkillSetConfig.Sets[setName] and not seen[setName] then
+				seen[setName] = true
+				table.insert(found, setName)
+			end
 		end
 	end
-	-- best tier first, then by name
-	table.sort(owned, function(a, b)
-		local tierA = TIER_ORDER[SkillSetConfig.Sets[a].tier] or 99
-		local tierB = TIER_ORDER[SkillSetConfig.Sets[b].tier] or 99
-		if tierA ~= tierB then
-			return tierA < tierB
-		end
-		return SkillSetConfig.Sets[a].tool < SkillSetConfig.Sets[b].tool
-	end)
-	return owned
+	return found
 end
 
 local function carried(kind)
@@ -299,6 +340,72 @@ local function carried(kind)
 		end
 	end
 	return nil
+end
+
+-- every card: the held power, stored ones, lifetime ones, carried briefcases,
+-- then the weapons you own. { key, setName, kind, rank, held, stored, lifetime, briefcase }
+local function entries()
+	local list = {}
+	local held, stored = heldPower(), powerList("PowerStorage")
+	for setName, set in pairs(SkillSetConfig.Sets) do
+		if set.kind == "power" then
+			local entry = { setName = setName, key = setName, kind = "power", held = held == setName }
+			entry.stored = table.find(stored, setName) ~= nil
+			entry.lifetime = isLifetime(setName)
+			entry.rank = entry.held and 1 or entry.stored and 2 or 3
+			if entry.held or entry.stored or entry.lifetime then
+				table.insert(list, entry)
+			end
+		end
+	end
+	for _, setName in ipairs(carriedBriefcases()) do
+		table.insert(list, { setName = setName, key = BRIEFCASE_PREFIX .. setName, kind = "power", briefcase = true, rank = 4 })
+	end
+	local ownedList = player:GetAttribute(SkillSetConfig.OwnedSetsAttribute) or ""
+	for setName in string.gmatch(ownedList, "[^,]+") do
+		local set = SkillSetConfig.Sets[setName]
+		if set and set.kind == "weapon" then
+			table.insert(list, { setName = setName, key = setName, kind = "weapon", held = carried("weapon") == setName, rank = 5 })
+		end
+	end
+	-- held first, then stored, lifetime, briefcases, weapons; best tier, then name
+	table.sort(list, function(a, b)
+		if a.rank ~= b.rank then
+			return a.rank < b.rank
+		end
+		local tierA = TIER_ORDER[SkillSetConfig.Sets[a.setName].tier] or 99
+		local tierB = TIER_ORDER[SkillSetConfig.Sets[b.setName].tier] or 99
+		if tierA ~= tierB then
+			return tierA < tierB
+		end
+		return SkillSetConfig.Sets[a.setName].tool < SkillSetConfig.Sets[b.setName].tool
+	end)
+	return list
+end
+
+local function tagText(entry)
+	if entry.briefcase then
+		return "BRIEFCASE"
+	elseif entry.kind == "weapon" then
+		return entry.held and "EQUIPPED" or nil
+	end
+	return entry.held and "HELD" or entry.stored and "STORED" or entry.lifetime and "LIFETIME" or nil
+end
+
+local function stateText(entry)
+	if entry.briefcase then
+		return "Briefcase"
+	elseif entry.kind == "weapon" then
+		return entry.held and "Equipped" or "Owned"
+	end
+	local parts = {}
+	if entry.held or entry.stored then
+		table.insert(parts, entry.held and "Held" or "In storage")
+	end
+	if entry.lifetime then
+		table.insert(parts, "Lifetime")
+	end
+	return table.concat(parts, " · ")
 end
 
 local function tierColor(set)
@@ -315,16 +422,18 @@ local function masteryText(setName)
 	return level >= SkillSetConfig.MaxMastery and "Mastery MAX" or ("Mastery " .. level)
 end
 
-local function selectSet(setName)
-	selected = setName
+local function selectKey(key)
+	selected = key
+	pending = nil
 	message.Text = ""
 	refresh()
 end
 
 -- a square card in the inventory grid
-local function makeCard(setName, index)
+local function makeCard(entry, index)
+	local setName = entry.setName
 	local set = SkillSetConfig.Sets[setName]
-	local isSelected = setName == selected
+	local isSelected = entry.key == selected
 	local card = make("TextButton", {
 		Parent = grid,
 		LayoutOrder = index,
@@ -341,9 +450,10 @@ local function makeCard(setName, index)
 		Position = UDim2.fromOffset(8, 6),
 		Size = UDim2.fromOffset(24, 22),
 	})
-	if carried(set.kind) == setName then
+	local tag = tagText(entry)
+	if tag then
 		label(card, {
-			Text = "EQUIPPED",
+			Text = tag,
 			Font = Enum.Font.GothamBold,
 			TextSize = 9,
 			TextColor3 = BACKGROUND,
@@ -353,7 +463,7 @@ local function makeCard(setName, index)
 			BorderSizePixel = 0,
 			AnchorPoint = Vector2.new(1, 0),
 			Position = UDim2.new(1, -6, 0, 8),
-			Size = UDim2.fromOffset(56, 14),
+			Size = UDim2.fromOffset(64, 14),
 		})
 	end
 	label(card, {
@@ -382,7 +492,7 @@ local function makeCard(setName, index)
 		BorderSizePixel = 0,
 	})
 	card.Activated:Connect(function()
-		selectSet(setName)
+		selectKey(entry.key)
 	end)
 end
 
@@ -455,7 +565,7 @@ local function makeSlot(slot, index)
 		Size = UDim2.new(1, -54, 0, 12),
 	})
 	frame.Activated:Connect(function()
-		selectSet(setName)
+		selectKey(setName)
 	end)
 end
 
@@ -511,20 +621,102 @@ local function detailRow(key, name, note, dim)
 	})
 end
 
-local function showDetails()
+-- shows a button (or hides it with nil text), filled for a main action and outlined for a quiet one
+local function setButton(button, stroke, text, quiet)
+	button.Visible = text ~= nil
+	button.Text = text or ""
+	button.BackgroundTransparency = quiet and 1 or 0
+	button.TextColor3 = quiet and TEXT or BACKGROUND
+	stroke.Transparency = quiet and 0.4 or 0.5
+end
+
+-- asks the server for a power action; a refusal that needs a yes becomes CONFIRM / CANCEL
+local function runPower(action, setName, confirm)
+	if busy then
+		return
+	end
+	busy = true
+	local ok, result, why, needsConfirm = pcall(powerAction.InvokeServer, powerAction, action, { set = setName, confirm = confirm })
+	busy = false
+	pending = nil
+	if not ok then
+		message.Text = "Couldn't reach the server"
+	elseif result then
+		message.Text = ""
+	elseif needsConfirm then
+		pending = { action = action, set = setName }
+		message.Text = why or "Are you sure?"
+	else
+		message.Text = why or "Couldn't do that"
+	end
+	refresh()
+end
+
+-- the buttons for a power card (a weapon's are set where it's shown)
+local function powerButtons(entry)
+	local setName = entry.setName
+	if pending then
+		primaryAction = function()
+			runPower(pending.action, pending.set, true)
+		end
+		altAction = function()
+			pending = nil
+			message.Text = ""
+			refresh()
+		end
+		setButton(equipButton, equipStroke, "CONFIRM", false)
+		setButton(altButton, altStroke, "CANCEL", true)
+		return
+	end
+	local mine = heldPower() == setName or table.find(powerList("PowerStorage"), setName) ~= nil or isLifetime(setName)
+	local primaryText, altText
+	if entry.briefcase then
+		if mine then
+			message.Text = "You already own this power. Sell the briefcase to the Power Dealer."
+		else
+			primaryText, altText = "USE", "STORE"
+			primaryAction = function()
+				runPower("use", setName, false)
+			end
+			altAction = function()
+				runPower("store", setName, false)
+			end
+		end
+	elseif entry.stored then
+		primaryText, altText = "SWAP WITH HELD", "TAKE OUT"
+		primaryAction = function()
+			runPower("swap", setName, false)
+		end
+		altAction = function()
+			runPower("takeOut", setName, false)
+		end
+	elseif entry.lifetime and not entry.held then
+		primaryText = "SWITCH TO IT"
+		primaryAction = function()
+			runPower("switch", setName, false)
+		end
+	end
+	setButton(equipButton, equipStroke, primaryText, false)
+	setButton(altButton, altStroke, altText, true)
+end
+
+local function showDetails(entry)
 	clear(details)
 	detailOrder = 0
-	local set = selected and SkillSetConfig.Sets[selected]
-	equipButton.Visible = set ~= nil
+	primaryAction, altAction = nil, nil
+	setButton(equipButton, equipStroke, nil, false)
+	setButton(altButton, altStroke, nil, true)
+	local set = entry and SkillSetConfig.Sets[entry.setName]
 	if not set then
 		label(details, { Text = "Pick a set to see its moves.", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 20) })
 		return
 	end
+	local selectedSet = entry.setName
 
 	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
 	label(title, { Text = set.tool, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = set.color or TEXT, Size = UDim2.new(1, 0, 0, 22) })
 	label(title, {
-		Text = string.format("%s-tier %s  ·  %s", set.tier or "?", set.kind, masteryText(selected)),
+		Text = string.format("%s-tier %s  ·  %s  ·  %s", set.tier or "?", set.kind, masteryText(selectedSet), stateText(entry)),
 		Font = Enum.Font.GothamBold,
 		TextSize = 11,
 		TextColor3 = tierColor(set),
@@ -532,7 +724,7 @@ local function showDetails()
 		Size = UDim2.new(1, 0, 0, 14),
 	})
 
-	local level = mastery(selected)
+	local level = mastery(selectedSet)
 	-- a feature that isn't unlocked yet is dimmed with its mastery, like a locked skill
 	local function featureRow(key, feature, name, note)
 		local at = set[feature].mastery
@@ -579,20 +771,47 @@ local function showDetails()
 		end
 	end
 
-	local isCarried = carried(set.kind) == selected
-	equipButton.Text = isCarried and "UNEQUIP" or ("EQUIP " .. string.upper(set.kind))
-	equipButton.BackgroundTransparency = isCarried and 1 or 0
-	equipButton.TextColor3 = isCarried and TEXT or BACKGROUND
-	equipStroke.Transparency = isCarried and 0.4 or 0.5
+	if entry.kind == "power" then
+		powerButtons(entry)
+		return
+	end
+	local isCarried = entry.held
+	setButton(equipButton, equipStroke, isCarried and "UNEQUIP" or "EQUIP WEAPON", isCarried)
+	primaryAction = function()
+		if busy then
+			return
+		end
+		busy = true
+		local ok, result, why = pcall(equipRemote.InvokeServer, equipRemote, not isCarried and selectedSet or nil, set.kind)
+		busy = false
+		if not ok then
+			message.Text = "Couldn't reach the server"
+		elseif not result then
+			message.Text = why or "Couldn't do that"
+		else
+			message.Text = ""
+		end
+		refresh()
+	end
+end
+
+local function findEntry(list, key)
+	for _, entry in ipairs(list) do
+		if entry.key == key then
+			return entry
+		end
+	end
+	return nil
 end
 
 function refresh()
-	local owned = ownedSets()
-	-- keep the selection on something owned
-	if selected and not table.find(owned, selected) then
+	local list = entries()
+	-- keep the selection on something that's still there
+	if selected and not findEntry(list, selected) then
 		selected = nil
+		pending = nil
 	end
-	selected = selected or carried("power") or owned[1]
+	selected = selected or heldPower() or (list[1] and list[1].key)
 
 	clear(slotList)
 	for i, slot in ipairs(SLOTS) do
@@ -606,34 +825,27 @@ function refresh()
 	end
 	clear(grid)
 	local count = 0
-	for _, setName in ipairs(owned) do
-		if tab == "all" or SkillSetConfig.Sets[setName].kind == tab then
+	for _, entry in ipairs(list) do
+		if tab == "all" or entry.kind == tab then
 			count += 1
-			makeCard(setName, count)
+			makeCard(entry, count)
 		end
 	end
 	emptyLabel.Visible = count == 0
+	warning.Visible = #carriedBriefcases() > 0
 
-	showDetails()
+	showDetails(selected and findEntry(list, selected))
 end
 
 equipButton.Activated:Connect(function()
-	local set = selected and SkillSetConfig.Sets[selected]
-	if busy or not set then
-		return
+	if primaryAction then
+		primaryAction()
 	end
-	busy = true
-	local unequip = carried(set.kind) == selected
-	local ok, result, why = pcall(equipRemote.InvokeServer, equipRemote, not unequip and selected or nil, set.kind)
-	busy = false
-	if not ok then
-		message.Text = "Couldn't reach the server"
-	elseif not result then
-		message.Text = why or "Couldn't do that"
-	else
-		message.Text = ""
+end)
+altButton.Activated:Connect(function()
+	if altAction then
+		altAction()
 	end
-	refresh()
 end)
 
 local function setOpen(open)
@@ -669,7 +881,15 @@ end)
 
 -- which attributes change what the menu shows: ownership, what's carried,
 -- mastery, the player's keys
-local watched = { [SkillSetConfig.OwnedSetsAttribute] = true, PowerSet = true, WeaponSet = true, [Keybinds.Attribute] = true }
+local watched = {
+	[SkillSetConfig.OwnedSetsAttribute] = true,
+	PowerSet = true,
+	WeaponSet = true,
+	CurrentPower = true,
+	PowerStorage = true,
+	LifetimePowers = true,
+	[Keybinds.Attribute] = true,
+}
 for setName in pairs(SkillSetConfig.Sets) do
 	watched[SkillSetConfig.MasteryAttribute(setName)] = true
 end
@@ -678,3 +898,31 @@ player.AttributeChanged:Connect(function(name)
 		refresh()
 	end
 end)
+
+-- briefcases are Tools: the menu follows them in and out of the backpack and hands
+local toolsChanged = false
+local function onToolsChanged()
+	if toolsChanged then
+		return
+	end
+	toolsChanged = true
+	task.defer(function()
+		toolsChanged = false
+		if panel.Visible then
+			refresh()
+		end
+	end)
+end
+local function watchTools(container)
+	container.ChildAdded:Connect(onToolsChanged)
+	container.ChildRemoved:Connect(onToolsChanged)
+end
+local function watchCharacter(character)
+	watchTools(character)
+	watchTools(player:WaitForChild("Backpack"))
+	onToolsChanged()
+end
+player.CharacterAdded:Connect(watchCharacter)
+if player.Character then
+	task.spawn(watchCharacter, player.Character)
+end

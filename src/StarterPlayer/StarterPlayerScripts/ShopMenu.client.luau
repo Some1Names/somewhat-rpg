@@ -2,7 +2,9 @@
 -- of that shopkeeper's shop (its ShopId attribute) with their yen prices.
 -- Skill sets show their tier; placeholders for sets still to come show as
 -- COMING SOON. Buying goes through the ShopServer script, which does all
--- the checking. Closes when you walk away, or when another menu opens (Menus).
+-- the checking. The Power Dealer's rows (briefcase items) also have SELL,
+-- for a briefcase you carry, and LIFETIME R$ where the power has a Robux
+-- product (PowerSources prompts the purchase). Closes when you walk away, or when another menu opens (Menus).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -10,14 +12,18 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local buyItem = ReplicatedStorage:WaitForChild("BuyItem")
+local sellItem = ReplicatedStorage:WaitForChild("SellItem")
+local buyLifetime = ReplicatedStorage:WaitForChild("BuyLifetime")
 local player = Players.LocalPlayer
 
 local PANEL_WIDTH = 360
 local PADDING = 14
 local ITEM_HEIGHT = 70
+local EXTRA_HEIGHT = 34 -- a briefcase row's strip of SELL / LIFETIME buttons
 local MAX_LIST_HEIGHT = 420 -- past this the list scrolls
 local BADGE_SIZE = 30 -- a set's tier letter
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
@@ -152,6 +158,23 @@ local function setStatus(text, failed)
 	status.TextColor3 = failed and DANGER or GOLD
 end
 
+-- whether the player carries a briefcase of the power
+local function carriesBriefcase(setName)
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	for _, container in ipairs({ player.Character, backpack }) do
+		for _, tool in ipairs(container and container:GetChildren() or {}) do
+			if tool:IsA("Tool") and tool:GetAttribute(PowerConfig.BriefcaseAttribute) == setName then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function lifetimeOwned(setName)
+	return SkillSetConfig.OwnAllSets or string.find("," .. (player:GetAttribute("LifetimePowers") or "") .. ",", "," .. setName .. ",", 1, true) ~= nil
+end
+
 local function owns(item)
 	return item.starter or (ShopConfig.Ownable(item) and player:GetAttribute(ShopConfig.OwnedAttribute(item.id)) == 1)
 end
@@ -174,6 +197,19 @@ local function refresh()
 		row.buy.AutoButtonColor = not closed
 		row.buy.BackgroundTransparency = closed and 0.85 or (affordable and 0 or 0.55)
 		row.buy.TextColor3 = closed and MUTED or BACKGROUND
+		if row.sell then
+			local has = carriesBriefcase(item.set)
+			row.sell.AutoButtonColor = has
+			row.sell.BackgroundTransparency = has and 0 or 0.7
+			row.sell.TextColor3 = has and BACKGROUND or MUTED
+		end
+		if row.lifetime then
+			local have = lifetimeOwned(item.set)
+			row.lifetime.Text = have and "LIFETIME OWNED" or "LIFETIME R$"
+			row.lifetime.AutoButtonColor = not have
+			row.lifetime.BackgroundTransparency = have and 0.7 or 0
+			row.lifetime.TextColor3 = have and MUTED or BACKGROUND
+		end
 	end
 end
 player.AttributeChanged:Connect(function()
@@ -192,6 +228,21 @@ local function buy(item)
 		return
 	end
 	setStatus(message, not success)
+	refresh() -- a bought briefcase can now be sold
+end
+
+local function sell(item)
+	if not carriesBriefcase(item.set) then
+		setStatus("You aren't carrying a " .. item.name .. " briefcase", true)
+		return
+	end
+	local ok, success, message = pcall(sellItem.InvokeServer, sellItem, item.set)
+	if not ok then
+		setStatus("Couldn't reach the shop", true)
+		return
+	end
+	setStatus(message, not success)
+	refresh()
 end
 
 -- one row per item the shop sells
@@ -207,7 +258,7 @@ local function buildRows(shopId)
 			local row = make("Frame", {
 				Parent = list,
 				LayoutOrder = #rows + 1,
-				Size = UDim2.new(1, 0, 0, ITEM_HEIGHT),
+				Size = UDim2.new(1, 0, 0, item.briefcase and ITEM_HEIGHT + EXTRA_HEIGHT or ITEM_HEIGHT),
 				BackgroundColor3 = Color3.new(0, 0, 0),
 				BackgroundTransparency = 0.6,
 			})
@@ -247,12 +298,12 @@ local function buildRows(shopId)
 				TextWrapped = true,
 				TextYAlignment = Enum.TextYAlignment.Top,
 				Position = UDim2.fromOffset(textLeft, 19),
-				Size = UDim2.new(1, -(96 + textLeft), 1, -19),
+				Size = UDim2.new(1, -(96 + textLeft), 0, ITEM_HEIGHT - 16 - 19),
 			})
 			local button = make("TextButton", {
 				Parent = row,
 				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.fromScale(1, 0.5),
+				Position = UDim2.new(1, 0, 0, (ITEM_HEIGHT - 16) / 2),
 				Size = UDim2.fromOffset(84, 32),
 				BackgroundColor3 = GOLD,
 				BorderSizePixel = 0,
@@ -263,7 +314,48 @@ local function buildRows(shopId)
 			button.Activated:Connect(function()
 				buy(item)
 			end)
-			table.insert(rows, { item = item, buy = button })
+			local entry = { item = item, buy = button }
+			if item.briefcase and not item.comingSoon then
+				-- under the text: sell a carried briefcase, and the Robux lifetime copy
+				local product = PowerConfig.RobuxProducts[item.set]
+				local set = SkillSetConfig.Sets[item.set]
+				local width = product and UDim2.new(0.5, -3, 0, 24) or UDim2.new(1, 0, 0, 24)
+				entry.sell = make("TextButton", {
+					Parent = row,
+					AnchorPoint = Vector2.new(0, 1),
+					Position = UDim2.fromScale(0, 1),
+					Size = width,
+					BackgroundColor3 = GOLD,
+					BorderSizePixel = 0,
+					Font = Enum.Font.GothamBold,
+					TextSize = 11,
+					TextColor3 = BACKGROUND,
+					Text = "SELL BRIEFCASE " .. formatYen(PowerConfig.sellPrice(item.set, set.tier)),
+				})
+				entry.sell.Activated:Connect(function()
+					sell(item)
+				end)
+				if product then
+					entry.lifetime = make("TextButton", {
+						Parent = row,
+						AnchorPoint = Vector2.new(1, 1),
+						Position = UDim2.fromScale(1, 1),
+						Size = width,
+						BackgroundColor3 = GOLD,
+						BorderSizePixel = 0,
+						Font = Enum.Font.GothamBold,
+						TextSize = 11,
+						TextColor3 = BACKGROUND,
+						Text = "LIFETIME R$",
+					})
+					entry.lifetime.Activated:Connect(function()
+						if not lifetimeOwned(item.set) then
+							buyLifetime:FireServer(item.set)
+						end
+					end)
+				end
+			end
+			table.insert(rows, entry)
 		end
 	end
 end
