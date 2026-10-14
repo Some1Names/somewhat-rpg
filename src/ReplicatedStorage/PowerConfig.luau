@@ -8,7 +8,7 @@ local PowerConfig = {}
 -- strongest first
 PowerConfig.Tiers = { "S", "A", "B", "C" }
 PowerConfig.TierPrice = { S = 500000, A = 150000, B = 50000, C = 15000 } -- the dealer's price in yen
-PowerConfig.TierWeight = { S = 5, A = 15, B = 30, C = 50 } -- gacha and map drop odds
+PowerConfig.TierWeight = { S = 2, A = 8, B = 30, C = 60 } -- gacha and map drop odds (percent)
 
 PowerConfig.StorageSlots = 2
 PowerConfig.SellShare = 0.3 -- the dealer buys a briefcase back at this share of its price
@@ -22,7 +22,7 @@ PowerConfig.Overrides = {
 PowerConfig.Gacha = {
 	price = 25000, -- yen per roll that isn't the free one
 	cooldown = 7200, -- seconds of real time between a player's free rolls (extra rolls cost yen any time)
-	pity = 30, -- after this many rolls without an S, the next roll is S
+	pity = 60, -- after this many rolls without an S, the next roll is S
 	tag = "PowerGacha", -- CollectionService tag on the gacha NPC
 	range = 14, -- studs from the NPC
 	claimTimeout = 14, -- seconds after a roll before the briefcase is handed over even if the reel never reports done (the reel runs about 8)

@@ -46,10 +46,10 @@ for _ = 1, ROLLS do
 	local tier = PowerConfig.roll(rng, 0, all)
 	counts[tier] += 1
 end
-check("S is about 5% of rolls", math.abs(counts.S / ROLLS - 0.05) < 0.01)
-check("A is about 15% of rolls", math.abs(counts.A / ROLLS - 0.15) < 0.015)
+check("S is about 2% of rolls", math.abs(counts.S / ROLLS - 0.02) < 0.006)
+check("A is about 8% of rolls", math.abs(counts.A / ROLLS - 0.08) < 0.01)
 check("B is about 30% of rolls", math.abs(counts.B / ROLLS - 0.30) < 0.02)
-check("C is about 50% of rolls", math.abs(counts.C / ROLLS - 0.50) < 0.02)
+check("C is about 60% of rolls", math.abs(counts.C / ROLLS - 0.60) < 0.02)
 
 -- tiers with no powers are skipped and the rest re-weighted
 rng = seeded(11)
@@ -65,10 +65,11 @@ check("nothing available rolls nothing", PowerConfig.roll(rng, 0, {}) == nil)
 check("pity can't force a tier with no powers", PowerConfig.roll(always(0), 99, { A = { "c" }, B = { "d" } }) == "A")
 
 -- pity
-check("29 rolls without S doesn't force S", PowerConfig.roll(always(0.99), 29, all) ~= "S")
-check("30 rolls without S forces S", PowerConfig.roll(always(0.99), 30, all) == "S")
+local PITY = PowerConfig.Gacha.pity
+check("one roll short of the pity limit doesn't force S", PowerConfig.roll(always(0.99), PITY - 1, all) ~= "S")
+check("the pity limit forces S", PowerConfig.roll(always(0.99), PITY, all) == "S")
 check("pity counts a non-S roll", PowerConfig.nextPity(4, "B") == 5)
-check("pity resets on S", PowerConfig.nextPity(29, "S") == 0)
+check("pity resets on S", PowerConfig.nextPity(PITY - 1, "S") == 0)
 
 -- pick
 check("pick takes the first at 0", PowerConfig.pick(always(0), { "a", "b", "c" }) == "a")

@@ -41,7 +41,7 @@ For testing set `SkillSetConfig.OwnAllSets = false`, otherwise every power is li
       extra roll costs ¥25,000 any time and doesn't touch the free-roll timer. The reel stops on the result.
 - [ ] Holding a briefcase: punches and skills do nothing. Left click it: a box "Use <Power>?" with USE POWER / CANCEL;
       a power you already own shows a red error; a held power that would be lost asks CONFIRM.
-- [ ] After 30 rolls without an S the next is S (use the admin tools / `GachaPity` to skip ahead).
+- [ ] After 60 rolls without an S the next is S (use the admin tools / `GachaPity` to skip ahead).
 - [ ] Every 20 minutes (shorten `PowerConfig.Drop.interval` to test) a pickup appears at a `BriefcaseSpawn` part, the
       kill feed says "A briefcase has appeared somewhere...", only one at a time, gone after 20 minutes.
 
