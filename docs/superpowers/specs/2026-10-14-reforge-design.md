@@ -82,17 +82,21 @@ New files (Rojo-style names):
 | `StarterPlayerScripts/ReforgeMenu.client.luau` | LocalScript | The smith UI: owned sets, level and modifier display, level-up and reroll buttons, the old-versus-new compare. Opens the way `ShopMenu` does. Square UI, no `UICorner`. |
 
 Remote: `ReplicatedStorage.ReforgeAction` (RemoteFunction, created in Studio like the other remotes),
-called as `("level", set)`, `("reroll", set, slot)`, `("resolve", set, keep)`; it returns `ok, message,
+called as `("level", set)`, `("reroll", set, slot)`, `("resolve", set, keep)`, `("pending", set)` (the
+waiting candidate, free, so closing the menu doesn't waste a paid roll); it returns `ok, message,
 candidate`.
 
 Changes to existing files (small):
-- `PlayerStats`: new saved text field `Reforge` (in `TEXT_DEFAULTS`, longer `TEXT_LENGTHS` entry, 400).
+- `PlayerStats`: new saved text field `Reforge` (in `TEXT_DEFAULTS`, longer `TEXT_LENGTHS` entry, `ReforgeConfig.MaxSaveLength = 800`).
   Per set `Set:level:id=value,id=value`, sets joined by `;`. Also mirrored for the client as per-set player
   attributes `Reforge_<Set>` (`level:id=value,id=value`), so the menu and any UI can read it.
 - `Damage.Deal`: next to the `damageScale` line, multiply by `Reforge.DamageMultiplier` when `attacker` and
-  `options.skillSet` are set and the hit isn't a `dot` tick. After `dealt` is known, roll the status
-  procs and Vampiric heal (`StatusEffects.Apply(..., { source, skillSet, stat })`; healing multiplied by
-  `StatusConfig.HealMultiplier`, as in `PunchCombat`).
+  `options.skillSet` are set and the hit isn't a `dot` tick. The status procs and Vampiric heal
+  (`StatusEffects.Apply(..., { source, skillSet, stat })`; healing multiplied by
+  `StatusConfig.HealMultiplier`, as in `PunchCombat`) run in a `Damage.OnDealt` listener in
+  `ReforgeServer`, because `StatusEffects` requires `Damage`.
+- `SkillBar` (client): it predicts cooldowns from `skill.cooldown`, so it scales it by the same Swift
+  multiplier, read from the `Reforge_<Set>` attribute.
 - `SkillSetServer`: scale `skill.cooldown` by `Reforge.CooldownMultiplier(player, setName)` where it checks
   and spends cooldowns (`SkillCooldowns.Ready`/`Spend`), so the check and the spend agree.
 

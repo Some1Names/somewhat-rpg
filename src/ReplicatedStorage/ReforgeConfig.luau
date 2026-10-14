@@ -16,6 +16,7 @@ ReforgeConfig.Range = 14 -- studs from a smith that reforging works
 ReforgeConfig.Tag = "Smith" -- CollectionService tag on smith models
 ReforgeConfig.Remote = "ReforgeAction" -- RemoteFunction in ReplicatedStorage
 ReforgeConfig.Attribute = "Reforge" -- the saved text on the player
+ReforgeConfig.MaxSaveLength = 800 -- longest the saved text may be (about 17 maxed sets)
 
 -- what the player carries for one set, for the menu: Reforge_<set>
 function ReforgeConfig.SetAttribute(setName)
