@@ -105,9 +105,9 @@ local rightCluster = make("Frame", {
 })
 local tracker -- QuestBoard's bounty tracker, once it exists
 local function placeRight()
-	local offset = HudConfig.BottomReserve + HudConfig.SideHeight + HudConfig.SideGap
+	local offset = HudConfig.BottomReserve + HudConfig.SideHeight + HudConfig.ClusterGap
 	if tracker and tracker.Visible then
-		offset += tracker.AbsoluteSize.Y + HudConfig.SideGap
+		offset += HudConfig.SideGap + tracker.AbsoluteSize.Y
 	end
 	rightCluster.Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -offset)
 end

@@ -117,22 +117,4 @@ function Menus.Fit(panel, side)
 	update()
 end
 
--- Places a fixed-size panel (`natural` is its size in pixels) at the `side` the
--- same way, shrinking it with a UIScale when the free space is shorter than
--- it. Call once after making the panel; Quests uses it.
-function Menus.Place(panel, natural, side)
-	local scale = Instance.new("UIScale")
-	scale.Parent = panel
-	local gui = panel:FindFirstAncestorOfClass("ScreenGui")
-	local anchor, x, bottom = sideLayout(side)
-	panel.AnchorPoint = anchor
-	local function update()
-		local available = screenHeight(gui) - FIT_TOP - bottom
-		scale.Scale = math.clamp(available / natural.Y, 0.5, 1)
-		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)
-	end
-	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
-	update()
-end
-
 return Menus
