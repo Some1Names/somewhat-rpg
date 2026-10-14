@@ -15,7 +15,7 @@ HudConfig.Icons = {
 	Inventory = { image = "", glyph = "B" },
 	Stats = { image = "", glyph = "M" },
 	Quests = { image = "", glyph = "J" },
-	Admin = { image = "", glyph = "`" },
+	Admin = { image = "", glyph = "A" },
 }
 
 return HudConfig

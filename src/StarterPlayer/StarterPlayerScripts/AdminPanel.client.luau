@@ -95,12 +95,12 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- centred like the other menus (only one is open at a time)
+-- at the right edge (it's too tall to centre above the skill bar); only one menu is open at a time
 local panel = make("Frame", {
 	Name = "Panel",
 	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -16, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
@@ -108,6 +108,7 @@ local panel = make("Frame", {
 	Visible = false,
 })
 outline(panel, 0.6)
+Menus.Fit(panel, true)
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),

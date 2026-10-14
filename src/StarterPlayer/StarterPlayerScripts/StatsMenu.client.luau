@@ -115,6 +115,7 @@ local panel = make("Frame", {
 	Visible = false,
 })
 outline(panel, 0.6)
+Menus.Fit(panel)
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -359,6 +360,7 @@ local infoPanel = make("Frame", {
 	Visible = false,
 })
 outline(infoPanel, 0.6)
+Menus.Fit(infoPanel)
 make("UIPadding", {
 	Parent = infoPanel,
 	PaddingTop = UDim.new(0, PADDING),

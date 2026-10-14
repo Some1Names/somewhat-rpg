@@ -5,7 +5,15 @@
 -- The top bar's icons toggle a menu by name (Menus.Toggle) through the
 -- function the menu gave Menus.Register, and watch Menus.OnChange to enlarge
 -- the icon of the open one.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+
 local Menus = {}
+
+local FIT_TOP = HudConfig.KillFeedTop -- under the icon row
+local FIT_BOTTOM = 280 -- the skill bar's top edge (116 px up, 96 px tall, its header)
+local FIT_MIN_SCALE = 0.5
 
 local openName, openClose
 local togglers = {} -- name -> function that toggles that menu like its key does
@@ -62,6 +70,37 @@ end
 -- calls `callback(openName or nil)` whenever the open menu changes
 function Menus.OnChange(callback)
 	table.insert(listeners, callback)
+end
+
+-- Keeps a centred menu panel (automatic height) in the space between the icon
+-- row and the skill bar, shrinking it on short screens so it never covers
+-- the bar. Call once after making the panel. `rightEdge` is for a panel too
+-- tall for that (Admin): it sits at the right edge, under the icon row and
+-- the kill feed's top, and shrinks to the screen's height instead.
+function Menus.Fit(panel, rightEdge)
+	local scale = Instance.new("UIScale")
+	scale.Parent = panel
+	panel.AnchorPoint = rightEdge and Vector2.new(1, 0.5) or Vector2.new(0.5, 0.5)
+	local gui = panel:FindFirstAncestorOfClass("ScreenGui")
+	local function update()
+		local natural = panel.AbsoluteSize.Y / scale.Scale
+		if natural <= 0 then
+			return
+		end
+		local available = gui.AbsoluteSize.Y - FIT_TOP - (rightEdge and HudConfig.EdgeMargin or FIT_BOTTOM)
+		local fitted = math.clamp(available / natural, FIT_MIN_SCALE, 1)
+		if math.abs(fitted - scale.Scale) > 0.001 then
+			scale.Scale = fitted
+		end
+		if rightEdge then
+			panel.Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, FIT_TOP + available / 2)
+		else
+			panel.Position = UDim2.new(0.5, 0, 0, FIT_TOP + available / 2)
+		end
+	end
+	panel:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
+	update()
 end
 
 return Menus
