@@ -1,0 +1,58 @@
+-- The hub menu's plain rules (Hub uses them): which colour an accent is drawn
+-- in on the hub's light paper (a near-white accent, like no power's white,
+-- would vanish there, so it becomes ink), what a tab's key does, and the
+-- order of the nav. tests/HubRules.spec.luau runs it outside Roblox.
+local HubRules = {}
+
+HubRules.InkLevel = 0.08 -- the ink's r, g and b
+HubRules.LightLuminance = 0.8 -- above this an accent is too light for the paper
+
+-- r, g, b from 0 to 1: the colour to draw that accent with on the paper
+function HubRules.Ink(r, g, b)
+	if 0.2126 * r + 0.7152 * g + 0.0722 * b > HubRules.LightLuminance then
+		return HubRules.InkLevel, HubRules.InkLevel, HubRules.InkLevel
+	end
+	return r, g, b
+end
+
+-- a tab's key with `openTab` showing (nil = hub closed): "open", "switch" or "close"
+function HubRules.KeyAction(openTab, pressedTab)
+	if openTab == nil then
+		return "open"
+	elseif openTab == pressedTab then
+		return "close"
+	end
+	return "switch"
+end
+
+-- `tabs` = { { name, order, locked } }: the names in nav order (by order, then name), locked ones too
+function HubRules.Order(tabs)
+	local sorted = table.clone(tabs)
+	table.sort(sorted, function(a, b)
+		if a.order ~= b.order then
+			return a.order < b.order
+		end
+		return a.name < b.name
+	end)
+	local names = {}
+	for _, tab in ipairs(sorted) do
+		table.insert(names, tab.name)
+	end
+	return names
+end
+
+-- the first tab in nav order that isn't locked, or nil
+function HubRules.FirstOpen(tabs)
+	local locked = {}
+	for _, tab in ipairs(tabs) do
+		locked[tab.name] = tab.locked == true
+	end
+	for _, name in ipairs(HubRules.Order(tabs)) do
+		if not locked[name] then
+			return name
+		end
+	end
+	return nil
+end
+
+return HubRules
