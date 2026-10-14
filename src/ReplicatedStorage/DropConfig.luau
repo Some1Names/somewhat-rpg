@@ -20,13 +20,41 @@ DropConfig.FolderName = "Drops" -- in workspace
 DropConfig.EnemyTag = "Enemy"
 DropConfig.TableAttribute = "DropTable" -- on an enemy model: a key of Tables
 
--- a tier picks the orb part (a child of the prefab) and the colour
+-- a tier picks the orb part (a child of the prefab) and the colour; a tier
+-- with `variants` picks one by weight per drop, each with its own label colour
 DropConfig.Tiers = {
 	Common = { order = 1, orb = "CommonOrb", rgb = { 170, 170, 175 } },
 	Rare = { order = 2, orb = "RareOrb", rgb = { 70, 140, 255 } },
 	Gold = { order = 3, orb = "GoldOrb", rgb = { 255, 205, 60 } },
-	Dark = { order = 4, orb = "DarkOrb", rgb = { 170, 110, 230 } },
+	Dark = {
+		order = 4,
+		rgb = { 170, 110, 230 },
+		variants = {
+			{ part = "DarkOrbRed", weight = 3, rgb = { 230, 60, 60 } },
+			{ part = "DarkOrbPurple", weight = 1, rgb = { 170, 110, 230 } },
+		},
+	},
 }
+
+-- the orb part and label colour for one drop of a tier; `roll` is in [0, 1)
+function DropConfig.Variant(tier, roll)
+	local info = DropConfig.Tiers[tier]
+	if not info.variants then
+		return { part = info.orb, rgb = info.rgb }
+	end
+	local total = 0
+	for _, variant in ipairs(info.variants) do
+		total += variant.weight
+	end
+	local left = roll * total
+	for _, variant in ipairs(info.variants) do
+		if left < variant.weight then
+			return variant
+		end
+		left -= variant.weight
+	end
+	return info.variants[#info.variants]
+end
 
 function DropConfig.TierColor(tier)
 	local rgb = DropConfig.Tiers[tier].rgb
@@ -44,10 +72,10 @@ DropConfig.Materials = {
 
 -- what any enemy of at least `minLevel` rolls, per helper
 DropConfig.Generic = {
-	{ material = "Scrap", minLevel = 1, chance = 0.8, min = 1, max = 3 },
-	{ material = "Core", minLevel = 10, chance = 0.25, min = 1, max = 2 },
-	{ material = "Crystal", minLevel = 30, chance = 0.06, min = 1, max = 1 },
-	{ material = "Essence", minLevel = 50, chance = 0.01, min = 1, max = 1 },
+	{ material = "Scrap", minLevel = 1, chance = 0.4, min = 1, max = 3 },
+	{ material = "Core", minLevel = 10, chance = 0.12, min = 1, max = 2 },
+	{ material = "Crystal", minLevel = 30, chance = 0.03, min = 1, max = 1 },
+	{ material = "Essence", minLevel = 50, chance = 0.005, min = 1, max = 1 },
 }
 
 -- extra rolls for an enemy whose DropTable attribute names one

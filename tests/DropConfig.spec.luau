@@ -36,11 +36,11 @@ local function same(rolls, expected)
 end
 
 -- rolls: the chance draw comes first, then (only if it passed) the amount draw
-check("level 1 can only reach Scrap", same(DropConfig.Rolls(1, nil, sequence({ 0.5, 0 })), { { "Scrap", 1 } }))
-check("amount draw 0.999 gives the max", same(DropConfig.Rolls(1, nil, sequence({ 0.5, 0.999 })), { { "Scrap", 3 } }))
-check("amount draw 0.34 gives 2 of 1-3", same(DropConfig.Rolls(1, nil, sequence({ 0.5, 0.34 })), { { "Scrap", 2 } }))
-check("a chance draw equal to the chance fails", same(DropConfig.Rolls(1, nil, sequence({ 0.8 })), {}))
-check("a chance draw just under passes", same(DropConfig.Rolls(1, nil, sequence({ 0.79, 0 })), { { "Scrap", 1 } }))
+check("level 1 can only reach Scrap", same(DropConfig.Rolls(1, nil, sequence({ 0.3, 0 })), { { "Scrap", 1 } }))
+check("amount draw 0.999 gives the max", same(DropConfig.Rolls(1, nil, sequence({ 0.3, 0.999 })), { { "Scrap", 3 } }))
+check("amount draw 0.34 gives 2 of 1-3", same(DropConfig.Rolls(1, nil, sequence({ 0.3, 0.34 })), { { "Scrap", 2 } }))
+check("a chance draw equal to the chance fails", same(DropConfig.Rolls(1, nil, sequence({ 0.4 })), {}))
+check("a chance draw just under passes", same(DropConfig.Rolls(1, nil, sequence({ 0.39, 0 })), { { "Scrap", 1 } }))
 check("a failed chance spends no amount draw", same(DropConfig.Rolls(10, nil, sequence({ 0.9, 0.1, 0 })), { { "Core", 1 } }))
 check("level 9 reaches only Scrap", #DropConfig.Rolls(9, nil, function() return 0 end) == 1)
 check(
@@ -61,6 +61,13 @@ check(
 	same(DropConfig.Rolls(1, "Wolf", function() return 0 end), { { "Scrap", 1 }, { "WolfFang", 1 } })
 )
 check("an unknown table rolls only the generic ones", same(DropConfig.Rolls(1, "NoSuchTable", sequence({ 0, 0 })), { { "Scrap", 1 } }))
+
+-- orb variants: a plain tier has one part, Dark picks red or purple by weight (3:1)
+check("a plain tier uses its orb part", DropConfig.Variant("Rare", 0.9).part == "RareOrb")
+check("Dark rolls red below 0.75", DropConfig.Variant("Dark", 0.74).part == "DarkOrbRed")
+check("Dark rolls purple from 0.75", DropConfig.Variant("Dark", 0.75).part == "DarkOrbPurple")
+check("roll 0 is red, a roll just under 1 is purple", DropConfig.Variant("Dark", 0).part == "DarkOrbRed" and DropConfig.Variant("Dark", 0.9999).part == "DarkOrbPurple")
+check("a variant carries a label colour", #DropConfig.Variant("Dark", 0).rgb == 3)
 
 -- helpers: at least a tenth of the enemy's max health
 check("10 of 100 is a helper", DropConfig.IsHelper(10, 100))

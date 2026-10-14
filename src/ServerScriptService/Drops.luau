@@ -56,18 +56,13 @@ local function orbPart(material)
 		warnOnce("ReplicatedStorage.VFXPrefabs." .. DropConfig.PrefabPath .. " is missing")
 		return nil
 	end
-	local orbName = DropConfig.Tiers[info.tier].orb
-	local choices = {}
-	for _, child in ipairs(prefab:GetChildren()) do
-		if child.Name == orbName and child:IsA("BasePart") then
-			table.insert(choices, child)
-		end
-	end
-	if #choices == 0 then
-		warnOnce("the orb prefab has no part named " .. orbName)
+	local variant = DropConfig.Variant(info.tier, math.random())
+	local part = prefab:FindFirstChild(variant.part)
+	if not part or not part:IsA("BasePart") then
+		warnOnce("the orb prefab has no part named " .. variant.part)
 		return nil
 	end
-	return choices[math.random(#choices)], info
+	return part, variant.rgb
 end
 
 local function labelText(material, amount)
@@ -84,7 +79,7 @@ end
 
 -- an orb for `player` near `position`, dropped onto the ground
 local function spawnOrb(player, material, amount, position, enemy)
-	local template, info = orbPart(material)
+	local template, rgb = orbPart(material)
 	if not template then
 		return
 	end
@@ -112,7 +107,7 @@ local function spawnOrb(player, material, amount, position, enemy)
 	orb.CanTouch = false
 	orb.Position = Vector3.new(x, y, z)
 
-	local color = DropConfig.TierColor(info.tier)
+	local color = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
 	local label = Instance.new("BillboardGui")
 	label.Name = "Label"
 	label.AlwaysOnTop = true

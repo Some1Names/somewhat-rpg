@@ -16,7 +16,7 @@ below is unplayed.
 
 ## Solo
 - [ ] Kill a level 1 enemy: a grey orb with "Scrap xN" floats about 2 studs over the ground near where it
-      died; walking within 6 studs takes it and "+N Scrap" pops up. Kill a few: Scrap is about 80%.
+      died; walking within 6 studs takes it and "+N Scrap" pops up. Kill a few: Scrap is about 40%.
 - [ ] A one-hit kill still drops (the killing blow counts).
 - [ ] A training dummy, and a player you kill, drop nothing.
 - [ ] Open the Inventory (B): a MATERIALS list under the slots shows what you hold, tier-coloured,
@@ -25,7 +25,7 @@ below is unplayed.
 - [ ] Rejoin: the bag is kept (Studio doesn't save; check on a live server). Reforge accepts the materials.
 - [ ] With 999 of a material, an orb of it stays on the ground (and vanishes after about a minute).
 - [ ] Wait 60 s without picking one up: it disappears.
-- [ ] An enemy with `DropTable = "Wolf"`: about 1 in 10 kills also drops Wolf Fang.
+- [ ] An enemy with `DropTable = "Wolf"`: about 1 in 10 kills also drops Wolf Fang; Essence (level 50+) shows a red orb 3 times in 4, a purple one otherwise.
 
 ## Two players
 - [ ] Both hit an enemy for at least 10% of its health each: each gets their own orb(s); you only see your

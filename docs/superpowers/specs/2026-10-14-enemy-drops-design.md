@@ -22,10 +22,10 @@ duplicated.
 
 | Tier | Material | Orb (from `DroppedItemOrb`) | First-pass drop (per helper, per kill) |
 |---|---|---|---|
-| Common | Scrap | `CommonOrb` (grey) | from level 1, 80%, 1–3 |
-| Rare | Core | `RareOrb` (blue) | from level 10, 25%, 1–2 |
-| Gold | Crystal | `GoldOrb` (yellow) | from level 30, 6%, 1 |
-| Dark | Essence | `DarkOrb` (dark; the model has two looks, one is picked at random per drop) | from level 50, 1%, 1 |
+| Common | Scrap | `CommonOrb` (grey) | from level 1, 40%, 1–3 |
+| Rare | Core | `RareOrb` (blue) | from level 10, 12%, 1–2 |
+| Gold | Crystal | `GoldOrb` (yellow) | from level 30, 3%, 1 |
+| Dark | Essence | `DarkOrbRed` (3 in 4) or `DarkOrbPurple` (1 in 4), picked per drop (the two `DarkOrb` parts were renamed) | from level 50, 0.5%, 1 |
 
   An enemy rolls every tier whose `minLevel` its `Level` reaches (an enemy with no `Level` counts as
   level 1). All numbers are `DropConfig` values to tune.
