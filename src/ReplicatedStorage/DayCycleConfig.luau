@@ -27,7 +27,7 @@ local DayCycleConfig = {
 	Keyframes = {
 		{
 			hour = 0,
-			Lighting = { Brightness = 0.4, Ambient = { 20, 24, 50 }, OutdoorAmbient = { 25, 30, 60 }, ExposureCompensation = 0 },
+			Lighting = { Brightness = 1.2, Ambient = { 70, 82, 135 }, OutdoorAmbient = { 75, 88, 145 }, ExposureCompensation = 0 },
 			ColorCorrection = { TintColor = { 170, 190, 255 }, Brightness = 0, Saturation = 0 },
 			Atmosphere = { Color = { 40, 60, 110 }, Decay = { 20, 30, 70 }, Density = 0.34, Haze = 0.5, Glare = 0 },
 			Bloom = { Intensity = 1 },
@@ -81,7 +81,7 @@ local DayCycleConfig = {
 		},
 		{
 			hour = 21,
-			Lighting = { Brightness = 0.5, Ambient = { 25, 28, 55 }, OutdoorAmbient = { 30, 34, 64 }, ExposureCompensation = 0 },
+			Lighting = { Brightness = 1.2, Ambient = { 65, 76, 128 }, OutdoorAmbient = { 70, 82, 138 }, ExposureCompensation = 0 },
 			ColorCorrection = { TintColor = { 180, 195, 255 }, Brightness = 0, Saturation = 0 },
 			Atmosphere = { Color = { 50, 65, 115 }, Decay = { 30, 40, 80 }, Density = 0.34, Haze = 0.55, Glare = 0 },
 			Bloom = { Intensity = 1 },
