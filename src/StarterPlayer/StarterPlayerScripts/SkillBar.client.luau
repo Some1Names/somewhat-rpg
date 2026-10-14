@@ -921,6 +921,7 @@ end)
 local popupGui = make("ScreenGui", {
 	Name = "SkillPopups",
 	ResetOnSpawn = false,
+	IgnoreGuiInset = true, -- popup heights are fractions of the real screen
 	Parent = player:WaitForChild("PlayerGui"),
 })
 

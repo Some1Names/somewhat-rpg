@@ -15,6 +15,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local questRemote = ReplicatedStorage:WaitForChild("Quest")
 local doneRemote = ReplicatedStorage:WaitForChild("QuestDone")
@@ -23,7 +25,7 @@ local player = Players.LocalPlayer
 
 local PANEL_WIDTH = 320
 local PADDING = 14
-local TRACKER_WIDTH = 190
+local TRACKER_WIDTH = HudConfig.SideWidth -- as wide as the tool grid it sits above
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
@@ -68,6 +70,7 @@ end
 local gui = make("ScreenGui", {
 	Name = "QuestBoard",
 	ResetOnSpawn = false,
+	IgnoreGuiInset = true, -- popup heights are fractions of the real screen
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = player:WaitForChild("PlayerGui"),
 })
@@ -76,8 +79,8 @@ local gui = make("ScreenGui", {
 local tracker = make("Frame", {
 	Name = "Tracker",
 	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0.5),
-	Position = UDim2.new(1, -16, 0.5, 0),
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -(HudConfig.BottomReserve + HudConfig.SideHeight + HudConfig.SideGap)),
 	Size = UDim2.fromOffset(TRACKER_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
@@ -97,9 +100,11 @@ local trackerKind = label(tracker, { LayoutOrder = 1, Text = "BOUNTY", Font = En
 local trackerTitle = label(tracker, { LayoutOrder = 2, Font = Enum.Font.GothamBold, TextSize = 13, Size = UDim2.new(1, 0, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 local trackerCount = label(tracker, { LayoutOrder = 3, TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
 
+local adminOpen = false -- the Admin panel takes the right side, so the tracker steps aside
+
 local function updateTracker()
 	local _, quest = QuestConfig.parseQuestId(player:GetAttribute("QuestId"))
-	tracker.Visible = quest ~= nil
+	tracker.Visible = quest ~= nil and not adminOpen
 	if quest then
 		trackerTitle.Text = quest.title
 		trackerCount.Text = string.format("%s %d/%d", QuestConfig.plural(quest), player:GetAttribute("QuestProgress") or 0, quest.count)
@@ -297,6 +302,10 @@ player:GetAttributeChangedSignal("QuestId"):Connect(function()
 	end
 end)
 player:GetAttributeChangedSignal("QuestProgress"):Connect(updateTracker)
+Menus.OnChange(function(openName)
+	adminOpen = openName == "Admin"
+	updateTracker()
+end)
 player:GetAttributeChangedSignal("Level"):Connect(function()
 	if panel.Visible then
 		render()

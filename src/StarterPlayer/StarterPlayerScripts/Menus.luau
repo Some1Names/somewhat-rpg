@@ -81,27 +81,56 @@ local function screenHeight(gui)
 	return workspace.CurrentCamera.ViewportSize.Y - GuiService:GetGuiInset().Y
 end
 
+-- where a panel sits for each side: its anchor, horizontal position, and the
+-- space it keeps clear at the bottom
+local function sideLayout(side)
+	if side == "right" or side == true then
+		return Vector2.new(1, 0.5), UDim2.new(1, -HudConfig.EdgeMargin, 0, 0), HudConfig.BottomReserve
+	elseif side == "left" then
+		return Vector2.new(0, 0.5), UDim2.new(0, HudConfig.EdgeMargin, 0, 0), HudConfig.LeftReserve
+	end
+	return Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0), FIT_BOTTOM
+end
+
 -- Keeps a menu panel (a ScrollingFrame holding a UIListLayout, optionally a
--- UIPadding, its width in Size.X.Offset) in the space between the icon row
--- and the skill bar: as tall as its content, or, when the screen is too short
--- for that, as tall as the space allows, and it scrolls. `rightEdge` puts it at
--- the right edge instead of centred, and lets it run down to the screen's
--- bottom edge (Admin, which is too tall to sit above the skill bar). Call once
--- after making the panel.
-function Menus.Fit(panel, rightEdge)
+-- UIPadding, its width in Size.X.Offset) in the free space under the top bar:
+-- as tall as its content, or, when the screen is too short for that, as tall
+-- as the space allows, and it scrolls. `side` is "left" or "right" to sit at
+-- that edge, above the left icons and cards (Stats) or down to the key hints
+-- line (Admin, which is too tall to sit above the skill bar); with none it's
+-- centred above the skill bar. Call once after making the panel.
+function Menus.Fit(panel, side)
 	local layout = panel:FindFirstChildOfClass("UIListLayout")
 	local padding = panel:FindFirstChildOfClass("UIPadding")
 	local width = panel.Size.X.Offset
 	local gui = panel:FindFirstAncestorOfClass("ScreenGui")
-	panel.AnchorPoint = rightEdge and Vector2.new(1, 0.5) or Vector2.new(0.5, 0.5)
+	local anchor, x, bottom = sideLayout(side)
+	panel.AnchorPoint = anchor
 	local function update()
 		local extra = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
-		local available = screenHeight(gui) - FIT_TOP - (rightEdge and HudConfig.BottomReserve or FIT_BOTTOM)
+		local available = screenHeight(gui) - FIT_TOP - bottom
 		panel.Size = UDim2.fromOffset(width, math.min(layout.AbsoluteContentSize.Y + extra, math.max(available, FIT_MIN_HEIGHT)))
-		local x = rightEdge and UDim2.new(1, -HudConfig.EdgeMargin, 0, 0) or UDim2.fromScale(0.5, 0)
 		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)
 	end
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update)
+	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
+	update()
+end
+
+-- Places a fixed-size panel (`natural` is its size in pixels) at the `side` the
+-- same way, shrinking it with a UIScale when the free space is shorter than
+-- it. Call once after making the panel; Quests uses it.
+function Menus.Place(panel, natural, side)
+	local scale = Instance.new("UIScale")
+	scale.Parent = panel
+	local gui = panel:FindFirstAncestorOfClass("ScreenGui")
+	local anchor, x, bottom = sideLayout(side)
+	panel.AnchorPoint = anchor
+	local function update()
+		local available = screenHeight(gui) - FIT_TOP - bottom
+		scale.Scale = math.clamp(available / natural.Y, 0.5, 1)
+		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)
+	end
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
 	update()
 end

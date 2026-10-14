@@ -15,6 +15,7 @@ local UserInputService = game:GetService("UserInputService")
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local player = Players.LocalPlayer
 
 local SLOT_WIDTH = HudConfig.SlotWidth
@@ -77,6 +78,11 @@ grid.Parent = gui
 
 local function setOf(tool)
 	local setName = tool:GetAttribute("SkillSet")
+-- the Admin panel takes the right side of the screen, so the grid steps aside while it's open
+Menus.OnChange(function(openName)
+	grid.Visible = openName ~= "Admin"
+end)
+
 	return setName, setName and SkillSetConfig.Sets[setName]
 end
 

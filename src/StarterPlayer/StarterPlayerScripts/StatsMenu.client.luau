@@ -25,7 +25,7 @@ local PANEL_WIDTH = 300
 local PADDING = 14
 local PANEL_LEFT = 16 -- px from the left edge, where the panel sits
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
-local STAT_ROW_HEIGHT = 56
+local STAT_ROW_HEIGHT = 40
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
@@ -76,6 +76,14 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
+-- the popups get a full-screen gui (no top inset), so their heights are fractions of the real screen
+local popupGui = make("ScreenGui", {
+	Name = "StatsPopups",
+	ResetOnSpawn = false,
+	IgnoreGuiInset = true,
+	Parent = player:WaitForChild("PlayerGui"),
+})
+
 local function formatYen(amount)
 	local digits = tostring(math.floor(amount))
 	local grouped = digits:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
@@ -104,13 +112,18 @@ local function tabTitles(header, current)
 	end
 end
 
-local panel = make("Frame", {
+local panel = make("ScrollingFrame", {
 	Name = "Panel",
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 0.5),
 	Position = UDim2.new(0, PANEL_LEFT, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = MUTED,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	BorderSizePixel = 0,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
@@ -124,6 +137,7 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+Menus.Fit(panel, "left")
 
 -- header: title, level and close button
 local header = section(1, 22)
@@ -226,30 +240,20 @@ local function formatNumber(n)
 	return n % 1 == 0 and tostring(n) or string.format("%.1f", n)
 end
 
--- what a stat gives now, and what comes next
+-- what a stat gives now, in one line (the Milestones tab has the rest)
 local describe = {
 	Vitality = function(points)
-		local _, upcoming = StatConfig.Milestones("Vitality", points)
-		local now = string.format("%d max HP  ·  %s HP/s regen", StatConfig.MaxHealth(points), formatNumber(StatConfig.RegenPerSecond(points)))
-		if upcoming then
-			return now, string.format("+%d HP per point  ·  %s HP/s regen at %d", StatConfig.HealthPerVitality, formatNumber(upcoming.regen), upcoming.at)
-		end
-		return now, string.format("+%d HP per point  ·  regen maxed", StatConfig.HealthPerVitality)
+		return string.format("%d max HP  ·  %s HP/s regen", StatConfig.MaxHealth(points), formatNumber(StatConfig.RegenPerSecond(points)))
 	end,
 	Strength = function(points)
-		local multiplier = StatConfig.DamageMultiplier("Strength", points)
-		local fists = PunchConfig.Weapons.Fists.baseDamage * multiplier
-		local axe = PunchConfig.Weapons.MandelaAxe.baseDamage * multiplier
-		local now = string.format("%s punch  ·  %s Mandela axe", formatNumber(fists), formatNumber(axe))
-		return now, string.format("+%d%% melee damage per point", math.round(StatConfig.Get("Strength").damageBonus * 100))
+		local fists = PunchConfig.Weapons.Fists.baseDamage * StatConfig.DamageMultiplier("Strength", points)
+		return string.format("%s punch damage", formatNumber(fists))
 	end,
 	Superliminal = function(points)
-		local now = string.format("%d%% skill damage", math.round(StatConfig.DamageMultiplier("Superliminal", points) * 100))
-		return now, string.format("+%d%% per point  ·  skills, Knife, Light Shot", math.round(StatConfig.Get("Superliminal").damageBonus * 100))
+		return string.format("%d%% skill damage", math.round(StatConfig.DamageMultiplier("Superliminal", points) * 100))
 	end,
 	Firearm = function(points)
-		local now = string.format("%d%% gun damage", math.round(StatConfig.DamageMultiplier("Firearm", points) * 100))
-		return now, string.format("+%d%% per point  ·  Revolver shots and skills", math.round(StatConfig.Get("Firearm").damageBonus * 100))
+		return string.format("%d%% gun damage", math.round(StatConfig.DamageMultiplier("Firearm", points) * 100))
 	end,
 }
 
@@ -267,12 +271,6 @@ for i, stat in ipairs(StatConfig.Stats) do
 		Size = UDim2.fromOffset(48, 18),
 	})
 	local effect = label(rowFrame, { TextSize = 12, Position = UDim2.fromOffset(0, 21), Size = UDim2.new(1, -42, 0, 15) })
-	local upcoming = label(rowFrame, {
-		TextSize = 11,
-		TextColor3 = MUTED,
-		Position = UDim2.fromOffset(0, 38),
-		Size = UDim2.new(1, -42, 0, 14),
-	})
 	local plus = make("TextButton", {
 		Parent = rowFrame,
 		AnchorPoint = Vector2.new(1, 0.5),
@@ -287,7 +285,7 @@ for i, stat in ipairs(StatConfig.Stats) do
 	plus.Activated:Connect(function()
 		allocateEvent:FireServer(stat.key, amount)
 	end)
-	rows[i] = { stat = stat, value = value, effect = effect, upcoming = upcoming, plus = plus }
+	rows[i] = { stat = stat, value = value, effect = effect, plus = plus }
 end
 
 local function refresh()
@@ -324,10 +322,10 @@ local function refresh()
 	for _, row in ipairs(rows) do
 		local value = player:GetAttribute(row.stat.key) or 0
 		row.value.Text = tostring(value)
-		row.effect.Text, row.upcoming.Text = describe[row.stat.key](value)
+		row.effect.Text = describe[row.stat.key](value)
 		local cap = StatConfig.StatCap(row.stat.key)
 		if value >= cap then
-			row.upcoming.Text = string.format("Maxed  ·  %d points is the cap", cap)
+			row.effect.Text ..= "  ·  MAX"
 		end
 		local canAdd = points > 0 and value < cap
 		row.plus.AutoButtonColor = canAdd
@@ -348,13 +346,18 @@ local INFO_BAR_HEIGHT = 22
 local INFO_AT_WIDTH = 70 -- the milestone column inside a bar
 local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 
-local infoPanel = make("Frame", {
+local infoPanel = make("ScrollingFrame", {
 	Name = "InfoPanel",
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 0.5),
 	Position = UDim2.new(0, PANEL_LEFT, 0.5, 0),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
-	AutomaticSize = Enum.AutomaticSize.Y,
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = MUTED,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
+	BorderSizePixel = 0,
 	BackgroundColor3 = BACKGROUND,
 	BackgroundTransparency = 0.15,
 	Visible = false,
@@ -368,6 +371,7 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, PADDING),
 })
 make("UIListLayout", { Parent = infoPanel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+Menus.Fit(infoPanel, "left")
 
 local infoHeader = section(1, 22)
 infoHeader.Parent = infoPanel
@@ -592,7 +596,7 @@ GuiService.MenuOpened:Connect(closeMenu)
 -- a line of text that drifts up and fades, for XP and level ups
 local function popup(text, color, size, height, lifetime, xOffset)
 	local popupLabel = make("TextLabel", {
-		Parent = gui,
+		Parent = popupGui,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, xOffset or 0, height, 0),
 		Size = UDim2.fromOffset(400, size + 8),

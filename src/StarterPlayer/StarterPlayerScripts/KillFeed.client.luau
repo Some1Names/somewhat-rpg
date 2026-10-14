@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local MAX_LINES = 5
@@ -44,6 +45,10 @@ list.Position = UDim2.new(1, -MARGIN, 0, TOP)
 list.Size = UDim2.fromOffset(420, (LINE_HEIGHT + 4) * MAX_LINES)
 list.BackgroundTransparency = 1
 list.Parent = gui
+-- the Admin panel takes the right side of the screen, so the feed steps aside while it's open
+Menus.OnChange(function(openName)
+	list.Visible = openName ~= "Admin"
+end)
 
 local layout = Instance.new("UIListLayout")
 layout.SortOrder = Enum.SortOrder.LayoutOrder
