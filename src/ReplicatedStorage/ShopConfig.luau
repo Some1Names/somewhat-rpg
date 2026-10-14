@@ -129,9 +129,9 @@ ShopConfig.Items = {
 		id = "Kintsugi",
 		name = "Kintsugi",
 		shop = "Powers",
-		tier = "B",
-		comingSoon = true,
-		description = "???",
+		set = "Kintsugi",
+		briefcase = true,
+		description = "B-tier power. Not made yet: the briefcase can only be sold.",
 	},
 }
 

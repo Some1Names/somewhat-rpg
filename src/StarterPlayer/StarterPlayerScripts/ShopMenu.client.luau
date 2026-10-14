@@ -64,6 +64,36 @@ local function tierOf(item)
 	return item.tier or (set and set.tier)
 end
 
+local TIER_ORDER = { S = 1, A = 2, B = 3, C = 4 }
+
+-- a shop's items in menu order: as listed, except the Power Dealer's, which go
+-- by tier (S first), made powers before unmade ones before coming-soon ones
+local function shopItems(shopId)
+	local items = {}
+	for index, item in ipairs(ShopConfig.Items) do
+		if ShopConfig.ShopOf(item) == shopId then
+			local set = item.set and SkillSetConfig.Sets[item.set]
+			local made = item.comingSoon and 3 or (set and set.placeholder) and 2 or 1
+			table.insert(items, { item = item, index = index, tier = TIER_ORDER[tierOf(item)] or 99, made = made })
+		end
+	end
+	if shopId == "Powers" then
+		table.sort(items, function(a, b)
+			if a.tier ~= b.tier then
+				return a.tier < b.tier
+			elseif a.made ~= b.made then
+				return a.made < b.made
+			end
+			return a.index < b.index
+		end)
+	end
+	local sorted = {}
+	for _, entry in ipairs(items) do
+		table.insert(sorted, entry.item)
+	end
+	return sorted
+end
+
 local gui = make("ScreenGui", {
 	Name = "ShopMenu",
 	ResetOnSpawn = false,
@@ -253,7 +283,7 @@ local function buildRows(shopId)
 		end
 	end
 	rows = {}
-	for _, item in ipairs(ShopConfig.Items) do
+	for _, item in ipairs(shopItems(shopId)) do
 		if ShopConfig.ShopOf(item) == shopId then
 			local row = make("Frame", {
 				Parent = list,

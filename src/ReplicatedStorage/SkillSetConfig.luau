@@ -421,6 +421,14 @@ SkillSetConfig.Sets = {
 		placeholder = true,
 		skills = {},
 	},
+	Kintsugi = {
+		tool = "Kintsugi",
+		kind = "power",
+		tier = "B",
+		color = Color3.fromRGB(230, 190, 90),
+		placeholder = true,
+		skills = {},
+	},
 	-- stand-ins so the B and C odds are real until those powers exist
 	PlaceholderB = {
 		tool = "PlaceholderB",
