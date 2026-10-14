@@ -5,7 +5,8 @@
 -- shows the new roll beside the old one: keep the new, or keep the old. The
 -- level and modifiers are the Reforge_<Set> attributes the server mirrors;
 -- every action goes through the ReforgeAction remote (ReforgeServer), which
--- does all the checking. Closes when you walk away.
+-- does all the checking. Closes when you walk away, or when another menu
+-- opens (Menus).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
@@ -15,6 +16,7 @@ local RunService = game:GetService("RunService")
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local remote = ReplicatedStorage:WaitForChild(ReforgeConfig.Remote)
 local player = Players.LocalPlayer
 
@@ -407,6 +409,7 @@ local openAt
 local function close()
 	gui.Enabled = false
 	openAt = nil
+	Menus.Close("Reforge")
 end
 closeButton.Activated:Connect(close)
 
@@ -419,6 +422,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		candidate = nil
 		render()
 		list.CanvasPosition = Vector2.zero
+		Menus.Open("Reforge", close)
 		gui.Enabled = true
 	end
 end)
