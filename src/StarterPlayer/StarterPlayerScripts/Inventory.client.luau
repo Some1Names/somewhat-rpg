@@ -1,15 +1,17 @@
--- Inventory: press B or click INVENTORY. Three columns: on the left what you
+-- Inventory: press B or the top bar's Inventory icon (TopBar). Three columns: on the left what you
 -- carry (a power, a weapon, and a melee slot kept for melee weapons still to
 -- come), in the middle every set you own with ALL/POWER/WEAPON tabs, on the
 -- right the selected set's info with EQUIP/UNEQUIP. Cards show the set's
 -- tier and your mastery in it. The owned list is the OwnedSets attribute the
 -- server keeps; equipping goes through the EquipSet remote, which checks
 -- ownership (see Loadout).
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
 
@@ -116,22 +118,6 @@ local gui = make("ScreenGui", {
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = player:WaitForChild("PlayerGui"),
 })
-
--- INVENTORY button under STATS and INFO (StatsMenu), above ADMIN
-local toggle = make("TextButton", {
-	Name = "Toggle",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, 72),
-	Size = UDim2.fromOffset(64, 28),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
-	Font = Enum.Font.GothamBold,
-	Text = "INVENTORY",
-	TextSize = 9,
-	TextColor3 = TEXT,
-})
-outline(toggle, 0.5)
 
 local panel = make("Frame", {
 	Name = "Panel",
@@ -653,21 +639,32 @@ end)
 local function setOpen(open)
 	panel.Visible = open
 	if open then
+		Menus.Open("Inventory", function()
+			setOpen(false)
+		end)
 		message.Text = ""
 		refresh()
+	else
+		Menus.Close("Inventory")
 	end
 end
 
-toggle.Activated:Connect(function()
+local function toggleMenu()
 	setOpen(not panel.Visible)
-end)
+end
+
+Menus.Register("Inventory", toggleMenu)
 closeButton.Activated:Connect(function()
 	setOpen(false)
 end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
-		setOpen(not panel.Visible)
+		toggleMenu()
 	end
+end)
+-- Esc opens Roblox's own menu: close this one
+GuiService.MenuOpened:Connect(function()
+	setOpen(false)
 end)
 
 -- which attributes change what the menu shows: ownership, what's carried,

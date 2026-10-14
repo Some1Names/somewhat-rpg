@@ -1,9 +1,11 @@
--- Stats menu: press M or click STATS to spend stat points on Vitality,
--- Strength, Superliminal and Firearm, and see when the next stamina box unlocks. The
--- INFO button under it shows the milestones and their rewards as bars. Also pops up XP
+-- Stats menu: press M or the top bar's Stats icon (TopBar) to spend stat
+-- points on Vitality, Strength, Superliminal and Firearm, and see when the
+-- next stamina box unlocks. Its MILESTONES tab shows the milestones and their
+-- rewards as bars. Opening it closes any other menu (Menus). Also pops up XP
 -- gains and level ups. The numbers come from the player attributes the
 -- server keeps (see PlayerStats).
 local Debris = game:GetService("Debris")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -11,6 +13,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
 local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 
@@ -20,6 +23,7 @@ local TOGGLE_KEY = Enum.KeyCode.M
 local AMOUNTS = { 1, 5, 10 } -- points added per click
 local PANEL_WIDTH = 300
 local PADDING = 14
+local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local STAT_ROW_HEIGHT = 56
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
@@ -71,62 +75,39 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- STATS button on the left edge, with a badge for unspent points
-local toggle = make("TextButton", {
-	Name = "Toggle",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, 0),
-	Size = UDim2.fromOffset(64, 28),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
-	Font = Enum.Font.GothamBold,
-	Text = "STATS",
-	TextSize = 11,
-	TextColor3 = TEXT,
-})
-outline(toggle, 0.5)
-local toggleScale = make("UIScale", { Parent = toggle })
-local badge = make("TextLabel", {
-	Parent = toggle,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(20, 18),
-	BackgroundColor3 = GOLD,
-	Font = Enum.Font.GothamBold,
-	TextSize = 11,
-	TextColor3 = BACKGROUND,
-	Visible = false,
-})
-
--- yen, just above the STATS button
-local yenLabel = make("TextLabel", {
-	Name = "Yen",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, -36),
-	Size = UDim2.fromOffset(96, 24),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
-	Font = Enum.Font.GothamBold,
-	TextSize = 12,
-	TextColor3 = GOLD,
-	TextXAlignment = Enum.TextXAlignment.Left,
-})
-make("UIPadding", { Parent = yenLabel, PaddingLeft = UDim.new(0, 8) })
-outline(yenLabel, 0.5)
-
 local function formatYen(amount)
 	local digits = tostring(math.floor(amount))
 	local grouped = digits:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
 	return "¥" .. grouped
 end
 
+local showTab -- defined below: switches between the STATS and MILESTONES panels
+
+-- the two tab titles in a panel's header; the one for the panel shown is white
+local function tabTitles(header, current)
+	for i, name in ipairs({ "STATS", "MILESTONES" }) do
+		local tab = make("TextButton", {
+			Parent = header,
+			Position = UDim2.fromOffset(i == 1 and 0 or 58, 0),
+			Size = UDim2.fromOffset(i == 1 and 52 or 100, 22),
+			BackgroundTransparency = 1,
+			Font = Enum.Font.GothamBold,
+			Text = name,
+			TextSize = 14,
+			TextColor3 = name == current and TEXT or MUTED,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		})
+		tab.Activated:Connect(function()
+			showTab(name)
+		end)
+	end
+end
+
 local panel = make("Frame", {
 	Name = "Panel",
 	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 92, 0.5, 0),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
@@ -146,14 +127,14 @@ make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, P
 -- header: title, level and close button
 local header = section(1, 22)
 header.Parent = panel
-label(header, { Text = "STATS", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.fromScale(0.5, 1) })
+tabTitles(header, "STATS")
 local levelLabel = label(header, {
 	Font = Enum.Font.GothamBold,
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, -30, 0, 0),
-	Size = UDim2.new(0.5, -30, 1, 0),
+	Size = UDim2.fromOffset(70, 22),
 })
 -- Modal frees the mouse while the menu is open, even in shift lock
 local closeButton = make("TextButton", {
@@ -311,9 +292,6 @@ end
 local function refresh()
 	local level = player:GetAttribute("Level")
 	local points = player:GetAttribute("StatPoints") or 0
-	yenLabel.Text = formatYen(player:GetAttribute("Yen") or 0)
-	badge.Visible = points > 0
-	badge.Text = points > 99 and "99+" or tostring(points)
 	if not level then
 		levelLabel.Text = ""
 		xpLabel.Text = "Loading…"
@@ -359,36 +337,21 @@ end
 refresh()
 player.AttributeChanged:Connect(refresh)
 
--- INFO button under STATS: the milestones (level rewards, then each stat's)
+-- The MILESTONES tab: the milestones (level rewards, then each stat's)
 -- as a stack of bars, one per milestone, that together read as one
 -- progress track: reached ones full, the next one filling in gold with how
 -- far along you are, later ones empty. It opens where the stats panel does,
--- so only one of the two is open at a time.
+-- so only one of the two is shown at a time.
 local INFO_MAX_BODY_HEIGHT = 380 -- past this the list scrolls
 local INFO_BAR_HEIGHT = 22
 local INFO_AT_WIDTH = 70 -- the milestone column inside a bar
 local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 
-local infoToggle = make("TextButton", {
-	Name = "InfoToggle",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, 36),
-	Size = UDim2.fromOffset(64, 28),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
-	Font = Enum.Font.GothamBold,
-	Text = "INFO",
-	TextSize = 11,
-	TextColor3 = TEXT,
-})
-outline(infoToggle, 0.5)
-
 local infoPanel = make("Frame", {
 	Name = "InfoPanel",
 	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 92, 0.5, 0),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
 	Size = UDim2.fromOffset(PANEL_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
@@ -407,7 +370,7 @@ make("UIListLayout", { Parent = infoPanel, SortOrder = Enum.SortOrder.LayoutOrde
 
 local infoHeader = section(1, 22)
 infoHeader.Parent = infoPanel
-label(infoHeader, { Text = "MILESTONES", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
+tabTitles(infoHeader, "MILESTONES")
 local infoClose = make("TextButton", {
 	Parent = infoHeader,
 	AnchorPoint = Vector2.new(1, 0),
@@ -581,20 +544,6 @@ local function buildInfo()
 	end
 end
 
-local function setInfoOpen(open)
-	if open then
-		buildInfo()
-		panel.Visible = false
-	end
-	infoPanel.Visible = open
-end
-
-infoToggle.Activated:Connect(function()
-	setInfoOpen(not infoPanel.Visible)
-end)
-infoClose.Activated:Connect(function()
-	setInfoOpen(false)
-end)
 -- kept current while it's open
 player.AttributeChanged:Connect(function(name)
 	if infoPanel.Visible and (name == "Level" or StatConfig.Get(name) ~= nil) then
@@ -602,31 +551,49 @@ player.AttributeChanged:Connect(function(name)
 	end
 end)
 
-local function setOpen(open)
-	panel.Visible = open
-	if open then
-		infoPanel.Visible = false
+local function closeMenu()
+	panel.Visible = false
+	infoPanel.Visible = false
+	Menus.Close("Stats")
+end
+
+-- shows the STATS or MILESTONES panel, opening the menu (and closing any other) if it's shut
+function showTab(name)
+	if not Menus.IsOpen("Stats") then
+		Menus.Open("Stats", closeMenu)
+	end
+	if name == "MILESTONES" then
+		buildInfo()
+	end
+	panel.Visible = name == "STATS"
+	infoPanel.Visible = name == "MILESTONES"
+end
+
+local function toggleMenu()
+	if Menus.IsOpen("Stats") then
+		closeMenu()
+	else
+		showTab("STATS")
 	end
 end
 
-toggle.Activated:Connect(function()
-	setOpen(not panel.Visible)
-end)
-closeButton.Activated:Connect(function()
-	setOpen(false)
-end)
+Menus.Register("Stats", toggleMenu)
+closeButton.Activated:Connect(closeMenu)
+infoClose.Activated:Connect(closeMenu)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
-		setOpen(not panel.Visible)
+		toggleMenu()
 	end
 end)
+-- Esc opens Roblox's own menu: close this one
+GuiService.MenuOpened:Connect(closeMenu)
 
 -- a line of text that drifts up and fades, for XP and level ups
-local function popup(text, color, size, height, lifetime)
+local function popup(text, color, size, height, lifetime, xOffset)
 	local popupLabel = make("TextLabel", {
 		Parent = gui,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, height),
+		Position = UDim2.new(0.5, xOffset or 0, height, 0),
 		Size = UDim2.fromOffset(400, size + 8),
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBlack,
@@ -636,7 +603,7 @@ local function popup(text, color, size, height, lifetime)
 		TextStrokeTransparency = 0.5,
 	})
 	TweenService:Create(popupLabel, TweenInfo.new(lifetime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Position = UDim2.fromScale(0.5, height - 0.03),
+		Position = UDim2.new(0.5, xOffset or 0, height - 0.03, 0),
 	}):Play()
 	local fade = TweenInfo.new(lifetime / 2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, 0, false, lifetime / 2)
 	TweenService:Create(popupLabel, fade, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
@@ -645,10 +612,10 @@ end
 
 progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained)
 	if xpGained > 0 then
-		popup(string.format("+%d XP", xpGained), TEXT, 18, 0.72, 1.2)
+		popup(string.format("+%d XP", xpGained), TEXT, 18, 0.62, 1.2, POPUP_OFFSET)
 	end
 	if yenGained and yenGained > 0 then
-		popup("+" .. formatYen(yenGained), GOLD, 18, 0.76, 1.2)
+		popup("+" .. formatYen(yenGained), GOLD, 18, 0.66, 1.2, POPUP_OFFSET)
 	end
 	if levelsGained > 0 then
 		popup("LEVEL UP", GOLD, 34, 0.22, 2.5)
@@ -662,7 +629,5 @@ progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained)
 		if newCharges > 0 then
 			popup(newCharges == 1 and "+1 dodge charge" or string.format("+%d dodge charges", newCharges), GOLD, 16, newBoxes > 0 and 0.35 or 0.31, 2.5)
 		end
-		toggleScale.Scale = 1.3
-		TweenService:Create(toggleScale, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	end
 end)

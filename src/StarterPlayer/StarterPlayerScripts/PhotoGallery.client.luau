@@ -13,6 +13,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local galleryRemote = ReplicatedStorage:WaitForChild("PhotoGallery") -- made by PhotoshopServer
 local player = Players.LocalPlayer
@@ -271,8 +272,20 @@ local function updateWaypoints()
 end
 player:GetAttributeChangedSignal("PhotoGallery"):Connect(updateWaypoints)
 
+local function setOpen(open)
+	gui.Enabled = open
+	if open then
+		Menus.Open("Gallery", function()
+			setOpen(false)
+		end)
+		refresh()
+	else
+		Menus.Close("Gallery")
+	end
+end
+
 closeButton.Activated:Connect(function()
-	gui.Enabled = false
+	setOpen(false)
 end)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -282,10 +295,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	local set = gallerySet()
 	-- the player's own gallery key (Keybinds; the set's gallery.key unless rebound)
 	if set and input.KeyCode == Keybinds.Key("Gallery") then
-		gui.Enabled = not gui.Enabled
-		if gui.Enabled then
-			refresh()
-		end
+		setOpen(not gui.Enabled)
 	end
 end)
 
@@ -294,7 +304,7 @@ local sinceDistances = 0
 RunService.Heartbeat:Connect(function(dt)
 	local inHand = gallerySet() ~= nil
 	if gui.Enabled and not inHand then
-		gui.Enabled = false
+		setOpen(false)
 	end
 	if inHand ~= waypointsShown then
 		updateWaypoints()

@@ -1,5 +1,5 @@
--- Settings menu: a square gear button at the top right of the screen, or
--- P, opens it; × or Esc closes it. Its first section, KEYBINDS, lists the
+-- Settings menu: the top bar's gear icon (TopBar), or P, opens it; × or Esc
+-- closes it. Its first section, KEYBINDS, lists the
 -- rebindable actions (Keybinds.Actions) with the key each is on: click one,
 -- press a key, and it's bound there (a key another action had swaps the
 -- two; reserved keys are refused). RESET TO DEFAULTS puts every action back.
@@ -7,15 +7,16 @@
 -- the player's Keybinds attribute, at most once per SEND_SPACING with the
 -- newest change winning; the rows show that attribute once it's back. While waiting for a key, Keybinds.Capturing()
 -- is on and the skill bar, dash, reload and gallery ignore key presses.
--- Below them, GAMEPLAY and EFFECTS hold the ON/OFF settings (Preferences:
--- Quick respawn, Camera shake, Flashes & impact frames, Damage numbers),
--- saved the same way on the SetPreferences remote.
+-- Below them, GAMEPLAY, EFFECTS and INTERFACE hold the ON/OFF settings (Preferences:
+-- Quick respawn, Camera shake, Flashes & impact frames, Damage numbers, Key
+-- hints), saved the same way on the SetPreferences remote.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local setKeybinds = ReplicatedStorage:WaitForChild("SetKeybinds") -- made by SettingsServer
 local setPreferences = ReplicatedStorage:WaitForChild("SetPreferences") -- made by SettingsServer
@@ -26,7 +27,6 @@ local PANEL_WIDTH = 330
 local PADDING = 12
 local ROW_HEIGHT = 26
 local KEY_WIDTH = 70
-local GEAR_SIZE = 36
 local CAPTURE_TIMEOUT = 6 -- seconds of waiting for a key before giving up
 local CAPTURE_RELEASE = 0.15 -- seconds the bound key stays swallowed, so it doesn't also cast
 local SEND_SPACING = 0.6 -- seconds between saves (SettingsServer takes one per 0.5 s)
@@ -63,22 +63,6 @@ local gui = make("ScreenGui", {
 	ResetOnSpawn = false,
 	Parent = player:WaitForChild("PlayerGui"),
 })
-
--- the gear, always there: top right, above the kill feed (which starts lower)
-local gear = make("TextButton", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -16, 0, 12),
-	Size = UDim2.fromOffset(GEAR_SIZE, GEAR_SIZE),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.2,
-	BorderSizePixel = 0,
-	Font = Enum.Font.GothamBold,
-	Text = "⚙",
-	TextSize = 22,
-	TextColor3 = TEXT,
-})
-make("UIStroke", { Parent = gear, Color = TEXT, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 
 local panel = make("Frame", {
 	Parent = gui,
@@ -340,12 +324,17 @@ local function setOpen(open)
 		stopCapture()
 	end
 	if open then
+		Menus.Open("Settings", function()
+			setOpen(false)
+		end)
 		setStatus("")
 		refresh()
+	else
+		Menus.Close("Settings")
 	end
 end
 
-gear.Activated:Connect(function()
+Menus.Register("Settings", function()
 	setOpen(not panel.Visible)
 end)
 closeButton.Activated:Connect(function()

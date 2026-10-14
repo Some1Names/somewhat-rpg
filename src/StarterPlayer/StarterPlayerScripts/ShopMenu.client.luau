@@ -2,13 +2,14 @@
 -- of that shopkeeper's shop (its ShopId attribute) with their yen prices.
 -- Skill sets show their tier; placeholders for sets still to come show as
 -- COMING SOON. Buying goes through the ShopServer script, which does all
--- the checking. Closes when you walk away.
+-- the checking. Closes when you walk away, or when another menu opens (Menus).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local buyItem = ReplicatedStorage:WaitForChild("BuyItem")
@@ -268,6 +269,7 @@ local openAt
 local function close()
 	gui.Enabled = false
 	openAt = nil
+	Menus.Close("Shop")
 end
 closeButton.Activated:Connect(close)
 
@@ -283,6 +285,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		setStatus("")
 		refresh()
 		list.CanvasPosition = Vector2.zero
+		Menus.Open("Shop", close)
 		gui.Enabled = true
 	end
 end)

@@ -1,4 +1,4 @@
--- The Quests menu: press J or click QUESTS. The BOUNTY tab shows the bounty
+-- The Quests menu: press J or the top bar's Quests icon (TopBar). The BOUNTY tab shows the bounty
 -- you've taken (what to defeat, how far along, what it pays) with Abandon.
 -- The CHALLENGES tab lists a skill set's mastery challenges (the one you
 -- hold, or pick another you own): each with its progress, its mastery XP
@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local questRemote = ReplicatedStorage:WaitForChild("Quest")
@@ -68,22 +69,6 @@ local gui = make("ScreenGui", {
 	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	Parent = player:WaitForChild("PlayerGui"),
 })
-
--- QUESTS button under INVENTORY and ADMIN on the left edge
-local toggle = make("TextButton", {
-	Name = "Toggle",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 16, 0.5, 144),
-	Size = UDim2.fromOffset(64, 28),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
-	Font = Enum.Font.GothamBold,
-	Text = "QUESTS",
-	TextSize = 10,
-	TextColor3 = TEXT,
-})
-outline(toggle, 0.5)
 
 local panel = make("Frame", {
 	Name = "Panel",
@@ -373,9 +358,17 @@ end
 local function setOpen(open)
 	panel.Visible = open
 	if open then
+		Menus.Open("Quests", function()
+			setOpen(false)
+		end)
 		refresh()
+	else
+		Menus.Close("Quests")
 	end
 end
+Menus.Register("Quests", function()
+	setOpen(not panel.Visible)
+end)
 
 for name, button in pairs(tabs) do
 	button.Activated:Connect(function()
@@ -383,9 +376,6 @@ for name, button in pairs(tabs) do
 		refresh()
 	end)
 end
-toggle.Activated:Connect(function()
-	setOpen(not panel.Visible)
-end)
 closeButton.Activated:Connect(function()
 	setOpen(false)
 end)

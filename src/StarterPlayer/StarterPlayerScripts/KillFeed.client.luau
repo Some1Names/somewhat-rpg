@@ -11,14 +11,15 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local MAX_LINES = 5
 local LINE_TIME = 6 -- seconds a line stays before fading
 local FADE_TIME = 0.5
 local LINE_HEIGHT = 26
-local TOP = 60 -- clear of the Roblox buttons
-local MARGIN = 16
+local TOP = HudConfig.KillFeedTop -- under the top bar's icon row
+local MARGIN = HudConfig.EdgeMargin
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local BORDER = Color3.fromRGB(60, 60, 75)
 local TEXT = Color3.new(1, 1, 1)
