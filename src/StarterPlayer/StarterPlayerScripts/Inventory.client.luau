@@ -1,4 +1,4 @@
--- Inventory: press B or the top bar's Inventory icon (TopBar). Three columns: on the left what you
+-- The hub's Backpack tab (B, or the hub's nav). Three columns: on the left what you
 -- carry (a power, a weapon, and a melee slot kept for melee weapons still to
 -- come), in the middle every set you own with ALL/POWER/WEAPON tabs, on the
 -- right the selected set's info with its buttons. Cards show the set's
@@ -9,25 +9,21 @@
 -- asks CONFIRM first. Weapons come from the OwnedSets attribute the server
 -- keeps; equipping goes through the EquipSet remote, which checks ownership
 -- (see Loadout).
-local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local HubRules = require(ReplicatedStorage:WaitForChild("HubRules"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
-local Menus = require(script.Parent:WaitForChild("Menus"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local Hub = require(script.Parent:WaitForChild("Hub"))
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
 local powerAction = ReplicatedStorage:WaitForChild("PowerAction")
 
 local player = Players.LocalPlayer
 
-local TOGGLE_KEY = Enum.KeyCode.B
 local PANEL_SIZE = Vector2.new(840, 460)
-local SCREEN_MARGIN = 16 -- the panel shrinks to keep this much screen round it
-local PADDING = 14
 local COLUMN_PADDING = 10
 local GAP = 12 -- between the columns
 local LEFT_WIDTH = 190
@@ -38,10 +34,11 @@ local SLOT_HEIGHT = 84
 local SLOT_GAP = 8
 local MATERIAL_ROW = 18
 local BUTTON_HEIGHT = 32
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
-local SELECTED_BACKGROUND = Color3.fromRGB(40, 40, 54)
-local TEXT = Color3.new(1, 1, 1)
-local MUTED = Color3.fromRGB(165, 165, 180)
+local BACKGROUND = Hub.Theme.Panel -- cards, and the text on ink buttons
+local SELECTED_BACKGROUND = Color3.fromRGB(190, 190, 188)
+local COLUMN_BACKGROUND = Color3.fromRGB(218, 218, 216)
+local TEXT = Hub.Theme.Ink
+local MUTED = Hub.Theme.Muted
 local DANGER = Color3.fromRGB(226, 75, 74)
 local TIER_ORDER = { S = 1, A = 2, B = 3, C = 4 }
 -- the carry slots, top to bottom, with the player attribute Loadout keeps
@@ -121,54 +118,34 @@ local function scroller(parent, props)
 	return make("ScrollingFrame", props)
 end
 
-local gui = make("ScreenGui", {
-	Name = "Inventory",
-	ResetOnSpawn = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	Parent = player:WaitForChild("PlayerGui"),
-})
+local tabFrame = Hub.Tab("Backpack", { order = 2, title = "BACKPACK", key = Enum.KeyCode.B, pose = "Crossed" })
 
 local panel = make("Frame", {
 	Name = "Panel",
-	Parent = gui,
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
+	Parent = tabFrame,
 	Size = UDim2.fromOffset(PANEL_SIZE.X, PANEL_SIZE.Y),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.15,
-	Visible = false,
+	BackgroundTransparency = 1,
 })
-outline(panel, 0.6)
-padding(panel, PADDING)
 
--- smaller screens get a smaller panel, so all three columns stay in view
+-- a small tab gets a smaller panel, so all three columns stay in view
 local panelScale = make("UIScale", { Parent = panel })
 local function rescale()
-	local viewport = workspace.CurrentCamera.ViewportSize
-	panelScale.Scale = math.min(1, (viewport.X - 2 * SCREEN_MARGIN) / PANEL_SIZE.X, (viewport.Y - 2 * SCREEN_MARGIN) / PANEL_SIZE.Y)
+	local room = tabFrame.AbsoluteSize
+	if room.X > 0 and room.Y > 0 then
+		panelScale.Scale = math.min(1, room.X / PANEL_SIZE.X, room.Y / PANEL_SIZE.Y)
+	end
 end
 rescale()
-workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
+tabFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(rescale)
 
--- header: title and close button
-local header = make("Frame", { Parent = panel, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
-label(header, { Text = "INVENTORY", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
-local closeButton = make("TextButton", {
-	Parent = header,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(22, 22),
-	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
-	Text = "×",
-	TextSize = 20,
-	TextColor3 = MUTED,
-})
+-- a set's colour as text on the paper (a light one is darkened)
+local function onPaper(color)
+	return Color3.new(HubRules.Ink(color.R, color.G, color.B))
+end
 
 local body = make("Frame", {
 	Parent = panel,
-	Position = UDim2.fromOffset(0, 32),
-	Size = UDim2.new(1, 0, 1, -32),
+	Size = UDim2.fromScale(1, 1),
 	BackgroundTransparency = 1,
 })
 
@@ -178,8 +155,8 @@ local function column(position, size, anchor, title)
 		AnchorPoint = anchor,
 		Position = position,
 		Size = size,
-		BackgroundColor3 = Color3.new(0, 0, 0),
-		BackgroundTransparency = 0.7,
+		BackgroundColor3 = COLUMN_BACKGROUND,
+		BackgroundTransparency = 0,
 	})
 	outline(frame, 0.85)
 	padding(frame, COLUMN_PADDING)
@@ -732,7 +709,7 @@ local function showDetails(entry)
 	local selectedSet = entry.setName
 
 	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = set.tool, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = set.color or TEXT, Size = UDim2.new(1, 0, 0, 22) })
+	label(title, { Text = set.tool, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = set.color and onPaper(set.color) or TEXT, Size = UDim2.new(1, 0, 0, 22) })
 	label(title, {
 		Text = string.format("%s-tier %s  ·  %s  ·  %s", set.tier or "?", set.kind, masteryText(selectedSet), stateText(entry)),
 		Font = Enum.Font.GothamBold,
@@ -902,35 +879,9 @@ altButton.Activated:Connect(function()
 	end
 end)
 
-local function setOpen(open)
-	panel.Visible = open
-	if open then
-		Menus.Open("Inventory", function()
-			setOpen(false)
-		end)
-		message.Text = ""
-		refresh()
-	else
-		Menus.Close("Inventory")
-	end
-end
-
-local function toggleMenu()
-	setOpen(not panel.Visible)
-end
-
-Menus.Register("Inventory", toggleMenu)
-closeButton.Activated:Connect(function()
-	setOpen(false)
-end)
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
-		toggleMenu()
-	end
-end)
--- Esc opens Roblox's own menu: close this one
-GuiService.MenuOpened:Connect(function()
-	setOpen(false)
+Hub.OnShown("Backpack", function()
+	message.Text = ""
+	refresh()
 end)
 
 -- which attributes change what the menu shows: ownership, what's carried,
@@ -951,7 +902,7 @@ for key in pairs(DropConfig.Materials) do
 	watched[DropConfig.Attribute(key)] = true
 end
 player.AttributeChanged:Connect(function(name)
-	if panel.Visible and watched[name] then
+	if Hub.IsOpen("Backpack") and watched[name] then
 		refresh()
 	end
 end)
@@ -965,7 +916,7 @@ local function onToolsChanged()
 	toolsChanged = true
 	task.defer(function()
 		toolsChanged = false
-		if panel.Visible then
+		if Hub.IsOpen("Backpack") then
 			refresh()
 		end
 	end)
