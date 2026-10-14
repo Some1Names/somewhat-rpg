@@ -3,7 +3,7 @@
 -- MELEE (3, coming), each outlined in the colour of its skill set's tier
 -- (SkillSetConfig.Tiers: purple S, red A, blue B, green C) with the set's name
 -- and your mastery in it. Bottom right, the other tools (anything that isn't a
--- power or weapon set) in a 2x3 grid of six slots, keys 4-9, empty ones shown
+-- power or weapon set) in a 3x2 grid of six slots, keys 4-9, empty ones shown
 -- dimmed. Both blocks are the same size and sit above the key hints line. A key or a click equips a tool,
 -- or puts it away if it's already in hand.
 local Players = game:GetService("Players")
@@ -20,7 +20,7 @@ local player = Players.LocalPlayer
 local SLOT_WIDTH = HudConfig.SlotWidth
 local SLOT_HEIGHT = HudConfig.SlotHeight
 local SLOT_GAP = HudConfig.SideGap
-local GRID_COLUMNS = 2
+local GRID_COLUMNS = 3
 local GRID_SLOTS = 6
 local CARD_WIDTH = HudConfig.CardWidth
 local CARD_HEIGHT = HudConfig.CardHeight

@@ -12,18 +12,18 @@ HudConfig.IconSizeOpen = 32 -- the icon whose menu is open
 HudConfig.KillFeedTop = 56 -- the kill feed starts under the icon row
 HudConfig.HintsHeight = 18 -- the key hints line along the bottom edge
 -- the bottom-left cards and bottom-right grid share one footprint: the grid is
--- 2 columns of square slots by 3 rows, and the three tall cards fill the same box
-HudConfig.SideWidth = 168
+-- 3 columns of square slots by 2 rows, and the three tall cards fill the same box
+HudConfig.SideWidth = 204
 HudConfig.SideGap = 6
-HudConfig.SlotWidth = (HudConfig.SideWidth - HudConfig.SideGap) / 2
+HudConfig.SlotWidth = (HudConfig.SideWidth - 2 * HudConfig.SideGap) / 3
 HudConfig.SlotHeight = HudConfig.SlotWidth
-HudConfig.SideHeight = 3 * HudConfig.SlotHeight + 2 * HudConfig.SideGap
-HudConfig.CardWidth = (HudConfig.SideWidth - 2 * HudConfig.SideGap) / 3
+HudConfig.SideHeight = 2 * HudConfig.SlotHeight + HudConfig.SideGap
+HudConfig.CardWidth = HudConfig.SlotWidth
+HudConfig.CardHeight = HudConfig.SideHeight
 -- px from the screen's bottom to the bottom of the cards and grid: the key hints line plus a gap
 HudConfig.BottomReserve = HudConfig.EdgeMargin + HudConfig.HintsHeight + 18
--- the left column is the yen, the Quests / Stats / Inventory icons, then the cards, topping out level with the grid
+-- above the cards sit the yen and the Quests / Stats / Inventory icons
 HudConfig.YenHeight = 22
-HudConfig.CardHeight = HudConfig.SideHeight - (HudConfig.YenHeight + HudConfig.IconSizeOpen + 2 * HudConfig.SideGap)
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
