@@ -42,7 +42,7 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
-local tabFrame = Hub.Tab("Updates", { order = 5, title = "UPDATES", pose = "Lean" })
+local tabFrame = Hub.Tab("Updates", { order = 5, title = "UPDATES" })
 
 local panel = make("ScrollingFrame", {
 	Parent = tabFrame,

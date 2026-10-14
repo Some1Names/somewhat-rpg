@@ -12,12 +12,12 @@ Try in-game:
 - [ ] Opening Settings (P), the Shop, Gallery or Admin closes the hub, and the hub closes them.
 - [ ] Accent: no power = white in the nav, black bars on the paper; Mandela = mint in the nav, a
       darker green on the paper; Iridescent = orange. Changes as soon as you swap powers.
-- [ ] The posed character shows on the right on a wide screen (each tab has its pose; Profile picks
+- [ ] The posed character (a faded one-colour silhouette in the accent) shows on Profile, Quests and Stats on a wide screen (Profile picks
       one at random each open), and the strip hides on a narrow window (under 1100 px). Respawn and
       reopen: it's your current look, not a dead body.
 - [ ] Poses: tune the numbers in `ReplicatedStorage.HubPoses` against your screenshots (+x raises a
       limb forward, +z swings it toward the character's right, +y turns it).
-- [ ] Backpack: equip, store, swap, take out, sell and the CONFIRM step all work as before; it shrinks
+- [ ] Backpack (full width, no character): equip, store, swap, take out, sell and the CONFIRM step all work as before; it shrinks
       to fit a small window.
 - [ ] Stats: spending points (x1/x5/x10), the MILESTONES sub-tab, XP / level-up popups still on the
       game screen.

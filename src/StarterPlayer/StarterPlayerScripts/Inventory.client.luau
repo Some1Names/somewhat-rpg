@@ -118,7 +118,7 @@ local function scroller(parent, props)
 	return make("ScrollingFrame", props)
 end
 
-local tabFrame = Hub.Tab("Backpack", { order = 2, title = "BACKPACK", key = Enum.KeyCode.B, pose = "Crossed" })
+local tabFrame = Hub.Tab("Backpack", { order = 2, title = "BACKPACK", key = Enum.KeyCode.B })
 
 local panel = make("Frame", {
 	Name = "Panel",
@@ -127,12 +127,14 @@ local panel = make("Frame", {
 	BackgroundTransparency = 1,
 })
 
--- a small tab gets a smaller panel, so all three columns stay in view
+-- the panel fills the tab; a tab smaller than PANEL_SIZE shrinks it (UIScale), so all three columns stay in view
 local panelScale = make("UIScale", { Parent = panel })
 local function rescale()
 	local room = tabFrame.AbsoluteSize
 	if room.X > 0 and room.Y > 0 then
-		panelScale.Scale = math.min(1, room.X / PANEL_SIZE.X, room.Y / PANEL_SIZE.Y)
+		local scale = math.min(1, room.X / PANEL_SIZE.X, room.Y / PANEL_SIZE.Y)
+		panelScale.Scale = scale
+		panel.Size = UDim2.fromOffset(room.X / scale, room.Y / scale)
 	end
 end
 rescale()

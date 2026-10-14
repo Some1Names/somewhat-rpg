@@ -93,11 +93,12 @@ local main = make("Frame", {
 	ZIndex = 3,
 })
 
--- the strip shows on wide screens only; the main column ends where it starts
+-- the strip shows on wide screens, on tabs that have a pose; the main column ends where it starts
+local stripWanted = true -- the showing tab has a pose
 local function layout()
-	local wide = workspace.CurrentCamera.ViewportSize.X >= Theme.PoseMinScreen
-	poseStrip.Visible = wide
-	main.Size = wide and UDim2.new(1 - Theme.PoseShare, -Theme.NavWidth, 1, 0) or UDim2.new(1, -Theme.NavWidth, 1, 0)
+	local shown = stripWanted and workspace.CurrentCamera.ViewportSize.X >= Theme.PoseMinScreen
+	poseStrip.Visible = shown
+	main.Size = shown and UDim2.new(1 - Theme.PoseShare, -Theme.NavWidth, 1, 0) or UDim2.new(1, -Theme.NavWidth, 1, 0)
 end
 layout()
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
@@ -353,6 +354,8 @@ local function show(name)
 	end
 	wanted = nil
 	current = name
+	stripWanted = tab.pose ~= nil
+	layout()
 	for _, other in pairs(tabs) do
 		if other.frame then
 			other.frame.Visible = other.name == name
@@ -469,6 +472,7 @@ function Hub.Badge(name, text)
 end
 
 -- registers a tab: opts = { order, title, key (Enum.KeyCode), locked, pose }.
+-- A tab with no pose gets the whole width (no character strip).
 -- Returns the frame to build it in (nil for a locked slot).
 function Hub.Tab(name, opts)
 	local tab = {

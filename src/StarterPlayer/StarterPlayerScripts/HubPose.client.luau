@@ -1,7 +1,8 @@
 -- The player's own character, posed, drawn over the right of the hub (Hub's
--- PoseStrip) like the illustrated characters on a magazine cover. A clone of
--- the character (no scripts, tools or animator, every part anchored) sits in
--- a ViewportFrame; each tab names a pose from HubPoses, and the parts are
+-- PoseStrip) like the illustrated characters on a magazine cover: a faded,
+-- one-colour silhouette in the accent. A clone of the character (no scripts,
+-- tools, animator, clothes or textures, every part white and anchored) sits in
+-- a ViewportFrame, flat-lit and tinted; each tab names a pose from HubPoses, and the parts are
 -- placed by walking the joints from the HumanoidRootPart, so nothing waits on
 -- the physics. Works on R6 and R15, with Motor6D joints or the newer
 -- AnimationConstraint ones (accessories on RigidConstraints). Rebuilt when the
@@ -16,9 +17,10 @@ local player = Players.LocalPlayer
 
 local BLEED = 1.4 -- the viewport is this many strips wide, reaching left over the main column
 local FIELD_OF_VIEW = 30
-local CAMERA_DISTANCE = 10.5
+local CAMERA_DISTANCE = 11.5
 local CAMERA_YAW = 20 -- degrees round from straight in front
-local LOOK_HEIGHT = -0.4 -- studs above the root part the camera looks at: the feet run off the bottom
+local LOOK_HEIGHT = 0.2 -- studs above the root part the camera looks at: room above the head, the feet run off the bottom
+local FADE = 0.55 -- the silhouette's transparency at the top; it fades out toward the bottom
 
 local viewport = Instance.new("ViewportFrame")
 viewport.Name = "Pose"
@@ -26,10 +28,22 @@ viewport.AnchorPoint = Vector2.new(1, 0)
 viewport.Position = UDim2.fromScale(1, 0)
 viewport.Size = UDim2.fromScale(BLEED, 1)
 viewport.BackgroundTransparency = 1
-viewport.Ambient = Color3.fromRGB(190, 190, 190)
-viewport.LightColor = Color3.new(1, 1, 1)
-viewport.LightDirection = Vector3.new(-1, -1, -1)
+-- flat light, so every part is the same colour; ImageColor3 tints it
+viewport.Ambient = Color3.new(1, 1, 1)
+viewport.LightColor = Color3.new(0, 0, 0)
+viewport.ImageTransparency = FADE
 viewport.Parent = Hub.PoseStrip
+local fade = Instance.new("UIGradient")
+fade.Rotation = 90
+fade.Transparency = NumberSequence.new({
+	NumberSequenceKeypoint.new(0, 0),
+	NumberSequenceKeypoint.new(0.6, 0.2),
+	NumberSequenceKeypoint.new(1, 1),
+})
+fade.Parent = viewport
+Hub.OnAccent(function(_, ink)
+	viewport.ImageColor3 = ink
+end)
 
 local camera = Instance.new("Camera")
 camera.FieldOfView = FIELD_OF_VIEW
@@ -54,10 +68,25 @@ world.Parent = viewport
 local clone -- the posed copy
 local links = {} -- { part0, part1, c0, c1, pose name }: every joint and weld in the clone, at rest
 
+local REMOVE = { "BaseScript", "Tool", "ForceField", "Animator", "Sound", "Clothing", "ShirtGraphic", "Decal", "SurfaceAppearance", "BodyColors" }
+
+-- no scripts or sounds, and no colours: every part plain white
 local function strip(model)
 	for _, item in ipairs(model:GetDescendants()) do
-		if item:IsA("BaseScript") or item:IsA("Tool") or item:IsA("ForceField") or item:IsA("Animator") or item:IsA("Sound") then
+		local remove = false
+		for _, className in ipairs(REMOVE) do
+			remove = remove or item:IsA(className)
+		end
+		if remove then
 			item:Destroy()
+		elseif item:IsA("BasePart") then
+			item.Color = Color3.new(1, 1, 1)
+			item.Material = Enum.Material.SmoothPlastic
+			if item:IsA("MeshPart") then
+				item.TextureID = ""
+			end
+		elseif item:IsA("SpecialMesh") then
+			item.TextureId = ""
 		end
 	end
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
