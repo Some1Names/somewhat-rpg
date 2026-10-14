@@ -21,6 +21,7 @@ local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Passives = require(script.Parent:WaitForChild("Passives"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local Reforge = require(script.Parent:WaitForChild("Reforge"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
@@ -155,6 +156,10 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	-- lower-tier skill sets hit softer
 	if options.skillSet then
 		amount *= SkillSetConfig.TierOf(options.skillSet).damageScale
+	end
+	-- a reforged set hits harder, less so against players (a status tick doesn't)
+	if attacker and options.skillSet and not options.dot then
+		amount *= Reforge.DamageMultiplier(attacker, options.skillSet, targetPlayer ~= nil)
 	end
 	-- a Weakened attacker hits softer
 	if attacker and attacker.Character then

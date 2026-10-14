@@ -12,6 +12,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
+local Reforge = require(ServerScriptService:WaitForChild("Reforge"))
 local SkillCooldowns = require(ServerScriptService:WaitForChild("SkillCooldowns"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -235,7 +236,9 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 		return
 	end
 	local id = setName .. "." .. key
-	if not SkillCooldowns.Ready(player, id, skill.cooldown, skill.charges, COOLDOWN_TOLERANCE) then
+	-- (the set's Swift reforge shortens it; the check and the spend use the same one)
+	local cooldown = skill.cooldown * Reforge.CooldownMultiplier(player, setName)
+	if not SkillCooldowns.Ready(player, id, cooldown, skill.charges, COOLDOWN_TOLERANCE) then
 		return
 	end
 	-- some skills turn into another one while the set is overcharged
@@ -245,7 +248,7 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 	end
 	-- a skill that couldn't go off (nowhere to put it) doesn't spend the cooldown
 	if handlerFor(handlerName).Cast(player, character, aim) then
-		SkillCooldowns.Spend(player, id, skill.cooldown)
+		SkillCooldowns.Spend(player, id, cooldown)
 	end
 end)
 

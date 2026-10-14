@@ -1642,5 +1642,71 @@
   "class": "Script",
   "runContext": "Client",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/ReforgeConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "ReforgeConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/ReforgeRules.luau",
+  "names": [
+   "ReplicatedStorage",
+   "ReforgeRules"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Reforge.luau",
+  "names": [
+   "ServerScriptService",
+   "Reforge"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/ReforgeServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "ReforgeServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ReforgeMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ReforgeMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

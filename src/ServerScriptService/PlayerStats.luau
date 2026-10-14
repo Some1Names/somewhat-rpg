@@ -15,6 +15,7 @@ local RunService = game:GetService("RunService")
 
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
+local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -51,10 +52,11 @@ local TEXT_DEFAULTS = {
 	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
 	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
 	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
+	Reforge = "", -- each set's reforge level and modifiers (ReforgeRules, Reforge)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
-local TEXT_LENGTHS = { Challenges = QuestConfig.MaxSaveLength }
+local TEXT_LENGTHS = { Challenges = QuestConfig.MaxSaveLength, Reforge = ReforgeConfig.MaxSaveLength }
 
 local PlayerStats = {}
 
@@ -374,6 +376,7 @@ function PlayerStats.ResetProgress(player)
 		player:SetAttribute(field, default)
 	end
 	player:SetAttribute("Challenges", TEXT_DEFAULTS.Challenges)
+	player:SetAttribute("Reforge", TEXT_DEFAULTS.Reforge)
 	updatePoints(player)
 	applyHealth(player, false)
 	return true
