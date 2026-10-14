@@ -432,6 +432,20 @@
   "enabled": true
  },
  {
+  "file": "src/ServerScriptService/SpawnServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SpawnServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/ServerScriptService/SkyLight.luau",
   "names": [
    "ServerScriptService",
@@ -1313,6 +1327,22 @@
    "StarterPlayer",
    "StarterPlayerScripts",
    "DayCycleClient"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SpawnNotice.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SpawnNotice"
   ],
   "classes": [
    "StarterPlayer",
