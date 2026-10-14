@@ -28,7 +28,7 @@ local CELL_GAP = 6
 local REEL_HEIGHT = 96
 local REEL_CELLS = 46 -- cards in a spin; the result sits near the end
 local RESULT_CELL = 40
-local SPIN_TIME = 4 -- seconds the reel takes to stop
+local NEAR_MISS_CHANCE = 0.6 -- how often the card before the result is a better tier
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
@@ -84,7 +84,7 @@ local panel = make("Frame", {
 	BackgroundTransparency = 0.1,
 	BorderSizePixel = 0,
 })
-make("UIStroke", { Parent = panel, Color = ACCENT, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+local panelStroke = make("UIStroke", { Parent = panel, Color = ACCENT, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -94,6 +94,15 @@ make("UIPadding", {
 })
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
 Menus.Fit(panel)
+-- a glow round the panel for the better tiers, behind it
+local screenFlash = make("Frame", {
+	Parent = gui,
+	Size = UDim2.fromScale(1, 1),
+	BackgroundColor3 = TEXT,
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ZIndex = 0,
+})
 
 local order = 0
 local function section(height)
@@ -137,7 +146,7 @@ local strip = make("Frame", {
 	Size = UDim2.new(0, REEL_CELLS * (CELL_WIDTH + CELL_GAP), 1, 0),
 	BackgroundTransparency = 1,
 })
-make("Frame", { -- the marker
+local marker = make("Frame", { -- the marker
 	Parent = reel,
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.fromScale(0.5, 0),
@@ -145,6 +154,14 @@ make("Frame", { -- the marker
 	BackgroundColor3 = TEXT,
 	BorderSizePixel = 0,
 	ZIndex = 5,
+})
+local reelFlash = make("Frame", {
+	Parent = reel,
+	Size = UDim2.fromScale(1, 1),
+	BackgroundColor3 = TEXT,
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ZIndex = 6,
 })
 local reelHint = label(reel, {
 	Text = "Roll for a power briefcase",
@@ -155,7 +172,8 @@ local reelHint = label(reel, {
 	ZIndex = 4,
 })
 
-local resultLabel = label(section(22), {
+local resultSection = section(22)
+local resultLabel = label(resultSection, {
 	Text = "",
 	Font = Enum.Font.GothamBold,
 	TextSize = 16,
@@ -227,27 +245,46 @@ local function refresh()
 	rollButton.BackgroundTransparency = ready and 0 or 0.6
 end
 
--- fills the reel with random tier cards, the result's among them, and slides it to a stop on it
+-- fills the reel with random tier cards (the result's among them, and more often than not a
+-- better tier right before it: a near miss), then plays the spin: it speeds up, rushes past,
+-- slows almost to a stop on the card before the result, holds, and creeps onto the result.
+-- The marker and the panel's outline take the colour of whichever card is under the marker.
 local function spin(setName)
 	local resultTier = SkillSetConfig.Sets[setName].tier
 	local random = Random.new()
 	-- the other cards follow the real odds, so the reel looks like the gacha
+	local totalWeight = 0
+	for _, tier in ipairs(PowerConfig.Tiers) do
+		totalWeight += PowerConfig.TierWeight[tier]
+	end
 	local function randomTier()
-		local target = random:NextNumber() * 100
+		local target = random:NextNumber() * totalWeight
 		for _, tier in ipairs(PowerConfig.Tiers) do
 			target -= PowerConfig.TierWeight[tier]
 			if target < 0 then
 				return tier
 			end
 		end
-		return "C"
+		return PowerConfig.Tiers[#PowerConfig.Tiers]
+	end
+	local tiers = {}
+	for index = 1, REEL_CELLS do
+		tiers[index] = index == RESULT_CELL and resultTier or randomTier()
+	end
+	local better = {}
+	for _, tier in ipairs(PowerConfig.Tiers) do
+		if table.find(PowerConfig.Tiers, tier) < table.find(PowerConfig.Tiers, resultTier) then
+			table.insert(better, tier)
+		end
+	end
+	if #better > 0 and random:NextNumber() < NEAR_MISS_CHANCE then
+		tiers[RESULT_CELL - 1] = better[random:NextInteger(1, #better)]
 	end
 	for _, child in ipairs(strip:GetChildren()) do
 		child:Destroy()
 	end
 	for index = 1, REEL_CELLS do
-		local tier = index == RESULT_CELL and resultTier or randomTier()
-		local color = tierColor(tier)
+		local color = tierColor(tiers[index])
 		local cell = make("Frame", {
 			Parent = strip,
 			Position = UDim2.fromOffset((index - 1) * (CELL_WIDTH + CELL_GAP) + CELL_GAP, 8),
@@ -258,7 +295,7 @@ local function spin(setName)
 		})
 		make("UIStroke", { Parent = cell, Color = color, Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 		label(cell, {
-			Text = tier,
+			Text = tiers[index],
 			Font = Enum.Font.GothamBlack,
 			TextSize = 34,
 			TextColor3 = color,
@@ -276,27 +313,98 @@ local function spin(setName)
 	end
 	reelHint.Visible = false
 	resultLabel.Text = ""
-	-- the result card's centre ends under the marker, a few pixels off so it never lands dead centre
 	local window = reel.AbsoluteSize.X
-	local centre = (RESULT_CELL - 1) * (CELL_WIDTH + CELL_GAP) + CELL_GAP + CELL_WIDTH / 2
-	local stop = -(centre - window / 2) + Random.new():NextInteger(-CELL_WIDTH // 4, CELL_WIDTH // 4)
+	-- the strip's offset that puts a card's centre under the marker
+	local function positionFor(index)
+		return -((index - 1) * (CELL_WIDTH + CELL_GAP) + CELL_GAP + CELL_WIDTH / 2 - window / 2)
+	end
+	-- the marker and the outline follow the card under the marker, ticking as each passes
+	local lastIndex
+	local follow = RunService.Heartbeat:Connect(function()
+		local centre = window / 2 - strip.Position.X.Offset
+		local index = math.clamp(math.floor((centre - CELL_GAP) / (CELL_WIDTH + CELL_GAP)) + 1, 1, REEL_CELLS)
+		if index ~= lastIndex then
+			lastIndex = index
+			local color = tierColor(tiers[index])
+			marker.BackgroundColor3 = color
+			panelStroke.Color = color
+			marker.Size = UDim2.new(0, 6, 1, 0)
+			TweenService:Create(marker, TweenInfo.new(0.1), { Size = UDim2.new(0, 2, 1, 0) }):Play()
+		end
+	end)
+	local function slide(position, time, style, direction)
+		local tween = TweenService:Create(strip, TweenInfo.new(time, style, direction), { Position = UDim2.fromOffset(position, 0) })
+		tween:Play()
+		tween.Completed:Wait()
+	end
 	strip.Position = UDim2.fromOffset(0, 0)
-	local tween = TweenService:Create(strip, TweenInfo.new(SPIN_TIME, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-		Position = UDim2.fromOffset(stop, 0),
-	})
-	tween:Play()
-	tween.Completed:Wait()
+	slide(positionFor(14), 1.0, Enum.EasingStyle.Quad, Enum.EasingDirection.In) -- picks up speed
+	slide(positionFor(RESULT_CELL - 1), 4.5, Enum.EasingStyle.Quart, Enum.EasingDirection.Out) -- rushes, then crawls
+	task.wait(0.8) -- holds on the card before the result
+	local jitter = Random.new():NextInteger(-CELL_WIDTH // 4, CELL_WIDTH // 4)
+	slide(positionFor(RESULT_CELL) + jitter, 1.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut) -- creeps onto it
+	follow:Disconnect()
+	marker.Size = UDim2.new(0, 2, 1, 0)
 end
 
--- the result card's pop and the power's name, in its tier colour
+-- squares thrown out from the result card, in its tier colour
+local function burst(card, color, count)
+	local x = card.AbsolutePosition.X + card.AbsoluteSize.X / 2 - resultSection.AbsolutePosition.X
+	local y = -(10 + REEL_HEIGHT / 2) -- the reel's middle, above the result line
+	local random = Random.new()
+	for _ = 1, count do
+		local size = random:NextInteger(5, 10)
+		local angle = random:NextNumber() * math.pi * 2
+		local distance = random:NextInteger(50, 150)
+		local piece = make("Frame", {
+			Parent = resultSection,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromOffset(x, y),
+			Size = UDim2.fromOffset(size, size),
+			BackgroundColor3 = color,
+			BorderSizePixel = 0,
+			Rotation = random:NextInteger(0, 90),
+			ZIndex = 8,
+		})
+		local tween = TweenService:Create(piece, TweenInfo.new(0.7 + random:NextNumber() * 0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Position = UDim2.fromOffset(x + math.cos(angle) * distance, y + math.sin(angle) * distance),
+			BackgroundTransparency = 1,
+			Rotation = piece.Rotation + random:NextInteger(-180, 180),
+		})
+		tween.Completed:Once(function()
+			piece:Destroy()
+		end)
+		tween:Play()
+	end
+end
+
+-- the panel jolts for a moment
+local function shake(strength)
+	local base = panel.Position
+	local random = Random.new()
+	for step = 1, 14 do
+		local fade = 1 - step / 14
+		panel.Position = base + UDim2.fromOffset(random:NextInteger(-strength, strength) * fade, random:NextInteger(-strength, strength) * fade)
+		task.wait(0.03)
+	end
+	panel.Position = base
+end
+
+-- the result: a flash, a pop of the name in its tier colour, and for the better tiers a
+-- harder flash, a jolt and more squares
 local function reveal(setName)
 	local tier = SkillSetConfig.Sets[setName].tier
 	local color = tierColor(tier)
+	local rank = table.find(PowerConfig.Tiers, tier) -- 1 is the best
 	local name = string.gsub(setName, "(%l)(%u)", "%1 %2")
+	marker.BackgroundColor3 = color
+	panelStroke.Color = color
 	resultLabel.TextColor3 = color
 	resultLabel.Text = string.format("%s-tier  ·  %s", tier, name)
 	resultLabel.TextTransparency = 1
+	resultLabel.TextSize = 10
 	TweenService:Create(resultLabel, TweenInfo.new(0.35), { TextTransparency = 0 }):Play()
+	TweenService:Create(resultLabel, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { TextSize = 18 }):Play()
 	local card = strip:GetChildren()[RESULT_CELL]
 	if card then
 		local stroke = card:FindFirstChildOfClass("UIStroke")
@@ -305,7 +413,25 @@ local function reveal(setName)
 			stroke.Transparency = 0
 		end
 		card.BackgroundColor3 = color
-		TweenService:Create(card, TweenInfo.new(0.6), { BackgroundColor3 = BACKGROUND }):Play()
+		TweenService:Create(card, TweenInfo.new(0.8), { BackgroundColor3 = BACKGROUND }):Play()
+		burst(card, color, ({ 28, 16, 8, 4 })[rank] or 4)
+	end
+	task.spawn(function()
+		local flashes = ({ 3, 2, 1, 1 })[rank] or 1
+		for _ = 1, flashes do
+			reelFlash.BackgroundColor3 = color
+			reelFlash.BackgroundTransparency = 0.35
+			TweenService:Create(reelFlash, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
+			if rank <= 2 then
+				screenFlash.BackgroundColor3 = color
+				screenFlash.BackgroundTransparency = rank == 1 and 0.6 or 0.8
+				TweenService:Create(screenFlash, TweenInfo.new(0.6), { BackgroundTransparency = 1 }):Play()
+			end
+			task.wait(0.25)
+		end
+	end)
+	if rank <= 2 then
+		task.spawn(shake, rank == 1 and 7 or 3)
 	end
 end
 
@@ -349,6 +475,8 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	local npc = prompt:FindFirstAncestorOfClass("Model")
 	if npc and CollectionService:HasTag(npc, PowerConfig.Gacha.tag) then
 		openAt = npc
+		panelStroke.Color = ACCENT
+		marker.BackgroundColor3 = TEXT
 		setStatus("")
 		resultLabel.Text = ""
 		reelHint.Visible = true
