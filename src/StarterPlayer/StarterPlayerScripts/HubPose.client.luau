@@ -1,8 +1,9 @@
 -- The player's own character, posed, drawn over the right of the hub (Hub's
--- PoseStrip) like the illustrated characters on a magazine cover: a faded,
--- one-colour silhouette in the accent. A clone of the character (no scripts,
--- tools, animator, clothes or textures, every part white and anchored) sits in
--- a ViewportFrame, flat-lit and tinted; each tab names a pose from HubPoses, and the parts are
+-- PoseStrip) like the illustrated characters on a magazine cover: in its own
+-- clothes, with the accent laid over it as a tint, see-through and fading out
+-- at the bottom and the left edge. A clone of the character (no scripts,
+-- tools or animator, every part anchored) sits in a ViewportFrame; each tab
+-- names a pose from HubPoses, and the parts are
 -- placed by walking the joints from the HumanoidRootPart, so nothing waits on
 -- the physics. Works on R6 and R15, with Motor6D joints or the newer
 -- AnimationConstraint ones (accessories on RigidConstraints). Rebuilt when the
@@ -20,7 +21,9 @@ local FIELD_OF_VIEW = 30
 local CAMERA_DISTANCE = 11.5
 local CAMERA_YAW = 20 -- degrees round from straight in front
 local LOOK_HEIGHT = 0.2 -- studs above the root part the camera looks at: room above the head, the feet run off the bottom
-local FADE = 0.55 -- the silhouette's transparency at the top; it fades out toward the bottom
+local FADE = 0.35 -- the image's transparency at the top; it fades out toward the bottom
+local TINT_STRENGTH = 0.7 -- how much of the accent is laid over it (0 = its own colours)
+local EDGE_FADE = 0.3 -- share of the image, from its left edge, that fades into the paper
 
 local viewport = Instance.new("ViewportFrame")
 viewport.Name = "Pose"
@@ -28,9 +31,9 @@ viewport.AnchorPoint = Vector2.new(1, 0)
 viewport.Position = UDim2.fromScale(1, 0)
 viewport.Size = UDim2.fromScale(BLEED, 1)
 viewport.BackgroundTransparency = 1
--- flat light, so every part is the same colour; ImageColor3 tints it
-viewport.Ambient = Color3.new(1, 1, 1)
-viewport.LightColor = Color3.new(0, 0, 0)
+viewport.Ambient = Color3.fromRGB(170, 170, 170)
+viewport.LightColor = Color3.new(1, 1, 1)
+viewport.LightDirection = Vector3.new(-1, -1, 1)
 viewport.ImageTransparency = FADE
 viewport.Parent = Hub.PoseStrip
 local fade = Instance.new("UIGradient")
@@ -41,9 +44,23 @@ fade.Transparency = NumberSequence.new({
 	NumberSequenceKeypoint.new(1, 1),
 })
 fade.Parent = viewport
-Hub.OnAccent(function(_, ink)
-	viewport.ImageColor3 = ink
+-- the accent as a tint (white, no power, leaves its own colours)
+Hub.OnAccent(function(accent)
+	viewport.ImageColor3 = Color3.new(1, 1, 1):Lerp(accent, TINT_STRENGTH)
 end)
+
+-- a limb past the image's left edge would end in a hard cut: paper fades over that edge
+local edge = Instance.new("Frame")
+edge.Name = "EdgeFade"
+edge.Position = UDim2.fromScale(1 - BLEED, 0)
+edge.Size = UDim2.fromScale(BLEED * EDGE_FADE, 1)
+edge.BackgroundColor3 = Hub.Theme.Paper
+edge.BorderSizePixel = 0
+edge.ZIndex = 2
+edge.Parent = Hub.PoseStrip
+local edgeGradient = Instance.new("UIGradient")
+edgeGradient.Transparency = NumberSequence.new(0, 1)
+edgeGradient.Parent = edge
 
 local camera = Instance.new("Camera")
 camera.FieldOfView = FIELD_OF_VIEW
@@ -68,25 +85,16 @@ world.Parent = viewport
 local clone -- the posed copy
 local links = {} -- { part0, part1, c0, c1, pose name }: every joint and weld in the clone, at rest
 
-local REMOVE = { "BaseScript", "Tool", "ForceField", "Animator", "Sound", "Clothing", "ShirtGraphic", "Decal", "SurfaceAppearance", "BodyColors" }
+local REMOVE = { "BaseScript", "Tool", "ForceField", "Animator", "Sound" }
 
--- no scripts or sounds, and no colours: every part plain white
+-- no scripts, tools or sounds
 local function strip(model)
 	for _, item in ipairs(model:GetDescendants()) do
-		local remove = false
 		for _, className in ipairs(REMOVE) do
-			remove = remove or item:IsA(className)
-		end
-		if remove then
-			item:Destroy()
-		elseif item:IsA("BasePart") then
-			item.Color = Color3.new(1, 1, 1)
-			item.Material = Enum.Material.SmoothPlastic
-			if item:IsA("MeshPart") then
-				item.TextureID = ""
+			if item:IsA(className) then
+				item:Destroy()
+				break
 			end
-		elseif item:IsA("SpecialMesh") then
-			item.TextureId = ""
 		end
 	end
 	local humanoid = model:FindFirstChildOfClass("Humanoid")

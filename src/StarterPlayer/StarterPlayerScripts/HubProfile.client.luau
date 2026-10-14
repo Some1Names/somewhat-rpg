@@ -1,5 +1,6 @@
 -- The hub's Profile tab, its cover page: the power held (big, in caps), its
--- tier, mastery and reforge level, the bounty taken, level and XP, and unspent
+-- tier, mastery and reforge level, the bounty taken, level and yen as big
+-- figures, XP, and unspent
 -- stat points (a link to Stats). The right side is left to the posed character
 -- (HubPose), with a huge faded "01" behind it and the player's name on a chip.
 -- Everything comes from player attributes other systems keep.
@@ -59,6 +60,12 @@ local function setTitle(setName)
 	return string.upper((string.gsub(setName, "(%l)(%u)", "%1 %2")))
 end
 
+local function formatYen(amount)
+	local digits = tostring(math.floor(amount))
+	local grouped = digits:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
+	return "¥" .. grouped
+end
+
 local frame = Hub.Tab("Profile", { order = 1, title = "PROFILE", pose = "Random" })
 
 -- the faded number and the name chip, on the right
@@ -113,10 +120,20 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
-local levelLabel = label(column, { LayoutOrder = 6, TextSize = 11, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
+-- level and yen: a caption over a big number each
+local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1 })
+make("UIListLayout", { Parent = figures, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 32) })
+local function figure(order, caption)
+	local holder = make("Frame", { Parent = figures, LayoutOrder = order, Size = UDim2.fromOffset(0, 52), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1 })
+	label(holder, { Text = caption, TextSize = 10, TextColor3 = Theme.Muted, Size = UDim2.fromOffset(0, 12), AutomaticSize = Enum.AutomaticSize.X })
+	return label(holder, { Font = Theme.TitleFont, TextSize = 32, Position = UDim2.fromOffset(0, 14), Size = UDim2.fromOffset(0, 36), AutomaticSize = Enum.AutomaticSize.X })
+end
+local levelFigure = figure(1, "LEVEL")
+local yenFigure = figure(2, "YEN")
+local levelLabel = label(column, { LayoutOrder = 7, TextSize = 11, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
 local pointsButton = make("TextButton", {
 	Parent = column,
-	LayoutOrder = 7,
+	LayoutOrder = 8,
 	Size = UDim2.fromOffset(0, 14),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
@@ -157,10 +174,12 @@ local function refresh()
 	end
 
 	local level = player:GetAttribute("Level") or 1
+	levelFigure.Text = tostring(level)
+	yenFigure.Text = formatYen(player:GetAttribute("Yen") or 0)
 	if level >= StatConfig.MaxLevel then
-		levelLabel.Text = string.format("LEVEL %d  ·  MAX LEVEL", level)
+		levelLabel.Text = "MAX LEVEL"
 	else
-		levelLabel.Text = string.format("LEVEL %d  ·  XP %d / %d", level, player:GetAttribute("XP") or 0, StatConfig.XPToLevelUp(level))
+		levelLabel.Text = string.format("XP %d / %d", player:GetAttribute("XP") or 0, StatConfig.XPToLevelUp(level))
 	end
 	local points = player:GetAttribute("StatPoints") or 0
 	pointsButton.Text = string.format("%d UNSPENT POINT%s  →  STATS", points, points == 1 and "" or "S")
@@ -179,6 +198,7 @@ local watched = {
 	QuestProgress = true,
 	Level = true,
 	XP = true,
+	Yen = true,
 	StatPoints = true,
 }
 player.AttributeChanged:Connect(function(name)

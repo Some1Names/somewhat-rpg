@@ -36,7 +36,6 @@ local MATERIAL_ROW = 18
 local BUTTON_HEIGHT = 32
 local BACKGROUND = Hub.Theme.Panel -- cards, and the text on ink buttons
 local SELECTED_BACKGROUND = Color3.fromRGB(190, 190, 188)
-local COLUMN_BACKGROUND = Color3.fromRGB(218, 218, 216)
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local DANGER = Color3.fromRGB(226, 75, 74)
@@ -157,8 +156,7 @@ local function column(position, size, anchor, title)
 		AnchorPoint = anchor,
 		Position = position,
 		Size = size,
-		BackgroundColor3 = COLUMN_BACKGROUND,
-		BackgroundTransparency = 0,
+		BackgroundTransparency = 1,
 	})
 	outline(frame, 0.85)
 	padding(frame, COLUMN_PADDING)

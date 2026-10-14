@@ -1,7 +1,8 @@
 -- The hub's Stats tab (M, or the hub's nav): spend stat points on Vitality,
 -- Strength, Superliminal and Firearm, and see when the next stamina box
 -- unlocks. Its MILESTONES sub-tab shows the milestones and their rewards as
--- bars. Unspent points show as a badge in the hub's nav. Also pops up XP
+-- bars. Beside them, CURRENT lists what the stats add up to (max HP, regen,
+-- damage, stamina, dodges). Unspent points show as a badge in the hub's nav. Also pops up XP
 -- gains and level ups. The numbers come from the player attributes the
 -- server keeps (see PlayerStats).
 local Debris = game:GetService("Debris")
@@ -18,7 +19,7 @@ local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 local player = Players.LocalPlayer
 
 local AMOUNTS = { 1, 5, 10 } -- points added per click
-local PANEL_WIDTH = 460
+local PANEL_SHARE = 0.6 -- of the tab's width; CURRENT has the rest
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local STAT_ROW_HEIGHT = 40
@@ -109,7 +110,7 @@ end
 local panel = make("ScrollingFrame", {
 	Name = "Panel",
 	Parent = tabFrame,
-	Size = UDim2.new(0, PANEL_WIDTH, 1, 0),
+	Size = UDim2.new(PANEL_SHARE, -16, 1, 0),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
@@ -263,6 +264,42 @@ for i, stat in ipairs(StatConfig.Stats) do
 	rows[i] = { stat = stat, value = value, effect = effect, plus = plus }
 end
 
+-- CURRENT: what the stats add up to, a caption over a big number each, right of the panel
+local current = make("Frame", {
+	Parent = tabFrame,
+	Position = UDim2.new(PANEL_SHARE, 16, 0, 0),
+	Size = UDim2.new(1 - PANEL_SHARE, -16, 1, 0),
+	BackgroundTransparency = 1,
+})
+make("UIListLayout", { Parent = current, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+label(current, { LayoutOrder = 0, Text = "CURRENT", Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.new(1, 0, 0, 22) })
+local currentValues = {}
+for i, caption in ipairs({ "MAX HP", "HP REGEN / S", "MELEE DAMAGE", "SKILL DAMAGE", "GUN DAMAGE", "STAMINA BOXES", "DODGE CHARGES" }) do
+	local holder = section(i, 44)
+	holder.Parent = current
+	label(holder, { Text = caption, TextSize = 10, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 12) })
+	currentValues[i] = label(holder, { Font = Enum.Font.GothamBlack, TextSize = 24, Position = UDim2.fromOffset(0, 13), Size = UDim2.new(1, 0, 0, 28) })
+end
+
+local function showCurrent(level)
+	local function points(key)
+		return player:GetAttribute(key) or 0
+	end
+	local vitality = points("Vitality")
+	local values = {
+		tostring(StatConfig.MaxHealth(vitality)),
+		formatNumber(StatConfig.RegenPerSecond(vitality)),
+		formatNumber(PunchConfig.Weapons.Fists.baseDamage * StatConfig.DamageMultiplier("Strength", points("Strength"))),
+		math.round(StatConfig.DamageMultiplier("Superliminal", points("Superliminal")) * 100) .. "%",
+		math.round(StatConfig.DamageMultiplier("Firearm", points("Firearm")) * 100) .. "%",
+		tostring((StatConfig.StaminaBoxes(level))),
+		tostring((StatConfig.DodgeCharges(level))),
+	}
+	for i, text in ipairs(values) do
+		currentValues[i].Text = text
+	end
+end
+
 local function refresh()
 	local level = player:GetAttribute("Level")
 	local points = player:GetAttribute("StatPoints") or 0
@@ -307,6 +344,7 @@ local function refresh()
 		row.plus.BackgroundTransparency = canAdd and 0 or 0.8
 		row.plus.TextTransparency = canAdd and 0 or 0.5
 	end
+	showCurrent(level)
 end
 refresh()
 player.AttributeChanged:Connect(refresh)
@@ -324,7 +362,7 @@ local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 local infoPanel = make("ScrollingFrame", {
 	Name = "InfoPanel",
 	Parent = tabFrame,
-	Size = UDim2.new(0, PANEL_WIDTH, 1, 0),
+	Size = UDim2.new(PANEL_SHARE, -16, 1, 0),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,

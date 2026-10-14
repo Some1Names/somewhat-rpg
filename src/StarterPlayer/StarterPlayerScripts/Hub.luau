@@ -1,7 +1,7 @@
 -- The hub: one full-screen menu holding Profile, Backpack (Inventory), Quests,
 -- Stats and Updates, with locked slots for later features. The first script to
 -- require it builds the screen: grey paper, the dark nav column on the left,
--- the header (#TITLE, the accent bar, the tab's number, level and yen), the
+-- the header (#TITLE, the accent bar and the tab's number), the
 -- footer, and on the right the strip HubPose draws the posed character in.
 -- Each tab is a script that asks Hub.Tab(name, opts) for a frame and builds in
 -- it; a tab's key (B, J, M) opens the hub on it, closes it if it's the one
@@ -55,12 +55,6 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
-local function formatYen(amount)
-	local digits = tostring(math.floor(amount))
-	local grouped = digits:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-	return "¥" .. grouped
-end
-
 local gui = make("ScreenGui", {
 	Name = "Hub",
 	ResetOnSpawn = false,
@@ -108,13 +102,6 @@ label(main, {
 	Text = "2026 · SECTOR 01 · INDEX 004.19",
 	TextSize = 11,
 	TextColor3 = Theme.Muted,
-	Position = UDim2.fromOffset(PAD, 10),
-	Size = UDim2.new(1, -2 * PAD, 0, 12),
-})
-local statusLabel = label(main, {
-	TextSize = 11,
-	TextColor3 = Theme.Muted,
-	TextXAlignment = Enum.TextXAlignment.Right,
 	Position = UDim2.fromOffset(PAD, 10),
 	Size = UDim2.new(1, -2 * PAD, 0, 12),
 })
@@ -341,10 +328,6 @@ local function paintHeader()
 	numberLabel.Text = string.format("(%02d)", position)
 end
 
-local function paintStatus()
-	statusLabel.Text = string.format("LV %d     %s", player:GetAttribute("Level") or 1, formatYen(player:GetAttribute("Yen") or 0))
-end
-
 -- shows `name`'s frame, and tells its listeners and the pose
 local function show(name)
 	local tab = tabs[name]
@@ -390,7 +373,6 @@ function Hub.Open(name)
 	if not gui.Enabled then
 		gui.Enabled = true
 		Menus.Open("Hub", close)
-		paintStatus()
 	end
 	show(name)
 end
@@ -603,8 +585,6 @@ end)
 player.AttributeChanged:Connect(function(name)
 	if name == "CurrentPower" then
 		readAccent()
-	elseif name == "Level" or name == "Yen" then
-		paintStatus()
 	end
 end)
 readAccent()
