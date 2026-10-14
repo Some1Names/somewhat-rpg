@@ -13,7 +13,7 @@ local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Menus = {}
 
 local FIT_TOP = 12 -- px from the top of the screen below the top bar (the icon row is up in the bar)
-local FIT_BOTTOM = 272 -- the skill bar's top edge (116 px up, 96 px tall, its header)
+local FIT_BOTTOM = 172 -- the skill bar's top edge (16 px up, 96 px tall, its header)
 local FIT_MIN_HEIGHT = 160 -- a panel never gets shorter than this, however short the screen
 
 local openName, openClose

@@ -1,4 +1,4 @@
--- Key hints, bottom left: plain text, one line per basic move, a small white
+-- Key hints, bottom left above the equipment cards: plain text, one line per basic move, a small white
 -- key cap then the move's name. Dash and Block show the player's own keys
 -- (Keybinds, so a rebind updates it), and Dash the set's own dash name when
 -- the set in hand has one unlocked (Lightstep). RMB Aim shows only while
@@ -44,7 +44,7 @@ local gui = make("ScreenGui", {
 local list = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -HudConfig.EdgeMargin),
+	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.EdgeMargin + HudConfig.CardHeight + 10)), -- above the Hotbar's cards
 	Size = UDim2.fromOffset(0, 0),
 	AutomaticSize = Enum.AutomaticSize.XY,
 	BackgroundTransparency = 1,

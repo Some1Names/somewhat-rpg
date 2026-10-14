@@ -1,20 +1,27 @@
--- The hotbar, in place of Roblox's own: a square slot per tool, outlined in
--- the colour of the tool's skill-set tier (SkillSetConfig.Tiers: purple S,
--- red A, blue B, green C; gray for tools that aren't skill sets). Keys 1-9
--- or a click equip a tool, or put it away if it's already in hand.
+-- The hotbar, in place of Roblox's own. Bottom left, three tall cards for what
+-- you carry, like Elden Ring's equipment slots: POWER (key 1), WEAPON (2) and
+-- MELEE (3, coming), each outlined in the colour of its skill set's tier
+-- (SkillSetConfig.Tiers: purple S, red A, blue B, green C) with the set's name
+-- and your mastery in it. Bottom right, the other tools (anything that isn't a
+-- power or weapon set) in a 3x2 grid, keys 4-9. A key or a click equips a tool,
+-- or puts it away if it's already in hand.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
 
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local player = Players.LocalPlayer
 
-local SLOT_SIZE = 52
+local SLOT_SIZE = HudConfig.SlotSize
 local SLOT_GAP = 6
-local BOTTOM_MARGIN = 16 -- pixels; the skill bar sits above it
+local GRID_COLUMNS = 3
+local GRID_SLOTS = 6
+local CARD_WIDTH = HudConfig.CardWidth
+local CARD_HEIGHT = HudConfig.CardHeight
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local HELD_BACKGROUND = Color3.fromRGB(44, 44, 58)
 local TEXT = Color3.new(1, 1, 1)
@@ -29,6 +36,12 @@ local NUMBER_KEYS = {
 	Enum.KeyCode.Seven,
 	Enum.KeyCode.Eight,
 	Enum.KeyCode.Nine,
+}
+-- the three cards, left to right; `kind` is a SkillSetConfig set kind (melee has none yet)
+local CARDS = {
+	{ label = "POWER", kind = "power" },
+	{ label = "WEAPON", kind = "weapon" },
+	{ label = "MELEE", kind = "melee" },
 }
 
 -- Roblox's own hotbar goes; CoreGui may not be ready right away
@@ -46,22 +59,33 @@ gui.Name = "Hotbar"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local row = Instance.new("Frame")
-row.AnchorPoint = Vector2.new(0.5, 1)
-row.Position = UDim2.new(0.5, 0, 1, -BOTTOM_MARGIN)
-row.BackgroundTransparency = 1
-row.Parent = gui
+local cardRow = Instance.new("Frame")
+cardRow.AnchorPoint = Vector2.new(0, 1)
+cardRow.Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -HudConfig.EdgeMargin)
+cardRow.Size = UDim2.fromOffset(#CARDS * CARD_WIDTH + (#CARDS - 1) * SLOT_GAP, CARD_HEIGHT)
+cardRow.BackgroundTransparency = 1
+cardRow.Parent = gui
+
+local grid = Instance.new("Frame")
+grid.AnchorPoint = Vector2.new(1, 1)
+grid.Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -HudConfig.EdgeMargin)
+grid.Size = UDim2.fromOffset(GRID_COLUMNS * SLOT_SIZE + (GRID_COLUMNS - 1) * SLOT_GAP, 2 * SLOT_SIZE + SLOT_GAP)
+grid.BackgroundTransparency = 1
+grid.Parent = gui
+
+local function setOf(tool)
+	local setName = tool:GetAttribute("SkillSet")
+	return setName, setName and SkillSetConfig.Sets[setName]
+end
 
 local function tierColor(tool)
-	local setName = tool:GetAttribute("SkillSet")
-	local set = setName and SkillSetConfig.Sets[setName]
+	local _, set = setOf(tool)
 	local tier = set and SkillSetConfig.Tiers[set.tier]
 	return tier and tier.color or SkillSetConfig.NoTierColor
 end
 
--- the tools in the order they first showed up, so slots don't shuffle
-local order = {}
-local function refreshOrder()
+-- every tool the player has, in the backpack or in hand
+local function ownedTools()
 	local owned = {}
 	local backpack = player:FindFirstChildOfClass("Backpack")
 	for _, child in ipairs(backpack and backpack:GetChildren() or {}) do
@@ -73,21 +97,33 @@ local function refreshOrder()
 	if held then
 		table.insert(owned, held)
 	end
+	return owned
+end
+
+-- the grid's tools (not a power or weapon set), in the order they first showed up, so slots don't shuffle
+local order = {}
+local function refreshOrder(owned)
+	local others = {}
+	for _, tool in ipairs(owned) do
+		local _, set = setOf(tool)
+		if not (set and (set.kind == "power" or set.kind == "weapon")) then
+			table.insert(others, tool)
+		end
+	end
 	for i = #order, 1, -1 do
-		if not table.find(owned, order[i]) then
+		if not table.find(others, order[i]) then
 			table.remove(order, i)
 		end
 	end
-	for _, tool in ipairs(owned) do
-		if not table.find(order, tool) and #order < #NUMBER_KEYS then
+	for _, tool in ipairs(others) do
+		if not table.find(order, tool) and #order < GRID_SLOTS then
 			table.insert(order, tool)
 		end
 	end
 end
 
--- equips the tool in slot i, or puts it away if it's in hand
-local function toggle(i)
-	local tool = order[i]
+-- equips the tool, or puts it away if it's in hand
+local function toggleTool(tool)
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	if not tool or not humanoid or humanoid.Health <= 0 then
@@ -100,6 +136,60 @@ local function toggle(i)
 	end
 end
 
+local function newStroke(parent)
+	local stroke = Instance.new("UIStroke")
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	stroke.LineJoinMode = Enum.LineJoinMode.Miter -- square corners
+	stroke.Parent = parent
+	return stroke
+end
+
+local function newLabel(parent, props)
+	local l = Instance.new("TextLabel")
+	l.BackgroundTransparency = 1
+	l.Font = props.Font or Enum.Font.GothamBold
+	l.TextColor3 = props.TextColor3 or TEXT
+	l.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Center
+	l.TextWrapped = true
+	l.TextSize = props.TextSize
+	l.Position = props.Position
+	l.Size = props.Size
+	l.AnchorPoint = props.AnchorPoint or Vector2.zero
+	l.Text = props.Text or ""
+	l.Parent = parent
+	return l
+end
+
+-- the equipment cards
+local cards = {}
+for i, spec in ipairs(CARDS) do
+	local button = Instance.new("TextButton")
+	button.AutoButtonColor = false
+	button.Text = ""
+	button.BorderSizePixel = 0
+	button.BackgroundColor3 = BACKGROUND
+	button.BackgroundTransparency = 0.25
+	button.Size = UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT)
+	button.Position = UDim2.fromOffset((i - 1) * (CARD_WIDTH + SLOT_GAP), 0)
+	button.Parent = cardRow
+	local stroke = newStroke(button)
+	newLabel(button, { Text = tostring(i), TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(5, 3), Size = UDim2.fromOffset(14, 12) })
+	newLabel(button, { Text = spec.label, TextSize = 9, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 12) })
+	local icon = Instance.new("ImageLabel")
+	icon.BackgroundTransparency = 1
+	icon.AnchorPoint = Vector2.new(0.5, 0)
+	icon.Position = UDim2.new(0.5, 0, 0, 32)
+	icon.Size = UDim2.fromOffset(CARD_WIDTH - 16, CARD_WIDTH - 16)
+	icon.Parent = button
+	local name = newLabel(button, { TextSize = 12, Position = UDim2.fromOffset(3, 34), Size = UDim2.new(1, -6, 0, 40) })
+	local mastery = newLabel(button, { TextSize = 9, TextColor3 = MUTED, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -6), Size = UDim2.new(1, 0, 0, 12) })
+	button.Activated:Connect(function()
+		toggleTool(cards[i].tool)
+	end)
+	cards[i] = { button = button, stroke = stroke, icon = icon, name = name, mastery = mastery, kind = spec.kind }
+end
+
+-- the grid's slots
 local slots = {}
 local function slotAt(i)
 	if slots[i] then
@@ -112,43 +202,20 @@ local function slotAt(i)
 	button.BackgroundColor3 = BACKGROUND
 	button.BackgroundTransparency = 0.25
 	button.Size = UDim2.fromOffset(SLOT_SIZE, SLOT_SIZE)
-	button.Position = UDim2.fromOffset((i - 1) * (SLOT_SIZE + SLOT_GAP), 0)
-	button.Parent = row
-	local stroke = Instance.new("UIStroke")
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	stroke.LineJoinMode = Enum.LineJoinMode.Miter -- square corners
-	stroke.Parent = button
-	local number = Instance.new("TextLabel")
-	number.BackgroundTransparency = 1
-	number.Position = UDim2.fromOffset(4, 2)
-	number.Size = UDim2.fromOffset(12, 12)
-	number.Font = Enum.Font.GothamBold
-	number.TextSize = 10
-	number.TextColor3 = MUTED
-	number.TextXAlignment = Enum.TextXAlignment.Left
-	number.Text = tostring(i)
-	number.Parent = button
+	local column, rowIndex = (i - 1) % GRID_COLUMNS, math.floor((i - 1) / GRID_COLUMNS)
+	button.Position = UDim2.fromOffset(column * (SLOT_SIZE + SLOT_GAP), rowIndex * (SLOT_SIZE + SLOT_GAP))
+	button.Parent = grid
+	local stroke = newStroke(button)
+	newLabel(button, { Text = tostring(#CARDS + i), TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(12, 12) })
 	local icon = Instance.new("ImageLabel")
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0.5, 0.5)
 	icon.Position = UDim2.fromScale(0.5, 0.5)
 	icon.Size = UDim2.fromScale(0.7, 0.7)
 	icon.Parent = button
-	local name = Instance.new("TextLabel")
-	name.BackgroundTransparency = 1
-	name.AnchorPoint = Vector2.new(0.5, 0.5)
-	name.Position = UDim2.fromScale(0.5, 0.55)
-	name.Size = UDim2.new(1, -8, 0.6, 0)
-	name.Font = Enum.Font.GothamBold
-	name.TextColor3 = TEXT
-	name.TextWrapped = true
-	name.TextScaled = true
-	name.Parent = button
-	local limit = Instance.new("UITextSizeConstraint")
-	limit.MaxTextSize = 11
-	limit.Parent = name
+	local name = newLabel(button, { TextSize = 11, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.55), Size = UDim2.new(1, -8, 0.6, 0) })
 	button.Activated:Connect(function()
-		toggle(i)
+		toggleTool(order[i])
 	end)
 	slots[i] = { button = button, stroke = stroke, icon = icon, name = name }
 	return slots[i]
@@ -158,15 +225,63 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if gameProcessed then
 		return
 	end
-	local i = table.find(NUMBER_KEYS, input.KeyCode)
-	if i then
-		toggle(i)
+	local key = table.find(NUMBER_KEYS, input.KeyCode)
+	if not key then
+		return
+	end
+	if key <= #CARDS then
+		toggleTool(cards[key].tool)
+	else
+		toggleTool(order[key - #CARDS])
 	end
 end)
 
+-- the tool of a card's kind, if the player carries one
+local function toolOfKind(owned, kind)
+	for _, tool in ipairs(owned) do
+		local _, set = setOf(tool)
+		if set and set.kind == kind then
+			return tool
+		end
+	end
+	return nil
+end
+
 RunService.RenderStepped:Connect(function()
-	refreshOrder()
+	local owned = ownedTools()
+	refreshOrder(owned)
 	local character = player.Character
+
+	for _, card in ipairs(cards) do
+		local tool = toolOfKind(owned, card.kind)
+		card.tool = tool
+		local held = tool ~= nil and tool.Parent == character
+		card.button.BackgroundColor3 = held and HELD_BACKGROUND or BACKGROUND
+		card.button.BackgroundTransparency = held and 0.05 or 0.25
+		if tool then
+			local setName = setOf(tool)
+			card.stroke.Color = tierColor(tool)
+			card.stroke.Thickness = held and 3 or 2
+			card.stroke.Transparency = held and 0 or 0.15
+			card.icon.Image = tool.TextureId
+			card.icon.Visible = tool.TextureId ~= ""
+			card.name.Visible = tool.TextureId == ""
+			card.name.Text = tool.Name
+			card.name.TextColor3 = TEXT
+			local mastery = setName and player:GetAttribute(SkillSetConfig.MasteryAttribute(setName))
+			card.mastery.Text = mastery and ("Mastery " .. mastery) or ""
+		else
+			card.stroke.Color = SkillSetConfig.NoTierColor
+			card.stroke.Thickness = 1
+			card.stroke.Transparency = 0.6
+			card.icon.Visible = false
+			card.name.Visible = true
+			card.name.Text = card.kind == "melee" and "Coming soon" or "Empty"
+			card.name.TextColor3 = MUTED
+			card.mastery.Text = ""
+		end
+	end
+
 	for i, tool in ipairs(order) do
 		local slot = slotAt(i)
 		local held = tool.Parent == character
@@ -185,6 +300,5 @@ RunService.RenderStepped:Connect(function()
 	for i = #order + 1, #slots do
 		slots[i].button.Visible = false
 	end
-	row.Visible = #order > 0
-	row.Size = UDim2.fromOffset(math.max(#order * SLOT_SIZE + (#order - 1) * SLOT_GAP, 0), SLOT_SIZE)
+	grid.Visible = #order > 0
 end)
