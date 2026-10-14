@@ -2,7 +2,11 @@
 -- back (Rewinding), they're holding a block (Blocking, Guard) or stunned
 -- (HitstunUntil, a guard break or an NPC's hitstun). The server's cast
 -- checks and the client's input scripts both ask here, so a new reason to
--- be locked goes in one place.
+-- be locked goes in one place. InWater is its own question (you can still
+-- block while swimming) and Busy asks both: skills, punches and shots ask
+-- that.
+local Water = require(script.Parent:WaitForChild("Water"))
+
 local ActionLock = {}
 
 function ActionLock.Locked(character)
@@ -12,6 +16,16 @@ function ActionLock.Locked(character)
 	return character:GetAttribute("Rewinding") == true
 		or character:GetAttribute("Blocking") == true
 		or (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
+end
+
+-- whether the character is in the map's water (you can't fight or dash there)
+function ActionLock.InWater(character)
+	return Water.IsIn(character)
+end
+
+-- Locked, or in the water
+function ActionLock.Busy(character)
+	return ActionLock.Locked(character) or ActionLock.InWater(character)
 end
 
 return ActionLock

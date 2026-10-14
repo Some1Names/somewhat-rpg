@@ -1,6 +1,7 @@
 -- Shift lock everyone can use without turning on Roblox's Shift Lock Switch
--- setting: Left Ctrl locks the mouse to the center, turns the character
--- with the camera and moves the camera over the shoulder.
+-- setting: Left Ctrl turns the character with the camera and moves the camera
+-- over the shoulder. The mouse only turns the camera while the left button is
+-- held (then it is locked to the center); otherwise the cursor is free.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -13,6 +14,7 @@ local CROSSHAIR = "rbxasset://textures/MouseLockedCursor.png"
 local RENDER_STEP_NAME = "ShiftLock"
 
 local locked = false
+local holding = false -- the left mouse button is down (and went down on the game, not a button)
 
 local function currentHumanoid()
 	local character = player.Character
@@ -29,7 +31,7 @@ end
 -- runs right after the camera updates each frame
 local function faceCamera()
 	-- the camera scripts can reset this, so it is reapplied every frame
-	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	UserInputService.MouseBehavior = holding and Enum.MouseBehavior.LockCenter or Enum.MouseBehavior.Default
 	local humanoid = currentHumanoid()
 	local root = humanoid and humanoid.RootPart
 	-- a dash roll faces its own direction until it finishes
@@ -45,6 +47,7 @@ end
 
 local function setLocked(value)
 	locked = value
+	holding = holding and value
 	applyToHumanoid(currentHumanoid())
 	if locked then
 		UserInputService.MouseIcon = CROSSHAIR
@@ -57,8 +60,19 @@ local function setLocked(value)
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
+	if gameProcessed then
+		return
+	end
+	if input.KeyCode == TOGGLE_KEY then
 		setLocked(not locked)
+	elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
+		holding = locked
+	end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		holding = false
 	end
 end)
 

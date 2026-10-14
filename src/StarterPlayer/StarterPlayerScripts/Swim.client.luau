@@ -3,10 +3,10 @@
 -- inside one, this puts the Humanoid in the Swimming state (so the rig's own
 -- swim animation plays), cancels gravity with a VectorForce and drives the
 -- character with a LinearVelocity: it floats with its head above the surface
--- when idle, swims where the camera points with the movement keys (looking
--- down dives), and Space rises. At the surface next to a ledge Space climbs
--- out; with no ledge it just floats. The client runs its own character's
--- physics, so everyone sees it swim. It leaves everything alone while the
+-- and swims level with the movement keys, locked to the surface (no diving, no
+-- rising). At the surface next to a ledge Space climbs out; with no ledge it
+-- just floats. The camera is kept above the surface (nobody sees under water).
+-- The client runs its own character's physics, so everyone sees it swim. It leaves everything alone while the
 -- character is flying (Iridescent Requiem), dead, anchored, or being held by a skill
 -- (a mover with the Hold attribute): then it lets go for that moment and the
 -- skill moves them; a Dash drives the character itself, so this waits for it
@@ -25,17 +25,15 @@ local controls = require(player:WaitForChild("PlayerScripts"):WaitForChild("Play
 
 local SWIM_ACCEL = 60 -- studs/s² the swim drive may apply (its force is this times the mass)
 local SPRING = 4 -- per second: how hard swimmers settle to the float height
-local UP_SPRING = 6 -- per second: the fastest rise allowed is this times the distance left to the float height
 local IDLE_RISE = 5 -- studs per second an idle swimmer's buoyancy lifts them, however deep
 local SPLASH_SPEED = 12 -- studs per second: the fastest a swimmer sinks when they hit the water
 local EXIT_GROW = 1.5 -- studs past the water's edge a swimmer is still counted in it, so skimming the surface doesn't flicker
-local SURFACE_ZONE = 2 -- studs below the float height within which swimming forward stays at the surface
-local DIVE_PITCH = 0.4 -- how steeply down (the camera's Y) you must look before swimming dives from the surface
 local STILL = 0.1 -- move input weaker than this counts as idle
 local LEDGE_REACH = 3.5 -- studs ahead at the surface where a ledge counts
 local LEDGE_HEIGHT = 4.2 -- studs above the surface of the highest ledge it climbs onto
 local CLIMB_PUSH = 14 -- studs per second forward when climbing out
 local CLIMB_EXTRA = 1.5 -- studs of clearance above the ledge top
+local CAMERA_CLEARANCE = 0.5 -- studs the camera stays above the water's surface
 local REENTER_DELAY = 0.6 -- seconds after climbing out before the water can take hold again
 -- every state that would fight the swimming one; all are switched back on afterwards
 local DISABLED_STATES = {
@@ -214,31 +212,25 @@ local function step()
 		end
 	end
 
-	local y = root.Position.Y
-	local velocity
-	if not moving and not jumping then
-		-- idle: buoyancy lifts a swimmer to the float height, however deep
-		velocity = Vector3.new(0, math.clamp((floatY - y) * SPRING, -Water.RiseSpeed, IDLE_RISE), 0)
-	else
-		if moving and y > floatY - SURFACE_ZONE and direction.Y > -DIVE_PITCH then
-			-- skimming the surface: a shallow camera pitch doesn't dive; swim level
-			local flat = Vector3.new(direction.X, 0, direction.Z)
-			local power = math.min(direction.Magnitude, 1)
-			flat = flat.Magnitude > 0.01 and flat.Unit * power or Vector3.zero
-			velocity = flat * Water.SwimSpeed + Vector3.new(0, math.clamp((floatY - y) * SPRING, -Water.RiseSpeed, Water.RiseSpeed), 0)
-		else
-			velocity = direction * Water.SwimSpeed
-		end
-		if jumping then
-			velocity += Vector3.new(0, Water.RiseSpeed, 0)
-		end
-		-- no swimming up out of the water: the rise tapers to nothing at the float height
-		if velocity.Y > 0 then
-			velocity = Vector3.new(velocity.X, math.min(velocity.Y, math.max((floatY - y) * UP_SPRING, 0)), velocity.Z)
-		end
-	end
-	swim.velocity.VectorVelocity = velocity
+	-- locked to the surface: swim level (the camera's pitch and Space don't
+	-- steer up or down), and buoyancy holds the float height, however deep
+	local flat = Vector3.new(direction.X, 0, direction.Z)
+	flat = moving and flat.Magnitude > 0.01 and flat.Unit * math.min(direction.Magnitude, 1) or Vector3.zero
+	local lift = math.clamp((floatY - root.Position.Y) * SPRING, -Water.RiseSpeed, IDLE_RISE)
+	swim.velocity.VectorVelocity = flat * Water.SwimSpeed + Vector3.new(0, lift, 0)
 end
+
+-- nobody sees under the water: a camera inside a water part is lifted to just
+-- above its surface (after the camera scripts have run each frame)
+RunService:BindToRenderStep("WaterCamera", Enum.RenderPriority.Camera.Value + 2, function()
+	local camera = workspace.CurrentCamera
+	local cframe = camera.CFrame
+	local part = Water.Find(cframe.Position)
+	if part then
+		local surface = Water.surfaceY(part.CFrame, part.Size, cframe.Position)
+		camera.CFrame = cframe + Vector3.new(0, surface + CAMERA_CLEARANCE - cframe.Position.Y, 0)
+	end
+end)
 
 RunService.Heartbeat:Connect(step)
 

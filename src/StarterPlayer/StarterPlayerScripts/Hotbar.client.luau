@@ -5,17 +5,19 @@
 -- and your mastery in it. Bottom right, the other tools (anything that isn't a
 -- power or weapon set) in a 3x2 grid of six slots, keys 4-9, empty ones shown
 -- dimmed. Both blocks are the same size and sit above the key hints line. A key or a click equips a tool,
--- or puts it away if it's already in hand.
+-- or puts it away if it's already in hand. No tools in the water: they can't
+-- be equipped there and one in hand is put away when you swim in.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
-local Menus = require(script.Parent:WaitForChild("Menus"))
 local player = Players.LocalPlayer
 
 local SLOT_WIDTH = HudConfig.SlotWidth
@@ -76,13 +78,13 @@ grid.Size = UDim2.fromOffset(HudConfig.SideWidth, HudConfig.SideHeight)
 grid.BackgroundTransparency = 1
 grid.Parent = gui
 
-local function setOf(tool)
-	local setName = tool:GetAttribute("SkillSet")
 -- the Admin panel takes the right side of the screen, so the grid steps aside while it's open
 Menus.OnChange(function(openName)
 	grid.Visible = openName ~= "Admin"
 end)
 
+local function setOf(tool)
+	local setName = tool:GetAttribute("SkillSet")
 	return setName, setName and SkillSetConfig.Sets[setName]
 end
 
@@ -139,7 +141,7 @@ local function toggleTool(tool)
 	end
 	if tool.Parent == character then
 		humanoid:UnequipTools()
-	else
+	elseif not ActionLock.InWater(character) then
 		humanoid:EquipTool(tool)
 	end
 end
@@ -264,6 +266,12 @@ RunService.RenderStepped:Connect(function()
 	local owned = ownedTools()
 	refreshOrder(owned)
 	local character = player.Character
+	if character and character:GetAttribute("Swimming") == true then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid:UnequipTools()
+		end
+	end
 
 	for _, card in ipairs(cards) do
 		local tool = toolOfKind(owned, card.kind)

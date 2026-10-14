@@ -1,13 +1,14 @@
--- Hold E (Keybinds "Block") to block: sends true on the Block remote when the
+-- Hold Alt (Keybinds "Block") to block: sends true on the Block remote when the
 -- key goes down and false when it comes up (ServerScriptService.Guard decides
 -- whether the block takes; GuardConfig has the rules). Letting go also
 -- happens on death, a respawn and the window losing focus, and Dash lets go
 -- itself. A press while a ProximityPrompt is on screen is the prompt's, not a
--- block; and so E always blocks in a fight, every prompt in the world is
--- switched off on this client while you're in combat (you dealt or took
--- damage within GuardConfig.CombatTime, the LastCombatAt attribute) and comes
--- back after. Plays the block pose in ReplicatedStorage.CombatAnimations.Block
--- while the character's Blocking attribute is on, once that animation exists.
+-- block. Prompts use E, so this only matters when Block is rebound to E: then,
+-- so E always blocks in a fight, every prompt in the world is switched off on
+-- this client while you're in combat (you dealt or took damage within
+-- GuardConfig.CombatTime, the LastCombatAt attribute) and comes back after.
+-- Plays the block pose in ReplicatedStorage.CombatAnimations.Block while the
+-- character's Blocking attribute is on, once that animation exists.
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,6 +28,11 @@ local promptsShown = 0
 local inCombat = false
 local switchedOff = setmetatable({}, { __mode = "k" }) -- prompts we disabled -> true
 
+-- prompts are triggered with E
+local function sharesPromptKey()
+	return Keybinds.Key("Block") == Enum.KeyCode.E
+end
+
 local function release()
 	if pressed then
 		pressed = false
@@ -40,7 +46,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 	-- E is the prompt's while one is on screen
-	if promptsShown > 0 or pressed then
+	if (sharesPromptKey() and promptsShown > 0) or pressed then
 		return
 	end
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -85,7 +91,7 @@ local function combatNow()
 end
 
 local function refreshCombat()
-	local combat = combatNow()
+	local combat = sharesPromptKey() and combatNow()
 	if combat == inCombat then
 		return
 	end
@@ -102,6 +108,8 @@ local function refreshCombat()
 		end
 	end
 end
+
+Keybinds.Changed(refreshCombat)
 
 workspace.DescendantAdded:Connect(function(descendant)
 	if inCombat and descendant:IsA("ProximityPrompt") then

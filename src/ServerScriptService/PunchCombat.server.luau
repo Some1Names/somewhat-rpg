@@ -293,7 +293,7 @@ punchEvent.OnServerEvent:Connect(function(player, index)
 	end
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 or ActionLock.Locked(character) then
+	if not humanoid or humanoid.Health <= 0 or ActionLock.Busy(character) then
 		return
 	end
 

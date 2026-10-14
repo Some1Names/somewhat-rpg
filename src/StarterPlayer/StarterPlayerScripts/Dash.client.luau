@@ -28,6 +28,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -369,7 +370,7 @@ local function dash()
 	if not root or humanoid.Health <= 0 or humanoid.Sit then
 		return
 	end
-	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() then
+	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() or ActionLock.InWater(character) then
 		return
 	end
 	if character:GetAttribute("Blocking") == true then

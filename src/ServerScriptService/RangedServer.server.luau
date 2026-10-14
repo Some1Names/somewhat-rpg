@@ -115,7 +115,7 @@ fireRanged.OnServerEvent:Connect(function(player, action, origin, direction, id,
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
 	-- (ActionLock: Photoshop's Undo carrying her back, a block, a stun)
-	if not root or humanoid.Health <= 0 or ActionLock.Locked(character) then
+	if not root or humanoid.Health <= 0 or ActionLock.Busy(character) then
 		return
 	end
 	local _, setName = SkillSetConfig.Equipped(character)

@@ -95,7 +95,7 @@ local function tryAttack()
 		or humanoid.Sit
 		or player:GetAttribute("Dashing")
 		or player:GetAttribute("RangedReady")
-		or ActionLock.Locked(character) -- Undo carrying her back, a block, a stun
+		or ActionLock.Busy(character) -- Undo carrying her back, a block, a stun, the water
 	then
 		return
 	end

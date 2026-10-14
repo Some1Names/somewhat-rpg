@@ -4,11 +4,12 @@
 -- (Iridescent Requiem's Lightstep) spends a charge the same way, then sends
 -- where it went from and to, and its handler in ServerScriptService.Skills
 -- takes over. Every dash is also a dodge: it breaks a hold on the player
--- (CrowdControl.Dodge).
+-- (CrowdControl.Dodge). No dashing in water (ActionLock.InWater).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -29,6 +30,9 @@ local function isPoint(value)
 end
 
 dashEffect.OnServerEvent:Connect(function(player, from, to)
+	if ActionLock.InWater(player.Character) then
+		return
+	end
 	local now = os.clock()
 	local max = StatConfig.DodgeCharges(player:GetAttribute("Level") or 0)
 	local bucket = buckets[player] or { charges = max, at = now }

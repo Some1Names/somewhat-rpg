@@ -44,10 +44,10 @@ check("parse_unknown_ignored", unknown.SkillZ == "K" and unknown.Bogus == nil)
 
 check("parse_double_falls_back", same(Keybinds.Parse("SkillZ=Q"), defaults))
 
--- Block came after players could already save E for something else: it gives way
+-- Block came after players could already save its key for something else: it gives way
 -- (takes that action's old key) instead of the whole save being thrown out
-local onE = Keybinds.Parse("SkillZ=E,Dash=K")
-check("parse_old_save_on_e_keeps_bindings", onE.SkillZ == "E" and onE.Dash == "K" and onE.Block == "Z" and Keybinds.Valid(onE))
+local onAlt = Keybinds.Parse("SkillZ=LeftAlt,Dash=K")
+check("parse_old_save_on_block_key_keeps_bindings", onAlt.SkillZ == "LeftAlt" and onAlt.Dash == "K" and onAlt.Block == "Z" and Keybinds.Valid(onAlt))
 check("parse_block_saved_on_e_stays", Keybinds.Parse("Block=E").Block == "E")
 
 check("parse_non_string_and_long", same(Keybinds.Parse(nil), defaults)

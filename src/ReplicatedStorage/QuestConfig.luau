@@ -33,21 +33,21 @@ QuestConfig.Givers = {
 	Training = {
 		name = "Bounty Hunter",
 		quests = {
-			{ id = "dummies", title = "Dummy Practice", level = 0, enemyType = "Dummy", plural = "Dummies", count = 3 },
-			{ id = "strong", title = "Tougher Dummies", level = 5, enemyType = "StrongDummy", plural = "Strong Dummies", count = 3 },
+			{ id = "dummies", title = "Dummy Practice", level = 0, enemyType = "Dummy", plural = "Dummies", count = 8 },
+			{ id = "strong", title = "Tougher Dummies", level = 5, enemyType = "StrongDummy", plural = "Strong Dummies", count = 8 },
 		},
 	},
 	Frontier = {
 		name = "Bounty Hunter",
 		quests = {
-			{ id = "workers", title = "Clear the Workers", level = 5, enemyType = "Worker", count = 6 },
-			{ id = "henchmen", title = "Henchmen Trouble", level = 10, enemyType = "Henchman", plural = "Henchmen", count = 4 },
+			{ id = "workers", title = "Clear the Workers", level = 5, enemyType = "Worker", count = 8 },
+			{ id = "henchmen", title = "Henchmen Trouble", level = 10, enemyType = "Henchman", plural = "Henchmen", count = 8 },
 		},
 	},
 	Outpost = {
 		name = "Bounty Hunter",
 		quests = {
-			{ id = "bodyguards", title = "Break the Guard", level = 15, enemyType = "Bodyguard", count = 3 },
+			{ id = "bodyguards", title = "Break the Guard", level = 15, enemyType = "Bodyguard", count = 8 },
 			{ id = "evilboss", title = "The Evil Boss", level = 40, enemyType = "EvilBoss", plural = "Evil Bosses", count = 1 },
 		},
 	},
