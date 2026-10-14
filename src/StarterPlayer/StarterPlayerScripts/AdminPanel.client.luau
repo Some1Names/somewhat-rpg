@@ -2,8 +2,8 @@
 -- checks every request). Press ` or click ADMIN to change any player's XP,
 -- level, stat points, stats and mastery, reset their skill cooldowns, give
 -- them a skill set, heal or respawn them, or put status effects on them (or
--- the NPC nearest them). The overcharge and reset
--- cooldowns buttons each have a key box: click it and press a key, and that
+-- the NPC nearest them), or set and freeze the world's time of day. The
+-- overcharge and reset cooldowns buttons each have a key box: click it and press a key, and that
 -- key does the action on yourself from then on, panel open or not
 -- (Backspace clears it, Escape cancels). Binds are kept in the saved
 -- AdminKeybinds attribute.
@@ -298,6 +298,25 @@ for setName in pairs(SkillSetConfig.Sets) do
 		run("SetMastery", setName, value)
 	end, SkillSetConfig.MaxMastery)
 end
+
+heading("WORLD")
+inputRow("Time (0-24)", "Set", function(value)
+	run("SetTime", value)
+end)
+local freezeButton = button(section(ROW_HEIGHT), "Freeze time", {
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	TextColor3 = TEXT,
+})
+outline(freezeButton, 0.5)
+local function showFrozen()
+	freezeButton.Text = ReplicatedStorage:GetAttribute("DayFrozen") and "Resume time" or "Freeze time"
+end
+showFrozen()
+ReplicatedStorage:GetAttributeChangedSignal("DayFrozen"):Connect(showFrozen)
+freezeButton.Activated:Connect(function()
+	run("FreezeTime")
+end)
 
 -- Key binds: bind id ("ResetCooldowns", "Overcharge:Mandela") -> key name,
 -- read from and saved to the AdminKeybinds attribute as "id=Key,id=Key"

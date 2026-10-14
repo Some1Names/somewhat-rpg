@@ -6,6 +6,8 @@
 -- DayLength real seconds. Keyframes are the lighting look at certain hours;
 -- Sample blends the two around an hour. Property names are real Roblox
 -- property names, colours are {r, g, b} in 0 to 255 (the client makes Color3s).
+local MAX_HOUR_INPUT = 1e6 -- hours: bigger and the % 24 below loses its precision
+
 local DayCycleConfig = {
 	DayLength = 1200, -- real seconds for one 24 hour day
 	StartHour = 7, -- the hour a new server starts at
@@ -104,12 +106,17 @@ function DayCycleConfig.PhaseAt(hour)
 	return "Night"
 end
 
--- an hour typed by an admin, wrapped into 0 up to 24; nil if it isn't a real number
+-- an hour typed by an admin, wrapped into 0 up to 24; nil if it isn't a real
+-- number, or so big that the wrapping would lose its precision
 function DayCycleConfig.CleanHour(value)
-	if typeof(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge then
+	if typeof(value) ~= "number" or value ~= value or math.abs(value) > MAX_HOUR_INPUT then
 		return nil
 	end
-	return value % 24
+	local hour = value % 24
+	if hour >= 24 then
+		hour = 0 -- a tiny negative rounds up to exactly 24
+	end
+	return hour
 end
 
 local function blend(from, to, t)

@@ -1,8 +1,10 @@
 -- Luminance and flight, for skill sets that have them (Iridescent Requiem).
 -- While the set is equipped, its Luminance (the player's <Set>Luminance
 -- attribute, 0 to 1) fills in sunlight, much faster above the set's
--- cloudHeight. In shade it can hold only the passive's shadeCap: above it
--- it drains down to it, below it slowly gathers up to it (the player's
+-- cloudHeight, and by night slowly in moonlight (DayCycleConfig.MoonShare of
+-- the rate, under open sky; SkyLight says which light reaches him). In shade
+-- it can hold only the passive's shadeCap: above it it drains down to it,
+-- below it slowly gathers up to it (the player's
 -- ShadedAttribute tells the skill bar). Flying and Prism Form
 -- (Skills.PrismForm) burn it instead of gathering it. ToggleFlight asks
 -- to take off or land, and the character's Flying attribute tells every
@@ -10,19 +12,18 @@
 -- out or the set is put away. Passives reads Luminance for its damage cut.
 -- Desaturated (Photoshop's Desaturate) drains the colour out: no light
 -- gathers, it drains DESATURATED_DRAIN a second, and he can't fly.
-local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local Quests = require(ServerScriptService:WaitForChild("Quests"))
+local SkyLight = require(ServerScriptService:WaitForChild("SkyLight"))
+local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
 
 local TICK = 0.2 -- seconds
-local SUN_RAY_LENGTH = 1000 -- studs
-local SEE_THROUGH = 0.5 -- parts at least this transparent let the light through
 local FLYING = "Flying"
 local DESATURATED_DRAIN = 0.15 -- Luminance per second while Desaturated
 local flights = setmetatable({}, { __mode = "k" }) -- player -> { since, last }: how long this flight has lasted (Quests)
@@ -35,34 +36,6 @@ local function luminanceSet(character)
 		return setName, set
 	end
 	return nil, nil
-end
-
--- whether sunlight reaches this point; characters don't count as shade
-local function inSunlight(position)
-	local sun = Lighting:GetSunDirection()
-	if sun.Y <= 0 then
-		return false -- the sun's down
-	end
-	local ignore = {}
-	for _, other in ipairs(Players:GetPlayers()) do
-		if other.Character then
-			table.insert(ignore, other.Character)
-		end
-	end
-	local params = RaycastParams.new()
-	params.FilterType = Enum.RaycastFilterType.Exclude
-	for _ = 1, 4 do
-		params.FilterDescendantsInstances = ignore
-		local hit = workspace:Raycast(position, sun * SUN_RAY_LENGTH, params)
-		if not hit then
-			return true
-		end
-		if hit.Instance.Transparency < SEE_THROUGH then
-			return false
-		end
-		table.insert(ignore, hit.Instance)
-	end
-	return false
 end
 
 local function desaturated(character)
@@ -136,16 +109,21 @@ task.spawn(function()
 					elseif flying and set.flight then
 						-- nor while flying (drained below), or flight above the
 						-- clouds would never end
-					elseif inSunlight(root.Position + Vector3.new(0, 2, 0)) then
-						local aboveClouds = root.Position.Y >= passive.cloudHeight
-						luminance += passive.chargePerSecond * (aboveClouds and passive.cloudMultiplier or 1) * dt
 					else
-						-- shade holds only so much: down to the cap, or slowly up to it
-						shaded = true
-						if luminance > passive.shadeCap then
-							luminance = math.max(luminance - passive.shadeDrainPerSecond * dt, passive.shadeCap)
+						local light = SkyLight.Exposure(root.Position + Vector3.new(0, 2, 0))
+						if light then
+							-- sunlight in full, moonlight a share of it
+							local aboveClouds = root.Position.Y >= passive.cloudHeight
+							local share = light == "moon" and DayCycleConfig.MoonShare or 1
+							luminance += passive.chargePerSecond * share * (aboveClouds and passive.cloudMultiplier or 1) * dt
 						else
-							luminance = math.min(luminance + passive.shadeChargePerSecond * dt, passive.shadeCap)
+							-- shade holds only so much: down to the cap, or slowly up to it
+							shaded = true
+							if luminance > passive.shadeCap then
+								luminance = math.max(luminance - passive.shadeDrainPerSecond * dt, passive.shadeCap)
+							else
+								luminance = math.min(luminance + passive.shadeChargePerSecond * dt, passive.shadeCap)
+							end
 						end
 					end
 					if flying and set.flight then

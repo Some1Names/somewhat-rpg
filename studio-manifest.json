@@ -316,6 +316,160 @@
   "enabled": true
  },
  {
+  "file": "src/ServerScriptService/Framed.luau",
+  "names": [
+   "ServerScriptService",
+   "Framed"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PhotoshopUtil.luau",
+  "names": [
+   "ServerScriptService",
+   "PhotoshopUtil"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PhotoshopServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "PhotoshopServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/SettingsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SettingsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/KillRecords.luau",
+  "names": [
+   "ServerScriptService",
+   "KillRecords"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Headhunter.server.luau",
+  "names": [
+   "ServerScriptService",
+   "Headhunter"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Guard.luau",
+  "names": [
+   "ServerScriptService",
+   "Guard"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/DayClock.luau",
+  "names": [
+   "ServerScriptService",
+   "DayClock"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/DayCycle.server.luau",
+  "names": [
+   "ServerScriptService",
+   "DayCycle"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/SkyLight.luau",
+  "names": [
+   "ServerScriptService",
+   "SkyLight"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Quests.luau",
+  "names": [
+   "ServerScriptService",
+   "Quests"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/QuestServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "QuestServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/ServerScriptService/Skills/BlackHole.luau",
   "names": [
    "ServerScriptService",
@@ -554,6 +708,90 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/ServerScriptService/Skills/Shutter.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Shutter"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Snapshot.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Snapshot"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/PhotoTeleport.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "PhotoTeleport"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Desaturate.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Desaturate"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/IrisHorizon.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "IrisHorizon"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Skills/Kaleidoscope.luau",
+  "names": [
+   "ServerScriptService",
+   "Skills",
+   "Kaleidoscope"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Folder",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
   "file": "src/StarterPlayer/StarterPlayerScripts/HitFeedback.client.luau",
   "names": [
    "StarterPlayer",
@@ -760,6 +998,22 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/PhotoshopEffects.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillEffects",
+   "PhotoshopEffects"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
   "file": "src/StarterPlayer/StarterPlayerScripts/DodgeCharges.luau",
   "names": [
    "StarterPlayer",
@@ -948,6 +1202,150 @@
   "enabled": true
  },
  {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PhotoGallery.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PhotoGallery"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Settings.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Settings"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DeathScreen.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DeathScreen"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Headhunter.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Headhunter"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Block.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Block"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DayCycleClient.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DayCycleClient"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/QuestBoard.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "QuestBoard"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Quests.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Quests"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Swim.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Swim"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/StarterPlayer/StarterCharacterScripts/Health.server.luau",
   "names": [
    "StarterPlayer",
@@ -1064,176 +1462,6 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
-  "names": [
-   "ServerStorage",
-   "BlackHoleTemplate",
-   "ClientEffect"
-  ],
-  "classes": [
-   "ServerStorage",
-   "Model",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Client",
-  "enabled": true
- },
- {
-  "file": "src/ServerScriptService/Framed.luau",
-  "names": [
-   "ServerScriptService",
-   "Framed"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/PhotoshopUtil.luau",
-  "names": [
-   "ServerScriptService",
-   "PhotoshopUtil"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/PhotoshopServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "PhotoshopServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/ServerScriptService/Skills/Shutter.luau",
-  "names": [
-   "ServerScriptService",
-   "Skills",
-   "Shutter"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Folder",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Skills/Snapshot.luau",
-  "names": [
-   "ServerScriptService",
-   "Skills",
-   "Snapshot"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Folder",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Skills/PhotoTeleport.luau",
-  "names": [
-   "ServerScriptService",
-   "Skills",
-   "PhotoTeleport"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Folder",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Skills/Desaturate.luau",
-  "names": [
-   "ServerScriptService",
-   "Skills",
-   "Desaturate"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Folder",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Skills/IrisHorizon.luau",
-  "names": [
-   "ServerScriptService",
-   "Skills",
-   "IrisHorizon"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Folder",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Skills/Kaleidoscope.luau",
-  "names": [
-   "ServerScriptService",
-   "Skills",
-   "Kaleidoscope"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Folder",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/PhotoGallery.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "PhotoGallery"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/PhotoshopEffects.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "SkillEffects",
-   "PhotoshopEffects"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
   "file": "src/ReplicatedStorage/Keybinds.luau",
   "names": [
    "ReplicatedStorage",
@@ -1244,36 +1472,6 @@
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/SettingsServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "SettingsServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Settings.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Settings"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/ReplicatedStorage/Preferences.luau",
@@ -1288,22 +1486,6 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/StarterPlayer/StarterPlayerScripts/DeathScreen.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "DeathScreen"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
   "file": "src/ReplicatedStorage/HeadhunterConfig.luau",
   "names": [
    "ReplicatedStorage",
@@ -1314,48 +1496,6 @@
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/KillRecords.luau",
-  "names": [
-   "ServerScriptService",
-   "KillRecords"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Headhunter.server.luau",
-  "names": [
-   "ServerScriptService",
-   "Headhunter"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Headhunter.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Headhunter"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/ReplicatedStorage/ActionLock.luau",
@@ -1382,32 +1522,16 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerScriptService/Guard.luau",
+  "file": "src/ReplicatedStorage/DayCycleConfig.luau",
   "names": [
-   "ServerScriptService",
-   "Guard"
+   "ReplicatedStorage",
+   "DayCycleConfig"
   ],
   "classes": [
-   "ServerScriptService",
+   "ReplicatedStorage",
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Block.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Block"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/ReplicatedStorage/QuestConfig.luau",
@@ -1420,64 +1544,6 @@
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Quests.luau",
-  "names": [
-   "ServerScriptService",
-   "Quests"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/QuestServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "QuestServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/QuestBoard.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "QuestBoard"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Quests.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Quests"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/ReplicatedStorage/MasteryRules.luau",
@@ -1504,19 +1570,19 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Swim.client.luau",
+  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
   "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Swim"
+   "ServerStorage",
+   "BlackHoleTemplate",
+   "ClientEffect"
   ],
   "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
+   "ServerStorage",
+   "Model",
+   "Script"
   ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
+  "class": "Script",
+  "runContext": "Client",
   "enabled": true
  }
 ]
