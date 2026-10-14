@@ -1,6 +1,7 @@
 -- Hold Left Shift to sprint while moving; sprinting drains stamina and swaps
 -- the normal run for the SprintRun animation. Blocking (Guard) halves the walk
--- and rules out sprinting; a guard break's stun holds you still.
+-- and rules out sprinting; a guard break's stun holds you still. No sprinting
+-- while swimming (Swim sets the character's Swimming attribute).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -62,7 +63,8 @@ RunService.Heartbeat:Connect(function(dt)
 	local moving = humanoid.MoveDirection.Magnitude > 0.1
 	local stunned = (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
 	local blocking = character:GetAttribute("Blocking") == true
-	local sprinting = holding and moving and not stunned and not blocking and Stamina.Drain(DRAIN_PER_SECOND * dt)
+	local swimming = character:GetAttribute("Swimming") == true
+	local sprinting = holding and moving and not stunned and not blocking and not swimming and Stamina.Drain(DRAIN_PER_SECOND * dt)
 	if stunned then
 		humanoid.WalkSpeed = 0
 		humanoid.Jump = false

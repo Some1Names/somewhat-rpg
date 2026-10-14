@@ -12,6 +12,7 @@ local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
+local Water = require(ReplicatedStorage:WaitForChild("Water"))
 
 local player = Players.LocalPlayer
 
@@ -60,6 +61,10 @@ local function tryDoubleJump()
 	end
 	-- a guard break's stun holds you still
 	if (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow() then
+		return
+	end
+	-- nothing to push off from in water
+	if Water.IsIn(character) then
 		return
 	end
 	if humanoid.FloorMaterial ~= Enum.Material.Air then
