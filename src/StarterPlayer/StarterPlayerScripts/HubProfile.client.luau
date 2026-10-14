@@ -1,6 +1,6 @@
 -- The hub's Profile tab, its cover page: the power held (big, in caps), its
--- tier, mastery and reforge level, the bounty taken, level and yen as big
--- figures, XP, and unspent
+-- tier, mastery and reforge level, the bounty taken, level with an XP bar,
+-- yen, and unspent
 -- stat points (a link to Stats). The right side is left to the posed character
 -- (HubPose), with a huge faded "01" behind it and the player's name on a chip.
 -- Everything comes from player attributes other systems keep.
@@ -121,10 +121,10 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
--- level, yen and XP: a row each, the caption on the left and the number big
--- on the right, with an accent bar down the left edge
+-- level with its XP bar, and yen: a row each with an accent bar down the left edge
 local FIGURE_HEIGHT = 48
-local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 3 * FIGURE_HEIGHT + 2 * 6), BackgroundTransparency = 1 })
+local LEVEL_HEIGHT = 58
+local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, LEVEL_HEIGHT + FIGURE_HEIGHT + 6), BackgroundTransparency = 1 })
 make("UIListLayout", { Parent = figures, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 local tileBars = {}
 local function figure(order, caption)
@@ -139,9 +139,21 @@ local function figure(order, caption)
 		Size = UDim2.new(1, -108, 1, 0),
 	})
 end
-local levelFigure = figure(1, "LEVEL")
+-- the level row: LEVEL and the number on the left, the XP toward the next one as a bar
+local levelRow = make("Frame", { Parent = figures, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, LEVEL_HEIGHT), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
+table.insert(tileBars, make("Frame", { Parent = levelRow, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 }))
+label(levelRow, { Text = "LEVEL", TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(14, 8), Size = UDim2.fromOffset(80, 12) })
+local levelFigure = label(levelRow, { Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(14, 22), Size = UDim2.fromOffset(90, 28) })
+local levelLabel = label(levelRow, {
+	TextSize = 11,
+	TextColor3 = Theme.Muted,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	Position = UDim2.fromOffset(110, 8),
+	Size = UDim2.new(1, -124, 0, 12),
+})
+local xpBack = make("Frame", { Parent = levelRow, Position = UDim2.fromOffset(110, 32), Size = UDim2.new(1, -124, 0, 8), BackgroundColor3 = Theme.BarBack, BorderSizePixel = 0 })
+local xpFill = make("Frame", { Parent = xpBack, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0 })
 local yenFigure = figure(2, "YEN")
-local levelLabel = figure(3, "XP")
 local pointsButton = make("TextButton", {
 	Parent = column,
 	LayoutOrder = 8,
@@ -188,9 +200,12 @@ local function refresh()
 	levelFigure.Text = tostring(level)
 	yenFigure.Text = formatYen(player:GetAttribute("Yen") or 0)
 	if level >= StatConfig.MaxLevel then
-		levelLabel.Text = "MAX"
+		levelLabel.Text = "MAX LEVEL"
+		xpFill.Size = UDim2.fromScale(1, 1)
 	else
-		levelLabel.Text = string.format("%d / %d", player:GetAttribute("XP") or 0, StatConfig.XPToLevelUp(level))
+		local xp, needed = player:GetAttribute("XP") or 0, StatConfig.XPToLevelUp(level)
+		levelLabel.Text = string.format("%d / %d XP", xp, needed)
+		xpFill.Size = UDim2.fromScale(math.clamp(xp / needed, 0, 1), 1)
 	end
 	local points = player:GetAttribute("StatPoints") or 0
 	pointsButton.Text = string.format("%d UNSPENT POINT%s  →  STATS", points, points == 1 and "" or "S")
@@ -203,6 +218,7 @@ Hub.OnAccent(function(_, ink)
 	end
 	masteryFill.BackgroundColor3 = ink
 	bountyBar.BackgroundColor3 = ink
+	xpFill.BackgroundColor3 = ink
 end)
 Hub.OnShown("Profile", refresh)
 

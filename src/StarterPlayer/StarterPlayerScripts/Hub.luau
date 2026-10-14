@@ -11,7 +11,7 @@
 -- drawn through HubRules.Ink so a light one stays visible. Square everything.
 -- Motion: the nav slides in on open; on each tab the page eases up into place,
 -- the title fades in and its bar sweeps across. Hover: nav entries nudge right,
--- the × turns, and every text-only button in a tab gets an accent underline.
+-- the × turns, and every button in a tab gets an accent line under it.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -653,17 +653,16 @@ escButton.MouseLeave:Connect(function()
 	escButton.TextColor3 = Theme.Muted
 end)
 
--- every text-only button in a tab (sub-tabs, filters, links) gets an accent
--- underline that sweeps in on hover; buttons with a fill darken by themselves
+-- every button in a tab (sub-tabs, chips, cards, links) gets an accent line
+-- that sweeps in just under it on hover
 local function hoverLine(button)
-	if button.BackgroundTransparency < 1 or button:FindFirstChild("HoverLine") or button:FindFirstChildWhichIsA("UIGridStyleLayout") then
+	if button:FindFirstChild("HoverLine") or button:FindFirstChildWhichIsA("UIGridStyleLayout") then
 		return
 	end
 	local line = make("Frame", {
 		Name = "HoverLine",
 		Parent = button,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
+		Position = UDim2.new(0, 0, 1, 2),
 		Size = UDim2.new(0, 0, 0, 2),
 		BorderSizePixel = 0,
 	})

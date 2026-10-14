@@ -1,6 +1,6 @@
 -- The HUD's plain icons. Top right, right to left: Settings (P), and Admin (`)
--- for admins. Bottom left, above the Hotbar's equipment cards: the player's
--- yen as gold text, and under it the Menu icon, which opens the hub (Hub) on
+-- for admins. Bottom left, above the Hotbar's equipment cards: the Menu icon
+-- with the player's yen as gold text to its right; Menu opens the hub (Hub) on
 -- Profile; B, J and M open it on Backpack, Quests and Stats. No boxes: white
 -- icons with a dark stroke, the one whose menu is open a little larger, a
 -- label with its key beside whichever is hovered (or held, on touch). Each
@@ -68,7 +68,7 @@ make("UIListLayout", {
 	Padding = UDim.new(0, ICON_GAP),
 })
 
--- bottom left, above the cards: the yen, and the Menu icon under it
+-- bottom left, above the cards: the Menu icon, and the yen to its right
 local cluster = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
@@ -77,10 +77,16 @@ local cluster = make("Frame", {
 	AutomaticSize = Enum.AutomaticSize.XY,
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = cluster, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, HudConfig.SideGap) })
+make("UIListLayout", {
+	Parent = cluster,
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, ICON_GAP),
+})
 local leftRow = make("Frame", {
 	Parent = cluster,
-	LayoutOrder = 2,
+	LayoutOrder = 1,
 	Size = UDim2.fromOffset(0, HudConfig.IconSizeOpen),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
@@ -101,7 +107,7 @@ end
 
 local yenLabel = make("TextLabel", {
 	Parent = cluster,
-	LayoutOrder = 1,
+	LayoutOrder = 2,
 	Size = UDim2.fromOffset(0, HudConfig.YenHeight),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
