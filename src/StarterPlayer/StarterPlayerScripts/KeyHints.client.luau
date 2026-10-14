@@ -1,11 +1,11 @@
--- Key hints, bottom left above the equipment cards: plain text, one line per basic move, a small white
+-- Key hints, one line along the bottom right: plain text, each basic move a small white
 -- key cap then the move's name. Dash and Block show the player's own keys
 -- (Keybinds, so a rebind updates it), and Dash the set's own dash name when
 -- the set in hand has one unlocked (Lightstep). RMB Aim shows only while
 -- holding a set with a ranged move. Space, Shift and Ctrl are fixed. The
--- Key hints setting (Preferences) turns the panel off. It hides while a menu
--- is open (Menus), since the side menus cover its corner. Touch-only devices
--- have no keys, so they don't get it.
+-- Key hints setting (Preferences) turns the line off. Touch-only devices have
+-- no keys, so they don't get it. Everything else on the bottom edge sits above
+-- it (HudConfig.BottomReserve).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -13,13 +13,12 @@ local UserInputService = game:GetService("UserInputService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
-local Menus = require(script.Parent:WaitForChild("Menus"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local player = Players.LocalPlayer
 
-local LINE_HEIGHT = 20
+local LINE_HEIGHT = HudConfig.HintsHeight
 local CHECK_SPACING = 0.25 -- seconds between looks at what's in hand
 local TEXT = Color3.new(1, 1, 1)
 local KEYCAP_TEXT = Color3.fromRGB(20, 20, 28)
@@ -43,13 +42,20 @@ local gui = make("ScreenGui", {
 
 local list = make("Frame", {
 	Parent = gui,
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.EdgeMargin + HudConfig.CardHeight + 10)), -- above the Hotbar's cards
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -HudConfig.EdgeMargin),
 	Size = UDim2.fromOffset(0, 0),
 	AutomaticSize = Enum.AutomaticSize.XY,
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3) })
+make("UIListLayout", {
+	Parent = list,
+	FillDirection = Enum.FillDirection.Horizontal,
+	HorizontalAlignment = Enum.HorizontalAlignment.Right,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 16),
+})
 
 local function line(order, key, name)
 	local row = make("Frame", {
@@ -115,11 +121,10 @@ local function hints()
 	return result
 end
 
-local menuOpen = false
 local shown -- the signature of the lines drawn, so they're rebuilt only when they change
 
 local function refresh()
-	local visible = Preferences.Get("KeyHints") and not menuOpen and (UserInputService.KeyboardEnabled or not UserInputService.TouchEnabled)
+	local visible = Preferences.Get("KeyHints") and (UserInputService.KeyboardEnabled or not UserInputService.TouchEnabled)
 	list.Visible = visible
 	if not visible then
 		return
@@ -144,10 +149,6 @@ local function refresh()
 	end
 end
 
-Menus.OnChange(function(openName)
-	menuOpen = openName ~= nil
-	refresh()
-end)
 Keybinds.Changed(refresh)
 Preferences.Changed(refresh)
 -- what's in hand changes with equipping, putting away and mastery: look now and then

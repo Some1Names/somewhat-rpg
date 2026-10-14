@@ -13,7 +13,7 @@ local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Menus = {}
 
 local FIT_TOP = 12 -- px from the top of the screen below the top bar (the icon row is up in the bar)
-local FIT_BOTTOM = 172 -- the skill bar's top edge (16 px up, 96 px tall, its header)
+local FIT_BOTTOM = HudConfig.BottomReserve + 154 -- the skill bar's top edge (above the key hints line, 154 px tall with its header)
 local FIT_MIN_HEIGHT = 160 -- a panel never gets shorter than this, however short the screen
 
 local openName, openClose
@@ -96,7 +96,7 @@ function Menus.Fit(panel, rightEdge)
 	panel.AnchorPoint = rightEdge and Vector2.new(1, 0.5) or Vector2.new(0.5, 0.5)
 	local function update()
 		local extra = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
-		local available = screenHeight(gui) - FIT_TOP - (rightEdge and HudConfig.EdgeMargin or FIT_BOTTOM)
+		local available = screenHeight(gui) - FIT_TOP - (rightEdge and HudConfig.BottomReserve or FIT_BOTTOM)
 		panel.Size = UDim2.fromOffset(width, math.min(layout.AbsoluteContentSize.Y + extra, math.max(available, FIT_MIN_HEIGHT)))
 		local x = rightEdge and UDim2.new(1, -HudConfig.EdgeMargin, 0, 0) or UDim2.fromScale(0.5, 0)
 		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)

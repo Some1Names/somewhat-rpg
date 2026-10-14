@@ -3,7 +3,8 @@
 -- MELEE (3, coming), each outlined in the colour of its skill set's tier
 -- (SkillSetConfig.Tiers: purple S, red A, blue B, green C) with the set's name
 -- and your mastery in it. Bottom right, the other tools (anything that isn't a
--- power or weapon set) in a 3x2 grid, keys 4-9. A key or a click equips a tool,
+-- power or weapon set) in a 2x3 grid of six slots, keys 4-9, empty ones shown
+-- dimmed. Both blocks are the same size and sit above the key hints line. A key or a click equips a tool,
 -- or puts it away if it's already in hand.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,12 +17,13 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local player = Players.LocalPlayer
 
-local SLOT_SIZE = HudConfig.SlotSize
-local SLOT_GAP = 6
-local GRID_COLUMNS = 3
+local SLOT_WIDTH = HudConfig.SlotWidth
+local SLOT_HEIGHT = HudConfig.SlotHeight
+local SLOT_GAP = HudConfig.SideGap
+local GRID_COLUMNS = 2
 local GRID_SLOTS = 6
 local CARD_WIDTH = HudConfig.CardWidth
-local CARD_HEIGHT = HudConfig.CardHeight
+local CARD_HEIGHT = HudConfig.SideHeight
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local HELD_BACKGROUND = Color3.fromRGB(44, 44, 58)
 local TEXT = Color3.new(1, 1, 1)
@@ -61,15 +63,15 @@ gui.Parent = player:WaitForChild("PlayerGui")
 
 local cardRow = Instance.new("Frame")
 cardRow.AnchorPoint = Vector2.new(0, 1)
-cardRow.Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -HudConfig.EdgeMargin)
-cardRow.Size = UDim2.fromOffset(#CARDS * CARD_WIDTH + (#CARDS - 1) * SLOT_GAP, CARD_HEIGHT)
+cardRow.Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -HudConfig.BottomReserve)
+cardRow.Size = UDim2.fromOffset(HudConfig.SideWidth, CARD_HEIGHT)
 cardRow.BackgroundTransparency = 1
 cardRow.Parent = gui
 
 local grid = Instance.new("Frame")
 grid.AnchorPoint = Vector2.new(1, 1)
-grid.Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -HudConfig.EdgeMargin)
-grid.Size = UDim2.fromOffset(GRID_COLUMNS * SLOT_SIZE + (GRID_COLUMNS - 1) * SLOT_GAP, 2 * SLOT_SIZE + SLOT_GAP)
+grid.Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -HudConfig.BottomReserve)
+grid.Size = UDim2.fromOffset(HudConfig.SideWidth, HudConfig.SideHeight)
 grid.BackgroundTransparency = 1
 grid.Parent = gui
 
@@ -178,10 +180,15 @@ for i, spec in ipairs(CARDS) do
 	local icon = Instance.new("ImageLabel")
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0.5, 0)
-	icon.Position = UDim2.new(0.5, 0, 0, 32)
-	icon.Size = UDim2.fromOffset(CARD_WIDTH - 16, CARD_WIDTH - 16)
+	icon.Position = UDim2.new(0.5, 0, 0, 36)
+	icon.Size = UDim2.fromOffset(CARD_WIDTH - 12, CARD_WIDTH - 12)
 	icon.Parent = button
-	local name = newLabel(button, { TextSize = 12, Position = UDim2.fromOffset(3, 34), Size = UDim2.new(1, -6, 0, 40) })
+	local name = newLabel(button, { TextSize = 12, Position = UDim2.fromOffset(2, 38), Size = UDim2.new(1, -4, 0, 56) })
+	name.TextScaled = true
+	local nameLimit = Instance.new("UITextSizeConstraint")
+	nameLimit.MaxTextSize = 13
+	nameLimit.MinTextSize = 8
+	nameLimit.Parent = name
 	local mastery = newLabel(button, { TextSize = 9, TextColor3 = MUTED, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -6), Size = UDim2.new(1, 0, 0, 12) })
 	button.Activated:Connect(function()
 		toggleTool(cards[i].tool)
@@ -201,9 +208,9 @@ local function slotAt(i)
 	button.BorderSizePixel = 0
 	button.BackgroundColor3 = BACKGROUND
 	button.BackgroundTransparency = 0.25
-	button.Size = UDim2.fromOffset(SLOT_SIZE, SLOT_SIZE)
+	button.Size = UDim2.fromOffset(SLOT_WIDTH, SLOT_HEIGHT)
 	local column, rowIndex = (i - 1) % GRID_COLUMNS, math.floor((i - 1) / GRID_COLUMNS)
-	button.Position = UDim2.fromOffset(column * (SLOT_SIZE + SLOT_GAP), rowIndex * (SLOT_SIZE + SLOT_GAP))
+	button.Position = UDim2.fromOffset(column * (SLOT_WIDTH + SLOT_GAP), rowIndex * (SLOT_HEIGHT + SLOT_GAP))
 	button.Parent = grid
 	local stroke = newStroke(button)
 	newLabel(button, { Text = tostring(#CARDS + i), TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(12, 12) })
@@ -282,10 +289,21 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 
-	for i, tool in ipairs(order) do
+	-- all six slots always show; the ones with no tool are dimmed
+	for i = 1, GRID_SLOTS do
 		local slot = slotAt(i)
+		local tool = order[i]
+		if not tool then
+			slot.button.BackgroundColor3 = BACKGROUND
+			slot.button.BackgroundTransparency = 0.6
+			slot.stroke.Color = SkillSetConfig.NoTierColor
+			slot.stroke.Thickness = 1
+			slot.stroke.Transparency = 0.7
+			slot.icon.Visible = false
+			slot.name.Visible = false
+			continue
+		end
 		local held = tool.Parent == character
-		slot.button.Visible = true
 		slot.button.BackgroundColor3 = held and HELD_BACKGROUND or BACKGROUND
 		slot.button.BackgroundTransparency = held and 0.05 or 0.25
 		-- the tier colour, bolder on the tool in hand
@@ -297,8 +315,4 @@ RunService.RenderStepped:Connect(function()
 		slot.name.Visible = tool.TextureId == ""
 		slot.name.Text = tool.Name
 	end
-	for i = #order + 1, #slots do
-		slots[i].button.Visible = false
-	end
-	grid.Visible = #order > 0
 end)
