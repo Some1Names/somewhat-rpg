@@ -9,7 +9,6 @@ HudConfig.EdgeMargin = 16 -- px from the screen's edges
 HudConfig.IconSize = 28
 HudConfig.IconSizeOpen = 32 -- the icon whose menu is open
 HudConfig.KillFeedTop = 56 -- the kill feed starts under the icon row
-HudConfig.LeaderboardClear = 190 -- px the icon row stays left of Roblox's player list at the right edge
 
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
