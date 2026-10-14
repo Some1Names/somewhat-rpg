@@ -18,13 +18,14 @@ otherwise.
 | [HUD layout pass](2026-10-09-hud-layout.md) | A minimal top-right icon row (Settings, Inventory, Stats, Quests, Admin, yen) replacing the left buttons, key hints at the bottom left (with a setting), a less crowded bottom centre, one menu at a time. Spec: `specs/2026-10-09-hud-layout-design.md`. | Cloud for tasks 1–5, then Studio for task 6 (screen sizes; icon images with you) | `Run docs/superpowers/plans/2026-10-09-hud-layout.md with superpowers:executing-plans, tasks 1–5. Read the spec first.` Then, in Studio: `Run task 6 of docs/superpowers/plans/2026-10-09-hud-layout.md with me.` |
 | [Getting powers](2026-10-09-power-acquisition.md) | One saved power + 2 storage slots + lifetime Robux powers; new powers come as briefcases from the Power Dealer (S ¥500,000), map drops and a ¥25,000 gacha; selling; death drops; no starter power. Spec: `specs/2026-10-09-power-acquisition-design.md`. | Cloud for tasks 1–6, then Studio, a live server and **you** for task 7 (Robux products, spawn points, briefcase model) | `Run docs/superpowers/plans/2026-10-09-power-acquisition.md with superpowers:executing-plans, tasks 1–6. Read the spec first.` Then, in Studio: `Run task 7 of docs/superpowers/plans/2026-10-09-power-acquisition.md with me.` |
 | [Photoshop revisual](2026-10-09-photoshop-revisual.md) | Photoshop's code-built looks replaced by imported VFX packs, one move at a time. You approve every pack before it's imported. | Studio | `Run docs/superpowers/plans/2026-10-09-photoshop-revisual.md with superpowers:executing-plans. Do one move per task, and stop for my OK on the packs and on the screenshots.` |
-| Studio sync | Brings everything pushed since the last sync into Studio. Nothing is waiting right now (last sync 2026-10-14: Mastery sources). | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
+| Studio sync | Brings everything pushed since the last sync into Studio. Nothing is waiting right now (last sync 2026-10-14: Swimmable water). | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
 
 ## Done
 
-- [Swimmable water parts](2026-10-10-swimmable-water.md): code built (`Water` module, the `Swim`
-  client script, no Gallery saves in water). Left: the Studio apply, tagging the water parts, and the
-  playtest with `specs/2026-10-10-swimmable-water-checklist.md`.
+- [Swimmable water parts](2026-10-10-swimmable-water.md): built and in Studio (2026-10-14): the `Water` module, the `Swim`
+  client script, no Gallery saves in water. Tried on a temporary pool (swim, float, buoyancy, climb a
+  ledge, a pull, Dash, dying in water). **The map has no water parts yet:** build them as parts, tag each
+  `Water` and turn off CanCollide/CanQuery/CanTouch, then run `specs/2026-10-10-swimmable-water-checklist.md`.
 - [More ways to earn mastery](2026-10-09-mastery-sources.md): built and in Studio (2026-10-14): PvP at half rate with a
   cap, a kill bonus, training dummies to mastery 10 (the Dummy, both Strong Dummies and the Boss Dummy are
   tagged `TrainingDummy`). Checked solo: dummy rate, infinite health, the cap at 10, the NPC kill bonus.
