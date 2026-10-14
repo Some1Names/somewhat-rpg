@@ -35,7 +35,14 @@ if not actionRemote then
 	actionRemote.Parent = ReplicatedStorage
 end
 
+-- a power that can be held, stored and owned for life (not a placeholder)
 local function isPower(setName)
+	local set = SkillSetConfig.Sets[setName]
+	return set ~= nil and set.kind == "power" and not set.placeholder
+end
+
+-- any power that can come as a briefcase, placeholders included (those can only be sold)
+local function hasBriefcase(setName)
 	local set = SkillSetConfig.Sets[setName]
 	return set ~= nil and set.kind == "power"
 end
@@ -161,7 +168,7 @@ end
 -- puts a briefcase for the power in the player's backpack
 function Powers.GiveBriefcase(player, setName)
 	local backpack = player:FindFirstChildOfClass("Backpack")
-	if not isPower(setName) or not backpack then
+	if not hasBriefcase(setName) or not backpack then
 		return false
 	end
 	makeBriefcase(setName).Parent = backpack
@@ -397,6 +404,9 @@ local function onAction(player, action, args)
 		return false, "Unknown action"
 	end
 	local setName = typeof(args) == "table" and args.set
+	if typeof(setName) == "string" and hasBriefcase(setName) and not isPower(setName) then
+		return false, Powers.DisplayName(setName) .. " isn't made yet. Sell the briefcase to the Power Dealer."
+	end
 	if typeof(setName) ~= "string" or not isPower(setName) then
 		return false, "Unknown power"
 	end

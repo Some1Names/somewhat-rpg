@@ -348,7 +348,7 @@ local function entries()
 	local list = {}
 	local held, stored = heldPower(), powerList("PowerStorage")
 	for setName, set in pairs(SkillSetConfig.Sets) do
-		if set.kind == "power" then
+		if set.kind == "power" and not set.placeholder then
 			local entry = { setName = setName, key = setName, kind = "power", held = held == setName }
 			entry.stored = table.find(stored, setName) ~= nil
 			entry.lifetime = isLifetime(setName)
@@ -671,7 +671,9 @@ local function powerButtons(entry)
 	local mine = heldPower() == setName or table.find(powerList("PowerStorage"), setName) ~= nil or isLifetime(setName)
 	local primaryText, altText
 	if entry.briefcase then
-		if mine then
+		if SkillSetConfig.Sets[setName].placeholder then
+			message.Text = "This power isn't made yet. Sell the briefcase to the Power Dealer."
+		elseif mine then
 			message.Text = "You already own this power. Sell the briefcase to the Power Dealer."
 		else
 			primaryText, altText = "USE", "STORE"

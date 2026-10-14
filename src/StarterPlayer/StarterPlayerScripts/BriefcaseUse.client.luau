@@ -115,9 +115,11 @@ local function open(tool)
 	end
 	current = tool
 	confirming = false
-	title.Text = "Use " .. powerName(setName) .. "?"
-	body.Text = "It becomes your power and the briefcase is used up."
+	local placeholder = SkillSetConfig.Sets[setName].placeholder
+	title.Text = placeholder and (powerName(setName) .. " isn't made yet") or ("Use " .. powerName(setName) .. "?")
+	body.Text = placeholder and "This briefcase can only be sold to the Power Dealer." or "It becomes your power and the briefcase is used up."
 	errorText.Visible = false
+	useButton.Visible = not placeholder
 	useButton.Text = "USE POWER"
 	gui.Enabled = true
 end

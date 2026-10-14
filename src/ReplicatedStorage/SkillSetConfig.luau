@@ -385,6 +385,60 @@ SkillSetConfig.Sets = {
 		},
 	},
 
+	-- Powers still to be made. They are in the gacha, map drops and the Power
+	-- Dealer, so their briefcases exist, but with `placeholder` there is no
+	-- skill tool yet: the briefcase can't be used or stored, only sold (Powers).
+	-- Fill in the moves and drop `placeholder` once a power is made.
+	Eventide = {
+		tool = "Eventide",
+		kind = "power",
+		tier = "A",
+		color = Color3.fromRGB(120, 90, 200),
+		placeholder = true,
+		skills = {},
+	},
+	Mnemosyne = {
+		tool = "Mnemosyne",
+		kind = "power",
+		tier = "S",
+		color = Color3.fromRGB(200, 160, 255),
+		placeholder = true,
+		skills = {},
+	},
+	Afterimage = {
+		tool = "Afterimage",
+		kind = "power",
+		tier = "A",
+		color = Color3.fromRGB(220, 220, 230),
+		placeholder = true,
+		skills = {},
+	},
+	Blackfrost = {
+		tool = "Blackfrost",
+		kind = "power",
+		tier = "A",
+		color = Color3.fromRGB(110, 170, 220),
+		placeholder = true,
+		skills = {},
+	},
+	-- stand-ins so the B and C odds are real until those powers exist
+	PlaceholderB = {
+		tool = "PlaceholderB",
+		kind = "power",
+		tier = "B",
+		color = Color3.fromRGB(90, 165, 255),
+		placeholder = true,
+		skills = {},
+	},
+	PlaceholderC = {
+		tool = "PlaceholderC",
+		kind = "power",
+		tier = "C",
+		color = Color3.fromRGB(90, 210, 110),
+		placeholder = true,
+		skills = {},
+	},
+
 	-- The shop's revolver, a B-tier weapon. Left click shoots (no punches
 	-- with it out), right click steadies the aim and zooms in, R reloads.
 	Revolver = {
