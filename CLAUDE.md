@@ -81,6 +81,11 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   module (saved as the `Reforge` text, mirrored as `Reforge_<Set>` attributes), the smith's remote in
   `ReforgeServer`. `Damage.Deal` and `SkillSetServer` read the bonuses; status procs and lifesteal
   run from a `Damage.OnDealt` listener in `ReforgeServer`.
+- **Enemy drops**: enemies tagged `Enemy` drop materials as orbs. `DropConfig` has the numbers and pure rules
+  (Lune-tested); `Drops` tracks damage per enemy (`Damage.OnDealt`), rolls for each player who dealt 10% on
+  `Damage.OnKill`, and runs the pickup loop; orbs are parts in `workspace.Drops` cloned from
+  `VFXPrefabs.DroppedItemOrb`, owner-only for 30 s. The bag is the saved `Mat_<key>` attributes (Reforge spends
+  them). `DropClient` hides others' orbs and pops up "+N".
 - **Client UI**: `SkillBar`, `Inventory`, `StatsMenu` (with a Milestones tab), `AdminPanel`, `ShopMenu`,
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
   popups), `Quests` (the J menu), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row and yen, no side

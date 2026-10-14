@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
@@ -43,6 +44,10 @@ for _, item in ipairs(ShopConfig.Items) do
 	if ShopConfig.Ownable(item) then
 		DEFAULTS[ShopConfig.OwnedAttribute(item.id)] = 0
 	end
+end
+-- drop materials: the bag Reforge spends from
+for key in pairs(DropConfig.Materials) do
+	DEFAULTS[DropConfig.Attribute(key)] = 0
 end
 
 -- saved text fields, with their defaults and longest allowed length
@@ -195,6 +200,10 @@ local function load(player)
 	for setName in pairs(SkillSetConfig.Sets) do
 		local key = SkillSetConfig.MasteryAttribute(setName)
 		player:SetAttribute(key, math.clamp(player:GetAttribute(key), 1, SkillSetConfig.MaxMastery))
+	end
+	for key in pairs(DropConfig.Materials) do
+		local attribute = DropConfig.Attribute(key)
+		player:SetAttribute(attribute, math.min(player:GetAttribute(attribute), DropConfig.MaxPerMaterial))
 	end
 	levelUp(player)
 	updatePoints(player)

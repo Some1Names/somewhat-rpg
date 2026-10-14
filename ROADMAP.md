@@ -76,17 +76,18 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 - **Reforge** (smith NPC, level up to 10, reroll 2 modifier slots): **built and in Studio**, plan
   `docs/superpowers/plans/2026-10-14-reforge.md`, checklist `docs/superpowers/specs/2026-10-14-reforge-checklist.md`.
-- **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **code in progress**
-  (`SpawnServer`, `SpawnNotice`, uncommitted); no plan or checklist yet.
+- **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **built and in Studio** (2026-10-14); no plan or checklist (needs a playtest and a `SpawnSetter` NPC placed on the map).
+- **Enemy drops** (materials as glowing orbs, per-player, saved bag; spent in Reforge): **code built, not in Studio yet**
+  (plan `docs/superpowers/plans/2026-10-14-enemy-drops.md`, checklist `docs/superpowers/specs/2026-10-14-enemy-drops-checklist.md`).
+  Needs `DroppedItemOrb` moved to `ReplicatedStorage.VFXPrefabs` (the owner's model) before it drops anything.
 
 ## Getting powers
 
 - **Briefcases, storage, lifetime, drops, gacha, selling** (and saved powers, no starter power):
-  **code built (tasks 1-6), not in Studio yet**, spec `docs/superpowers/specs/2026-10-09-power-acquisition-design.md`,
+  **built and in Studio** (`studio` tag at the gacha commit, 2026-10-14; the gacha roll panel is built, Aido's power is a sell-only placeholder, Deus Ex Machina), spec `docs/superpowers/specs/2026-10-09-power-acquisition-design.md`,
   plan `docs/superpowers/plans/2026-10-09-power-acquisition.md`, checklist
   `docs/superpowers/specs/2026-10-09-power-acquisition-checklist.md`. Left (task 7, Studio + you): the
-  `ServerStorage.Briefcase` tool, `BriefcaseSpawn` parts, the `PowerGacha` NPC and its roll panel (the
-  `RollGacha` remote is ready, no UI yet), Robux Developer Products in `PowerConfig.RobuxProducts`, the sync
+  `ServerStorage.Briefcase` tool, `BriefcaseSpawn` parts, the `PowerGacha` NPC and its roll panel , Robux Developer Products in `PowerConfig.RobuxProducts`, the sync
   and the playtest. Later: enemies dropping briefcases, the stat rework, trading, storage upgrades.
 
 ## World

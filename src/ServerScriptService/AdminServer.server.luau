@@ -17,6 +17,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
+local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local adminAction = ReplicatedStorage:WaitForChild("AdminAction")
 
 -- admins besides the game's owner, by UserId
@@ -87,6 +88,17 @@ function actions.GiveYen(target, amount)
 	end
 	PlayerStats.AddYen(target, amount)
 	return true, string.format("Gave %s ¥%d", target.Name, amount)
+end
+
+function actions.GiveMaterials(target)
+	if target:GetAttribute("Level") == nil then
+		return false, loadingMessage(target)
+	end
+	for key in pairs(DropConfig.Materials) do
+		local attribute = DropConfig.Attribute(key)
+		target:SetAttribute(attribute, math.min((target:GetAttribute(attribute) or 0) + 50, DropConfig.MaxPerMaterial))
+	end
+	return true, "Gave " .. target.Name .. " 50 of each material"
 end
 
 function actions.SetLevel(target, level)

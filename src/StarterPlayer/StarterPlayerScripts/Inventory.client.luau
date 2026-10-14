@@ -14,6 +14,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
@@ -34,6 +35,8 @@ local RIGHT_WIDTH = 250
 local HEADING_HEIGHT = 24 -- a column's title row
 local CARD_SIZE = 96
 local SLOT_HEIGHT = 84
+local SLOT_GAP = 8
+local MATERIAL_ROW = 18
 local BUTTON_HEIGHT = 32
 local BACKGROUND = Color3.fromRGB(20, 20, 28)
 local SELECTED_BACKGROUND = Color3.fromRGB(40, 40, 54)
@@ -201,14 +204,29 @@ local middleColumn = column(
 )
 local rightColumn = column(UDim2.fromScale(1, 0), UDim2.new(0, RIGHT_WIDTH, 1, 0), Vector2.new(1, 0), "INFO")
 
--- left: the carry slots
+-- left: the carry slots, then the materials you hold
+local SLOTS_HEIGHT = #SLOTS * SLOT_HEIGHT + (#SLOTS - 1) * SLOT_GAP
 local slotList = make("Frame", {
 	Parent = leftColumn,
 	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
-	Size = UDim2.new(1, 0, 1, -HEADING_HEIGHT),
+	Size = UDim2.new(1, 0, 0, SLOTS_HEIGHT),
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = slotList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+make("UIListLayout", { Parent = slotList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
+local MATERIALS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + 6
+label(leftColumn, {
+	Text = "MATERIALS",
+	Font = Enum.Font.GothamBold,
+	TextSize = 12,
+	TextColor3 = MUTED,
+	Position = UDim2.fromOffset(0, MATERIALS_TOP),
+	Size = UDim2.new(1, 0, 0, 16),
+})
+local materialList = scroller(leftColumn, {
+	Position = UDim2.fromOffset(0, MATERIALS_TOP + 18),
+	Size = UDim2.new(1, 0, 1, -(MATERIALS_TOP + 18)),
+})
+make("UIListLayout", { Parent = materialList, SortOrder = Enum.SortOrder.LayoutOrder })
 
 -- middle: tabs beside the title, then the grid of owned sets
 local tabRow = make("Frame", {
@@ -806,6 +824,41 @@ local function findEntry(list, key)
 	return nil
 end
 
+-- one row per material you hold: its name in the tier's colour, the amount on the right
+local function showMaterials()
+	clear(materialList)
+	local count = 0
+	for _, key in ipairs(DropConfig.Sorted()) do
+		local amount = player:GetAttribute(DropConfig.Attribute(key)) or 0
+		if amount > 0 then
+			count += 1
+			local info = DropConfig.Materials[key]
+			local row = make("Frame", {
+				Parent = materialList,
+				LayoutOrder = count,
+				Size = UDim2.new(1, 0, 0, MATERIAL_ROW),
+				BackgroundTransparency = 1,
+			})
+			label(row, {
+				Text = info.display,
+				TextSize = 12,
+				TextColor3 = DropConfig.TierColor(info.tier),
+				Size = UDim2.new(1, -40, 1, 0),
+			})
+			label(row, {
+				Text = tostring(amount),
+				Font = Enum.Font.GothamBold,
+				TextSize = 12,
+				TextXAlignment = Enum.TextXAlignment.Right,
+				Size = UDim2.new(1, 0, 1, 0),
+			})
+		end
+	end
+	if count == 0 then
+		label(materialList, { Text = "None yet", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, MATERIAL_ROW) })
+	end
+end
+
 function refresh()
 	local list = entries()
 	-- keep the selection on something that's still there
@@ -819,6 +872,7 @@ function refresh()
 	for i, slot in ipairs(SLOTS) do
 		makeSlot(slot, i)
 	end
+	showMaterials()
 
 	for kind, button in pairs(tabButtons) do
 		local active = kind == tab
@@ -894,6 +948,9 @@ local watched = {
 }
 for setName in pairs(SkillSetConfig.Sets) do
 	watched[SkillSetConfig.MasteryAttribute(setName)] = true
+end
+for key in pairs(DropConfig.Materials) do
+	watched[DropConfig.Attribute(key)] = true
 end
 player.AttributeChanged:Connect(function(name)
 	if panel.Visible and watched[name] then
