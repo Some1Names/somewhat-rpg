@@ -46,8 +46,8 @@ local DayCycleConfig = {
 		{
 			hour = 7,
 			Lighting = { Brightness = 2.5, Ambient = { 80, 75, 150 }, OutdoorAmbient = { 70, 65, 90 }, ExposureCompensation = 0 },
-			ColorCorrection = { TintColor = { 255, 215, 185 }, Brightness = 0, Saturation = 0.2 },
-			Atmosphere = { Color = { 235, 185, 140 }, Decay = { 200, 140, 110 }, Density = 0.34, Haze = 0.8, Glare = 0.9 },
+			ColorCorrection = { TintColor = { 250, 226, 206 }, Brightness = 0, Saturation = 0.2 },
+			Atmosphere = { Color = { 225, 195, 165 }, Decay = { 190, 150, 130 }, Density = 0.34, Haze = 0.8, Glare = 0.9 },
 			Bloom = { Intensity = 1 },
 			SunRays = { Intensity = 0.3 },
 			Sky = { StarCount = 0 },
