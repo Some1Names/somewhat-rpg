@@ -20,8 +20,8 @@ PowerConfig.Overrides = {
 }
 
 PowerConfig.Gacha = {
-	price = 25000, -- yen per roll
-	cooldown = 7200, -- seconds of real time between a player's rolls
+	price = 25000, -- yen per roll that isn't the free one
+	cooldown = 7200, -- seconds of real time between a player's free rolls (extra rolls cost yen any time)
 	pity = 30, -- after this many rolls without an S, the next roll is S
 	tag = "PowerGacha", -- CollectionService tag on the gacha NPC
 	range = 14, -- studs from the NPC

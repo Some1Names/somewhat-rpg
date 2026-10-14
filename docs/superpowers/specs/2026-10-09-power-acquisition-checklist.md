@@ -37,7 +37,10 @@ For testing set `SkillSetConfig.OwnAllSets = false`, otherwise every power is li
       lifetime come back, with a power's tool handed out).
 
 ## Gacha and map drops
-- [ ] RollGacha near the NPC: ¥25,000, gives a briefcase, then "Not ready yet" for 2 hours (also after rejoining).
+- [ ] The panel (E at the NPC): the first roll every 2 hours is FREE (button says FREE ROLL, countdown otherwise); any
+      extra roll costs ¥25,000 any time and doesn't touch the free-roll timer. The reel stops on the result.
+- [ ] Holding a briefcase: punches and skills do nothing. Left click it: a box "Use <Power>?" with USE POWER / CANCEL;
+      a power you already own shows a red error; a held power that would be lost asks CONFIRM.
 - [ ] After 30 rolls without an S the next is S (use the admin tools / `GachaPity` to skip ahead).
 - [ ] Every 20 minutes (shorten `PowerConfig.Drop.interval` to test) a pickup appears at a `BriefcaseSpawn` part, the
       kill feed says "A briefcase has appeared somewhere...", only one at a time, gone after 20 minutes.

@@ -1,5 +1,6 @@
 -- The power gacha: the prompt on a model tagged "PowerGacha" opens this panel
--- (price, time until your next roll, your pity count, the odds and ROLL).
+-- (the free roll or its countdown, the price of extra rolls, your pity count,
+-- the odds and ROLL).
 -- ROLL asks the RollGacha remote (PowerSources decides everything); the reply
 -- plays a reel: a strip of tier cards that rushes past and slows onto the
 -- power you got, then names it. The reel only shows what the server already
@@ -159,7 +160,7 @@ local resultLabel = label(section(22), {
 	Size = UDim2.fromScale(1, 1),
 })
 
-local infoLabel = label(section(60), {
+local infoLabel = label(section(74), {
 	Text = "",
 	TextSize = 12,
 	TextColor3 = MUTED,
@@ -199,9 +200,11 @@ local function refresh()
 	local readyAt = player:GetAttribute("GachaReadyAt") or 0
 	local pity = player:GetAttribute("GachaPity") or 0
 	local wait = readyAt - os.time()
+	local free = wait <= 0
 	balance.Text = "¥" .. formatNumber(yen)
 	local lines = {}
-	table.insert(lines, string.format("¥%s per roll  ·  one roll every %d hours", formatNumber(gacha.price), gacha.cooldown // 3600))
+	table.insert(lines, string.format("One free roll every %d hours  ·  extra rolls ¥%s", gacha.cooldown // 3600, formatNumber(gacha.price)))
+	table.insert(lines, free and "Your free roll is ready" or ("Free roll in " .. clock(wait)))
 	table.insert(lines, string.format("Pity %d / %d  ·  S guaranteed at %d rolls without one", pity, gacha.pity, gacha.pity))
 	local odds = {}
 	for _, tier in ipairs(PowerConfig.Tiers) do
@@ -209,11 +212,11 @@ local function refresh()
 	end
 	table.insert(lines, "Odds  " .. table.concat(odds, "  ·  "))
 	infoLabel.Text = table.concat(lines, "\n")
-	local ready = wait <= 0 and not spinning
+	local ready = (free or yen >= gacha.price) and not spinning
 	if spinning then
 		rollButton.Text = "..."
-	elseif wait > 0 then
-		rollButton.Text = "NEXT ROLL IN " .. clock(wait)
+	elseif free then
+		rollButton.Text = "FREE ROLL"
 	else
 		rollButton.Text = "ROLL  ¥" .. formatNumber(gacha.price)
 	end
@@ -304,7 +307,7 @@ local function reveal(setName)
 end
 
 local function roll()
-	if spinning or (player:GetAttribute("GachaReadyAt") or 0) > os.time() then
+	if spinning then
 		return
 	end
 	spinning = true

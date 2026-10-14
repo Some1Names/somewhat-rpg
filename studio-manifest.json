@@ -1762,5 +1762,21 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/BriefcaseUse.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "BriefcaseUse"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

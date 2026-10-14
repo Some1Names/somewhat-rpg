@@ -1,6 +1,7 @@
 -- Where new powers come from besides the Power Dealer's yen shop (ShopServer):
---  * the gacha: an NPC (a model tagged "PowerGacha") rolls a briefcase for
---    PowerConfig.Gacha.price yen, once per cooldown per player, with pity;
+--  * the gacha: an NPC (a model tagged "PowerGacha") rolls a briefcase, free
+--    once per PowerConfig.Gacha.cooldown per player and for
+--    PowerConfig.Gacha.price yen any other time, with pity;
 --    the RollGacha remote asks, the server decides everything and returns
 --    ok, message, the power's name.
 --  * map drops: every PowerConfig.Drop.interval seconds a briefcase appears at
@@ -83,11 +84,10 @@ rollGacha.OnServerInvoke = function(player)
 	if not near(player.Character, gacha.tag, gacha.range) then
 		return false, "Too far from the gacha"
 	end
-	if os.time() < readyAt then
-		return false, "Not ready yet"
-	end
-	if not PlayerStats.SpendYen(player, gacha.price) then
-		return false, string.format("You need ¥%d more", gacha.price - player:GetAttribute("Yen"))
+	-- the free roll is ready again every cooldown; any other roll is paid
+	local free = os.time() >= readyAt
+	if not free and not PlayerStats.SpendYen(player, gacha.price) then
+		return false, string.format("You need ¥%d more (or wait for the free roll)", gacha.price - player:GetAttribute("Yen"))
 	end
 	local pool = available()
 	local tier = PowerConfig.roll(function()
@@ -97,12 +97,16 @@ rollGacha.OnServerInvoke = function(player)
 		return rng:NextNumber()
 	end, pool[tier])
 	if not setName then
-		PlayerStats.AddYen(player, gacha.price)
+		if not free then
+			PlayerStats.AddYen(player, gacha.price)
+		end
 		return false, "Nothing to roll"
 	end
 	Powers.GiveBriefcase(player, setName)
 	player:SetAttribute("GachaPity", PowerConfig.nextPity(pity, tier))
-	player:SetAttribute("GachaReadyAt", os.time() + gacha.cooldown)
+	if free then
+		player:SetAttribute("GachaReadyAt", os.time() + gacha.cooldown)
+	end
 	task.spawn(PlayerStats.SaveNow, player) -- the cooldown and pity stick even if they leave
 	return true, "You got a " .. Powers.DisplayName(setName) .. " briefcase", setName
 end

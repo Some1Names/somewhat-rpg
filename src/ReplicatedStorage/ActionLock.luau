@@ -2,18 +2,26 @@
 -- back (Rewinding), they're holding a block (Blocking, Guard) or stunned
 -- (HitstunUntil, a guard break or an NPC's hitstun). The server's cast
 -- checks and the client's input scripts both ask here, so a new reason to
--- be locked goes in one place. InWater is its own question (you can still
+-- be locked goes in one place. Holding a power briefcase (a Tool with the
+-- PowerBriefcase attribute) locks too: you can't fight with an item in hand. InWater is its own question (you can still
 -- block while swimming) and Busy asks both: skills, punches and shots ask
 -- that.
 local Water = require(script.Parent:WaitForChild("Water"))
 
 local ActionLock = {}
 
+-- whether the character has a power briefcase in hand
+function ActionLock.HoldingBriefcase(character)
+	local tool = character and character:FindFirstChildOfClass("Tool")
+	return tool ~= nil and tool:GetAttribute("PowerBriefcase") ~= nil
+end
+
 function ActionLock.Locked(character)
 	if not character then
 		return false
 	end
-	return character:GetAttribute("Rewinding") == true
+	return ActionLock.HoldingBriefcase(character)
+		or character:GetAttribute("Rewinding") == true
 		or character:GetAttribute("Blocking") == true
 		or (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
 end
