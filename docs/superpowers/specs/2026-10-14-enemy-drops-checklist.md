@@ -30,6 +30,8 @@ server skips anything tagged `TrainingDummy`; checked: `Dummy` and `Strong Dummy
 ## Solo
 - [ ] Kill a level 1 enemy: a grey orb with "Scrap xN" floats about 2 studs over the ground near where it
       died; walking within 6 studs takes it and "+N Scrap" pops up. Kill a few: Scrap is about 40%.
+- [ ] Stand right next to the enemy when it dies: the orb shows for about 1 second before it is taken
+      (`PickupDelay = 1.2`; checked: still there at 0.7 s, collected by 2.2 s).
 - [ ] A one-hit kill still drops (the killing blow counts).
 - [ ] A training dummy, and a player you kill, drop nothing.
 - [ ] Open the Inventory (B): a MATERIALS list under the slots shows what you hold, tier-coloured,

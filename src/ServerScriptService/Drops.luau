@@ -130,7 +130,9 @@ local function spawnOrb(player, material, amount, position, enemy)
 	text.Text = labelText(material, amount)
 	text.Parent = label
 
-	local publicAt = workspace:GetServerTimeNow() + DropConfig.OwnerWindow
+	local now = workspace:GetServerTimeNow()
+	local publicAt = now + DropConfig.OwnerWindow
+	orb:SetAttribute("ReadyAt", now + DropConfig.PickupDelay)
 	orb:SetAttribute("OwnerUserId", player.UserId)
 	orb:SetAttribute("Material", material)
 	orb:SetAttribute("Amount", amount)
@@ -195,7 +197,7 @@ local function tick()
 				local material = orb.Parent and orb:GetAttribute("Material")
 				local attribute = material and DropConfig.Attribute(material)
 				local bag = attribute and player:GetAttribute(attribute)
-				if typeof(bag) == "number" and DropConfig.CanPickUp(orb:GetAttribute("OwnerUserId"), player.UserId, now, orb:GetAttribute("PublicAt")) then
+				if typeof(bag) == "number" and DropConfig.CanPickUp(orb:GetAttribute("OwnerUserId"), player.UserId, now, orb:GetAttribute("PublicAt"), orb:GetAttribute("ReadyAt")) then
 					local offset = orb.Position - root.Position
 					if DropConfig.InRange(Vector3.new(offset.X, 0, offset.Z).Magnitude, offset.Y) then
 						local taken, left = DropConfig.Fit(bag, orb:GetAttribute("Amount"))

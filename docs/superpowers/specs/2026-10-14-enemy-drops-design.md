@@ -61,7 +61,8 @@ duplicated.
   "Scrap x2" in the tier's colour (square, no rounded corners).
 - **Windows:** the owner alone for `OwnerWindow = 30` s, then anyone for `PublicWindow = 30` s more,
   then it's removed. At most `MaxDrops = 200` orbs exist (the oldest go first).
-- **Pick-up:** automatic. The server checks every `0.2` s; a living player within `PickupRange = 6`
+- **Pick-up:** automatic, but not for the first `PickupDelay = 1.2` s after it lands, so an orb is seen even
+  when a player stands on it. The server checks every `0.2` s; a living player within `PickupRange = 6`
   studs (flat) and 8 studs up or down, who is allowed to take it (the owner, or anyone once `PublicAt`
   has passed), gets it. If their bag would exceed `MaxPerMaterial`, they take what fits and the rest
   stays.

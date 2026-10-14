@@ -13,6 +13,7 @@ DropConfig.MaxDrops = 200 -- orbs that exist at once (the oldest go first)
 DropConfig.PickupRange = 6 -- studs, flat
 DropConfig.PickupHeight = 8 -- studs up or down
 DropConfig.PickupInterval = 0.2 -- seconds between pickup checks
+DropConfig.PickupDelay = 1.2 -- seconds after landing before anyone can take an orb, so it is seen first
 DropConfig.MaxPerMaterial = 999
 
 DropConfig.PrefabPath = "DroppedItemOrb" -- under ReplicatedStorage.VFXPrefabs
@@ -131,9 +132,9 @@ function DropConfig.Fit(current, amount)
 	return taken, amount - taken
 end
 
--- the owner at any time; anyone once the orb is public
-function DropConfig.CanPickUp(ownerUserId, playerUserId, now, publicAt)
-	return ownerUserId == playerUserId or now >= publicAt
+-- the owner once the orb is ready (readyAt); anyone once it is public
+function DropConfig.CanPickUp(ownerUserId, playerUserId, now, publicAt, readyAt)
+	return now >= (readyAt or 0) and (ownerUserId == playerUserId or now >= publicAt)
 end
 
 function DropConfig.InRange(flatDistance, heightDifference)
