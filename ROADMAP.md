@@ -76,7 +76,8 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 - **Reforge** (smith NPC, level up to 10, reroll 2 modifier slots): **built and in Studio**, plan
   `docs/superpowers/plans/2026-10-14-reforge.md`, checklist `docs/superpowers/specs/2026-10-14-reforge-checklist.md`.
-- **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **built and in Studio** (2026-10-14); no plan or checklist (needs a playtest and a `SpawnSetter` NPC placed on the map).
+- **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **built and in Studio** (2026-10-14); no plan or checklist (needs a playtest). A `Spawn Keeper` NPC (Power Gacha rig, tagged `SpawnSetter`) stands beside the SpawnLocation.
+- **Power aura** (an `Aura` model under `ServerStorage.SkillSets.<Set>` welds to the character while its tool is held; Photoshop uses `PhotoshopAura`): **code committed, not in Studio yet** (`SkillSetServer`, commit `fcdb0b3`). The aura models are yours (VFX).
 - **Enemy drops** (materials as glowing orbs, per-player, saved bag; spent in Reforge): **built and in Studio** (2026-10-14; a one-hit kill dropped orbs and walking onto them filled the bag)
   (plan `docs/superpowers/plans/2026-10-14-enemy-drops.md`, checklist `docs/superpowers/specs/2026-10-14-enemy-drops-checklist.md`).
   `DroppedItemOrb` is in `ReplicatedStorage.VFXPrefabs`. Left: the checklist (two players, visuals, UI).

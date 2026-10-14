@@ -62,6 +62,7 @@ local TEXT_DEFAULTS = {
 	PowerStorage = "", -- the spare powers in storage, comma separated (Powers)
 	LifetimePowers = "", -- powers bought with Robux, comma separated (Powers)
 	SpawnPoint = "", -- where the player respawns, "x,y,z" set by a Spawn Keeper (SpawnServer)
+	SeenUpdate = "", -- the last update's version whose What's new modal the player saw (UpdateNotes, UpdateNotesServer)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
