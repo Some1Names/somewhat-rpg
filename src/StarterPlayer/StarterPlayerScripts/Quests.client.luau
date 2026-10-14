@@ -152,7 +152,6 @@ local function showBounty()
 		BackgroundColor3 = CARD,
 		BackgroundTransparency = 0,
 	})
-	outline(frame, 0.85)
 	make("UIPadding", { Parent = frame, PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
 	label(frame, { Text = quest.title, Font = Enum.Font.GothamBold, TextSize = 15, Size = UDim2.new(1, 0, 0, 18) })
 	label(frame, {
@@ -268,7 +267,6 @@ local function showChallenges()
 			BackgroundColor3 = CARD,
 			BackgroundTransparency = 0,
 		})
-		outline(row, 0.85)
 		make("UIPadding", { Parent = row, PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
 		label(row, {
 			Text = challenge.text,
