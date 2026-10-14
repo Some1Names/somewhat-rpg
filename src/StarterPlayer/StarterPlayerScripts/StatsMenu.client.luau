@@ -1,8 +1,8 @@
--- The hub's Stats tab (M, or the hub's nav): spend stat points on Vitality,
--- Strength, Superliminal and Firearm, and see when the next stamina box
--- unlocks. Its MILESTONES sub-tab shows the milestones and their rewards as
--- bars. Beside them, CURRENT lists what the stats add up to (max HP, regen,
--- damage, stamina, dodges). Unspent points show as a badge in the hub's nav. Also pops up XP
+-- The hub's Stats tab (M, or the hub's nav). Across the top, a row of tiles
+-- with what the stats add up to (max HP, regen, damage, stamina, dodges);
+-- under it STATS, to spend stat points on Vitality, Strength, Superliminal
+-- and Firearm and see when the next stamina box unlocks, and beside it
+-- MILESTONES, the milestones and their rewards as bars. Unspent points show as a badge in the hub's nav. Also pops up XP
 -- gains and level ups. The numbers come from the player attributes the
 -- server keeps (see PlayerStats).
 local Debris = game:GetService("Debris")
@@ -19,7 +19,8 @@ local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 local player = Players.LocalPlayer
 
 local AMOUNTS = { 1, 5, 10 } -- points added per click
-local PANEL_SHARE = 0.6 -- of the tab's width; CURRENT has the rest
+local PANEL_SHARE = 0.55 -- STATS' share of the tab's width; MILESTONES has the rest
+local TILES_HEIGHT = 92 -- the row of totals across the top, with the gap under it
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local STAT_ROW_HEIGHT = 40
@@ -85,32 +86,16 @@ local function formatYen(amount)
 	return "¥" .. grouped
 end
 
-local showTab -- defined below: switches between the STATS and MILESTONES panels
-
--- the two tab titles in a panel's header; the one for the panel shown is white
-local function tabTitles(header, current)
-	for i, name in ipairs({ "STATS", "MILESTONES" }) do
-		local tab = make("TextButton", {
-			Parent = header,
-			Position = UDim2.fromOffset(i == 1 and 0 or 58, 0),
-			Size = UDim2.fromOffset(i == 1 and 52 or 100, 22),
-			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamBold,
-			Text = name,
-			TextSize = 14,
-			TextColor3 = name == current and TEXT or MUTED,
-			TextXAlignment = Enum.TextXAlignment.Left,
-		})
-		tab.Activated:Connect(function()
-			showTab(name)
-		end)
-	end
+-- a panel's title in its header
+local function tabTitles(header, title)
+	label(header, { Text = title, Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.fromOffset(200, 22) })
 end
 
 local panel = make("ScrollingFrame", {
 	Name = "Panel",
 	Parent = tabFrame,
-	Size = UDim2.new(PANEL_SHARE, -16, 1, 0),
+	Position = UDim2.fromOffset(0, TILES_HEIGHT),
+	Size = UDim2.new(PANEL_SHARE, -12, 1, -TILES_HEIGHT),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
@@ -264,21 +249,27 @@ for i, stat in ipairs(StatConfig.Stats) do
 	rows[i] = { stat = stat, value = value, effect = effect, plus = plus }
 end
 
--- CURRENT: what the stats add up to, a caption over a big number each, right of the panel
-local current = make("Frame", {
+-- the totals: a row of tiles across the top, each a caption over a big number
+-- with an accent bar down its left edge
+local CURRENT = { "MAX HP", "HP REGEN / S", "MELEE DAMAGE", "SKILL DAMAGE", "GUN DAMAGE", "STAMINA BOXES", "DODGE CHARGES" }
+local tiles = make("Frame", {
 	Parent = tabFrame,
-	Position = UDim2.new(PANEL_SHARE, 16, 0, 0),
-	Size = UDim2.new(1 - PANEL_SHARE, -16, 1, 0),
+	Size = UDim2.new(1, 0, 0, TILES_HEIGHT - 16),
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = current, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
-label(current, { LayoutOrder = 0, Text = "CURRENT", Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.new(1, 0, 0, 22) })
+make("UIGridLayout", {
+	Parent = tiles,
+	CellSize = UDim2.new(1 / #CURRENT, -6, 1, 0),
+	CellPadding = UDim2.fromOffset(6, 0),
+	SortOrder = Enum.SortOrder.LayoutOrder,
+})
 local currentValues = {}
-for i, caption in ipairs({ "MAX HP", "HP REGEN / S", "MELEE DAMAGE", "SKILL DAMAGE", "GUN DAMAGE", "STAMINA BOXES", "DODGE CHARGES" }) do
-	local holder = section(i, 44)
-	holder.Parent = current
-	label(holder, { Text = caption, TextSize = 10, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 12) })
-	currentValues[i] = label(holder, { Font = Enum.Font.GothamBlack, TextSize = 24, Position = UDim2.fromOffset(0, 13), Size = UDim2.new(1, 0, 0, 28) })
+local tileBars = {}
+for i, caption in ipairs(CURRENT) do
+	local tile = make("Frame", { Parent = tiles, LayoutOrder = i, BackgroundColor3 = Hub.Theme.Panel, BorderSizePixel = 0 })
+	tileBars[i] = make("Frame", { Parent = tile, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 })
+	label(tile, { Text = caption, TextSize = 10, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -18, 0, 12) })
+	currentValues[i] = label(tile, { Font = Enum.Font.GothamBlack, TextSize = 28, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -18, 0, 34) })
 end
 
 local function showCurrent(level)
@@ -362,7 +353,8 @@ local INFO_COUNT_WIDTH = 48 -- the progress count on the right of a bar
 local infoPanel = make("ScrollingFrame", {
 	Name = "InfoPanel",
 	Parent = tabFrame,
-	Size = UDim2.new(PANEL_SHARE, -16, 1, 0),
+	Position = UDim2.new(PANEL_SHARE, 12, 0, TILES_HEIGHT),
+	Size = UDim2.new(1 - PANEL_SHARE, -12, 1, -TILES_HEIGHT),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	ScrollBarThickness = 4,
@@ -552,23 +544,19 @@ player.AttributeChanged:Connect(function(name)
 	end
 end)
 
--- shows the STATS or MILESTONES panel
-function showTab(name)
-	if name == "MILESTONES" then
-		buildInfo()
-	end
-	panel.Visible = name == "STATS"
-	infoPanel.Visible = name == "MILESTONES"
-end
-
--- the hub always opens it on STATS
+-- STATS and MILESTONES side by side
 Hub.OnShown("Stats", function()
-	showTab("STATS")
+	buildInfo()
+	panel.Visible = true
+	infoPanel.Visible = true
 end)
 
--- the XP bar in the accent; unspent points as a badge in the hub's nav
+-- the XP bar and the tiles' edges in the accent; unspent points as a badge in the hub's nav
 Hub.OnAccent(function(_, ink)
 	xpFill.BackgroundColor3 = ink
+	for _, bar in ipairs(tileBars) do
+		bar.BackgroundColor3 = ink
+	end
 end)
 local function showBadge()
 	local points = player:GetAttribute("StatPoints") or 0

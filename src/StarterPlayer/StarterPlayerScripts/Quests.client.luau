@@ -72,21 +72,22 @@ local panel = make("Frame", {
 local tab = "bounty"
 local pickedSet -- the set shown on the challenges tab, once chosen
 local tabs = {}
+-- the sub-tabs as plain titles, like the Stats tab's: the one showing in ink
 local tabRow = make("Frame", { Parent = panel, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
-make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder })
+make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 22), SortOrder = Enum.SortOrder.LayoutOrder })
 for order, entry in ipairs({ { "bounty", "BOUNTY" }, { "challenges", "CHALLENGES" } }) do
 	tabs[entry[1]] = make("TextButton", {
 		Parent = tabRow,
 		LayoutOrder = order,
-		Size = UDim2.new(0.5, -3, 1, 0),
-		BackgroundColor3 = CARD,
-		BackgroundTransparency = 0,
+		Size = UDim2.fromOffset(0, 26),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamBold,
 		Text = entry[2],
-		TextSize = 11,
+		TextSize = 14,
 		TextColor3 = MUTED,
+		TextXAlignment = Enum.TextXAlignment.Left,
 	})
-	outline(tabs[entry[1]], 0.85)
 end
 
 -- the page under the tabs; rebuilt on every refresh
@@ -104,6 +105,8 @@ local body = make("ScrollingFrame", {
 	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 })
 make("UIListLayout", { Parent = body, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+-- a pixel of room, so the outlines on the cards' edges aren't cut off
+make("UIPadding", { Parent = body, PaddingTop = UDim.new(0, 1), PaddingBottom = UDim.new(0, 1), PaddingLeft = UDim.new(0, 1), PaddingRight = UDim.new(0, 6) })
 
 local function clearBody()
 	for _, child in ipairs(body:GetChildren()) do
@@ -227,20 +230,23 @@ local function showChallenges()
 	local picker = make("Frame", { Parent = body, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
 	make("UIListLayout", { Parent = picker, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4), SortOrder = Enum.SortOrder.LayoutOrder })
 	for index, setName in ipairs(sets) do
+		-- the chosen set is filled in its own colour, the rest are outlines
 		local chosen = setName == pickedSet
+		local color = SkillSetConfig.Sets[setName].color or TEXT
+		local light = 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B > 0.5
 		local button = make("TextButton", {
 			Parent = picker,
 			LayoutOrder = index,
 			Size = UDim2.new(1 / #sets, -4, 1, 0),
-			BackgroundColor3 = chosen and GOLD or CARD,
-			BackgroundTransparency = chosen and 0 or 0.7,
+			BackgroundColor3 = color,
+			BackgroundTransparency = chosen and 0 or 1,
 			Font = Enum.Font.GothamBold,
 			Text = setLabel(setName),
 			TextSize = 10,
-			TextColor3 = chosen and BACKGROUND or MUTED,
+			TextColor3 = chosen and (light and TEXT or BACKGROUND) or MUTED,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 		})
-		outline(button, 0.85)
+		outline(button, chosen and 1 or 0.7)
 		button.Activated:Connect(function()
 			pickedSet = setName
 			refresh()
@@ -300,7 +306,6 @@ function refresh()
 	for name, button in pairs(tabs) do
 		local chosen = name == tab
 		button.TextColor3 = chosen and TEXT or MUTED
-		button.BackgroundTransparency = chosen and 0.35 or 0.7
 	end
 	if tab == "bounty" then
 		showBounty()

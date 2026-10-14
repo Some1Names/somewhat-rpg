@@ -28,7 +28,7 @@ local STROKE_TRANSPARENCY = 0.4
 local ICONS = {
 	{ name = "Admin", title = "Admin", key = "`" },
 	{ name = "Settings", title = "Settings", key = "P" },
-	{ name = "Hub", title = "Menu", key = "B / J / M", left = true },
+	{ name = "Hub", title = "Menu", left = true }, -- no key of its own: B, J and M open its tabs
 }
 
 local function make(className, props)
@@ -165,7 +165,7 @@ for order, icon in ipairs(ICONS) do
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
 		Font = Enum.Font.GothamMedium,
-		Text = string.format("%s  [%s]", icon.title, icon.key),
+		Text = icon.key and string.format("%s  [%s]", icon.title, icon.key) or icon.title,
 		TextSize = 12,
 		TextColor3 = TEXT,
 		TextStrokeTransparency = STROKE_TRANSPARENCY,

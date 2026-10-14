@@ -73,7 +73,8 @@ label(frame, {
 	Text = "01",
 	Font = Theme.BodyFont,
 	TextSize = 200,
-	TextColor3 = Theme.Panel,
+	TextColor3 = Theme.Ink,
+	TextTransparency = 0.8,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.new(1, 0, 0, -20),
 	Size = UDim2.new(1 - LEFT_SHARE, 0, 0, 200),
@@ -120,17 +121,20 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
--- level and yen: a caption over a big number each
-local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 52), BackgroundTransparency = 1 })
-make("UIListLayout", { Parent = figures, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 32) })
-local function figure(order, caption)
-	local holder = make("Frame", { Parent = figures, LayoutOrder = order, Size = UDim2.fromOffset(0, 52), AutomaticSize = Enum.AutomaticSize.X, BackgroundTransparency = 1 })
-	label(holder, { Text = caption, TextSize = 10, TextColor3 = Theme.Muted, Size = UDim2.fromOffset(0, 12), AutomaticSize = Enum.AutomaticSize.X })
-	return label(holder, { Font = Theme.TitleFont, TextSize = 32, Position = UDim2.fromOffset(0, 14), Size = UDim2.fromOffset(0, 36), AutomaticSize = Enum.AutomaticSize.X })
+-- level, yen and XP: tiles like the Stats tab's, a caption over a big number
+-- with an accent bar down the left edge
+local figures = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 76), BackgroundTransparency = 1 })
+make("UIGridLayout", { Parent = figures, CellSize = UDim2.new(1 / 3, -6, 1, 0), CellPadding = UDim2.fromOffset(6, 0), SortOrder = Enum.SortOrder.LayoutOrder })
+local tileBars = {}
+local function figure(order, caption, size)
+	local tile = make("Frame", { Parent = figures, LayoutOrder = order, BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
+	table.insert(tileBars, make("Frame", { Parent = tile, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 }))
+	label(tile, { Text = caption, TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -18, 0, 12) })
+	return label(tile, { Font = Theme.TitleFont, TextSize = size, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -18, 0, 36), TextTruncate = Enum.TextTruncate.AtEnd })
 end
-local levelFigure = figure(1, "LEVEL")
-local yenFigure = figure(2, "YEN")
-local levelLabel = label(column, { LayoutOrder = 7, TextSize = 11, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
+local levelFigure = figure(1, "LEVEL", 30)
+local yenFigure = figure(2, "YEN", 30)
+local levelLabel = figure(3, "XP", 20)
 local pointsButton = make("TextButton", {
 	Parent = column,
 	LayoutOrder = 8,
@@ -177,9 +181,9 @@ local function refresh()
 	levelFigure.Text = tostring(level)
 	yenFigure.Text = formatYen(player:GetAttribute("Yen") or 0)
 	if level >= StatConfig.MaxLevel then
-		levelLabel.Text = "MAX LEVEL"
+		levelLabel.Text = "MAX"
 	else
-		levelLabel.Text = string.format("XP %d / %d", player:GetAttribute("XP") or 0, StatConfig.XPToLevelUp(level))
+		levelLabel.Text = string.format("%d / %d", player:GetAttribute("XP") or 0, StatConfig.XPToLevelUp(level))
 	end
 	local points = player:GetAttribute("StatPoints") or 0
 	pointsButton.Text = string.format("%d UNSPENT POINT%s  →  STATS", points, points == 1 and "" or "S")
@@ -187,6 +191,9 @@ local function refresh()
 end
 
 Hub.OnAccent(function(_, ink)
+	for _, bar in ipairs(tileBars) do
+		bar.BackgroundColor3 = ink
+	end
 	masteryFill.BackgroundColor3 = ink
 	bountyBar.BackgroundColor3 = ink
 end)

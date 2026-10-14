@@ -1,7 +1,6 @@
 -- The player's own character, posed, drawn over the right of the hub (Hub's
 -- PoseStrip) like the illustrated characters on a magazine cover: in its own
--- clothes, with the accent laid over it as a tint, see-through and fading out
--- at the bottom and the left edge. A clone of the character (no scripts,
+-- clothes and colours, see-through and fading out at the bottom and the left edge. A clone of the character (no scripts,
 -- tools or animator, every part anchored) sits in a ViewportFrame; each tab
 -- names a pose from HubPoses, and the parts are
 -- placed by walking the joints from the HumanoidRootPart, so nothing waits on
@@ -22,7 +21,6 @@ local CAMERA_DISTANCE = 11.5
 local CAMERA_YAW = 20 -- degrees round from straight in front
 local LOOK_HEIGHT = 0.2 -- studs above the root part the camera looks at: room above the head, the feet run off the bottom
 local FADE = 0.35 -- the image's transparency at the top; it fades out toward the bottom
-local TINT_STRENGTH = 0.7 -- how much of the accent is laid over it (0 = its own colours)
 local EDGE_FADE = 0.3 -- share of the image, from its left edge, that fades into the paper
 
 local viewport = Instance.new("ViewportFrame")
@@ -44,11 +42,6 @@ fade.Transparency = NumberSequence.new({
 	NumberSequenceKeypoint.new(1, 1),
 })
 fade.Parent = viewport
--- the accent as a tint (white, no power, leaves its own colours)
-Hub.OnAccent(function(accent)
-	viewport.ImageColor3 = Color3.new(1, 1, 1):Lerp(accent, TINT_STRENGTH)
-end)
-
 -- a limb past the image's left edge would end in a hard cut: paper fades over that edge
 local edge = Instance.new("Frame")
 edge.Name = "EdgeFade"

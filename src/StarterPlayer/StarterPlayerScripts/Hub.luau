@@ -30,6 +30,8 @@ local NAV_TOP = 58 -- the first tab button, this far under the brand
 -- the nav starts under Roblox's own buttons (top left), which sit over the hub
 local ROBLOX_BAR = math.max(GuiService:GetGuiInset().Y, 36)
 local SWATCH = 10
+local TITLE_WIDTH = 330 -- the #TITLE's room, so the bar after it starts in the same place on every tab
+local CLOSE_ROOM = 48 -- the header stops short of the × at the top right
 local WHITE = Color3.new(1, 1, 1)
 
 local Hub = {}
@@ -65,15 +67,17 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- back to front: paper, the pose strip, the main column, the nav, the ×
+-- back to front: paper, the pose strip, the main column with the header and
+-- footer (both always the full width, so they don't move between tabs), the nav, the ×
 make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BorderSizePixel = 0, ZIndex = 1 })
 
+-- between the header and the footer, so the character never covers the top
 local poseStrip = make("Frame", {
 	Name = "PoseStrip",
 	Parent = gui,
 	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromScale(Theme.PoseShare, 1),
+	Position = UDim2.new(1, 0, 0, Theme.HeaderHeight),
+	Size = UDim2.new(Theme.PoseShare, 0, 1, -(Theme.HeaderHeight + Theme.FooterHeight)),
 	BackgroundTransparency = 1,
 	ZIndex = 2,
 })
@@ -82,7 +86,15 @@ Hub.PoseStrip = poseStrip
 local main = make("Frame", {
 	Name = "Main",
 	Parent = gui,
+	Position = UDim2.fromOffset(Theme.NavWidth, Theme.HeaderHeight),
+	BackgroundTransparency = 1,
+	ZIndex = 3,
+})
+local top = make("Frame", {
+	Name = "Header",
+	Parent = gui,
 	Position = UDim2.fromOffset(Theme.NavWidth, 0),
+	Size = UDim2.new(1, -(Theme.NavWidth + CLOSE_ROOM), 0, Theme.HeaderHeight),
 	BackgroundTransparency = 1,
 	ZIndex = 3,
 })
@@ -92,13 +104,14 @@ local stripWanted = true -- the showing tab has a pose
 local function layout()
 	local shown = stripWanted and workspace.CurrentCamera.ViewportSize.X >= Theme.PoseMinScreen
 	poseStrip.Visible = shown
-	main.Size = shown and UDim2.new(1 - Theme.PoseShare, -Theme.NavWidth, 1, 0) or UDim2.new(1, -Theme.NavWidth, 1, 0)
+	local height = -(Theme.HeaderHeight + Theme.FooterHeight)
+	main.Size = shown and UDim2.new(1 - Theme.PoseShare, -Theme.NavWidth, 1, height) or UDim2.new(1, -Theme.NavWidth, 1, height)
 end
 layout()
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
 
 -- header: a line of microtext, then #TITLE, the accent bar and (0n)
-label(main, {
+label(top, {
 	Text = "2026 · SECTOR 01 · INDEX 004.19",
 	TextSize = 11,
 	TextColor3 = Theme.Muted,
@@ -106,7 +119,7 @@ label(main, {
 	Size = UDim2.new(1, -2 * PAD, 0, 12),
 })
 local titleRow = make("Frame", {
-	Parent = main,
+	Parent = top,
 	Position = UDim2.fromOffset(PAD, 24),
 	Size = UDim2.new(1, -2 * PAD, 0, 44),
 	BackgroundTransparency = 1,
@@ -122,8 +135,7 @@ local titleLabel = label(titleRow, {
 	LayoutOrder = 1,
 	Font = Theme.TitleFont,
 	TextSize = 40,
-	Size = UDim2.fromOffset(0, 44),
-	AutomaticSize = Enum.AutomaticSize.X,
+	Size = UDim2.fromOffset(TITLE_WIDTH, 44),
 })
 local barHolder = make("Frame", { Parent = titleRow, LayoutOrder = 2, Size = UDim2.fromOffset(0, 44), BackgroundTransparency = 1 })
 make("UIFlexItem", { Parent = barHolder, FlexMode = Enum.UIFlexMode.Fill })
@@ -146,18 +158,19 @@ local numberLabel = label(titleRow, {
 local content = make("Frame", {
 	Name = "Content",
 	Parent = main,
-	Position = UDim2.fromOffset(PAD, Theme.HeaderHeight),
-	Size = UDim2.new(1, -2 * PAD, 1, -(Theme.HeaderHeight + Theme.FooterHeight)),
+	Position = UDim2.fromOffset(PAD, 0),
+	Size = UDim2.new(1, -2 * PAD, 1, 0),
 	BackgroundTransparency = 1,
 })
 
 -- footer: a rule, the record line, and #SOMEWHAT on an accent chip
 local footer = make("Frame", {
-	Parent = main,
+	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, PAD, 1, 0),
-	Size = UDim2.new(1, -2 * PAD, 0, Theme.FooterHeight),
+	Position = UDim2.new(0, Theme.NavWidth + PAD, 1, 0),
+	Size = UDim2.new(1, -(Theme.NavWidth + 2 * PAD), 0, Theme.FooterHeight),
 	BackgroundTransparency = 1,
+	ZIndex = 3,
 })
 make("Frame", { Parent = footer, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Theme.Ink, BorderSizePixel = 0 })
 label(footer, {

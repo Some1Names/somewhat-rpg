@@ -23,11 +23,11 @@ local powerAction = ReplicatedStorage:WaitForChild("PowerAction")
 
 local player = Players.LocalPlayer
 
-local PANEL_SIZE = Vector2.new(840, 460)
+local PANEL_SIZE = Vector2.new(1000, 460)
 local COLUMN_PADDING = 10
 local GAP = 12 -- between the columns
-local LEFT_WIDTH = 190
-local RIGHT_WIDTH = 250
+local LEFT_WIDTH = 250
+local RIGHT_WIDTH = 330
 local HEADING_HEIGHT = 24 -- a column's title row
 local CARD_SIZE = 96
 local SLOT_HEIGHT = 84
