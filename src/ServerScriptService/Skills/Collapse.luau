@@ -23,10 +23,10 @@ local CONFIG = {
 	Radius = 20, -- studs pulled and hurt (times the form's blastScale)
 	PullTime = 0.6, -- seconds
 	PullTicks = 3, -- damage ticks, evenly through the pull
-	TickDamage = 4, -- before the caster's Superliminal bonus
+	TickDamage = 6, -- before the caster's Superliminal bonus
 	MaxPullSpeed = 90, -- studs per second
 	BlastRadius = 10,
-	BlastDamage = 25,
+	BlastDamage = 40,
 	CentreHeight = 3, -- studs above the ground the pull aims at
 }
 local TICK_OPTIONS = { stat = "Superliminal", skillSet = SET_NAME, guard = "unblockable", skill = "X" }

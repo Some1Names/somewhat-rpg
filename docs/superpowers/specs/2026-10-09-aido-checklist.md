@@ -3,7 +3,8 @@
 Nothing here has been run: the cloud/code session can't playtest, and no Luau toolchain (Lune,
 StyLua, selene) was available when it was written, so scripts were read, not parsed. Apply the diff
 to Studio, then tick each line in a playtest. All visuals are placeholders (red parts and Shared
-prefabs) until your VFX pass. Numbers are before the Superliminal bonus.
+prefabs) until your VFX pass. Numbers are before the Superliminal bonus. **Glass-cannon update:
+the damage numbers below are the old ones; see the last section for the current ones.**
 
 **Setup**
 - Add a Tool `Deus Ex Machina` to `ServerStorage.SkillSetTools` with the attribute `SkillSet = "Aido"` (copy
@@ -68,3 +69,16 @@ prefabs) until your VFX pass. Numbers are before the Superliminal bonus.
 ## Challenges (Quests, J)
 - [ ] Aido's five mastery challenges show and count: Fuse pops, a 3-enemy Collapse pull, Catastrophe kills,
       Total Destruction kills, and a 3-enemy Ground Zero.
+
+## Glass cannon and Meltdown (current numbers)
+He hits harder and is easier to kill. New numbers: Fuse **18**; Catastrophe **60**, 16 studs, 5 s;
+Collapse ticks **6**, blast **40**, 7 s; Total Destruction **22**, 9 studs, 10 s; Ground Zero **180**
+to **70**, 35 s; Final Cut roar **60**; Atomic Breath **12**. Chain Reaction fills 40% faster
+(25 per stack).
+- [ ] Every hit on him is **35% harder** (Half-Life); in Final Cut that is cut by 20%, so he is still
+      slightly softer than normal.
+- [ ] **Meltdown**: the passive label on the bar shows `MELTDOWN n%`. Each skill blast (not Fuse, not
+      aftershocks) adds 10%, and it drains 4% a second after 4 s of no blasts.
+- [ ] At 100% he melts down for 8 s: red glow and aura, blasts **2x damage** and **1.4x wider**.
+- [ ] While melting down he burns himself 5% of max health a second, **never below 1 HP**.
+- [ ] Meltdown ends on its time, death, respawn or putting the set away, and the meter resets to 0.

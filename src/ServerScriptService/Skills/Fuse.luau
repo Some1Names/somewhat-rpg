@@ -20,7 +20,7 @@ local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 local CONFIG = {
 	FuseTime = 1, -- seconds from sticking to popping
 	Radius = 6, -- studs
-	Damage = 12, -- before the thrower's Superliminal bonus
+	Damage = 18, -- before the thrower's Superliminal bonus
 }
 local FLIGHT = SkillSetConfig.Sets.Aido.ranged.projectile
 

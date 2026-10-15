@@ -451,8 +451,15 @@ SkillSetConfig.Sets = {
 		-- Half-Life: every skill blast leaves a Fallout patch (falloutRadius
 		-- studs for falloutDuration seconds; 1 Burnt stack a second to anyone
 		-- in it), and a blast on someone already Burnt hits 1 + burntBonus times
-		-- as hard. In Final Cut it also cuts all damage taken (form.damageReduction).
-		passive = { name = "Half-Life", mastery = 10, burntBonus = 0.25, falloutRadius = 6, falloutDuration = 3 },
+		-- as hard. He is a glass cannon: every hit on him is `vulnerability` harder
+		-- (Passives), though Final Cut still cuts all damage taken (form.damageReduction).
+		passive = { name = "Half-Life", mastery = 10, burntBonus = 0.25, falloutRadius = 6, falloutDuration = 3, vulnerability = 0.35 },
+		-- Meltdown (AidoUtil): each skill blast fills a 0..`max` meter by `perBlast`
+		-- (it drains `decayPerSecond` after `decayDelay` seconds of no blasts). Full,
+		-- he melts down for `duration` seconds: his blasts hit `damageMult` times as
+		-- hard and `radiusMult` times as wide, but he burns himself for `burnPerSecond`
+		-- of his max health a second (never to death). Needs the passive's mastery.
+		meltdown = { max = 100, perBlast = 10, decayDelay = 4, decayPerSecond = 4, duration = 8, damageMult = 2, radiusMult = 1.4, burnPerSecond = 0.05 },
 		-- fills from damage he deals only (no takenShare). While it's on, every
 		-- skill blast sets off `count` aftershocks `delay` seconds later at random
 		-- points within `spread` of its radius, each `share` of its damage
@@ -461,7 +468,7 @@ SkillSetConfig.Sets = {
 			mastery = 25,
 			color = SkillSetConfig.AidoRed,
 			maxStacks = 10,
-			damagePerStack = 40,
+			damagePerStack = 25,
 			meleeShare = 0.35,
 			duration = 15,
 			cooldown = 30,
@@ -505,17 +512,17 @@ SkillSetConfig.Sets = {
 			Z = {
 				name = "Catastrophe",
 				mastery = 1,
-				cooldown = 7,
+				cooldown = 5,
 				handler = "Catastrophe",
 				recast = "Detonate",
 				form = true,
-				aim = { kind = "circle", range = 70, radius = 14 },
-				formAim = { kind = "circle", range = 70, radius = 21 },
+				aim = { kind = "circle", range = 70, radius = 16 },
+				formAim = { kind = "circle", range = 70, radius = 24 },
 			},
 			X = {
 				name = "Collapse",
 				mastery = 5,
-				cooldown = 10,
+				cooldown = 7,
 				handler = "Collapse",
 				form = true,
 				aim = { kind = "circle", range = 60, radius = 20 },
@@ -524,7 +531,7 @@ SkillSetConfig.Sets = {
 			C = {
 				name = "Total Destruction",
 				mastery = 20,
-				cooldown = 14,
+				cooldown = 10,
 				handler = "TotalDestruction",
 				overcharged = true,
 				form = true,
@@ -534,7 +541,7 @@ SkillSetConfig.Sets = {
 			V = {
 				name = "Ground Zero",
 				mastery = 50,
-				cooldown = 45,
+				cooldown = 35,
 				handler = "GroundZero",
 				form = true,
 				aim = { kind = "circle", range = 80, radius = 40 },

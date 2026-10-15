@@ -15,7 +15,7 @@ local StatusEffects = require(ServerScriptService:WaitForChild("StatusEffects"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
-	Damage = 8, -- before the shooter's Superliminal bonus
+	Damage = 12, -- before the shooter's Superliminal bonus
 	Burnt = 1, -- stacks per hit
 }
 local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Aido", guard = "ranged", skill = "ranged" }

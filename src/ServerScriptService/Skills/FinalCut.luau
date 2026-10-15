@@ -26,7 +26,7 @@ local DRAGON_FRONT = CFrame.Angles(0, math.pi, 0) -- the model faces +Z; a chara
 local CHECK_INTERVAL = 0.1 -- seconds
 local ROAR = {
 	Radius = 20, -- studs
-	Damage = 40, -- before the caster's Superliminal bonus
+	Damage = 60, -- before the caster's Superliminal bonus
 }
 
 -- the dragon model, if the owner has made it

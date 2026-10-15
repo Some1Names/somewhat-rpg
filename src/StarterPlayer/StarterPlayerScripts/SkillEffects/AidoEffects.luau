@@ -8,6 +8,7 @@
 -- (FinalCutDragon) with its idle/walk/breath animations from
 -- ReplicatedStorage.AidoAnimations, his own body hidden, and (for the local
 -- player) the camera kept back; with no dragon model, a red aura instead.
+-- Also glows anyone melting down (their character's Meltdown attribute).
 -- Returns a function that takes the SkillEffects script's own helpers and
 -- gives back the effects by name, which that script adds to its own.
 local Players = game:GetService("Players")
@@ -330,10 +331,41 @@ return function(helpers)
 		update()
 	end
 
+	-- Meltdown: a red glow (and a held aura) on whoever is melting down
+	local function watchMeltdown(character)
+		local root = character:WaitForChild("HumanoidRootPart", 10)
+		if not root then
+			return
+		end
+		local glow, aura
+		local function update()
+			local on = character:GetAttribute("Meltdown") == true
+			if on and not glow then
+				glow = Instance.new("Highlight")
+				glow.Name = "MeltdownGlow"
+				glow.FillColor = RED
+				glow.FillTransparency = 0.6
+				glow.OutlineColor = CORE
+				glow.OutlineTransparency = 0.1
+				glow.Parent = character
+				aura = playPrefab("Meltdown", "Shared/AuraBurst", root, 1.2)
+			elseif not on and glow then
+				glow:Destroy()
+				glow = nil
+				VFX.Stop(aura)
+				aura = nil
+			end
+		end
+		character:GetAttributeChangedSignal("Meltdown"):Connect(update)
+		update()
+	end
+
 	local function watchPlayer(other)
 		other.CharacterAdded:Connect(watchForm)
+		other.CharacterAdded:Connect(watchMeltdown)
 		if other.Character then
 			task.spawn(watchForm, other.Character)
+			task.spawn(watchMeltdown, other.Character)
 		end
 	end
 	Players.PlayerAdded:Connect(watchPlayer)

@@ -694,6 +694,12 @@ RunService.RenderStepped:Connect(function()
 		local cut = inForm and set.form.physicalReduction or set.passive.physicalReduction * luminance
 		passiveLabel.Text = cut >= 1 and "PHYSICAL IMMUNE" or string.format("-%d%% PHYSICAL", math.round(cut * 100))
 		passiveLabel.TextColor3 = cut > 0 and set.color or MUTED
+	elseif set.passive and set.passive.name == "Half-Life" then
+		-- Aido: the Meltdown meter fills with his blasts (AidoUtil)
+		local meter = player:GetAttribute("AidoMeltdown") or 0
+		local melting = player.Character ~= nil and player.Character:GetAttribute("Meltdown") == true
+		passiveLabel.Text = melting and "MELTDOWN" or string.format("MELTDOWN  %d%%", math.round(meter * 100))
+		passiveLabel.TextColor3 = (melting or meter > 0.6) and set.color or MUTED
 	elseif set.passive then
 		local recharging = (player:GetAttribute(SkillSetConfig.PassiveReadyAttribute(setName)) or 0) - workspace:GetServerTimeNow()
 		if recharging > 0 then

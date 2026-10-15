@@ -6,7 +6,7 @@
 -- physical hits (melee and weapons) are cut in proportion to the light held
 -- (see LuminanceServer), and pass straight through him in Prism Form, where
 -- an enemy's hit trains the set's mastery as dealing one would. Aido's
--- Half-Life: in Final Cut all damage taken is cut. Every hit on
+-- Half-Life: he takes more damage (less in Final Cut). Every hit on
 -- a player goes through Passives.Absorb first: Damage.Deal for players'
 -- attacks, EnemyAI for enemies' swings.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -38,11 +38,13 @@ function behaviours.Luminance(player, character, setName, set, amount, physical,
 	return amount * (1 - set.passive.physicalReduction * luminance)
 end
 
--- Aido's Half-Life: in Final Cut every hit on him is cut by the form's
--- damageReduction, physical or not (his Fallout and Burnt bonus are in AidoUtil)
+-- Aido's Half-Life: he is fragile, every hit on him is `vulnerability` harder;
+-- in Final Cut it is cut by the form's damageReduction (his Fallout, Burnt
+-- bonus and Meltdown are in AidoUtil)
 behaviours["Half-Life"] = function(player, character, setName, set, amount)
+	amount *= 1 + set.passive.vulnerability
 	if SkillSetConfig.InForm(character, setName) then
-		return amount * (1 - set.form.damageReduction)
+		amount *= 1 - set.form.damageReduction
 	end
 	return amount
 end

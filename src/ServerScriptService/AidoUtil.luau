@@ -3,7 +3,9 @@
 -- hits, its damage (falling off from the centre, or flat), the Half-Life
 -- passive's extra damage on someone Burnt, the Burnt it applies, the Fallout
 -- patch it leaves, and the aftershocks Chain Reaction adds. His own blasts
--- never hurt him. Clients draw each blast from the SkillEffects `kind` it fires.
+-- never hurt him. Meltdown (the set's glass-cannon gimmick) lives here too: skill
+-- blasts fill a meter, a full one makes his blasts stronger and wider while he
+-- burns himself. Clients draw each blast from the SkillEffects `kind` it fires.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
@@ -19,6 +21,10 @@ local SET_NAME = "Aido"
 local SET = SkillSetConfig.Sets[SET_NAME]
 local PASSIVE = SET.passive
 local AFTERSHOCK = SET.aftershock
+local MELTDOWN = SET.meltdown
+local METER_ATTRIBUTE = "AidoMeltdown" -- on the player: the meter, 0 to 1 (SkillBar)
+local ACTIVE_ATTRIBUTE = "Meltdown" -- on the character while melting down
+local MELTDOWN_STEP = 0.25 -- seconds between meter and burn updates
 local GROUND_RAY = 70 -- studs down from above a spot to look for ground
 local GROUND_RISE = 10 -- studs above a spot the ground search starts
 local FALLOUT_TICK = 1 -- seconds between Burnt stacks from a Fallout patch
@@ -26,6 +32,75 @@ local FALLOUT_TICK = 1 -- seconds between Burnt stacks from a Fallout patch
 local AidoUtil = {}
 
 local nextFalloutId = 0
+
+-- player -> { meter, lastGain, character, endsAt? } (endsAt while melting down)
+local meltdowns = {}
+
+local function endMeltdown(player, state)
+	if state.character and state.character.Parent then
+		state.character:SetAttribute(ACTIVE_ATTRIBUTE, nil)
+	end
+	state.endsAt = nil
+	state.meter = 0
+	if player.Parent then
+		player:SetAttribute(METER_ATTRIBUTE, 0)
+	end
+end
+
+-- a skill blast went off: the meter fills, and a full one starts the meltdown
+local function addMeltdown(player, character)
+	if not SkillSetConfig.FeatureUnlocked(player, SET_NAME, "passive") then
+		return
+	end
+	local state = meltdowns[player]
+	if not state or state.character ~= character then
+		state = { meter = 0, lastGain = 0, character = character }
+		meltdowns[player] = state
+	end
+	if state.endsAt then
+		return
+	end
+	state.meter = math.min(state.meter + MELTDOWN.perBlast, MELTDOWN.max)
+	state.lastGain = os.clock()
+	player:SetAttribute(METER_ATTRIBUTE, state.meter / MELTDOWN.max)
+	if state.meter >= MELTDOWN.max then
+		state.endsAt = os.clock() + MELTDOWN.duration
+		character:SetAttribute(ACTIVE_ATTRIBUTE, true)
+	end
+end
+
+-- the meter drains when he stops blasting; a meltdown burns him (never to
+-- death) and ends on its time, his death, a respawn or putting the set away
+task.spawn(function()
+	while true do
+		task.wait(MELTDOWN_STEP)
+		for player, state in pairs(meltdowns) do
+			local character = state.character
+			local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+			local _, setName = SkillSetConfig.Equipped(character)
+			if not player.Parent then
+				meltdowns[player] = nil
+			elseif player.Character ~= character or not humanoid or humanoid.Health <= 0 or setName ~= SET_NAME then
+				endMeltdown(player, state)
+				meltdowns[player] = nil
+			elseif state.endsAt then
+				if os.clock() >= state.endsAt then
+					endMeltdown(player, state)
+				else
+					-- (the passive's vulnerability applies to the burn too)
+					local burn = humanoid.MaxHealth * MELTDOWN.burnPerSecond * MELTDOWN_STEP
+					burn = math.min(burn, (humanoid.Health - 1) / (1 + PASSIVE.vulnerability))
+					if burn > 0 then
+						Damage.Deal(nil, humanoid, burn, { dot = true })
+					end
+				end
+			elseif state.meter > 0 and os.clock() - state.lastGain > MELTDOWN.decayDelay then
+				state.meter = math.max(state.meter - MELTDOWN.decayPerSecond * MELTDOWN_STEP, 0)
+				player:SetAttribute(METER_ATTRIBUTE, state.meter / MELTDOWN.max)
+			end
+		end
+	end
+end)
 
 -- everyone alive but `character` whose root is within `radius` of `centre`
 -- (a sphere): { { model, humanoid, root } }
@@ -136,6 +211,11 @@ function AidoUtil.blast(player, character, centre, spec)
 	if spec.form and SkillSetConfig.InForm(character, SET_NAME) then
 		radius *= SET.form.blastScale
 	end
+	-- melting down: wider and harder
+	local melting = character:GetAttribute(ACTIVE_ATTRIBUTE) == true
+	if melting then
+		radius *= MELTDOWN.radiusMult
+	end
 	local passiveOn = SkillSetConfig.FeatureUnlocked(player, SET_NAME, "passive")
 	local options = { stat = "Superliminal", skillSet = SET_NAME, skill = spec.skill, guard = spec.guard }
 	local dealt = {}
@@ -147,8 +227,14 @@ function AidoUtil.blast(player, character, centre, spec)
 				spec.struck[humanoid] = hits + 1
 			end
 			local amount = spec.damage
+			if melting then
+				amount *= MELTDOWN.damageMult
+			end
 			if spec.edgeDamage then
 				amount = AidoMath.falloff((target.root.Position - centre).Magnitude, radius, spec.damage, spec.edgeDamage)
+				if melting then
+					amount *= MELTDOWN.damageMult
+				end
 			end
 			-- already Burnt before this blast's own Burnt
 			if passiveOn and not spec.noBonus and StatusEffects.Has(humanoid, "Burnt") then
@@ -164,6 +250,10 @@ function AidoUtil.blast(player, character, centre, spec)
 	if spec.fallout ~= false and passiveOn then
 		local patch = spec.fallout or { radius = PASSIVE.falloutRadius, duration = PASSIVE.falloutDuration }
 		AidoUtil.fallout(player, character, centre, patch.radius, patch.duration)
+	end
+	-- (a skill blast: not Fuse, not an aftershock)
+	if spec.fallout ~= false or spec.aftershocks then
+		addMeltdown(player, character)
 	end
 	if spec.aftershocks and player.Parent and Overcharge.IsActive(player, SET_NAME) then
 		scheduleAftershocks(player, character, centre, radius, spec)

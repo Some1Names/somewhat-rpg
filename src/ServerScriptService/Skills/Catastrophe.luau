@@ -16,8 +16,8 @@ local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 local CONFIG = {
 	Range = 70, -- studs from the caster
 	FuseTime = 1, -- seconds before it goes off by itself
-	Radius = 14, -- studs
-	Damage = 40, -- before the caster's Superliminal bonus
+	Radius = 16, -- studs
+	Damage = 60, -- before the caster's Superliminal bonus
 	Burnt = 1, -- stacks
 }
 local RECAST = SkillSetConfig.RecastAttribute("Aido", "Z") -- on the player, for the skill bar
