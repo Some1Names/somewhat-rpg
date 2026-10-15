@@ -1,10 +1,11 @@
 -- Aido F, Final Cut: he becomes a dragon. It needs Chain Reaction on (the
 -- skill bar and SkillSetServer check), starts with a roar blast around him, and
--- lasts form.duration seconds even if Chain Reaction runs out first. While it
+-- lasts until F is pressed again, even if Chain Reaction runs out first (or
+-- form.duration seconds, if the set gives one). While it
 -- lasts the character's FinalCut attribute is on (Passives cuts the damage he
 -- takes, AidoUtil widens `form` blasts, RangedFor swaps Fuse for Atomic
 -- Breath, and clients draw the dragon and limit the camera from it). It ends
--- when F is pressed again (Revert), the time is up, he dies or leaves, or the
+-- when F is pressed again (Revert), he dies or leaves, or the
 -- set is put away: the attribute, the recast mark and the dragon copy all go.
 -- The dragon is ServerStorage.SkillSets.Aido.AidoDragon (a Model with a
 -- PrimaryPart); without it he keeps his body and clients draw an aura instead.
@@ -81,12 +82,12 @@ end
 
 -- keeps the form going until something ends it
 local function watch(player, character, humanoid)
-	local endsAt = os.clock() + FORM.duration
+	local endsAt = FORM.duration and os.clock() + FORM.duration
 	while character:GetAttribute(FORM.attribute) do
 		task.wait(CHECK_INTERVAL)
 		local _, setName = SkillSetConfig.Equipped(character)
 		if
-			os.clock() >= endsAt
+			(endsAt and os.clock() >= endsAt)
 			or not player.Parent
 			or player.Character ~= character
 			or not character:IsDescendantOf(workspace)

@@ -34,7 +34,7 @@ prefabs) until your VFX pass. Numbers are before the Superliminal bonus.
       Nobody takes more than 3 of one cast. With Chain Reaction: 3 lines 25 degrees apart.
 - [ ] **V Ground Zero** (45 s): a 40-stud circle with a 3-2-1 everyone can see, then **110** at the centre
       falling to **40** at the edge, 2 Burnt stacks, a 30-stud Fallout field for 6 s.
-- [ ] **F Final Cut** (90 s, needs Chain Reaction): a roar (**40**, 20 studs); then 12 s of the form. See
+- [ ] **F Final Cut** (90 s, needs Chain Reaction): a roar (**40**, 20 studs); then the form, until F again. See
       Review Focus 1 below.
 - [ ] **Atomic Breath** (in Final Cut, hold left click, no right click): a 60-stud beam, **8** every 0.2 s,
       1 Burnt per hit, no ammo; the Fuse slot shows Atomic Breath with no count.
@@ -46,7 +46,7 @@ prefabs) until your VFX pass. Numbers are before the Superliminal bonus.
       every skill blast sets off 3 aftershocks 0.25 s later (30% damage, 6 studs).
 
 ## Review Focus
-1. **Final Cut ends cleanly**, each way (F again, 12 s, dying, putting the set away, leaving the game):
+1. **Final Cut ends cleanly**, each way (F again, dying, putting the set away, leaving the game):
       the `FinalCut` attribute on the character, the `FinalCutDragon` folder, the hidden body,
       the camera limit and the Fuse/Atomic Breath swap all go back. Respawn: nothing carries over.
 - [ ] **A target dying, respawning or leaving mid-move**: Fuse stuck on them, Collapse pulling them, Ground

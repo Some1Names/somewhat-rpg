@@ -98,7 +98,7 @@ end
 -- instant (its `effect` names how SkillEffects draws it; LightShot if none). `animation`: a <Set>Animations one to play per shot.
 -- A ranged move with none of charges, luminanceCost or rounds is free (Atomic
 -- Breath). A `form` may carry its own `ranged` that replaces the set's while
--- in the form: always read it through RangedFor. A form's `duration` ends it
+-- in the form: always read it through RangedFor. A form's optional `duration` ends it
 -- by itself after that many seconds; `damageReduction` cuts all damage taken
 -- in it, `blastScale` widens `form` skills' blasts, `camera` is the closest
 -- the camera may zoom in. `aftershock`: see the Aido entry.
@@ -481,15 +481,14 @@ SkillSetConfig.Sets = {
 			animation = "CastZ",
 			projectile = { model = "FissionSeed", speed = 90, range = 80, radius = 1 },
 		},
-		-- Final Cut, on F: for `duration` seconds a dragon (damageReduction less
+		-- Final Cut, on F: a dragon until F again (damageReduction less
 		-- damage taken, `form` skills blast blastScale times wider, the camera
 		-- can't come closer than `camera` studs). Its ranged move replaces Fuse
 		-- (SkillSetConfig.RangedFor); with no ranged cost, it is free.
 		form = {
 			name = "Final Cut",
 			key = "F",
-			attribute = "FinalCut",
-			duration = 12,
+			attribute = "FinalCut", -- no `duration`: it lasts until F again, death or putting the set away
 			damageReduction = 0.2,
 			blastScale = 1.5,
 			camera = 22,
