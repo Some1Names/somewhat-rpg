@@ -75,6 +75,15 @@ function AidoUtil.groundAt(position, ignore)
 	return position
 end
 
+-- `aim` pulled to at most `range` studs from `origin`, flat, at origin's height
+function AidoUtil.clampFlat(origin, aim, range)
+	local offset = Vector3.new(aim.X - origin.X, 0, aim.Z - origin.Z)
+	if offset.Magnitude > range then
+		offset = offset.Unit * range
+	end
+	return origin + offset
+end
+
 -- a patch of Fallout: for `duration` seconds, one Burnt stack a second to
 -- everyone inside (so a patch never gives more than one stack a second, and
 -- Burnt's own maxStacks caps overlapping ones)
@@ -120,6 +129,9 @@ end
 -- SkillEffects event, fired with the centre and radius). Returns damage dealt
 -- per humanoid.
 function AidoUtil.blast(player, character, centre, spec)
+	if not player.Parent then
+		return {}
+	end
 	local radius = spec.radius
 	if spec.form and SkillSetConfig.InForm(character, SET_NAME) then
 		radius *= SET.form.blastScale

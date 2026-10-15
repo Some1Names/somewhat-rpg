@@ -69,7 +69,8 @@ end
 -- drawForOwner (a skill's shot, which the owner's client hasn't drawn);
 -- homing (a BasePart it turns toward every step while it's there: the
 -- root of the character the shot is locked onto); onHit (function(humanoid,
--- position)).
+-- position)); onStop (function(position, hitPart?, humanoid?), once, whenever
+-- it ends: a person, a wall or the end of its range).
 function Projectiles.Launch(options)
 	for _, other in ipairs(Players:GetPlayers()) do
 		if other ~= options.owner or options.drawForOwner then
@@ -94,7 +95,7 @@ function Projectiles.Launch(options)
 		local direction = options.direction
 		local homing = options.homing
 		local travelled = 0
-		local stoppedAt, struck
+		local stoppedAt, struck, struckPart
 		while travelled < options.range do
 			local step = math.min(options.speed * RunService.Heartbeat:Wait(), options.range - travelled)
 			if homing and homing.Parent then
@@ -107,6 +108,7 @@ function Projectiles.Launch(options)
 			if hit then
 				stoppedAt = position + direction * hit.Distance
 				struck = humanoid
+				struckPart = hit.Instance
 				break
 			end
 			position += direction * step
@@ -115,6 +117,12 @@ function Projectiles.Launch(options)
 		stoppedAt = stoppedAt or position
 		if struck and options.onHit then
 			local ok, err = pcall(options.onHit, struck, stoppedAt)
+			if not ok then
+				warn("[Projectiles] " .. tostring(err))
+			end
+		end
+		if options.onStop then
+			local ok, err = pcall(options.onStop, stoppedAt, struckPart, struck)
 			if not ok then
 				warn("[Projectiles] " .. tostring(err))
 			end
