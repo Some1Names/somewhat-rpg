@@ -10,6 +10,9 @@
 --   loop       for sounds that last as long as a model does (Sfx.Attach)
 local SoundConfig = {}
 
+-- every clip's volume is multiplied by this (1 = as set below)
+SoundConfig.MasterVolume = 0.5
+
 SoundConfig.Sounds = {
 	-- melee
 	swing = { id = 87075337487332, volume = 0.5, pitch = { 0.9, 1.15 }, range = 70 },

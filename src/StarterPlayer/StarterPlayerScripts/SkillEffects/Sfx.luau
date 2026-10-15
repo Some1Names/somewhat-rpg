@@ -50,7 +50,7 @@ local function build(key)
 	sound.SoundId = "rbxassetid://" .. SoundConfig.PickId(entry, function(low, high)
 		return random:NextInteger(low, high)
 	end)
-	sound.Volume = entry.volume or DEFAULT_VOLUME
+	sound.Volume = (entry.volume or DEFAULT_VOLUME) * SoundConfig.MasterVolume
 	local pitch = entry.pitch or DEFAULT_PITCH
 	sound.PlaybackSpeed = pitch[1] + random:NextNumber() * (pitch[2] - pitch[1])
 	sound.RollOffMode = Enum.RollOffMode.InverseTapered
