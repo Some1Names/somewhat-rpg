@@ -115,7 +115,7 @@ check("every challenge has an id, kind, count and reward", (function()
 	return true
 end)())
 check("the spec's challenge counts", #QuestConfig.Challenges.Mandela == 5 and #QuestConfig.Challenges.IridescentRequiem == 5
-	and #QuestConfig.Challenges.Photoshop == 5 and #QuestConfig.Challenges.Revolver == 2)
+	and #QuestConfig.Challenges.Photoshop == 5 and #QuestConfig.Challenges.Aido == 5 and #QuestConfig.Challenges.Revolver == 2)
 check("the three givers exist", QuestConfig.Givers.Training ~= nil and QuestConfig.Givers.Frontier ~= nil and QuestConfig.Givers.Outpost ~= nil)
 check("every bounty has what the panel needs", (function()
 	local seen = {}

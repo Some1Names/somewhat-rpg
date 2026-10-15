@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local AidoUtil = require(ServerScriptService:WaitForChild("AidoUtil"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -41,7 +42,7 @@ function GroundZero.Cast(player, character, aim)
 	end
 	skillEffects:FireAllClients("GroundZeroCountdown", HttpService:GenerateGUID(false), centre, radius, CONFIG.Countdown)
 	task.delay(CONFIG.Countdown, function()
-		AidoUtil.blast(player, character, centre, {
+		local dealt = AidoUtil.blast(player, character, centre, {
 			radius = radius,
 			damage = CONFIG.Damage,
 			edgeDamage = CONFIG.EdgeDamage,
@@ -51,6 +52,15 @@ function GroundZero.Cast(player, character, aim)
 			skill = "V",
 			kind = "GroundZeroBlast",
 		})
+		local hits = 0
+		for _, taken in pairs(dealt) do
+			if taken > 0 then
+				hits += 1
+			end
+		end
+		if player.Parent then
+			Quests.Report(player, SET_NAME, "GroundZeroHits", hits)
+		end
 	end)
 	return true
 end

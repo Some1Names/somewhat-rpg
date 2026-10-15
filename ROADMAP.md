@@ -26,9 +26,10 @@ reuse `FORM_*` textures, `sunShaft`, `lyingFlat` and pack prefabs, check with fr
 Design with the owner first (questions, then a written spec), then build. (Cloud for design and
 server code; Studio for visuals, animations, models.)
 
-1. **Aido** (Furukiwa Aido, The Director; his power is named **Deus Ex Machina**; S power, red, atomic): **designed**, spec
-   `docs/superpowers/specs/2026-10-09-aido-design.md`, plan `docs/superpowers/plans/2026-10-09-aido.md`
-   (not built yet). Fuse, Z Catastrophe, X Collapse, C Total Destruction, V Ground Zero, F Final Cut
+1. **Aido** (Furukiwa Aido, The Director; his power is named **Deus Ex Machina**; S power, red, atomic): **code built, waiting on Studio** (branch
+   `claude/vigilant-rubin-ckqtnn`), spec `docs/superpowers/specs/2026-10-09-aido-design.md`, plan
+   `docs/superpowers/plans/2026-10-09-aido.md` (tasks 1-10 done; task 11, applying it to Studio, is left),
+   checklist `docs/superpowers/specs/2026-10-09-aido-checklist.md`. Placeholder visuals. Fuse, Z Catastrophe, X Collapse, C Total Destruction, V Ground Zero, F Final Cut
    (dragon form), G Chain Reaction, passive Half-Life (Fallout, Burnt). Later in Studio: the dragon
    model, `AidoAnimations`, VFX packs.
 2. **Photoshop** (Nozomi, S power, pink / light blue): **in Studio** from branch
@@ -63,7 +64,7 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **Mastery unlocks per power** (own skill levels; passives, G, Lightstep, the Gallery by mastery):
   **built and in Studio** (synced 2026-10-14), spec `docs/superpowers/specs/2026-10-09-mastery-unlocks-design.md`, plan
   `docs/superpowers/plans/2026-10-09-mastery-unlocks.md`, checklist `docs/superpowers/specs/2026-10-09-mastery-unlocks-checklist.md`.
-  Waiting on a playtest. Aido's numbers go in with the Aido build.
+  Waiting on a playtest. Aido's numbers are in (Half-Life mastery 10, Chain Reaction 25).
 - **Quests** (bounties from Bounty Hunters, mastery challenges): **built and in Studio**, spec `docs/superpowers/specs/2026-10-09-quests-design.md`, plan
   `docs/superpowers/plans/2026-10-09-quests.md`, checklist `docs/superpowers/specs/2026-10-09-quests-checklist.md`.
   Three Bounty Hunters stand on the map's `QuestSpawn` parts (GiverIds Training, Frontier, Outpost;
@@ -77,7 +78,7 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **Reforge** (smith NPC, level up to 10, reroll 2 modifier slots): **built and in Studio**, plan
   `docs/superpowers/plans/2026-10-14-reforge.md`, checklist `docs/superpowers/specs/2026-10-14-reforge-checklist.md`.
 - **Spawn Keeper** (an NPC tagged `SpawnSetter` saves the player's spawn spot): **built and in Studio** (2026-10-14); no plan or checklist (needs a playtest). A `Spawn Keeper` NPC (Power Gacha rig, tagged `SpawnSetter`) stands beside the SpawnLocation.
-- **Power aura** (an `Aura` model under `ServerStorage.SkillSets.<Set>` welds to the character while its tool is held; Photoshop uses `PhotoshopAura`): **code committed, not in Studio yet** (`SkillSetServer`, commit `fcdb0b3`). The aura models are yours (VFX).
+- **Power aura** (an `Aura` model under `ServerStorage.SkillSets.<Set>` welds to the character while its tool is held; Photoshop uses `PhotoshopAura`): **built and in Studio** (`SkillSetServer`, synced 2026-10-15). The aura models are yours (VFX).
 - **Enemy drops** (materials as glowing orbs, per-player, saved bag; spent in Reforge): **built and in Studio** (2026-10-14; a one-hit kill dropped orbs and walking onto them filled the bag)
   (plan `docs/superpowers/plans/2026-10-14-enemy-drops.md`, checklist `docs/superpowers/specs/2026-10-14-enemy-drops-checklist.md`).
   `DroppedItemOrb` is in `ReplicatedStorage.VFXPrefabs`. Left: the checklist (two players, visuals, UI).

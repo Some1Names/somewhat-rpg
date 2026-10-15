@@ -75,6 +75,13 @@ QuestConfig.Challenges = {
 		{ id = 4, text = "Undo 10 times, healing at least 20 each time", kind = "event", event = "UndoHeal", min = 20, count = 10, reward = 400 },
 		{ id = 5, text = "Catch a target in Iris Horizon without them escaping, 5 times", kind = "event", event = "IrisCaught", count = 5, reward = 1000, gate = "V" },
 	},
+	Aido = {
+		{ id = 1, text = "Land 20 Fuse pops", kind = "hits", skill = "ranged", count = 20, reward = 150 },
+		{ id = 2, text = "Pull 3 enemies with one Collapse", kind = "event", event = "CollapsePull", min = 3, count = 1, reward = 400, gate = "X" },
+		{ id = 3, text = "Kill 5 enemies with Catastrophe", kind = "kills", skill = "Z", count = 5, reward = 600 },
+		{ id = 4, text = "Kill 10 enemies with Total Destruction", kind = "kills", skill = "C", count = 10, reward = 1000, gate = "C" },
+		{ id = 5, text = "Hit 3 enemies with one Ground Zero, 3 times", kind = "event", event = "GroundZeroHits", min = 3, count = 3, reward = 1500, gate = "V" },
+	},
 	Revolver = {
 		{ id = 1, text = "Land 30 shots", kind = "hits", skill = "ranged", count = 30, reward = 150 },
 		{ id = 2, text = "Kill 3 enemies with Dead Eye", kind = "kills", skill = "X", count = 3, reward = 400, gate = "X" },

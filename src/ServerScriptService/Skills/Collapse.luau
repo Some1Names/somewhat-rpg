@@ -12,6 +12,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 local AidoUtil = require(ServerScriptService:WaitForChild("AidoUtil"))
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
+local Quests = require(ServerScriptService:WaitForChild("Quests"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -53,12 +54,17 @@ end
 
 local function run(player, character, centre, reach)
 	local pulls = {}
+	local pulled = 0
 	for _, target in ipairs(AidoUtil.enemiesWithin(character, centre, reach)) do
 		local model = target.model
 		if not target.root.Anchored and model:GetAttribute("Flying") ~= true and CrowdControl.CanControl(model) then
 			pulls[target.humanoid] = attachPull(target.root)
 			CrowdControl.Begin(model)
+			pulled += 1
 		end
+	end
+	if player.Parent then
+		Quests.Report(player, SET_NAME, "CollapsePull", pulled)
 	end
 	local ok, err = pcall(function()
 		local startedAt = os.clock()
