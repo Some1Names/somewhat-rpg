@@ -27,6 +27,7 @@ local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local VFX = require(ReplicatedStorage:WaitForChild("VFX"))
+local Sfx = require(script:WaitForChild("Sfx"))
 
 local SPARKLE_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
 local SMOKE_TEXTURE = "rbxasset://textures/particles/smoke_main.dds"
@@ -2896,6 +2897,7 @@ for kind, draw in pairs(photoshopEffects) do
 end
 
 local function play(kind, ...)
+	Sfx.ForEffect(kind, ...)
 	local effect = effects[kind]
 	if effect then
 		effect(...)
@@ -2915,6 +2917,7 @@ local function drawModel(child)
 	local run = child:IsA("Model") and modelEffects[child:GetAttribute("ClientEffect") or ""]
 	if run then
 		task.spawn(run, child)
+		Sfx.AttachFor(child)
 	end
 end
 workspace.ChildAdded:Connect(drawModel)

@@ -357,6 +357,7 @@ punchEvent.OnServerEvent:Connect(function(player, index, aim)
 	if direction.Magnitude < 0.01 then
 		direction = Vector3.zAxis
 	end
+	skillEffects:FireAllClients("MeleeSwing", character, weapon.skillSet ~= nil)
 	task.delay(weapon.hits[hitIndex].impact, land, player, character, weapon, hitIndex == PunchConfig.ComboLength, direction.Unit)
 end)
 

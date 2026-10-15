@@ -2014,5 +2014,33 @@
   "class": "Script",
   "runContext": "Client",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/SoundConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "SoundConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SkillEffects/Sfx.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SkillEffects",
+   "Sfx"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
  }
 ]
