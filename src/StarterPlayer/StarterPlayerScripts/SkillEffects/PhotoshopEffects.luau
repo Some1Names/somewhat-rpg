@@ -844,7 +844,7 @@ return function(helpers)
 				root.AssemblyLinearVelocity = Vector3.zero
 			end
 			if not done then
-				if elapsed - lastCopy >= REWIND_GHOST_EVERY then
+				if elapsed - lastCopy >= REWIND_GHOST_EVERY / math.max(VFX.Quality(), 0.35) then
 					lastCopy = elapsed
 					afterimage(character, PINK:Lerp(BLUE, math.clamp(elapsed / duration, 0, 1)), REWIND_GHOST_FADE, REWIND_GHOST_OPACITY)
 				end

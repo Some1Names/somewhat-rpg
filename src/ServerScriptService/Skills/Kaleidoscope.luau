@@ -80,18 +80,22 @@ end
 -- Frames everyone in `targets` (or keeps their frame going) and readies Step In
 -- on the one nearest her, unless she has Stepped In since `since` (one warp
 -- per ultimate). `resisted` holds those whose frame was forgotten
--- (Mandela's Misremembered): they aren't tried again.
+-- (Mandela's Misremembered): they aren't tried again. A frame that still has
+-- most of its time left isn't sent again, and someone Invulnerable for a
+-- moment (a dash) is tried again next tick rather than counted as resisting.
 local function frameThem(player, root, targets, resisted, since)
 	local nearest, nearestDistance
 	for _, target in ipairs(targets) do
-		if not resisted[target.model] then
-			if not Framed.Mark(player, target.model) then
-				resisted[target.model] = true
-			else
+		local model = target.model
+		if not resisted[model] then
+			local fresh = Framed.Has(player, model) and (model:GetAttribute("FramedUntil") or 0) - workspace:GetServerTimeNow() > Framed.Duration / 2
+			if fresh or Framed.Mark(player, model) then
 				local distance = (target.root.Position - root.Position).Magnitude
 				if not nearest or distance < nearestDistance then
-					nearest, nearestDistance = target.model, distance
+					nearest, nearestDistance = model, distance
 				end
+			elseif not model:GetAttribute("Invulnerable") then
+				resisted[model] = true
 			end
 		end
 	end

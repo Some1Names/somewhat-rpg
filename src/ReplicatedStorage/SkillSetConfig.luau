@@ -242,7 +242,7 @@ SkillSetConfig.Sets = {
 		-- seconds between two Lightsteps, whatever charges are left. `linkRange`: a
 		-- Lightstep begun while the last trail still burns, within this many studs
 		-- of where that one ended, joins the two with a stretch of light.
-		dash = { name = "Lightstep", mastery = 15, handler = "Lightstep", range = 28, travelTime = 0.1, trailDuration = 3, maxTrails = 3, interval = 1.5, linkRange = 40 },
+		dash = { name = "Lightstep", mastery = 15, handler = "Lightstep", range = 28, travelTime = 0.1, trailDuration = 3, maxTrails = 3, interval = 0.75, linkRange = 40 },
 		-- Prism Form, on X: it needs minimumToStart Luminance and costs entryCost,
 		-- then burns drainPerSecond (sunlight stops refilling it meanwhile) until
 		-- X is pressed again or the light runs out. Physical hits are cut by
@@ -324,6 +324,8 @@ SkillSetConfig.Sets = {
 		-- so Undo can take it back (PhotoshopServer). Mandela's damage can't be
 		-- undone.
 		passive = { name = "History", mastery = 15 },
+		-- the SkillEffects effect drawn when she takes the set up, instead of the shared Equip
+		equipEffect = "PhotoshopEquip",
 		-- G, Undo: back to where she stood `rewind` seconds ago, healing
 		-- healShare of the damage taken since; she's carried back along the
 		-- way she came over rewindTime seconds, untouchable and unable to act

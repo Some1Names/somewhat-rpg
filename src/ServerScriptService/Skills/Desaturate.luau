@@ -48,8 +48,8 @@ local function run(id, player, character, humanoid, center)
 	local endsAt = os.clock() + CONFIG.Duration
 	while os.clock() < endsAt and PhotoshopUtil.alive(player, character, humanoid) do
 		for _, target in ipairs(PhotoshopUtil.enemiesWithin(character, center, CONFIG.Radius)) do
-			-- a dome, not a column: too high above the ground is out
-			if (target.root.Position - center).Magnitude <= CONFIG.Radius then
+			-- a dome, not a column: out past its radius, or below the ground it stands on (the client draws the same)
+			if (target.root.Position - center).Magnitude <= CONFIG.Radius and target.root.Position.Y >= center.Y - 4 then
 				Damage.Deal(player, target.humanoid, CONFIG.TickDamage, DAMAGE_OPTIONS)
 				local targetPlayer = PhotoshopUtil.playerOf(target.model)
 				if not resisted[target.model] and targetPlayer and lightBound(target.model) and Passives.ResistEdit(targetPlayer) then

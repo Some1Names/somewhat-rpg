@@ -20,6 +20,7 @@ local UserInputService = game:GetService("UserInputService")
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local fireRanged = ReplicatedStorage:WaitForChild("FireRanged")
 local localSkillEffect = ReplicatedStorage:WaitForChild("LocalSkillEffect")
 local player = Players.LocalPlayer
@@ -40,6 +41,12 @@ local lastShotAt = -math.huge
 local shotCount = 0
 local normalFov -- the camera's own field of view, while zoomed in
 local crosshairShown = false
+-- with a menu open the mouse is for the menu: no crosshair standing in for it,
+-- and no shots (Menus.OnChange gives the open menu's name, or nil)
+local menuOpen = false
+Menus.OnChange(function(name)
+	menuOpen = name ~= nil
+end)
 
 -- the crosshair: a small square with a dot, following the mouse
 local gui = Instance.new("ScreenGui")
@@ -385,7 +392,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		readying = true
 	elseif input.UserInputType == Enum.UserInputType.MouseButton1 then
 		local _, ranged = heldSet()
-		if ranged and (ranged.primary or readying) then
+		if ranged and (ranged.primary or readying) and not menuOpen then
 			firing = true
 			fire()
 		end
@@ -407,7 +414,7 @@ end
 
 RunService.RenderStepped:Connect(function()
 	local setName, ranged, character = heldSet()
-	local ready = ranged ~= nil and (ranged.primary == true or readying)
+	local ready = ranged ~= nil and (ranged.primary == true or readying) and not menuOpen
 	if player:GetAttribute(READY_ATTRIBUTE) ~= ready then
 		player:SetAttribute(READY_ATTRIBUTE, ready)
 	end

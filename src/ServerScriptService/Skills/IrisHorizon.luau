@@ -84,7 +84,8 @@ local function burst(id, player, character, center, target, caught)
 	skillEffects:FireAllClients("IrisBurst", id, center, CONFIG.SplashRadius, caught)
 	-- a moment later, a second burst reaching further
 	task.delay(CONFIG.AftershockDelay, function()
-		if not player.Parent then
+		-- not if she died, left or put the set away meanwhile
+		if not PhotoshopUtil.alive(player, character, character:FindFirstChildOfClass("Humanoid")) then
 			return
 		end
 		for _, other in ipairs(PhotoshopUtil.enemiesWithin(character, center, CONFIG.AftershockRadius)) do

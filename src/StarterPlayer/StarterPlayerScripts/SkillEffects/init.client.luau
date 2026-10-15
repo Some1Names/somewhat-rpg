@@ -267,14 +267,17 @@ end
 local effects = {}
 
 -- the set's power flares up around its new wielder; `setName`: a set with an
--- entrance of its own (Photoshop's, in PhotoshopEffects) plays that instead
+-- entrance of its own (its equipEffect in SkillSetConfig, Photoshop's in
+-- PhotoshopEffects) plays that instead
 function effects.Equip(character, color, setName)
 	local feet, root = feetOf(character)
 	if not feet then
 		return
 	end
-	if setName == "Photoshop" and effects.PhotoshopEquip then
-		effects.PhotoshopEquip(character, color, feet, root)
+	local set = setName and SkillSetConfig.Sets[setName]
+	local entrance = set and set.equipEffect and effects[set.equipEffect]
+	if entrance then
+		entrance(character, color, feet, root)
 		return
 	end
 	VFX.Play("Shared/Shockwave", CFrame.new(feet + Vector3.new(0, 0.2, 0)), { color = color, scale = 0.7 })

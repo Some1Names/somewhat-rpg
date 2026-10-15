@@ -18,6 +18,7 @@ local skillModules = ServerScriptService:WaitForChild("Skills")
 
 local RECHARGE_TIME = 1 -- seconds per charge; matches the DodgeCharges module
 local TOLERANCE = 0.1 -- network jitter between client and server timing
+local INTERVAL_SLACK = 0.3 -- a set dash's least gap is checked this much looser than the client keeps it, so jitter can't drop a real dash
 
 local buckets = {} -- player -> { charges, at }
 
@@ -48,7 +49,7 @@ dashEffect.OnServerEvent:Connect(function(player, from, to)
 	-- a set dash that is still locked (mastery) is the normal dash
 	local setDash = dash and SkillSetConfig.FeatureUnlocked(player, setName, "dash")
 	-- a set dash can ask for a least gap between uses; too soon spends nothing
-	if setDash and dash.interval and now - (bucket.lastSetDashAt or -math.huge) < dash.interval - TOLERANCE then
+	if setDash and dash.interval and now - (bucket.lastSetDashAt or -math.huge) < dash.interval - INTERVAL_SLACK then
 		return
 	end
 	bucket.charges -= 1

@@ -5,9 +5,11 @@
 -- stands and pasted BehindDistance studs behind them, facing them, or in
 -- front of them when a wall is at their back. Over a drop, or beside
 -- someone flying, she's put at their height rather than at the bottom.
--- Landing, she throws three quick punches (ComboHits) at whoever is in front
--- of her at each one, so a target who dashes off makes the rest miss; the
--- last knocks back. Clients draw it from the SkillEffects "Snapshot",
+-- Landing, she and the one she warped to are held still for the combo (their
+-- root parts anchored, so a dash can't dodge it; someone CrowdControl won't let
+-- her hold stays free), and she throws three quick punches (ComboHits) at
+-- whoever is in front of her at each one. The last lets them go and knocks
+-- back. Clients draw it from the SkillEffects "Snapshot",
 -- "StepIn" and "PhotoshopPunchHit" events, and the caster's arms from
 -- "StepInCombo". SkillSetServer checks the tool, mastery and cooldown
 -- before calling Cast.
@@ -37,6 +39,7 @@ local CONFIG = {
 	ComboInterval = 0.15, -- seconds before each punch
 	ComboReach = 6, -- studs in front of her a punch reaches
 	ComboWidth = 5, -- studs across
+	ComboHoldMargin = 0.1, -- seconds she stays held past the last punch
 	ComboKnockback = 40, -- studs per second the last punch throws them
 	ComboKnockbackTime = 0.3, -- seconds the throw lasts
 }
@@ -94,9 +97,25 @@ local function knockBack(root, direction)
 	Debris:AddItem(attachment, CONFIG.ComboKnockbackTime)
 end
 
+-- anchors `root` for `seconds` (it frees itself, so nobody is left stuck);
+-- false if something already holds it
+local function hold(root, seconds)
+	if root.Anchored then
+		return false
+	end
+	root.Anchored = true
+	task.delay(seconds, function()
+		if root.Parent then
+			root.Anchored = false
+		end
+	end)
+	return true
+end
+
 -- Step In's punches, each ComboInterval after the last, while she's still
--- standing with Photoshop out
-local function combo(player, character, humanoid)
+-- standing with Photoshop out. `heldRoot`: the root of the one she warped to,
+-- held still until the last punch lets them go.
+local function combo(player, character, humanoid, heldRoot)
 	local landedCount = 0 -- punches that hit, for the Step In challenge (Quests)
 	for i, amount in ipairs(CONFIG.ComboHits) do
 		task.wait(CONFIG.ComboInterval)
@@ -105,6 +124,9 @@ local function combo(player, character, humanoid)
 			return
 		end
 		local last = i == #CONFIG.ComboHits
+		if last and heldRoot and heldRoot.Parent then
+			heldRoot.Anchored = false -- let go, so the last punch can throw them
+		end
 		local model, target = inFront(character, root)
 		if target then
 			local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
@@ -207,7 +229,15 @@ function Snapshot.Recast(player, character)
 	player:SetAttribute(RECAST, nil)
 	-- her arms throw the punches on her own screen
 	skillEffects:FireClient(player, "StepInCombo", character, #CONFIG.ComboHits, CONFIG.ComboInterval)
-	task.spawn(combo, player, character, humanoid)
+	-- both stand still for the combo: her, and them unless CrowdControl protects them
+	local comboTime = CONFIG.ComboInterval * #CONFIG.ComboHits
+	hold(root, comboTime + CONFIG.ComboHoldMargin)
+	local heldRoot
+	if CrowdControl.CanControl(model) and hold(targetRoot, comboTime) then
+		heldRoot = targetRoot
+		CrowdControl.Apply(model, comboTime)
+	end
+	task.spawn(combo, player, character, humanoid, heldRoot)
 end
 
 return Snapshot

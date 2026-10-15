@@ -175,6 +175,8 @@ local function tint(piece, color, on)
 	end
 end
 
+local ENTRANCE_ATTRIBUTE = "EntranceSet" -- on the character: the set whose own entrance (equipEffect) was last played
+
 -- Dresses the character for whichever set's tool it holds (or undresses it),
 -- adding or removing the overcharge-only pieces as the overcharge comes and goes.
 local function updateWearables(character)
@@ -187,6 +189,17 @@ local function updateWearables(character)
 		folder:Destroy()
 		folder = nil
 	end
+	-- a set with an entrance of its own (equipEffect) plays it when it is taken
+	-- up, whether or not it has wearables; the rest play theirs below, as the
+	-- wearables go on
+	local set = setName and SkillSetConfig.Sets[setName]
+	local entrance = set and set.equipEffect and setName or nil
+	if player and character:GetAttribute(ENTRANCE_ATTRIBUTE) ~= entrance then
+		character:SetAttribute(ENTRANCE_ATTRIBUTE, entrance)
+		if entrance then
+			skillEffects:FireAllClients("Equip", character, set.color, setName)
+		end
+	end
 	local pieces = setName and assets:FindFirstChild(setName) and assets[setName]:FindFirstChild("Wearables")
 	if not pieces or not player then
 		return
@@ -196,7 +209,9 @@ local function updateWearables(character)
 		folder.Name = WEARABLES_FOLDER
 		folder:SetAttribute("SkillSet", setName)
 		folder.Parent = character
-		skillEffects:FireAllClients("Equip", character, SkillSetConfig.Sets[setName].color, setName)
+		if not entrance then
+			skillEffects:FireAllClients("Equip", character, SkillSetConfig.Sets[setName].color, setName)
+		end
 	end
 	local overcharged = SkillSetConfig.IsOvercharged(player, setName)
 	for _, piece in ipairs(pieces:GetChildren()) do
