@@ -162,7 +162,6 @@ return function(helpers)
 	-- shared Equip (the rest of the sets keep theirs). `feet`, `root`: from the
 	-- Equip in SkillEffects, which hands it over; `color`: the set's pink
 	function effects.PhotoshopEquip(character, color, feet, root)
-		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(feet + Vector3.new(0, 0.2, 0)), { color = color, scale = 0.7 })
 		VFX.Play("Photoshop/AuraEnter", root, { color = color, offset = CFrame.new(0, -0.5, 0) })
 		VFX.Play("Photoshop/SparksSnapshot", root.Position, { color = color })
 		if character == Players.LocalPlayer.Character then
@@ -370,8 +369,6 @@ return function(helpers)
 		dome.Transparency = 1
 		tween(dome, 0.3, { Transparency = 0.6 })
 		table.insert(zone.parts, dome)
-		ring(center + Vector3.new(0, 0.2, 0), GREY, radius * 0.5, radius * 2, 0.5, 0.25)
-		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = GREY, scale = radius / SHOCKWAVE_RADIUS })
 		VFX.Shake(center, "Light", radius * 2)
 		-- grey pixels fill the dome while it lasts: its emitters spread through a
 		-- sphere on the ground (the half under it is hidden by the ground)
