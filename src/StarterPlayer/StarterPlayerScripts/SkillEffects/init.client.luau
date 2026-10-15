@@ -13,7 +13,7 @@
 -- (ReplicatedStorage.VFX): prefabs, camera shake, impact frames, craters.
 -- The tornado and black hole models are drawn by the TornadoEffect and
 -- BlackHoleEffect modules under this script (see the end), and Photoshop's
--- looks by PhotoshopEffects.
+-- looks by PhotoshopEffects, and Aido's (with Final Cut's dragon) by AidoEffects.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local HttpService = game:GetService("HttpService")
@@ -2924,6 +2924,21 @@ local photoshopEffects = require(script:WaitForChild("PhotoshopEffects"))({
 	ghostOf = ghostOf,
 })
 for kind, draw in pairs(photoshopEffects) do
+	effects[kind] = draw
+end
+
+-- and Aido's (placeholders until his VFX pack), plus Final Cut's dragon
+local aidoEffects = require(script:WaitForChild("AidoEffects"))({
+	folder = folder,
+	effectPart = effectPart,
+	tween = tween,
+	flash = flash,
+	ring = ring,
+	burst = burst,
+	lightBeam = lightBeam,
+	ghostOf = ghostOf,
+})
+for kind, draw in pairs(aidoEffects) do
 	effects[kind] = draw
 end
 
