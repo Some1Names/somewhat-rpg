@@ -2447,6 +2447,7 @@ end
 -- bokeh and light; it bursts going in and shatters coming out. Each
 -- client changes the parts' look only on its own screen and puts it back.
 local FORM_ATTRIBUTE = "PrismForm"
+local FORM_TRAIL = SkillSetConfig.Sets.IridescentRequiem.form.trail
 local FORM_TRAIL_TEXTURE = "rbxassetid://14050983225" -- a soft glowing streak (the dash's)
 
 -- Going in and coming out it uses the ui-resources.com images (FORM_*) above Solar Lance.
@@ -2672,7 +2673,7 @@ local function watchForm(character)
 			})
 			ribbon.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
 			ribbon.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.3) })
-			ribbon.Lifetime = 0.5
+			ribbon.Lifetime = FORM_TRAIL.duration -- as long as the light burns (Skills.PrismForm)
 			ribbon.LightEmission = 1
 			ribbon.LightInfluence = 0
 			ribbon.MinLength = 0.05

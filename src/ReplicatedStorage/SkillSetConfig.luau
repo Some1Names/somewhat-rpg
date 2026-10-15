@@ -247,7 +247,10 @@ SkillSetConfig.Sets = {
 		-- then burns drainPerSecond (sunlight stops refilling it meanwhile) until
 		-- X is pressed again or the light runs out. Physical hits are cut by
 		-- physicalReduction (1: they pass straight through him), and skills
-		-- marked `form` are empowered.
+		-- marked `form` are empowered. `trail`: the light he leaves behind as he
+		-- moves lasts `duration` seconds, `width` studs either side of the path,
+		-- and burns anyone in it for `damage` (and Burnt), the same person at most
+		-- once per `hitInterval`; a new stretch is laid every `minStep` studs.
 		-- shots of light at the mouse, 10% of the Luminance each (10 from full)
 		ranged = {
 			name = "Light Shot",
@@ -266,6 +269,7 @@ SkillSetConfig.Sets = {
 			entryCost = 0.1,
 			drainPerSecond = 0.08,
 			physicalReduction = 1,
+			trail = { duration = 1.5, width = 3, damage = 5, hitInterval = 0.5, minStep = 1.5 },
 		},
 		skills = {
 			Z = {
