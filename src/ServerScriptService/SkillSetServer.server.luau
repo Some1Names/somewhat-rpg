@@ -3,7 +3,8 @@
 -- ones marked OverchargeOnly only while the set is overcharged, along with an
 -- aura) and can cast its Z/X/C/V skills. Every cast is checked here: the tool is
 -- equipped, the skill exists and is unlocked by the player's mastery in the
--- set, and it's off cooldown. The skills themselves live in
+-- set, it's off cooldown and it isn't muted or erased (CombatState). The skills
+-- themselves live in
 -- ServerScriptService.Skills. The overcharge key (ActivateOvercharge) also
 -- comes through here, for the set in hand.
 local Players = game:GetService("Players")
@@ -11,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
+local CombatState = require(ServerScriptService:WaitForChild("CombatState"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
 local Reforge = require(ServerScriptService:WaitForChild("Reforge"))
 local SkillCooldowns = require(ServerScriptService:WaitForChild("SkillCooldowns"))
@@ -284,6 +286,10 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 		return
 	end
 	local id = setName .. "." .. key
+	-- muted by Place Where Dream Ends, or the skill erased for the fight
+	if CombatState.Blocked(player, id) then
+		return
+	end
 	-- (the set's Swift reforge shortens it; the check and the spend use the same one)
 	local cooldown = skill.cooldown * Reforge.CooldownMultiplier(player, setName)
 	if not SkillCooldowns.Ready(player, id, cooldown, skill.charges, COOLDOWN_TOLERANCE) then
@@ -297,6 +303,7 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 	-- a skill that couldn't go off (nowhere to put it) doesn't spend the cooldown
 	if handlerFor(handlerName).Cast(player, character, aim) then
 		SkillCooldowns.Spend(player, id, cooldown)
+		CombatState.RecordCast(player, id)
 	end
 end)
 

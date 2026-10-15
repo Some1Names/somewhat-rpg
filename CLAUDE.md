@@ -67,6 +67,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   player), `Guard` (block and posture: every hit on a player goes through `Guard.Resolve`; tag a
   damage call's `options.guard`), `ActionLock` (can't act: rewinding, blocking, stunned),
   `StatusEffects`, `Passives`, `Overcharge`, `Projectiles`, `Sunmark`, `Ragdoll`.
+  `CombatState` (Mandela V's mutes, marks and erased skills; the 30 s out-of-combat rule and numbers are
+  in `CombatRules`, Lune-tested; `CombatTimer` shows the last 10 s; `SkillSetServer` asks `Blocked`).
 - **Player data**: `PlayerStats` (attributes, DataStore save/load; Studio can't reach DataStores),
   `Powers` (the one held power, 2 storage slots, Robux lifetime powers, briefcase Tools, death drops; saved
   as `CurrentPower`/`PowerStorage`/`LifetimePowers`; numbers and pure rules in `PowerConfig`, Lune-tested;

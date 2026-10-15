@@ -2,7 +2,7 @@
 -- every client gets smooth local copies: the burst when a skill set is
 -- equipped, the eruption when it overcharges, ground shockwaves, the slash
 -- flashes of weapon hits, enemies shrugging off a stagger, Mandela's thrown
--- axe, Spine Lash, Overcome the Possibility and Misremembered, and
+-- axe, Spine Lash, Place Where Dream Ends and Misremembered, and
 -- Iridescent Requiem's light, including the glow of anyone in Prism Form
 -- (their character's PrismForm attribute). Anything tagged Iridescent
 -- shimmers between the set's orange and cyan here (SkillSetConfig
@@ -620,35 +620,16 @@ function effects.BoneSpikes(position, color, scale)
 	VFX.ImpactFrameNear(position, 6 * scale)
 end
 
--- Mandela V, Overcome the Possibility: the mask breaks and the zone turns
--- into a mirror world. A ring of tall glass panes rises round it, reflecting
--- the scene, and cracks a little more every second of the countdown; glints
--- drift up inside; everyone caught leaves a mirror-glass reflection of
--- themselves where they stood, tethered to them; and for whoever is inside,
--- the world greys out behind faint cracks across the screen.
--- PossibilitySnap shatters it all.
-local MIRROR_PANES = 14
-local MIRROR_HEIGHT = 17 -- studs, give or take
+-- Mandela V, Place Where Dream Ends: the mask breaks and a very large
+-- shockwave sweeps out of the caster (PossibilityWave); the players it marks
+-- are outlined until they're out of combat (PossibilityMark/Unmark), and a
+-- marked player hit again bursts where they stand as a skill is erased
+-- (PossibilityErase). The mirror glass helpers below are shared with the
+-- ultimate's dome. The wave is placeholder: stock rings and bursts, until
+-- its pack prefab exists.
 local MIRROR_TINT = Color3.fromRGB(225, 245, 238)
 local GLINT_TEXTURE = "rbxassetid://298984512" -- a sharp four-point star
 local SHARDS_PER_PANE = 9
-local possibilities = {} -- cast id -> what to clean up
-
-local function clearPossibility(castId)
-	local state = possibilities[castId]
-	if not state then
-		return nil
-	end
-	possibilities[castId] = nil
-	if state.connection then
-		state.connection:Disconnect()
-	end
-	for _, instance in ipairs(state.instances) do
-		instance:Destroy()
-	end
-	return state
-end
-
 -- a part turned to mirror glass
 local function mirrorGlass(part, transparency)
 	part.Material = Enum.Material.Glass
@@ -742,172 +723,6 @@ local function shatterPane(pane, center)
 	part:Destroy()
 end
 
--- a marked target's mirror-glass reflection where it stood, tethered to it
-local function possibilityGhost(state, model, color)
-	if not model.Parent then
-		return
-	end
-	local ghost = ghostOf(model, color)
-	table.insert(state.instances, ghost)
-	for _, part in ipairs(ghost:GetChildren()) do
-		mirrorGlass(part, 0.35)
-	end
-	ghost.Parent = folder
-	local torso = ghost:FindFirstChild("UpperTorso") or ghost:FindFirstChild("Torso")
-	local targetRoot = model:FindFirstChild("HumanoidRootPart")
-	if torso and targetRoot then
-		local fromGhost = Instance.new("Attachment")
-		fromGhost.Parent = torso
-		local toTarget = Instance.new("Attachment")
-		toTarget.Name = "PossibilityTether"
-		toTarget.Parent = targetRoot
-		table.insert(state.instances, toTarget)
-		local tether = Instance.new("Beam")
-		tether.Attachment0 = fromGhost
-		tether.Attachment1 = toTarget
-		tether.Color = ColorSequence.new(WHITE, color)
-		tether.Width0 = 0.25
-		tether.Width1 = 0.1
-		tether.LightEmission = 1
-		tether.Transparency = NumberSequence.new(0.2, 0.6)
-		tether.FaceCamera = true
-		tether.Texture = "rbxassetid://7216849788"
-		tether.TextureMode = Enum.TextureMode.Wrap
-		tether.TextureLength = 3
-		tether.TextureSpeed = 3
-		tether.Parent = torso
-	end
-end
-
--- for someone inside: the world goes black and white, like the ultimate's dome
-local function possibilityGrade(state, lifetime)
-	if state.grade then
-		return
-	end
-	local grade = Instance.new("ColorCorrectionEffect")
-	grade.Name = "PossibilityGrade"
-	grade.Parent = Lighting
-	tween(grade, 0.3, { Saturation = -1, Contrast = 0.2 })
-	state.grade = grade
-	-- removed by the snap, or by the fallback below
-	Debris:AddItem(grade, lifetime + 1)
-end
-
-function effects.Possibility(castId, character, center, radius, delay, models, overcharged, color)
-	local state = { instances = {}, caster = character, lifetime = delay + 3 }
-	possibilities[castId] = state
-	local function keep(instance)
-		table.insert(state.instances, instance)
-		return instance
-	end
-
-	local head = character and character:FindFirstChild("Head")
-	if head then
-		VFX.Play("Shared/Impact", head.Position, { color = color, scale = 0.8 })
-		shatter(head.Position, color, 14, 8)
-	end
-	if overcharged then
-		flash(center + Vector3.new(0, 3, 0), color, 2, 12, 0.35)
-	end
-
-	-- the mirror world: a ring of tall glass panes rising round the zone,
-	-- each facing the middle and leaning a little its own way
-	local lifetime = delay + 3
-	local ground = VFX.Ground(center) or center
-	local paneWidth = 2 * math.pi * radius / MIRROR_PANES * 1.04
-	local paneModel = Instance.new("Model")
-	paneModel.Name = "MirrorPanes"
-	local panes = {}
-	for i = 1, MIRROR_PANES do
-		local angle = (i + math.random() * 0.2) / MIRROR_PANES * math.pi * 2
-		local out = Vector3.new(math.cos(angle), 0, math.sin(angle))
-		local height = MIRROR_HEIGHT * (0.8 + math.random() * 0.45)
-		local base = ground + out * radius
-		local standing = CFrame.lookAt(base, base - out)
-			* CFrame.Angles(math.rad(math.random(-8, 4)), 0, math.rad(math.random(-5, 5)))
-			* CFrame.new(0, height / 2, 0)
-		local pane = effectPart(Enum.PartType.Block, MIRROR_TINT, Vector3.new(paneWidth, height, 0.3), standing * CFrame.new(0, -height, 0), lifetime + 1)
-		mirrorGlass(pane, 0.5)
-		pane.Parent = paneModel
-		tween(pane, 0.4, { CFrame = standing }, Enum.EasingStyle.Back)
-		local origin = Vector2.new((math.random() - 0.5) * paneWidth * 0.5, (math.random() - 0.5) * height * 0.5)
-		table.insert(panes, { part = pane, out = out, crack = { origin = origin, rays = {}, rayCount = 5, reach = 0 } })
-	end
-	-- crisp bright edges on every pane
-	local outline = Instance.new("Highlight")
-	outline.FillTransparency = 1
-	outline.OutlineColor = color:Lerp(WHITE, 0.5)
-	outline.OutlineTransparency = 0.15
-	outline.DepthMode = Enum.HighlightDepthMode.Occluded
-	outline.Adornee = paneModel
-	outline.Parent = paneModel
-	paneModel.Parent = folder
-	Debris:AddItem(paneModel, lifetime + 1)
-	state.panes = panes
-	state.paneModel = paneModel
-
-	-- glints of light drifting up inside the mirror
-	local motes = keep(effectPart(Enum.PartType.Block, WHITE, Vector3.new(radius * 2, 0.2, radius * 2), CFrame.new(center + Vector3.new(0, 0.3, 0)), lifetime))
-	motes.Transparency = 1
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Texture = GLINT_TEXTURE
-	emitter.Color = ColorSequence.new(WHITE, MIRROR_TINT)
-	emitter.LightEmission = 1
-	emitter.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.3, 0.9), NumberSequenceKeypoint.new(1, 0) })
-	emitter.Lifetime = NumberRange.new(1, 1.6)
-	emitter.Speed = NumberRange.new(2, 5)
-	emitter.SpreadAngle = Vector2.new(10, 10)
-	emitter.EmissionDirection = Enum.NormalId.Top
-	emitter.Shape = Enum.ParticleEmitterShape.Box
-	emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
-	emitter.Rotation = NumberRange.new(0, 90)
-	emitter.Rate = 35
-	emitter.Parent = motes
-
-	-- for anyone inside (the zone is a column, so up in the air too)
-	local myCharacter = Players.LocalPlayer.Character
-	local myRoot = myCharacter and myCharacter:FindFirstChild("HumanoidRootPart")
-	if myRoot then
-		local offset = myRoot.Position - center
-		if Vector3.new(offset.X, 0, offset.Z).Magnitude <= radius + 4 then
-			possibilityGrade(state, lifetime)
-		end
-	end
-
-	-- each target leaves a mirror-glass reflection where it stood, tethered to it
-	for _, model in ipairs(models) do
-		possibilityGhost(state, model, color)
-	end
-
-	-- the glass cracks further every second, counting down
-	local seconds = math.ceil(delay)
-	for second = 1, seconds - 1 do
-		task.delay(second, function()
-			if possibilities[castId] ~= state then
-				return
-			end
-			local progress = second / (seconds - 1)
-			for _, pane in ipairs(panes) do
-				crackPane(pane, progress)
-			end
-			for _ = 1, 3 do
-				local pane = panes[math.random(#panes)].part
-				if pane.Parent then
-					local spot = CFrame.new((math.random() - 0.5) * pane.Size.X * 0.8, (math.random() - 0.5) * pane.Size.Y * 0.8, 0)
-					VFX.Play("Shared/Sparks", pane.CFrame * spot, { color = WHITE, scale = 0.6 })
-				end
-			end
-			VFX.Shake(center, "Light", radius * 2)
-		end)
-	end
-	-- in case the snap never arrives
-	task.delay(lifetime, function()
-		if possibilities[castId] == state then
-			clearPossibility(castId)
-		end
-	end)
-end
-
 -- Mandela's Knife pinning someone (three in a row): a red impact and
 -- splinters on them, and while they're stunned (`stunTime`, 0 if they
 -- weren't) a red outline holds them
@@ -934,56 +749,67 @@ function effects.KnifePin(model, stunTime)
 	end
 end
 
--- someone came into the zone while it held: they're marked where they came in
-function effects.PossibilityMark(castId, models, color)
-	local state = possibilities[castId]
-	if not state then
+-- the shockwave: a ring races out over the ground to the edge of the zone,
+-- with a burst at the caster and on everyone it caught
+function effects.PossibilityWave(character, center, radius, overcharged, color, models)
+	local head = character and character:FindFirstChild("Head")
+	if head then
+		VFX.Play("Shared/Impact", head.Position, { color = color, scale = 0.8 })
+		shatter(head.Position, color, 14, 8)
+	end
+	local ground = center + Vector3.new(0, 0.3, 0)
+	VFX.Play("Shared/Shockwave", CFrame.new(ground), { color = color, scale = radius / 10 })
+	ring(ground, color, 4, radius * 2, 0.8, 0.5)
+	ring(ground, WHITE, 2, radius * 1.6, 0.6, 0.3)
+	flash(center + Vector3.new(0, 3, 0), color, 2, overcharged and 14 or 9, 0.35)
+	VFX.Shake(center, "Heavy", radius * 2)
+	VFX.ImpactFrameNear(center, 10, character)
+	for _, model in ipairs(models) do
+		local root = model:FindFirstChild("HumanoidRootPart")
+		if root then
+			VFX.Play("Shared/Impact", root.Position, { color = WHITE, scale = 1 })
+		end
+	end
+end
+
+-- marked: an outline on them until the mark is spent or the fight is over
+function effects.PossibilityMark(model, color)
+	if not model or not model.Parent then
 		return
 	end
-	for _, model in ipairs(models) do
-		possibilityGhost(state, model, color)
-		if model == Players.LocalPlayer.Character then
-			possibilityGrade(state, state.lifetime)
-		end
+	local old = model:FindFirstChild("PossibilityMark")
+	if old then
+		old:Destroy()
+	end
+	local mark = Instance.new("Highlight")
+	mark.Name = "PossibilityMark"
+	mark.FillColor = color
+	mark.FillTransparency = 0.85
+	mark.OutlineColor = WHITE
+	mark.OutlineTransparency = 0.2
+	mark.DepthMode = Enum.HighlightDepthMode.Occluded
+	mark.Adornee = model
+	mark.Parent = model
+end
+
+function effects.PossibilityUnmark(model)
+	local mark = model and model:FindFirstChild("PossibilityMark")
+	if mark then
+		mark:Destroy()
 	end
 end
 
--- reality corrects itself: the mirror world shatters (every pane bursts into
--- flying glass), an impact frame for the
--- caster and everyone inside, the colour slams back, every target bursts
--- like glass where it's snapped back to, and overcharged, backbones erupt there
-function effects.PossibilitySnap(castId, center, radius, positions, overcharged, color)
-	local state = clearPossibility(castId)
-	if state and state.panes then
-		for _, pane in ipairs(state.panes) do
-			shatterPane(pane, center)
-		end
-		state.paneModel:Destroy()
+-- a skill erased: they burst like glass where they stand
+function effects.PossibilityErase(model, color)
+	local root = model and model:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
 	end
-	if state and state.grade and state.grade.Parent then
-		local grade = state.grade
-		grade.Saturation = 0.6
-		grade.Contrast = 0.35
-		grade.Brightness = 0.25
-		grade.TintColor = WHITE
-		tween(grade, 0.45, { Saturation = 0, Contrast = 0, Brightness = 0 })
-		Debris:AddItem(grade, 0.5)
-	end
-	VFX.Play("Shared/Shockwave", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = color, scale = radius / 10 })
-	VFX.Play("Shared/BigImpact", center + Vector3.new(0, 3, 0), { color = color, scale = 1.4 })
-	VFX.Shake(center, "Heavy", radius * 3)
-	VFX.ImpactFrameNear(center, radius + 4, state and state.caster)
-	for _, position in ipairs(positions) do
-		VFX.Play("Shared/Impact", position, { color = WHITE, scale = 1.3 })
-		shatter(position, color, 18, 12)
-		if overcharged then
-			erupt(position - Vector3.new(0, 3, 0), color)
-			VFX.Crater(position, 6)
-		end
-	end
+	VFX.Play("Shared/BigImpact", root.Position, { color = color, scale = 0.8 })
+	shatter(root.Position, color, 20, 12)
 end
 
--- Mandela F, Place Where Dream Ends: the wrong timeline. A dome of mirror
+-- Mandela F, Overcome the Possibility: the wrong timeline. A dome of mirror
 -- glass assembles from the ground up where the server's (invisible, solid)
 -- one stands, and the slam sends a wave of glass tiles out across the
 -- ground that turns it into a rolling ocean of black glass; for anyone

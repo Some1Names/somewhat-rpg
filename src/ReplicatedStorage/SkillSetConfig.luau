@@ -122,7 +122,6 @@ SkillSetConfig.Sets = {
 		links = {
 			exposedDuration = 3, -- seconds someone stays exposed after Z pulls them in
 			exposedFinisherBonus = 0.5, -- extra share of damage on your next axe finisher against them
-			snapInHoleBonus = 0.3, -- extra share of Overcome the Possibility's snap inside your Event Horizon
 		},
 		overcharge = {
 			name = "Backbone Power",
@@ -184,18 +183,19 @@ SkillSetConfig.Sets = {
 				overchargedAim = { kind = "path", length = 89, count = 3, spread = 35, radius = 20 },
 			},
 			V = {
-				name = "Overcome the Possibility",
+				name = "Place Where Dream Ends",
 				mastery = 40,
 				cooldown = 60,
 				handler = "OvercomeThePossibility",
 				overcharged = true,
-				aim = { kind = "self", radius = 34 },
+				aim = { kind = "self", radius = 70 },
+				overchargedAim = { kind = "self", radius = 90 },
 			},
 			-- the S-tier fifth move, the ultimate: a huge dome of mirror glass
 			-- records every hit you land inside it, then they all happen again
 			-- (Skills.PlaceWhereDreamEnds). Only while overcharged.
 			F = {
-				name = "Place Where Dream Ends",
+				name = "Overcome the Possibility",
 				mastery = 100,
 				cooldown = 90,
 				handler = "PlaceWhereDreamEnds",

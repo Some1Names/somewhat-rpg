@@ -1,11 +1,12 @@
--- Mandela F, Place Where Dream Ends: the ultimate, only while overcharged.
+-- Mandela F, Overcome the Possibility: the ultimate, only while overcharged.
 -- The caster slams the axe down and a huge dome of mirror glass closes over
 -- them (Radius): the wrong timeline. For Duration seconds every hit the
 -- caster lands on anyone caught inside (or inside when it lands) is written
 -- down. Then reality rewrites itself: everyone hit takes everything written
 -- down on them again (times RewriteShare) in one critical hit no passive can
 -- erase, plus OverchargeDamagePerSecond for every second of overcharge left,
--- which the Rewrite spends. The overcharge runs on until then, so
+-- which the Rewrite spends, and leaves everyone it hits Weakened. The
+-- overcharge runs on until then, so
 -- overcharged skills can fill the record. Hits written down on someone who
 -- got out still count.
 -- The glass is a real wall (tagged WallTag): walking or being knocked into
@@ -22,6 +23,7 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
+local StatusEffects = require(ServerScriptService:WaitForChild("StatusEffects"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -181,7 +183,9 @@ local function run(player, character, state)
 		for target, record in pairs(records) do
 			local targetRoot = target.RootPart
 			if record.model.Parent and targetRoot and target.Health > 0 then
-				Damage.Deal(player, target, record.total * CONFIG.RewriteShare + bonus, REWRITE_OPTIONS)
+				if Damage.Deal(player, target, record.total * CONFIG.RewriteShare + bonus, REWRITE_OPTIONS) > 0 then
+					StatusEffects.Apply(target, "Weakened", { source = player, stat = "Superliminal", skillSet = "Mandela" })
+				end
 				table.insert(positions, targetRoot.Position)
 				table.insert(models, record.model)
 			end

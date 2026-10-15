@@ -5,8 +5,7 @@
 -- carries the CCImmuneUntil attribute (server time).
 -- A player can always get out: a hold with no set length (a black hole's
 -- pull, a tornado) lets them go after MaxHold seconds, and a dodge (Q, see
--- DashRelay) breaks it at once and also slips a mark waiting to snap them
--- (Overcome the Possibility).
+-- DashRelay) breaks it at once.
 local Players = game:GetService("Players")
 
 local IMMUNITY = 2.5 -- seconds after a hold on a player ends

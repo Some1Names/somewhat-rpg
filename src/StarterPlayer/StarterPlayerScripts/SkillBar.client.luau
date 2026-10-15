@@ -30,6 +30,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
+local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
@@ -50,6 +51,18 @@ local function cooldownOf(setName, skill)
 		return skill.cooldown
 	end
 	return skill.cooldown * ReforgeRules.CooldownMultiplier(ReforgeRules.DecodeState(text))
+end
+
+-- Place Where Dream Ends' locks (CombatState): "muted" for a few seconds, or
+-- "erased" until the fight is over; nil when the skill is free to cast
+local function lockOf(setName, key)
+	if (player:GetAttribute("SkillsMutedUntil") or 0) > workspace:GetServerTimeNow() then
+		return "muted"
+	end
+	if CombatRules.DecodeErased(player:GetAttribute("ErasedSkills"))[setName .. "." .. key] then
+		return "erased"
+	end
+	return nil
 end
 
 local SLOT_SIZE = 58
@@ -493,6 +506,8 @@ local function readyToCast(setName, key, skill)
 		return false, string.format("%s: needs mastery %d", name, skill.mastery)
 	elseif skill.overchargedOnly and not overcharged then
 		return false, name .. ": needs overcharge"
+	elseif lockOf(setName, key) then
+		return false, string.format("%s: %s", name, lockOf(setName, key))
 	elseif waitingForWeapon then
 		return false, string.format("%s: %s still thrown", name, skill.weaponName or "weapon")
 	elseif lacksLight then
@@ -813,6 +828,10 @@ RunService.RenderStepped:Connect(function()
 		elseif not available then
 			slot.status.Text = "Lv " .. skill.mastery
 			slot.status.TextColor3 = MUTED
+			slot.cover.Size = UDim2.fromScale(1, 1)
+		elseif lockOf(setName, key) then
+			slot.status.Text = string.upper(lockOf(setName, key))
+			slot.status.TextColor3 = DENIED
 			slot.cover.Size = UDim2.fromScale(1, 1)
 		elseif skill.overchargedOnly and not overcharged then
 			-- an ultimate waits for the overcharge

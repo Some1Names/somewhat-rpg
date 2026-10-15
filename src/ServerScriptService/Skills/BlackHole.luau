@@ -315,13 +315,6 @@ end
 
 local BlackHole = {}
 
--- whether `position` is inside the player's open black hole (Overcome the
--- Possibility hits harder there)
-function BlackHole.Contains(player, position)
-	local state = active[player]
-	return state ~= nil and (position - state.center).Magnitude <= state.radius
-end
-
 -- X again while it's open
 function BlackHole.Recast(player)
 	local state = active[player]
