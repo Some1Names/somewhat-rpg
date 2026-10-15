@@ -7,10 +7,11 @@
 -- SplashRadius, and anyone flying is knocked out of the air (unless
 -- Mandela's Misremembered forgets it, Passives.ResistEdit). A target who
 -- got out of the ring before it shut (a dash, flight) takes only
--- EscapedDamage. On someone she's Framed it starts half shut and closes in
+-- EscapedDamage. A moment later (AftershockDelay) a second, wider burst hits
+-- everyone within AftershockRadius for AftershockDamage. On someone she's Framed it starts half shut and closes in
 -- FramedCloseTime. It's called off if she dies or puts the set away, and
 -- bursts where it was if the target dies or goes. Clients draw it from the
--- SkillEffects "IrisHorizon", "IrisBurst" and "IrisCancel" events.
+-- SkillEffects "IrisHorizon", "IrisBurst", "IrisAftershock" and "IrisCancel" events.
 -- SkillSetServer checks the tool, mastery and cooldown before calling Cast.
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -33,9 +34,12 @@ local CONFIG = {
 	FramedCloseTime = 0.4, -- seconds to shut on a framed target
 	FramedStartShare = 0.5, -- how far shut it already is on a framed target
 	FollowSpeed = 34, -- studs per second the ring drifts after them (sprint is 32)
-	TargetDamage = 45, -- before the caster's Superliminal bonus
-	SplashDamage = 25,
+	TargetDamage = 60, -- before the caster's Superliminal bonus
+	SplashDamage = 30,
 	SplashRadius = 10, -- studs round the burst
+	AftershockDelay = 0.6, -- seconds after the burst before a second, wider one
+	AftershockRadius = 16, -- studs round the burst
+	AftershockDamage = 15, -- to everyone in it, the target too
 	EscapedDamage = 10, -- to a target who got out before it shut
 	EscapeMargin = 2, -- studs past the ring before they count as out (network jitter)
 }
@@ -78,6 +82,18 @@ local function burst(id, player, character, center, target, caught)
 		end
 	end
 	skillEffects:FireAllClients("IrisBurst", id, center, CONFIG.SplashRadius, caught)
+	-- a moment later, a second burst reaching further
+	task.delay(CONFIG.AftershockDelay, function()
+		if not player.Parent then
+			return
+		end
+		for _, other in ipairs(PhotoshopUtil.enemiesWithin(character, center, CONFIG.AftershockRadius)) do
+			if (other.root.Position - center).Magnitude <= CONFIG.AftershockRadius then
+				Damage.Deal(player, other.humanoid, CONFIG.AftershockDamage, DAMAGE_OPTIONS)
+			end
+		end
+		skillEffects:FireAllClients("IrisAftershock", center, CONFIG.AftershockRadius)
+	end)
 end
 
 local function run(id, player, character, humanoid, target, closeTime, startShare)

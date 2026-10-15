@@ -487,6 +487,8 @@ local function readyToCast(setName, key, skill)
 	local name = shownName(skill, overcharged)
 	if not skill.handler then
 		return false, name .. ": coming soon"
+	elseif player.Character:GetAttribute("Flying") == true then
+		return false, name .. ": not while flying"
 	elseif mastery < skill.mastery then
 		return false, string.format("%s: needs mastery %d", name, skill.mastery)
 	elseif skill.overchargedOnly and not overcharged then

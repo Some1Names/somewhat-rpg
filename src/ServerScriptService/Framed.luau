@@ -2,7 +2,7 @@
 -- seconds, and her other skills build on it: Step In (Snapshot's recast)
 -- needs someone framed, Paste (Photo Teleport's recast) moves them into her
 -- photo, Shutter keeps the frame going, Iris Horizon closes almost at once
--- on them and Kaleidoscope hits them twice. Like Sunmark, the mark is kept
+-- on them and Kaleidoscope strikes them with an extra mirror every tick. Like Sunmark, the mark is kept
 -- on the target's model as FramedUntil (server time) and FramedBy (the
 -- caster's UserId), and only the caster is told, so only they see it
 -- (SkillEffects "Framed"). A player holding Mandela with Misremembered

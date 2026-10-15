@@ -196,7 +196,7 @@ local function updateWearables(character)
 		folder.Name = WEARABLES_FOLDER
 		folder:SetAttribute("SkillSet", setName)
 		folder.Parent = character
-		skillEffects:FireAllClients("Equip", character, SkillSetConfig.Sets[setName].color)
+		skillEffects:FireAllClients("Equip", character, SkillSetConfig.Sets[setName].color, setName)
 	end
 	local overcharged = SkillSetConfig.IsOvercharged(player, setName)
 	for _, piece in ipairs(pieces:GetChildren()) do
@@ -262,6 +262,10 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 		if module.Recast then
 			module.Recast(player, character)
 		end
+		return
+	end
+	-- no skills in the air (LuminanceServer's Flying): only the ranged move
+	if character:GetAttribute("Flying") == true then
 		return
 	end
 	local id = setName .. "." .. key

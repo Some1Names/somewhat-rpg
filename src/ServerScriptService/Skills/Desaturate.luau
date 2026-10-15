@@ -1,6 +1,6 @@
--- Photoshop C, Desaturate: the colour drains out of a circle where she aimed
+-- Photoshop C, Desaturate: the colour drains out of a dome where she aimed
 -- (up to Range away) for Duration seconds. Every TickInterval everyone in
--- it, at any height, takes TickDamage and is Desaturated (StatusConfig) for
+-- it (within Radius of its centre on the ground, up in the air too) takes TickDamage and is Desaturated (StatusConfig) for
 -- Linger seconds, so it holds while they stay in and wears off just after
 -- they leave: no Luminance gathers, no flight, no Prism Form
 -- (LuminanceServer, Skills.PrismForm). On someone it would take that from,
@@ -24,10 +24,10 @@ local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local CONFIG = {
 	Range = 50, -- studs from her the centre can be (SkillSetConfig's aim shows the same)
-	Radius = 18, -- studs
+	Radius = 28, -- studs: the dome's, from its centre on the ground (SkillSetConfig's aim shows the same)
 	Duration = 4, -- seconds
 	TickInterval = 0.5, -- seconds
-	TickDamage = 4, -- per tick, before the caster's Superliminal bonus
+	TickDamage = 6, -- per tick, before the caster's Superliminal bonus
 	Linger = 1, -- seconds Desaturated lasts after the last tick on them
 }
 local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "C" }
@@ -48,13 +48,16 @@ local function run(id, player, character, humanoid, center)
 	local endsAt = os.clock() + CONFIG.Duration
 	while os.clock() < endsAt and PhotoshopUtil.alive(player, character, humanoid) do
 		for _, target in ipairs(PhotoshopUtil.enemiesWithin(character, center, CONFIG.Radius)) do
-			Damage.Deal(player, target.humanoid, CONFIG.TickDamage, DAMAGE_OPTIONS)
-			local targetPlayer = PhotoshopUtil.playerOf(target.model)
-			if not resisted[target.model] and targetPlayer and lightBound(target.model) and Passives.ResistEdit(targetPlayer) then
-				resisted[target.model] = true
-			end
-			if not resisted[target.model] then
-				StatusEffects.Apply(target.model, "Desaturated", options)
+			-- a dome, not a column: too high above the ground is out
+			if (target.root.Position - center).Magnitude <= CONFIG.Radius then
+				Damage.Deal(player, target.humanoid, CONFIG.TickDamage, DAMAGE_OPTIONS)
+				local targetPlayer = PhotoshopUtil.playerOf(target.model)
+				if not resisted[target.model] and targetPlayer and lightBound(target.model) and Passives.ResistEdit(targetPlayer) then
+					resisted[target.model] = true
+				end
+				if not resisted[target.model] then
+					StatusEffects.Apply(target.model, "Desaturated", options)
+				end
 			end
 		end
 		task.wait(CONFIG.TickInterval)

@@ -316,7 +316,11 @@ local function firstWall(from, offset, character)
 end
 
 -- Lightstep: straight to the end of the dash as light, stopping short of walls
+local lastLightstepAt = -math.huge
 local function lightDash(character, humanoid, root, spec, setName, flying)
+	if os.clock() - lastLightstepAt < (spec.interval or 0) then
+		return
+	end
 	local direction
 	if flying then
 		local camera = workspace.CurrentCamera.CFrame
@@ -349,6 +353,7 @@ local function lightDash(character, humanoid, root, spec, setName, flying)
 	if not DodgeCharges.TryUse() then
 		return
 	end
+	lastLightstepAt = os.clock()
 	breakFree(root)
 
 	local to = from + direction * distance

@@ -42,15 +42,23 @@ dashEffect.OnServerEvent:Connect(function(player, from, to)
 	if bucket.charges < 1 - TOLERANCE then
 		return
 	end
-	bucket.charges -= 1
 	local character = player.Character
-	if character then
-		CrowdControl.Dodge(character)
-	end
 	local _, setName = SkillSetConfig.Equipped(character)
 	local dash = setName and SkillSetConfig.Sets[setName].dash
 	-- a set dash that is still locked (mastery) is the normal dash
-	if dash and SkillSetConfig.FeatureUnlocked(player, setName, "dash") then
+	local setDash = dash and SkillSetConfig.FeatureUnlocked(player, setName, "dash")
+	-- a set dash can ask for a least gap between uses; too soon spends nothing
+	if setDash and dash.interval and now - (bucket.lastSetDashAt or -math.huge) < dash.interval - TOLERANCE then
+		return
+	end
+	bucket.charges -= 1
+	if setDash then
+		bucket.lastSetDashAt = now
+	end
+	if character then
+		CrowdControl.Dodge(character)
+	end
+	if setDash then
 		if isPoint(from) and isPoint(to) then
 			require(skillModules:WaitForChild(dash.handler)).Dash(player, character, from, to)
 		end

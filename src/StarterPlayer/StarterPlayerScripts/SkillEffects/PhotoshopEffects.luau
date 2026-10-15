@@ -24,9 +24,10 @@ local GREY = Color3.fromRGB(150, 150, 160)
 local SPARKLE_TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
 local CARD_SIZE = Vector3.new(3, 3.6, 0.1) -- a photo, studs
 local IRIS_CARDS = 8
-local SHARD_COUNT = 36 -- Kaleidoscope's mirror shards (fewer on low quality)
+local STAGE_SHARDS = 12 -- more small shards swirl in at each stage (fewer on low quality)
+local KALEIDOSCOPE_PREFAB_RADIUS = 60 -- the radius Photoshop/KaleidoscopeDome is built for
+local SHOCKWAVE_RADIUS = 22.5 -- studs the ground ring of Photoshop/ShockwaveStepIn reaches at scale 1 (its biggest layers are 45 across); a call's scale is its skill's radius over this
 local PIXEL_COUNT = 18 -- cubes a body breaks into when it's cut out (fewer on low quality)
-local DESATURATE_HEIGHT = 60 -- studs, the grey column
 
 -- a hue round the rainbow, for Iris Horizon's black hole
 local function rainbow(share)
@@ -87,24 +88,26 @@ return function(helpers)
 		}, count)
 	end
 
-	-- a see-through copy of a character, fading over `time`
-	local function afterimage(model, color, time)
+	-- a see-through copy of a character, fading over `time` (starting at
+	-- `startTransparency`, 0.35 by default)
+	local function afterimage(model, color, time, startTransparency)
 		if not model or not model.Parent then
 			return
 		end
 		local ghost = ghostOf(model, color)
 		ghost.Parent = folder
 		for _, part in ipairs(ghost:GetChildren()) do
-			part.Transparency = 0.35
+			part.Transparency = startTransparency or 0.35
 			tween(part, time, { Transparency = 1 })
 		end
 		Debris:AddItem(ghost, time)
 	end
 
-	-- a camera flash: a white pop with a coloured ring and glints
-	local function cameraFlash(position, size, color)
+	-- a camera flash: a white pop with a coloured ring and glints (`prefab`: another
+	-- flash made for one skill, the all-purpose Photoshop/CameraFlash by default)
+	local function cameraFlash(position, size, color, prefab)
 		flash(position, WHITE, size * 0.3, size, 0.12)
-		VFX.Play("Photoshop/CameraFlash", position, { color = color or PINK, scale = size / 4 })
+		VFX.Play(prefab or "Photoshop/CameraFlash", position, { color = color or PINK, scale = size / 4 })
 	end
 
 	-- where someone was cut out of the picture: it breaks into square pixels
@@ -137,9 +140,10 @@ return function(helpers)
 		end
 	end
 
-	-- the ring on the ground where someone is pasted in (`position`: their root)
-	local function pasteRing(position, color, scale)
-		VFX.Play("Shared/Shockwave", CFrame.new(position - Vector3.new(0, 2.8, 0)), { color = color, scale = scale })
+	-- the ring on the ground where someone is pasted in (`position`: their root);
+	-- `prefab`: another ring made for one skill, Photoshop/ShockwaveStepIn by default
+	local function pasteRing(position, color, scale, prefab)
+		VFX.Play(prefab or "Photoshop/ShockwaveStepIn", CFrame.new(position - Vector3.new(0, 2.8, 0)), { color = color, scale = scale })
 	end
 
 	function effects.Shutter(origin, finish, struck)
@@ -148,9 +152,21 @@ return function(helpers)
 		VFX.Play("Photoshop/CameraFlash", origin, { color = BLUE, scale = 0.35 })
 		if struck then
 			cameraFlash(finish, 3)
-			VFX.Play("Shared/Impact", finish, { color = PINK, scale = 0.6 })
+			VFX.Play("Photoshop/ShutterHit", finish, { color = PINK, scale = 0.6 })
 		else
 			flash(finish, BLUE, 0.4, 1.5, 0.12)
+		end
+	end
+
+	-- her entrance, when she takes up the set: Photoshop's own version of the
+	-- shared Equip (the rest of the sets keep theirs). `feet`, `root`: from the
+	-- Equip in SkillEffects, which hands it over; `color`: the set's pink
+	function effects.PhotoshopEquip(character, color, feet, root)
+		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(feet + Vector3.new(0, 0.2, 0)), { color = color, scale = 0.7 })
+		VFX.Play("Photoshop/AuraEnter", root, { color = color, offset = CFrame.new(0, -0.5, 0) })
+		VFX.Play("Photoshop/SparksSnapshot", root.Position, { color = color })
+		if character == Players.LocalPlayer.Character then
+			VFX.Shake(nil, "Light")
 		end
 	end
 
@@ -237,8 +253,8 @@ return function(helpers)
 			flash(hand.Position, WHITE, 0.4, 2.5, 0.1)
 		end
 		if root then
-			cameraFlash(root.Position, 5)
-			VFX.Play("Shared/Sparks", root.Position, { color = PINK })
+			cameraFlash(root.Position, 5, nil, "Photoshop/SnapshotFlash")
+			VFX.Play("Photoshop/SparksSnapshot", root.Position, { color = PINK })
 			VFX.Shake(root.Position, "Light", 30)
 			local card, border = photoCard(CFrame.new(root.Position + Vector3.new(0, 4, 0)), PINK, 0.6)
 			tween(card, 0.6, { CFrame = card.CFrame * CFrame.new(0, 2, 0) * CFrame.Angles(0, math.pi, 0) })
@@ -253,7 +269,7 @@ return function(helpers)
 		local card, border = photoCard(CFrame.new(from), PINK, 0.35, Vector3.new(4, 6, 0.1))
 		fadeCard(card, border, 0.35)
 		cameraFlash(to, 4)
-		pasteRing(to, PINK, 0.5)
+		pasteRing(to, PINK, 0.5, "Photoshop/ShockwaveStepIn")
 		VFX.Shake(to, "Light", 30)
 	end
 
@@ -302,7 +318,14 @@ return function(helpers)
 		effects.PhotoGone(id)
 	end
 
-	-- Desaturate: a grey column; anyone inside goes grey, and your own view
+	-- the burst where Photo Teleport's photo landed (Skills.PhotoTeleport)
+	function effects.PhotoBurst(point, radius)
+		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(point + Vector3.new(0, 0.2, 0)), { color = BLUE, scale = radius / SHOCKWAVE_RADIUS })
+		VFX.Play("Photoshop/BigImpactIrisBurst", point + Vector3.new(0, 2, 0), { color = BLUE, scale = radius / 13 })
+		VFX.Shake(point, "Light", radius * 3)
+	end
+
+	-- Desaturate: a grey dome; anyone inside goes grey, and your own view
 	-- drains of colour while you're in it
 	local zones = {} -- id -> { parts, ended, inside = { model -> true } }
 	local greyed = {} -- model -> { outline, zones = how many zones hold them }
@@ -341,23 +364,27 @@ return function(helpers)
 	function effects.Desaturate(id, center, radius, duration)
 		local zone = { parts = {}, ended = false, inside = {} }
 		zones[id] = zone
-		local column = effectPart(
-			Enum.PartType.Cylinder,
-			GREY,
-			Vector3.new(DESATURATE_HEIGHT, radius * 2, radius * 2),
-			CFrame.new(center + Vector3.new(0, DESATURATE_HEIGHT / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-			duration + 1
-		)
-		column.Material = Enum.Material.ForceField
-		column.Transparency = 1
-		tween(column, 0.3, { Transparency = 0.6 })
-		table.insert(zone.parts, column)
+		-- a ball sunk to its middle in the ground: the half above it is the dome
+		local dome = effectPart(Enum.PartType.Ball, GREY, Vector3.one * radius * 2, CFrame.new(center), duration + 1)
+		dome.Material = Enum.Material.ForceField
+		dome.Transparency = 1
+		tween(dome, 0.3, { Transparency = 0.6 })
+		table.insert(zone.parts, dome)
 		ring(center + Vector3.new(0, 0.2, 0), GREY, radius * 0.5, radius * 2, 0.5, 0.25)
-		VFX.Play("Shared/Shockwave", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = GREY, scale = radius / 10 })
+		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = GREY, scale = radius / SHOCKWAVE_RADIUS })
 		VFX.Shake(center, "Light", radius * 2)
-		-- grey pixels sift down through the whole column while it lasts
-		zone.ash = VFX.Play("Photoshop/GreyAsh", CFrame.new(center + Vector3.new(0, 12, 0)), { duration = duration })
-		stretch(zone.ash, Vector3.new(radius * 2, 1, radius * 2))
+		-- grey pixels fill the dome while it lasts: its emitters spread through a
+		-- sphere on the ground (the half under it is hidden by the ground)
+		zone.ash = VFX.Play("Photoshop/GreyAsh", CFrame.new(center), { duration = duration })
+		if zone.ash then
+			for _, emitter in ipairs(zone.ash:GetDescendants()) do
+				if emitter:IsA("ParticleEmitter") then
+					emitter.Shape = Enum.ParticleEmitterShape.Sphere
+					emitter.ShapeStyle = Enum.ParticleEmitterShapeStyle.Volume
+				end
+			end
+			stretch(zone.ash, Vector3.one * radius * 2)
+		end
 
 		local insideMe = false
 		local endsAt = os.clock() + duration
@@ -367,9 +394,9 @@ return function(helpers)
 			overlap.FilterDescendantsInstances = { folder }
 			while os.clock() < endsAt and not zone.ended do
 				local here = {}
-				for _, part in ipairs(workspace:GetPartBoundsInBox(CFrame.new(center + Vector3.new(0, DESATURATE_HEIGHT / 2, 0)), Vector3.new(radius * 2, DESATURATE_HEIGHT, radius * 2), overlap)) do
+				for _, part in ipairs(workspace:GetPartBoundsInRadius(center, radius, overlap)) do
 					local model = part.Name == "HumanoidRootPart" and part.Parent
-					if model and ((part.Position - center) * Vector3.new(1, 0, 1)).Magnitude <= radius then
+					if model and (part.Position - center).Magnitude <= radius and part.Position.Y >= center.Y - 4 then
 						here[model] = true
 						if not zone.inside[model] then
 							zone.inside[model] = true
@@ -517,8 +544,8 @@ return function(helpers)
 			end
 			sparkles(point, PINK, caught and 24 or 12)
 			sparkles(point, BLUE, caught and 24 or 12)
-			VFX.Play("Shared/BigImpact", point, { color = PINK, scale = 1.3 })
-			VFX.Play("Shared/Shockwave", CFrame.new(point - Vector3.new(0, 2.8, 0)), { color = PINK, scale = splashRadius / 8 })
+			VFX.Play("Photoshop/BigImpactIrisBurst", point, { color = PINK, scale = 1.3 })
+			VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(point - Vector3.new(0, 2.8, 0)), { color = PINK, scale = splashRadius / SHOCKWAVE_RADIUS })
 			pixelate(point, BLUE, 2)
 			VFX.Shake(point, caught and "Heavy" or "Medium")
 			VFX.Crater(point, splashRadius * 0.6)
@@ -528,56 +555,142 @@ return function(helpers)
 		end)
 	end
 
-	-- Kaleidoscope: a dome of mirror shards, slowly turning
-	local scopes = {} -- id -> { shards, done, center, glitter }
-	function effects.Kaleidoscope(id, character, center, radius, duration)
-		local scope = { shards = {}, done = false, center = center }
+	-- Iris Horizon's second, wider burst a moment after the first (Skills.IrisHorizon)
+	function effects.IrisAftershock(center, radius)
+		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(center - Vector3.new(0, 2.8, 0)), { color = PINK, scale = radius / SHOCKWAVE_RADIUS })
+		VFX.Play("Photoshop/BigImpactIrisBurst", center, { color = PINK, scale = radius / 12 })
+		VFX.Shake(center, "Medium", radius * 3)
+	end
+
+	-- Kaleidoscope: the finished dome model (VFXPrefabs.Photoshop.KaleidoscopeDome:
+	-- glass shards with their outline, a bubble and ground glow, floor particles,
+	-- clouds, outline particles and a ring of beams) laid over the spot. Its
+	-- glass is turned here; the rest just plays. Each stage, as more mirror
+	-- images strike (Skills.Kaleidoscope's StageTime), a pulse runs out, the
+	-- shards turn faster and thicken, and more glass swirls in; when it runs its
+	-- course they burst outward.
+	local scopes = {} -- id -> { shards, done, center, radius, glitter, dome, bubble, floor }
+	local KALEIDOSCOPE_SHARD_TRANSPARENCY = { 0.45, 0.32, 0.2 } -- by stage
+	function effects.Kaleidoscope(id, character, center, radius, duration, stageTime)
+		stageTime = stageTime or 2
+		local scope = { shards = {}, done = false, center = center, radius = radius }
 		scopes[id] = scope
-		local count = math.max(12, math.round(SHARD_COUNT * VFX.Quality()))
-		for i = 1, count do
-			local wedge = Instance.new("WedgePart")
-			wedge.Anchored = true
-			wedge.CanCollide = false
-			wedge.CanQuery = false
-			wedge.CanTouch = false
-			wedge.CastShadow = false
-			wedge.Material = Enum.Material.Glass
-			wedge.Reflectance = 0.45
-			wedge.Color = i % 2 == 0 and PINK or BLUE
-			wedge.Transparency = 1
-			wedge.Size = Vector3.new(0.3, 6 + math.random() * 6, 5 + math.random() * 5)
-			wedge.Parent = folder
-			Debris:AddItem(wedge, duration + 2)
-			-- spread over the dome: golden-angle round, rising row by row
-			local up = math.rad(8 + (i / count) * 70)
-			local around = i * 2.39996
-			table.insert(scope.shards, { part = wedge, up = up, around = around, spin = (math.random() - 0.5) * 2 })
-		end
-		for _, shard in ipairs(scope.shards) do
-			tween(shard.part, 0.4, { Transparency = 0.45 })
+		-- the root stands about 3 up
+		local ground = center - Vector3.new(0, 2.9, 0)
+		local dome = VFX.Find("Photoshop/KaleidoscopeDome")
+		dome = dome and dome:Clone()
+		local smalls = {} -- the small shards: more are copied from these at each stage
+		if dome then
+			if math.abs(radius - KALEIDOSCOPE_PREFAB_RADIUS) > 0.5 then
+				dome:ScaleTo(radius / KALEIDOSCOPE_PREFAB_RADIUS)
+			end
+			dome:PivotTo(CFrame.new(center)) -- its pivot is the middle of its bubble
+			dome.Parent = folder
+			Debris:AddItem(dome, duration + 3)
+			local all = {}
+			for _, part in ipairs(dome:GetDescendants()) do
+				if part:IsA("WedgePart") then
+					table.insert(all, part)
+				elseif part:IsA("ParticleEmitter") then
+					part.Enabled = true
+				end
+			end
+			-- fewer shards on low quality
+			local keep = math.max(12, math.round(#all * VFX.Quality()))
+			for i = #all, keep + 1, -1 do
+				table.remove(all, math.random(i)):Destroy()
+			end
+			for _, part in ipairs(all) do
+				-- where it stands in the dome gives its place; the big mirrors turn
+				-- one way, the small ones deeper in the other, and every one bobs
+				local offset = part.Position - center
+				local distance = math.max(offset.Magnitude, 0.1)
+				local small = part.Name == "SmallShard"
+				if small then
+					table.insert(smalls, part)
+				end
+				table.insert(scope.shards, {
+					part = part,
+					up = math.asin(math.clamp(offset.Y / distance, -1, 1)),
+					around = math.atan2(offset.Z, offset.X),
+					spin = (math.random() - 0.5) * (small and 5 or 2),
+					reach = distance / radius, -- share of the radius
+					direction = small and -1 or 1,
+					bob = math.random() * math.pi * 2,
+				})
+				part.Transparency = 1
+				tween(part, 0.4, { Transparency = KALEIDOSCOPE_SHARD_TRANSPARENCY[1] })
+			end
+			-- the reach: its bubble and ground glow fade in to the look they were made with
+			scope.dome = dome
+			local reach = dome:FindFirstChild("Reach")
+			scope.bubble = reach and reach:FindFirstChild("Bubble")
+			scope.floor = reach and reach:FindFirstChild("GroundGlow")
+			for _, extra in ipairs({ scope.bubble, scope.floor }) do
+				local shown = extra.Transparency
+				extra.Transparency = 1
+				tween(extra, 0.5, { Transparency = shown })
+			end
+		else
+			warn("[Kaleidoscope] no Photoshop/KaleidoscopeDome prefab")
 		end
 		ring(center, PINK, 2, radius * 2, 0.6, 0.4)
 		cameraFlash(center + Vector3.new(0, 3, 0), 8)
 		-- the ultimate going up: everyone inside sees it land
-		VFX.Play("Shared/Shockwave", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = PINK, scale = radius / 10 })
-		VFX.Play("Shared/BigImpact", center + Vector3.new(0, 3, 0), { color = BLUE, scale = 1.4 })
+		VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(center + Vector3.new(0, 0.2, 0)), { color = PINK, scale = radius / SHOCKWAVE_RADIUS })
+		VFX.Play("Photoshop/BigImpactIrisBurst", center + Vector3.new(0, 3, 0), { color = BLUE, scale = 1.4 })
 		VFX.Shake(center, "Heavy", radius * 3)
 		VFX.ImpactFrameNear(center, radius + 4, character)
 		-- glints and pixels hang in the dome while it stands, around head height
 		scope.glitter = VFX.Play("Photoshop/PrismGlitter", CFrame.new(center + Vector3.new(0, 6, 0)), { duration = duration })
 		stretch(scope.glitter, Vector3.new(radius * 1.6, 12, radius * 1.6))
 		local started = os.clock()
+		local stages = math.max(1, math.floor(duration / stageTime))
+		local stage = 1
+		local turn = 0
 		local connection
-		connection = RunService.Heartbeat:Connect(function()
+		connection = RunService.Heartbeat:Connect(function(dt)
 			local t = os.clock() - started
 			if scope.done or t > duration then
 				connection:Disconnect()
-				effects.KaleidoscopeEnd(id)
+				effects.KaleidoscopeEnd(id, not scope.done) -- running its course: the finale
 				return
 			end
+			local now = math.min(math.floor(t / stageTime) + 1, stages)
+			if now > stage then
+				-- more mirrors: a pulse out, the shards thicken and turn faster
+				stage = now
+				ring(ground, stage == stages and PINK or BLUE, 2, radius * 2, 0.5, 0.4)
+				flash(center + Vector3.new(0, 3, 0), WHITE, 2, radius * 0.5, 0.2)
+				VFX.Shake(center, "Medium", radius * 3)
+				-- and more glass swirls in: copies of the small shards, in their own colour group
+				if #smalls > 0 then
+					local more = math.max(4, math.round(STAGE_SHARDS * VFX.Quality()))
+					for _ = 1, more do
+						local template = smalls[math.random(#smalls)]
+						local part = template:Clone()
+						part.Transparency = 1
+						part.Parent = template.Parent
+						table.insert(scope.shards, {
+							part = part,
+							up = math.rad(4 + math.random() * 76),
+							around = math.random() * math.pi * 2,
+							spin = (math.random() - 0.5) * 5,
+							reach = 0.5 + math.random() * 0.45,
+							direction = -1,
+							bob = math.random() * math.pi * 2,
+						})
+					end
+				end
+				for _, shard in ipairs(scope.shards) do
+					tween(shard.part, 0.3, { Transparency = KALEIDOSCOPE_SHARD_TRANSPARENCY[math.min(stage, #KALEIDOSCOPE_SHARD_TRANSPARENCY)] })
+				end
+			end
+			turn += dt * (0.25 + 0.15 * (stage - 1))
 			for _, shard in ipairs(scope.shards) do
-				local around = shard.around + t * 0.25
-				local offset = Vector3.new(math.cos(around) * math.cos(shard.up), math.sin(shard.up), math.sin(around) * math.cos(shard.up)) * radius
+				local around = shard.around + turn * shard.direction
+				local bob = math.sin(t * 1.5 + shard.bob) * (shard.reach < 1 and 1.2 or 0.4)
+				local offset = Vector3.new(math.cos(around) * math.cos(shard.up), math.sin(shard.up), math.sin(around) * math.cos(shard.up)) * radius * shard.reach + Vector3.new(0, bob, 0)
 				local spot = center + offset
 				shard.part.CFrame = CFrame.lookAt(spot, center) * CFrame.Angles(0, math.rad(90), t * shard.spin)
 			end
@@ -599,12 +712,14 @@ return function(helpers)
 		shard.Reflectance = 0.5
 		tween(shard, 0.15, { CFrame = CFrame.lookAt(root.Position, root.Position + side), Transparency = 1 })
 		flash(root.Position, WHITE, 0.5, 2.5, 0.12)
-		VFX.Play("Shared/SlashArc", root.Position, { color = color, rotation = math.random(0, 180) })
-		VFX.Play("Shared/Impact", root.Position, { color = color, scale = 0.6 })
+		VFX.Play("Photoshop/KaleidoscopeSlash", root.Position, { color = color, rotation = math.random(0, 180) })
+		VFX.Play("Photoshop/ImpactKaleidoscopeReflect", root.Position, { color = color, scale = 0.6 })
 		VFX.Shake(root.Position, "Light", 20)
 	end
 
-	function effects.KaleidoscopeEnd(id)
+	-- `finale`: it ran its course (Skills.Kaleidoscope's last hit on everyone
+	-- inside), so the mirrors burst outward; otherwise it was cut short and they just shatter
+	function effects.KaleidoscopeEnd(id, finale)
 		local scope = scopes[id]
 		if not scope then
 			return
@@ -612,8 +727,47 @@ return function(helpers)
 		scopes[id] = nil
 		scope.done = true
 		VFX.Stop(scope.glitter)
+		local center, radius = scope.center, scope.radius
+		local ground = center - Vector3.new(0, 2.9, 0)
+		if scope.dome then
+			-- its particles and beams stop; the glass goes as below, then the model
+			for _, d in ipairs(scope.dome:GetDescendants()) do
+				if d:IsA("ParticleEmitter") or d:IsA("Beam") then
+					d.Enabled = false
+				end
+			end
+			Debris:AddItem(scope.dome, 2)
+		end
+		for _, extra in ipairs({ scope.bubble, scope.floor }) do
+			if extra.Parent then
+				tween(extra, 0.5, finale and extra == scope.bubble and { Size = Vector3.one * radius * 2.4, Transparency = 1 } or { Transparency = 1 })
+			end
+		end
+		if finale then
+			local middle = center + Vector3.new(0, 3, 0)
+			for _, shard in ipairs(scope.shards) do
+				if shard.part.Parent then
+					local outward = shard.part.Position - center
+					outward = outward.Magnitude > 0.1 and outward.Unit or Vector3.yAxis
+					tween(shard.part, 0.7, { CFrame = shard.part.CFrame + outward * radius * 0.5, Transparency = 1, Size = shard.part.Size * 0.2 })
+					Debris:AddItem(shard.part, 0.7)
+				end
+			end
+			flash(middle, WHITE, 2, radius, 0.3)
+			for i, color in ipairs({ PINK, BLUE, WHITE }) do
+				ring(ground, color, 2, radius * (1.6 + i * 0.3), 0.4 + i * 0.1, 0.5)
+			end
+			cameraFlash(middle, 14)
+			sparkles(middle, PINK, 30)
+			sparkles(middle, BLUE, 30)
+			VFX.Play("Photoshop/ShockwaveStepIn", CFrame.new(ground), { color = PINK, scale = radius / SHOCKWAVE_RADIUS })
+			VFX.Play("Photoshop/BigImpactIrisBurst", middle, { color = PINK, scale = 2 })
+			VFX.Shake(center, "Heavy", radius * 3)
+			VFX.ImpactFrameNear(center, radius + 4)
+			return
+		end
 		-- the mirrors shatter
-		VFX.Play("Shared/Sparks", scope.center + Vector3.new(0, 3, 0), { color = BLUE, scale = 2 })
+		VFX.Play("Photoshop/SparksSnapshot", scope.center + Vector3.new(0, 3, 0), { color = BLUE, scale = 2 })
 		for _, shard in ipairs(scope.shards) do
 			if shard.part.Parent then
 				tween(shard.part, 0.4, { Transparency = 1, Size = shard.part.Size * 0.3 })
@@ -628,18 +782,21 @@ return function(helpers)
 		lightBeam(from, to, BLUE, 0.15, 0.3)
 		cameraFlash(from, 2.5)
 		flash(to, PINK, 0.5, 3, 0.15)
-		VFX.Play("Shared/Impact", to, { color = PINK, scale = 0.8 })
+		VFX.Play("Photoshop/ImpactKaleidoscopeReflect", to, { color = PINK, scale = 0.8 })
 	end
 
 	-- Undo: she's carried back the way she came, like a video scrubbed
 	-- backwards. Her own client moves her along `path` (where she's been,
 	-- newest first) over `duration`, running the animations she's in
 	-- backwards (the rig's Animate script is paused meanwhile, so it doesn't
-	-- start new ones). Everyone sees blue copies of her left along the way, a
-	-- thin blue line down the path and a flash where she lands. The server
-	-- puts her exactly on the last spot when it's over.
+	-- start new ones). Everyone sees a trail of copies of her left along the
+	-- way (close together, pink where she began the rewind to blue where it
+	-- ends, each fading slowly), a thin blue line down the path and a flash
+	-- where she lands. The server puts her exactly on the last spot when it's over.
 	local REWIND_ANIMATION_SPEED = -2 -- the animations she's in, played backwards this fast
-	local REWIND_GHOST_EVERY = 0.08 -- seconds between the copies left along the way
+	local REWIND_GHOST_EVERY = 0.035 -- seconds between the copies left along the way
+	local REWIND_GHOST_FADE = 0.8 -- seconds a copy takes to fade out
+	local REWIND_GHOST_OPACITY = 0.2 -- how see-through a copy starts (0 solid, 1 gone)
 
 	-- the pivot `share` (0 to 1) of the way along a path of pivots
 	local function alongPath(path, share)
@@ -689,7 +846,7 @@ return function(helpers)
 			if not done then
 				if elapsed - lastCopy >= REWIND_GHOST_EVERY then
 					lastCopy = elapsed
-					afterimage(character, BLUE, 0.3)
+					afterimage(character, PINK:Lerp(BLUE, math.clamp(elapsed / duration, 0, 1)), REWIND_GHOST_FADE, REWIND_GHOST_OPACITY)
 				end
 				return
 			end
@@ -710,7 +867,6 @@ return function(helpers)
 				flash(landing, BLUE, 0.5, 4, 0.2)
 				sparkles(landing, PINK, 10)
 				pasteRing(landing, BLUE, 0.6)
-				VFX.Play("Shared/AuraBurst", root, { color = BLUE, offset = CFrame.new(0, -0.5, 0) })
 			end
 		end)
 	end

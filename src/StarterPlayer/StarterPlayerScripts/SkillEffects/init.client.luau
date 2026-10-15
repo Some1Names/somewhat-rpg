@@ -266,10 +266,15 @@ end
 
 local effects = {}
 
--- the set's power flares up around its new wielder
-function effects.Equip(character, color)
+-- the set's power flares up around its new wielder; `setName`: a set with an
+-- entrance of its own (Photoshop's, in PhotoshopEffects) plays that instead
+function effects.Equip(character, color, setName)
 	local feet, root = feetOf(character)
 	if not feet then
+		return
+	end
+	if setName == "Photoshop" and effects.PhotoshopEquip then
+		effects.PhotoshopEquip(character, color, feet, root)
 		return
 	end
 	VFX.Play("Shared/Shockwave", CFrame.new(feet + Vector3.new(0, 0.2, 0)), { color = color, scale = 0.7 })
@@ -1634,6 +1639,7 @@ local LIGHTSTEP_FADE_IN = 0.15 -- seconds the body takes to reappear
 local LIGHTSTEP_TRAIL_FADE = 0.5 -- seconds a lingering trail takes to fade at the end
 local LIGHTSTEP_DASH = SkillSetConfig.Sets.IridescentRequiem.dash
 local lightstepTrails = setmetatable({}, { __mode = "k" }) -- character -> its lingering trails, oldest first
+local lightstepLast = setmetatable({}, { __mode = "k" }) -- character -> { to, endsAt } of its latest trail
 function effects.Lightstep(character, from, to, travelTime)
 	local path = to - from
 	local along = path.Magnitude > 0.1 and path.Unit or Vector3.zero
@@ -1681,6 +1687,16 @@ function effects.Lightstep(character, from, to, travelTime)
 	lightRibbon(from + Vector3.new(0, 1.2, 0), to + Vector3.new(0, 1.2, 0), 0.7, 0.3)
 	local linger = LIGHTSTEP_DASH.trailDuration
 	local trail = lightRibbon(from, to, 1.1, linger, nil, linger - LIGHTSTEP_TRAIL_FADE)
+	-- a Lightstep begun near where the last trail ended, while it still burns,
+	-- joins them (Skills.Lightstep does the same); the link goes with this trail
+	local last = lightstepLast[character]
+	lightstepLast[character] = { to = to, endsAt = os.clock() + linger }
+	if trail and last and os.clock() < last.endsAt and (last.to - from).Magnitude <= LIGHTSTEP_DASH.linkRange then
+		local link = lightRibbon(last.to, from, 1.1, linger, nil, linger - LIGHTSTEP_TRAIL_FADE)
+		if link then
+			link.Parent = trail
+		end
+	end
 	if trail then
 		local trails = lightstepTrails[character] or {}
 		lightstepTrails[character] = trails

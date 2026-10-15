@@ -27,7 +27,7 @@ local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 local CONFIG = {
 	Range = 100, -- studs, the lock's reach (SkillSetConfig's aim shows the same)
 	Cone = 30, -- degrees either side of the aim it locks onto a target in
-	Damage = 12, -- before the caster's Superliminal bonus
+	Damage = 20, -- before the caster's Superliminal bonus
 	StepRange = 110, -- studs from her a framed target can be for Step In (past Range, so anyone she framed)
 	BehindDistance = 4, -- studs behind them she lands
 	MaxDrop = 6, -- studs below them the ground there may be; past that (a cliff edge, a flier) she stays at their height
@@ -44,6 +44,7 @@ local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = 
 local RECAST = SkillSetConfig.RecastAttribute("Photoshop", "Z")
 
 local watching = setmetatable({}, { __mode = "k" }) -- player -> the frame being watched
+local lastStepIn = setmetatable({}, { __mode = "k" }) -- player -> os.clock() of her last Step In
 
 -- Step In stays on Z for as long as the frame does (Shutter can stretch it)
 local function watchFrame(player, model)
@@ -146,6 +147,17 @@ function Snapshot.Cast(player, character, aim)
 	return true
 end
 
+-- Step In made ready on Z for as long as `model` stays framed, for whoever else
+-- frames someone (Kaleidoscope frames everyone it strikes)
+function Snapshot.Arm(player, model)
+	watchFrame(player, model)
+end
+
+-- whether she has Stepped In since the os.clock() time `since`
+function Snapshot.SteppedInSince(player, since)
+	return (lastStepIn[player] or -math.huge) >= since
+end
+
 -- Step In: behind the framed target nearest her
 function Snapshot.Recast(player, character)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -190,6 +202,7 @@ function Snapshot.Recast(player, character)
 	root.AssemblyLinearVelocity = Vector3.zero
 	character:PivotTo(CFrame.lookAt(landing, facing))
 	skillEffects:FireAllClients("StepIn", character, from, landing)
+	lastStepIn[player] = os.clock()
 	watching[player] = nil
 	player:SetAttribute(RECAST, nil)
 	-- her arms throw the punches on her own screen

@@ -5,14 +5,16 @@
 -- for PasteHold (a flier lands there); otherwise she pastes herself into it. Moving a player
 -- follows CrowdControl, and Mandela's Misremembered forgets the paste
 -- (Passives.ResistEdit); then she goes herself. A new photo replaces the
--- old one. Clients draw it from the SkillEffects "PhotoPin", "PhotoPaste"
--- and "PhotoGone" events. SkillSetServer checks the tool, mastery and
--- cooldown before calling Cast.
+-- old one. Wherever it lands, the photo bursts: BurstDamage to everyone else
+-- within BurstRadius of it. Clients draw it from the SkillEffects "PhotoPin",
+-- "PhotoPaste", "PhotoBurst" and "PhotoGone" events. SkillSetServer checks
+-- the tool, mastery and cooldown before calling Cast.
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
+local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Framed = require(ServerScriptService:WaitForChild("Framed"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local PhotoshopUtil = require(ServerScriptService:WaitForChild("PhotoshopUtil"))
@@ -26,7 +28,10 @@ local CONFIG = {
 	Lifetime = 8, -- seconds the photo stays
 	PasteRange = 60, -- studs from the photo a framed target can be pasted from
 	PasteHold = 0.5, -- seconds a pasted target stays frozen in the photo
+	BurstRadius = 12, -- studs round the photo it bursts when it lands
+	BurstDamage = 12, -- before the caster's Superliminal bonus
 }
+local DAMAGE_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", skill = "X" }
 local RECAST = SkillSetConfig.RecastAttribute("Photoshop", "X")
 
 local photos = setmetatable({}, { __mode = "k" }) -- player -> { id, point }
@@ -60,6 +65,17 @@ local function paste(model, root, point)
 	root.AssemblyLinearVelocity = Vector3.zero
 	model:PivotTo(CFrame.lookAt(point, point + facing))
 	return from
+end
+
+-- the photo bursts where it landed: everyone else near it is hurt
+local function burst(player, character, point)
+	local middle = point + Vector3.new(0, 3, 0) -- a root stands about 3 up
+	for _, other in ipairs(PhotoshopUtil.enemiesWithin(character, point, CONFIG.BurstRadius)) do
+		if (other.root.Position - middle).Magnitude <= CONFIG.BurstRadius then
+			Damage.Deal(player, other.humanoid, CONFIG.BurstDamage, DAMAGE_OPTIONS)
+		end
+	end
+	skillEffects:FireAllClients("PhotoBurst", point, CONFIG.BurstRadius)
 end
 
 local PhotoTeleport = {}
@@ -112,6 +128,7 @@ function PhotoTeleport.Recast(player, character)
 			CrowdControl.Apply(target, CONFIG.PasteHold)
 			skillEffects:FireAllClients("PhotoPaste", photo.id, target, from, photo.point)
 			endPhoto(player, photo)
+			burst(player, character, photo.point)
 			Quests.Report(player, "Photoshop", "CutPaste")
 			return
 		end
@@ -119,6 +136,7 @@ function PhotoTeleport.Recast(player, character)
 	local from = paste(character, root, photo.point)
 	skillEffects:FireAllClients("PhotoPaste", photo.id, character, from, photo.point)
 	endPhoto(player, photo)
+	burst(player, character, photo.point)
 end
 
 return PhotoTeleport

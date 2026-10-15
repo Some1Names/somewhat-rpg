@@ -6,7 +6,9 @@
 -- everyone along the path, harder in Prism Form, where it also leaves them
 -- Burnt. The light lingers on the path for the dash's trailDuration, and
 -- anyone who walks into it takes the same hit, once per trail; only
--- maxTrails of his trails last at a time. Other clients draw the streak
+-- maxTrails of his trails last at a time. A Lightstep begun within linkRange
+-- of where the last trail ended, while it still burns, also lights the stretch
+-- between the two, burning like the trail. Other clients draw the streak
 -- from the SkillEffects "Lightstep" event (the dasher already drew his own).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -55,6 +57,14 @@ local function burnPath(player, character, from, to, damage, burns, struck)
 	end
 end
 
+-- burns a trail's path, and the stretch of light linking it to the one before
+local function burnTrail(player, trail)
+	burnPath(player, trail.character, trail.from, trail.to, trail.damage, trail.burns, trail.struck)
+	if trail.link then
+		burnPath(player, trail.character, trail.link.from, trail.link.to, trail.damage, trail.burns, trail.struck)
+	end
+end
+
 -- keeps the trail burning anyone who walks in until it fades; past
 -- maxTrails, the oldest goes
 local function addTrail(player, trail)
@@ -78,7 +88,7 @@ local function addTrail(player, trail)
 				if now >= each.endsAt then
 					table.remove(list, i)
 				else
-					burnPath(player, each.character, each.from, each.to, each.damage, each.burns, each.struck)
+					burnTrail(player, each)
 				end
 			end
 		end
@@ -119,16 +129,23 @@ function Lightstep.Dash(player, character, from, to)
 		end
 	end
 	local inForm = SkillSetConfig.InForm(character, SET_NAME)
+	-- the last trail still burning, if he's stepped on from near where it ended
+	local previous = trails[player] and trails[player][#trails[player]]
+	local link
+	if previous and os.clock() < previous.endsAt and (previous.to - from).Magnitude <= DASH.linkRange then
+		link = { from = previous.to, to = from }
+	end
 	local trail = {
 		character = character,
 		from = from,
 		to = to,
+		link = link, -- {from, to} of the light joining this trail to the last, or nil
 		damage = inForm and CONFIG.FormDamage or CONFIG.Damage,
 		burns = inForm,
 		struck = {}, -- humanoid -> true once this trail has hurt them
 		endsAt = os.clock() + DASH.trailDuration,
 	}
-	burnPath(player, character, from, to, trail.damage, trail.burns, trail.struck)
+	burnTrail(player, trail)
 	addTrail(player, trail)
 end
 

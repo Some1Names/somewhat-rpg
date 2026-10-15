@@ -25,7 +25,7 @@ local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
 
 local TICK = 0.2 -- seconds
 local FLYING = "Flying"
-local DESATURATED_DRAIN = 0.15 -- Luminance per second while Desaturated
+local DESATURATED_DRAIN = 0.2 -- Luminance per second while Desaturated (most of a bar over the 4 s the dome lasts)
 local flights = setmetatable({}, { __mode = "k" }) -- player -> { since, last }: how long this flight has lasted (Quests)
 
 -- the equipped set, if its passive is Luminance

@@ -238,8 +238,11 @@ SkillSetConfig.Sets = {
 		-- (Skills.Lightstep). It spends a dodge charge like the normal dash, but
 		-- no stamina. The light it leaves lingers for trailDuration seconds,
 		-- hurting anyone who walks into it once per trail; only maxTrails of his
-		-- trails last at a time (a new one ends the oldest).
-		dash = { name = "Lightstep", mastery = 15, handler = "Lightstep", range = 28, travelTime = 0.1, trailDuration = 3, maxTrails = 3 },
+		-- trails last at a time (a new one ends the oldest). `interval`: the least
+		-- seconds between two Lightsteps, whatever charges are left. `linkRange`: a
+		-- Lightstep begun while the last trail still burns, within this many studs
+		-- of where that one ended, joins the two with a stretch of light.
+		dash = { name = "Lightstep", mastery = 15, handler = "Lightstep", range = 28, travelTime = 0.1, trailDuration = 3, maxTrails = 3, interval = 1.5, linkRange = 40 },
 		-- Prism Form, on X: it needs minimumToStart Luminance and costs entryCost,
 		-- then burns drainPerSecond (sunlight stops refilling it meanwhile) until
 		-- X is pressed again or the light runs out. Physical hits are cut by
@@ -324,7 +327,7 @@ SkillSetConfig.Sets = {
 		-- G, Undo: back to where she stood `rewind` seconds ago, healing
 		-- healShare of the damage taken since; she's carried back along the
 		-- way she came over rewindTime seconds, untouchable and unable to act
-		undo = { name = "Undo", mastery = 15, cooldown = 18, rewind = 3, healShare = 0.5, rewindTime = 0.6 },
+		undo = { name = "Undo", mastery = 15, cooldown = 18, rewind = 3, healShare = 1, rewindTime = 0.6 },
 		-- `key` opens her saved photos of places, `slots` of them, to step
 		-- back into out of combat (PhotoshopServer, the PhotoGallery script)
 		gallery = { name = "Gallery", mastery = 30, key = "T", slots = 3 },
@@ -364,7 +367,7 @@ SkillSetConfig.Sets = {
 				cooldown = 14, -- per charge
 				charges = 3,
 				handler = "Desaturate",
-				aim = { kind = "circle", range = 50, radius = 18 },
+				aim = { kind = "circle", range = 50, radius = 28 },
 			},
 			V = {
 				name = "Iris Horizon",
