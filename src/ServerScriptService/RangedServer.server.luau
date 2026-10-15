@@ -119,7 +119,7 @@ fireRanged.OnServerEvent:Connect(function(player, action, origin, direction, id,
 		return
 	end
 	local _, setName = SkillSetConfig.Equipped(character)
-	local ranged = setName and SkillSetConfig.Sets[setName].ranged
+	local ranged = setName and SkillSetConfig.RangedFor(character, setName)
 	if not ranged then
 		return
 	end

@@ -492,6 +492,7 @@ local function readyToCast(setName, key, skill)
 	-- a form (Prism Form) takes some light to start
 	local form = SkillSetConfig.Sets[setName].form
 	local lacksLight = form ~= nil
+		and form.minimumToStart ~= nil
 		and form.key == key
 		and (player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0) < form.minimumToStart
 	-- (a skill with charges: when all are back, so one is ready a few recharges sooner)
@@ -783,7 +784,7 @@ RunService.RenderStepped:Connect(function()
 			elseif filled >= settings.maxStacks then
 				ready = true
 				stackLabel.Text = string.format("READY  [%s]", Keybinds.Text("Special"))
-				stackLabel.TextColor3 = ACCENT
+				stackLabel.TextColor3 = set.color
 			else
 				stackLabel.Text = string.upper(settings.name)
 				stackLabel.TextColor3 = MUTED
@@ -796,7 +797,7 @@ RunService.RenderStepped:Connect(function()
 		local pulseTransparency = ready and (0.5 - 0.5 * math.cos(os.clock() * 6)) * 0.45 or 0
 		for i, segment in ipairs(stackSegments) do
 			segment.fill.Size = UDim2.fromScale(math.clamp(filled - (i - 1), 0, 1), 1)
-			segment.fill.BackgroundColor3 = overcharged and settings.color or cooling and COOLING or ACCENT
+			segment.fill.BackgroundColor3 = overcharged and settings.color or cooling and COOLING or set.color
 			segment.fill.BackgroundTransparency = pulseTransparency
 			segment.track.BackgroundTransparency = TRACK_TRANSPARENCY
 		end
@@ -898,7 +899,7 @@ RunService.RenderStepped:Connect(function()
 
 	-- the ranged move's ammo: charges ready (or the next one's refill), shots
 	-- of Luminance left, or rounds (or the reload)
-	local ranged = set.ranged
+	local ranged = SkillSetConfig.RangedFor(player.Character, setName)
 	rangedSlot.frame.Visible = ranged ~= nil
 	if ranged then
 		local status, cover = "", 0

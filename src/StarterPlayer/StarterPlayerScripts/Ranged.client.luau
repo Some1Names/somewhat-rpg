@@ -245,7 +245,7 @@ local function heldSet()
 		return nil
 	end
 	local _, setName = SkillSetConfig.Equipped(character)
-	local ranged = setName and SkillSetConfig.Sets[setName].ranged
+	local ranged = setName and SkillSetConfig.RangedFor(character, setName)
 	if not ranged then
 		return nil
 	end

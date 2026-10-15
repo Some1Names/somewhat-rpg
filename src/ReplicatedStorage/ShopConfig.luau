@@ -87,11 +87,11 @@ ShopConfig.Items = {
 	},
 	{
 		id = "AidoPower",
-		name = "Deus Ex Machina",
+		name = "Aido",
 		shop = "Powers",
-		set = "DeusExMachina",
+		set = "Aido",
 		briefcase = true,
-		description = "Furukiwa Aido's power. Not for sale: only the gacha and drops give it.",
+		description = "Furukiwa Aido, The Director. Fuse, Catastrophe, Collapse, Total Destruction, Ground Zero, Final Cut. G: Chain Reaction. Passive: Half-Life. Not for sale: only the gacha and drops give it.",
 	},
 	{
 		id = "Eventide",

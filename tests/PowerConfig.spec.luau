@@ -31,12 +31,12 @@ check("S dealer price is 500,000", PowerConfig.price("Mandela", "S") == 500000)
 check("A dealer price is 150,000", PowerConfig.price("X", "A") == 150000)
 check("B dealer price is 50,000", PowerConfig.price("X", "B") == 50000)
 check("C dealer price is 15,000", PowerConfig.price("X", "C") == 15000)
-check("Deus Ex Machina is not for sale", PowerConfig.price("DeusExMachina", "S") == nil)
+check("Aido is not for sale", PowerConfig.price("Aido", "S") == nil)
 check("an unknown tier has no price", PowerConfig.price("X", "Z") == nil)
 
 check("S sells for 150,000", PowerConfig.sellPrice("Mandela", "S") == 150000)
 check("C sells for 4,500", PowerConfig.sellPrice("X", "C") == 4500)
-check("Deus Ex Machina sells for 200,000", PowerConfig.sellPrice("DeusExMachina", "S") == 200000)
+check("Aido sells for 200,000", PowerConfig.sellPrice("Aido", "S") == 200000)
 
 local all = { S = { "a", "b" }, A = { "c" }, B = { "d" }, C = { "e" } }
 local rng = seeded(7)

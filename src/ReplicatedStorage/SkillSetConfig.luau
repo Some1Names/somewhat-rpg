@@ -96,6 +96,12 @@ end
 -- `luminanceCost`, or a round of `rounds` (reloading for `reload` seconds).
 -- `projectile` flies a ReplicatedStorage.ProjectileModels piece; `beam` is
 -- instant (its `effect` names how SkillEffects draws it; LightShot if none). `animation`: a <Set>Animations one to play per shot.
+-- A ranged move with none of charges, luminanceCost or rounds is free (Atomic
+-- Breath). A `form` may carry its own `ranged` that replaces the set's while
+-- in the form: always read it through RangedFor. A form's `duration` ends it
+-- by itself after that many seconds; `damageReduction` cuts all damage taken
+-- in it, `blastScale` widens `form` skills' blasts, `camera` is the closest
+-- the camera may zoom in. `aftershock`: see the Aido entry.
 -- Aim assist: while a move that `aims` is readied (right click held),
 -- everyone within its reach and in sight gets a circle AimAssistRadius studs
 -- around them; a shot fired with the crosshair inside one is locked onto
@@ -110,6 +116,10 @@ end
 -- can't be used again for `cooldown` seconds (stacks still build). Each kill
 -- while overcharged adds `killRefill` seconds back, up to a full bar. Stacks
 -- short of full fade after `decayDelay` seconds without dealing damage.
+-- Aido's red, and the hot core of his blasts
+SkillSetConfig.AidoRed = Color3.fromRGB(255, 64, 48)
+SkillSetConfig.AidoCore = Color3.fromRGB(255, 196, 120)
+
 SkillSetConfig.Sets = {
 	Mandela = {
 		tool = "Mandela",
@@ -430,14 +440,118 @@ SkillSetConfig.Sets = {
 		placeholder = true,
 		skills = {},
 	},
-	-- Furukiwa Aido's power (the Aido plan builds it; rename this key if that plan uses another)
-	DeusExMachina = {
-		tool = "DeusExMachina",
+	-- Furukiwa Aido, The Director: atomic annihilation, staged. His blasts leave
+	-- Fallout and burn; Chain Reaction makes every blast set off aftershocks;
+	-- Final Cut turns him into a dragon. All the blast rules are in AidoUtil.
+	Aido = {
+		tool = "Aido",
 		kind = "power",
 		tier = "S",
-		color = Color3.fromRGB(220, 70, 60),
-		placeholder = true,
-		skills = {},
+		color = SkillSetConfig.AidoRed,
+		-- Half-Life: every skill blast leaves a Fallout patch (falloutRadius
+		-- studs for falloutDuration seconds; 1 Burnt stack a second to anyone
+		-- in it), and a blast on someone already Burnt hits 1 + burntBonus times
+		-- as hard. In Final Cut it also cuts all damage taken (form.damageReduction).
+		passive = { name = "Half-Life", mastery = 10, burntBonus = 0.25, falloutRadius = 6, falloutDuration = 3 },
+		-- fills from damage he deals only (no takenShare). While it's on, every
+		-- skill blast sets off `count` aftershocks `delay` seconds later at random
+		-- points within `spread` of its radius, each `share` of its damage
+		overcharge = {
+			name = "Chain Reaction",
+			mastery = 25,
+			color = SkillSetConfig.AidoRed,
+			maxStacks = 10,
+			damagePerStack = 40,
+			meleeShare = 0.35,
+			duration = 15,
+			cooldown = 30,
+			killRefill = 1.5,
+			decayDelay = 6,
+			decayPerSecond = 0.5,
+		},
+		aftershock = { count = 3, delay = 0.25, share = 0.3, radius = 6, spread = 0.6 },
+		-- Fuse: a fission seed that sticks and pops a second later
+		ranged = {
+			name = "Fuse",
+			handler = "Fuse",
+			aims = true,
+			charges = 3,
+			recharge = 3, -- seconds per charge
+			interval = 0.3,
+			animation = "CastZ",
+			projectile = { model = "FissionSeed", speed = 90, range = 80, radius = 1 },
+		},
+		-- Final Cut, on F: for `duration` seconds a dragon (damageReduction less
+		-- damage taken, `form` skills blast blastScale times wider, the camera
+		-- can't come closer than `camera` studs). Its ranged move replaces Fuse
+		-- (SkillSetConfig.RangedFor); with no ranged cost, it is free.
+		form = {
+			name = "Final Cut",
+			key = "F",
+			attribute = "FinalCut",
+			duration = 12,
+			damageReduction = 0.2,
+			blastScale = 1.5,
+			camera = 22,
+			ranged = {
+				name = "Atomic Breath",
+				handler = "AtomicBreath",
+				aims = true,
+				primary = true,
+				interval = 0.2,
+				beam = { range = 60, effect = "AtomicBreath" },
+			},
+		},
+		skills = {
+			Z = {
+				name = "Catastrophe",
+				mastery = 1,
+				cooldown = 7,
+				handler = "Catastrophe",
+				recast = "Detonate",
+				form = true,
+				aim = { kind = "circle", range = 70, radius = 14 },
+				formAim = { kind = "circle", range = 70, radius = 21 },
+			},
+			X = {
+				name = "Collapse",
+				mastery = 5,
+				cooldown = 10,
+				handler = "Collapse",
+				form = true,
+				aim = { kind = "circle", range = 60, radius = 20 },
+				formAim = { kind = "circle", range = 60, radius = 30 },
+			},
+			C = {
+				name = "Total Destruction",
+				mastery = 20,
+				cooldown = 14,
+				handler = "TotalDestruction",
+				overcharged = true,
+				form = true,
+				aim = { kind = "path", length = 80 },
+				overchargedAim = { kind = "path", length = 80, count = 3, spread = 25 },
+			},
+			V = {
+				name = "Ground Zero",
+				mastery = 50,
+				cooldown = 45,
+				handler = "GroundZero",
+				form = true,
+				aim = { kind = "circle", range = 80, radius = 40 },
+				formAim = { kind = "circle", range = 80, radius = 60 },
+			},
+			F = {
+				name = "Final Cut",
+				mastery = 100,
+				cooldown = 90,
+				handler = "FinalCut",
+				recast = "Revert",
+				overchargedOnly = true,
+				overcharged = true,
+				aim = { kind = "self", radius = 20 },
+			},
+		},
 	},
 	Kintsugi = {
 		tool = "Kintsugi",
@@ -634,6 +748,18 @@ function SkillSetConfig.RangedCharges(player, setName)
 	end
 	local at = player:GetAttribute(SkillSetConfig.RangedChargedAtAttribute(setName)) or 0
 	return math.min(ranged.charges, stored + (workspace:GetServerTimeNow() - at) / ranged.recharge)
+end
+
+-- the ranged move in use: the form's while in the form, else the set's
+function SkillSetConfig.RangedFor(character, setName)
+	local set = setName and SkillSetConfig.Sets[setName]
+	if not set then
+		return nil
+	end
+	if set.form and set.form.ranged and SkillSetConfig.InForm(character, setName) then
+		return set.form.ranged
+	end
+	return set.ranged
 end
 
 -- how far a ranged move reaches: its projectile's range or its beam's
