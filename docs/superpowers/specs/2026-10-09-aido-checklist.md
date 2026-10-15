@@ -6,7 +6,7 @@ to Studio, then tick each line in a playtest. All visuals are placeholders (red 
 prefabs) until your VFX pass. Numbers are before the Superliminal bonus.
 
 **Setup**
-- Add a Tool `Aido` to `ServerStorage.SkillSetTools` with the attribute `SkillSet = "Aido"` (copy
+- Add a Tool `Deus Ex Machina` to `ServerStorage.SkillSetTools` with the attribute `SkillSet = "Aido"` (copy
   the Photoshop tool).
 - Admin panel: set your Aido mastery to 100 (SetMastery) so every move and the passive unlock.
 - Use the `Player Dummy` for single checks; a second player for Block, CrowdControl and PvP.

@@ -444,7 +444,7 @@ SkillSetConfig.Sets = {
 	-- Fallout and burn; Chain Reaction makes every blast set off aftershocks;
 	-- Final Cut turns him into a dragon. All the blast rules are in AidoUtil.
 	Aido = {
-		tool = "Aido",
+		tool = "Deus Ex Machina", -- the power's name; the Tool in SkillSetTools is called this too
 		kind = "power",
 		tier = "S",
 		color = SkillSetConfig.AidoRed,
