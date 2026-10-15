@@ -6,7 +6,7 @@
 -- Breath, and clients draw the dragon and limit the camera from it). It ends
 -- when F is pressed again (Revert), the time is up, he dies or leaves, or the
 -- set is put away: the attribute, the recast mark and the dragon copy all go.
--- The dragon is ServerStorage.SkillSets.Aido.Dragon (a Model with a
+-- The dragon is ServerStorage.SkillSets.Aido.AidoDragon (a Model with a
 -- PrimaryPart); without it he keeps his body and clients draw an aura instead.
 -- His hitbox stays his own body: the copy can't be hit.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,7 +19,9 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local SET_NAME = "Aido"
 local FORM = SkillSetConfig.Sets[SET_NAME].form
 local RECAST = SkillSetConfig.RecastAttribute(SET_NAME, FORM.key)
+local DRAGON_MODEL = "AidoDragon" -- ServerStorage.SkillSets.Aido.AidoDragon
 local DRAGON_FOLDER = "FinalCutDragon" -- in the character, holding the welded copy
+local DRAGON_FRONT = CFrame.Angles(0, math.pi, 0) -- the model faces +Z; a character faces -Z
 local CHECK_INTERVAL = 0.1 -- seconds
 local ROAR = {
 	Radius = 20, -- studs
@@ -30,12 +32,12 @@ local ROAR = {
 local function dragonTemplate()
 	local sets = ServerStorage:FindFirstChild("SkillSets")
 	local assets = sets and sets:FindFirstChild(SET_NAME)
-	local template = assets and assets:FindFirstChild("Dragon")
+	local template = assets and assets:FindFirstChild(DRAGON_MODEL)
 	return template and template:IsA("Model") and template.PrimaryPart and template or nil
 end
 
 -- a welded, harmless copy of the dragon on the character; nothing without the model
-local function attachDragon(character, root)
+local function attachDragon(character, humanoid, root)
 	local template = dragonTemplate()
 	if not template then
 		return
@@ -52,7 +54,11 @@ local function attachDragon(character, root)
 			part.CanQuery = false
 		end
 	end
-	dragon:PivotTo(root.CFrame)
+	-- turned to face the way he does, and stood on the ground he stands on
+	dragon:PivotTo(root.CFrame * DRAGON_FRONT)
+	local boxCFrame, boxSize = dragon:GetBoundingBox()
+	local feetY = root.Position.Y - (humanoid.HipHeight + root.Size.Y / 2)
+	dragon:PivotTo(dragon:GetPivot() + Vector3.new(0, feetY - (boxCFrame.Position.Y - boxSize.Y / 2), 0))
 	local weld = Instance.new("WeldConstraint")
 	weld.Part0 = root
 	weld.Part1 = dragon.PrimaryPart
@@ -103,7 +109,7 @@ function FinalCut.Cast(player, character)
 	end
 	character:SetAttribute(FORM.attribute, true)
 	player:SetAttribute(RECAST, true)
-	attachDragon(character, root)
+	attachDragon(character, humanoid, root)
 	task.spawn(watch, player, character, humanoid)
 	AidoUtil.blast(player, character, root.Position, {
 		radius = ROAR.Radius,

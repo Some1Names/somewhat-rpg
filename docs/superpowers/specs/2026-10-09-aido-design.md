@@ -139,7 +139,7 @@ form = {
   - Skills marked `form` blast **1.5×** wider (`blastScale`).
   - The camera can't zoom in closer than `camera` studs, so he sees around the dragon.
 
-**The dragon (Studio model, doesn't exist yet):** `ServerStorage.SkillSets.Aido.Dragon`, a
+**The dragon (Studio model, doesn't exist yet):** `ServerStorage.SkillSets.Aido.AidoDragon`, a
 `Model` with a `PrimaryPart` named `RootPart` and an `AnimationController` with an `Animator`.
 While the form lasts the server welds a copy to his `HumanoidRootPart` (in a folder in his
 character), with every part `Massless`, `CanCollide`/`CanTouch`/`CanQuery` off. Clients hide

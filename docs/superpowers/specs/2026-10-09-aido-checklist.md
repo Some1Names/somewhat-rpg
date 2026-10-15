@@ -10,7 +10,7 @@ prefabs) until your VFX pass. Numbers are before the Superliminal bonus.
   the Photoshop tool).
 - Admin panel: set your Aido mastery to 100 (SetMastery) so every move and the passive unlock.
 - Use the `Player Dummy` for single checks; a second player for Block, CrowdControl and PvP.
-- Optional: `ReplicatedStorage.ProjectileModels.FissionSeed` (looks only), `ServerStorage.SkillSets.Aido.Dragon`
+- Optional: `ReplicatedStorage.ProjectileModels.FissionSeed` (looks only), `ServerStorage.SkillSets.Aido.AidoDragon`
   and `ReplicatedStorage.AidoAnimations` (DragonIdle/DragonWalk/DragonBreath). Everything works without them.
 
 ## Equip and UI
