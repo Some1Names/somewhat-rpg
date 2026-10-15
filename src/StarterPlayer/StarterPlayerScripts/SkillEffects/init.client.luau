@@ -2447,6 +2447,7 @@ end
 -- bokeh and light; it bursts going in and shatters coming out. Each
 -- client changes the parts' look only on its own screen and puts it back.
 local FORM_ATTRIBUTE = "PrismForm"
+local FORM_TRAIL_TEXTURE = "rbxassetid://14050983225" -- a soft glowing streak (the dash's)
 
 -- Going in and coming out it uses the ui-resources.com images (FORM_*) above Solar Lance.
 
@@ -2649,7 +2650,36 @@ local function watchForm(character)
 			drift.SpreadAngle = Vector2.new(180, 180)
 			drift.Rate = 10 * VFX.Quality()
 			drift.Parent = attachment
-			glow = { highlight, attachment, restore = restore }
+			-- a ribbon of orange-to-cyan light trailing the body wherever it moves
+			local ribbonTop = Instance.new("Attachment")
+			ribbonTop.Name = "PrismFormTrailTop"
+			ribbonTop.Position = Vector3.new(0, 2.2, 0)
+			ribbonTop.Parent = root
+			local ribbonBottom = Instance.new("Attachment")
+			ribbonBottom.Name = "PrismFormTrailBottom"
+			ribbonBottom.Position = Vector3.new(0, -2.2, 0)
+			ribbonBottom.Parent = root
+			local ribbon = Instance.new("Trail")
+			ribbon.Name = "PrismFormTrail"
+			ribbon.Attachment0 = ribbonTop
+			ribbon.Attachment1 = ribbonBottom
+			ribbon.Texture = FORM_TRAIL_TEXTURE
+			ribbon.TextureMode = Enum.TextureMode.Stretch
+			ribbon.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, spectrum(0)),
+				ColorSequenceKeypoint.new(0.5, spectrum(0.5)),
+				ColorSequenceKeypoint.new(1, spectrum(1)),
+			})
+			ribbon.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+			ribbon.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.3) })
+			ribbon.Lifetime = 0.5
+			ribbon.LightEmission = 1
+			ribbon.LightInfluence = 0
+			ribbon.MinLength = 0.05
+			ribbon.FaceCamera = true
+			ribbon.Parent = root
+			CollectionService:AddTag(ribbon, "Iridescent")
+			glow = { highlight, attachment, ribbonTop, ribbonBottom, ribbon, restore = restore }
 			if not quiet then
 				formBurst(root.Position, 1, true)
 				ring(root.Position - Vector3.new(0, 2.5, 0), SkillSetConfig.IridescentOrange, 2, 20, 0.45, 0.3)
