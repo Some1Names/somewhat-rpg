@@ -1,7 +1,7 @@
 -- Server side of melee (fists, the Mandela axe, or Photoshop's punches while
 -- that set is out): keeps
--- count of each player's combo, finds what's in front of them when a hit
--- lands and damages it. The last hit of the combo is a critical that knocks
+-- count of each player's combo, finds what's in front of them (the way they
+-- aimed) when a hit lands, and for a moment after, and damages it. The last hit of the combo is a critical that knocks
 -- the target back (players protected by CrowdControl, and anyone of a higher
 -- level than the puncher, still take the critical but aren't thrown). Every
 -- hit staggers an enemy NPC for a moment (its HitstunUntil attribute, which
@@ -36,6 +36,8 @@ local CONFIG = {
 	KnockbackLift = 14, -- studs per second upward
 	KnockbackTime = 0.2, -- seconds the push lasts (about 7 studs)
 	Tolerance = 0.1, -- network jitter between client and server timing
+	Samples = 3, -- times the hitbox is checked per swing, from the moment of impact
+	SampleGap = 0.06, -- seconds between those checks
 }
 
 local combos = {}
@@ -217,7 +219,7 @@ local function spikeBurst(player, character, center, weapon)
 	return dealt
 end
 
-local function land(player, character, weapon, finisher)
+local function land(player, character, weapon, finisher, direction)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
 	-- the puncher may have died or respawned during the wind-up
@@ -227,67 +229,79 @@ local function land(player, character, weapon, finisher)
 	local overlap = OverlapParams.new()
 	overlap.FilterType = Enum.RaycastFilterType.Exclude
 	overlap.FilterDescendantsInstances = { character }
-	local box = root.CFrame * CFrame.new(0, 0, -weapon.hitboxForward)
 
 	local damage = weapon.baseDamage * (finisher and PunchConfig.CritMultiplier or 1)
 	local options = { stat = weapon.stat or DEFAULT_STAT, critical = finisher, skillSet = weapon.skillSet, melee = true, skill = "melee" }
-	local look = root.CFrame.LookVector
-	local direction = Vector3.new(look.X, 0, look.Z).Unit
+	local overcharged = weapon.overcharged and Overcharge.IsActive(player, weapon.skillSet)
 
 	local slashColor = weapon.skillSet and weaponColor(player, weapon)
 	local punchColor = not weapon.skillSet and fistColor(character)
 	local hit = {}
-	local dealt = 0
-	local firstRoot
-	for _, part in ipairs(workspace:GetPartBoundsInBox(box, weapon.hitboxSize, overlap)) do
-		local model = part:FindFirstAncestorOfClass("Model")
-		local target = model and model:FindFirstChildOfClass("Humanoid")
-		if target and not hit[target] and target.Health > 0 then
-			hit[target] = true
-			firstRoot = firstRoot or target.RootPart
-			if weapon.hitEffect and target.RootPart then
-				-- its own look (Photoshop's camera flash), on the side the hit struck
-				skillEffects:FireAllClients(weapon.hitEffect, target.RootPart.Position - direction * 0.8, finisher)
-			elseif slashColor and target.RootPart then
-				skillEffects:FireAllClients("Slash", target.RootPart.Position, direction, finisher, slashColor)
-			elseif punchColor and target.RootPart then
-				-- on the side of the body the fist struck
-				skillEffects:FireAllClients("FistHit", target.RootPart.Position - direction * 0.8, direction, finisher, punchColor)
-			end
-			-- someone the set's Z pulled in takes extra from the finisher
-			local links = weapon.skillSet and SkillSetConfig.Sets[weapon.skillSet].links
-			local hitDamage = damage
-			if finisher and links and Damage.ConsumeExposed(player, model) then
-				hitDamage *= 1 + links.exposedFinisherBonus
-				Quests.Report(player, weapon.skillSet, "ExposedFinisher")
-			end
-			local landed = Damage.Deal(player, target, hitDamage, options)
-			dealt += landed
-			if not Players:GetPlayerFromCharacter(model) then
-				stagger(model)
-			end
-			-- a hit a passive erased or let pass through doesn't throw them either
-			if finisher and landed > 0 and target.RootPart and not target.RootPart.Anchored and canThrow(player, model) and CrowdControl.CanControl(model) then
-				knockBack(target.RootPart, direction)
-				CrowdControl.Apply(model, CONFIG.KnockbackTime)
-			end
+	local spiked = false
+	-- an overcharged weapon heals a share of what it deals
+	local function heal(dealt)
+		if overcharged and dealt > 0 and humanoid.Health > 0 then
+			humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + dealt * weapon.overcharged.lifesteal * StatusConfig.HealMultiplier(character))
 		end
 	end
-
-	if weapon.overcharged and Overcharge.IsActive(player, weapon.skillSet) then
-		if finisher and firstRoot then
-			dealt += spikeBurst(player, character, firstRoot.Position, weapon)
+	-- The swing stays live for a moment: the box is checked again every
+	-- SampleGap, following the puncher, and each target is hit once. A target
+	-- that steps away, or that lag showed in the wrong place, is still caught.
+	for sample = 1, CONFIG.Samples do
+		if sample > 1 then
+			task.wait(CONFIG.SampleGap)
+			if not root.Parent or humanoid.Health <= 0 or player.Character ~= character then
+				return
+			end
 		end
-		if dealt > 0 and humanoid.Health > 0 then
-			humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + dealt * weapon.overcharged.lifesteal * StatusConfig.HealMultiplier(character))
+		local box = CFrame.lookAt(root.Position, root.Position + direction) * CFrame.new(0, 0, -weapon.hitboxForward)
+		local firstRoot
+		for _, part in ipairs(workspace:GetPartBoundsInBox(box, weapon.hitboxSize, overlap)) do
+			local model = part:FindFirstAncestorOfClass("Model")
+			local target = model and model:FindFirstChildOfClass("Humanoid")
+			if target and not hit[target] and target.Health > 0 then
+				hit[target] = true
+				firstRoot = firstRoot or target.RootPart
+				if weapon.hitEffect and target.RootPart then
+					-- its own look (Photoshop's camera flash), on the side the hit struck
+					skillEffects:FireAllClients(weapon.hitEffect, target.RootPart.Position - direction * 0.8, finisher)
+				elseif slashColor and target.RootPart then
+					skillEffects:FireAllClients("Slash", target.RootPart.Position, direction, finisher, slashColor)
+				elseif punchColor and target.RootPart then
+					-- on the side of the body the fist struck
+					skillEffects:FireAllClients("FistHit", target.RootPart.Position - direction * 0.8, direction, finisher, punchColor)
+				end
+				-- someone the set's Z pulled in takes extra from the finisher
+				local links = weapon.skillSet and SkillSetConfig.Sets[weapon.skillSet].links
+				local hitDamage = damage
+				if finisher and links and Damage.ConsumeExposed(player, model) then
+					hitDamage *= 1 + links.exposedFinisherBonus
+					Quests.Report(player, weapon.skillSet, "ExposedFinisher")
+				end
+				local landed = Damage.Deal(player, target, hitDamage, options)
+				heal(landed)
+				if not Players:GetPlayerFromCharacter(model) then
+					stagger(model)
+				end
+				-- a hit a passive erased or let pass through doesn't throw them either
+				if finisher and landed > 0 and target.RootPart and not target.RootPart.Anchored and canThrow(player, model) and CrowdControl.CanControl(model) then
+					knockBack(target.RootPart, direction)
+					CrowdControl.Apply(model, CONFIG.KnockbackTime)
+				end
+			end
+		end
+		-- the overcharged finisher's spikes burst round the first target it hits, once
+		if overcharged and finisher and firstRoot and not spiked then
+			spiked = true
+			heal(spikeBurst(player, character, firstRoot.Position, weapon))
 		end
 	end
 end
 
--- The client says which hit of the combo it threw. The server only lets it
--- carry on a combo the server saw too, so a finisher always needs the hits
--- before it.
-punchEvent.OnServerEvent:Connect(function(player, index)
+-- The client says which hit of the combo it threw, and the direction it aimed
+-- it. The server only lets it carry on a combo the server saw too, so a
+-- finisher always needs the hits before it.
+punchEvent.OnServerEvent:Connect(function(player, index, aim)
 	if typeof(index) ~= "number" or index ~= index then
 		return
 	end
@@ -331,7 +345,19 @@ punchEvent.OnServerEvent:Connect(function(player, index)
 	elseif weaponName == "Fists" then
 		showFistTrails(character, weapon.hits[hitIndex].length)
 	end
-	task.delay(weapon.hits[hitIndex].impact, land, player, character, weapon, hitIndex == PunchConfig.ComboLength)
+	-- the swing goes where the client aimed it (flat), else the way they face
+	local root = humanoid.RootPart
+	local direction = root and root.CFrame.LookVector * Vector3.new(1, 0, 1) or Vector3.zAxis
+	if typeof(aim) == "Vector3" and aim.X == aim.X and aim.Y == aim.Y and aim.Z == aim.Z then
+		local flat = Vector3.new(aim.X, 0, aim.Z)
+		if flat.Magnitude > 0.01 and flat.Magnitude < 1e5 then
+			direction = flat.Unit
+		end
+	end
+	if direction.Magnitude < 0.01 then
+		direction = Vector3.zAxis
+	end
+	task.delay(weapon.hits[hitIndex].impact, land, player, character, weapon, hitIndex == PunchConfig.ComboLength, direction.Unit)
 end)
 
 Players.PlayerRemoving:Connect(function(player)

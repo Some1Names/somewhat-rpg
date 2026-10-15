@@ -2,7 +2,8 @@
 -- while Mandela is equipped. Hits chain into a combo whose last hit is a
 -- critical that knocks the target back. The PunchCombat server script
 -- decides what each hit lands on; this script handles input and plays the
--- attack animations, plus the weapon's hold pose while it's equipped. Left
+-- attack animations (turning the character to face where the camera looks),
+-- plus the weapon's hold pose while it's equipped. Left
 -- click is left to the Ranged script while it has the RangedReady attribute
 -- set (a ranged move readied with right click, or a gun in hand).
 local Players = game:GetService("Players")
@@ -86,6 +87,18 @@ local function updateHold(humanoid, weapon)
 	holdTrack = wanted
 end
 
+-- The swing goes where the camera looks (flat), so a punch lands on what the
+-- player is aiming at even when the body faces another way; the way the body
+-- faces if the camera looks straight up or down.
+local function aimDirection(root)
+	local look = workspace.CurrentCamera.CFrame.LookVector
+	local flat = Vector3.new(look.X, 0, look.Z)
+	if flat.Magnitude < 0.05 then
+		flat = Vector3.new(root.CFrame.LookVector.X, 0, root.CFrame.LookVector.Z)
+	end
+	return flat.Magnitude > 0.01 and flat.Unit or Vector3.zAxis
+end
+
 local function tryAttack()
 	local character = player.Character
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -120,8 +133,14 @@ local function tryAttack()
 		count = 1
 	end
 	lastHitAt = now
+	-- turn the body into the swing, so what is drawn matches what is hit
+	local root = humanoid.RootPart
+	local direction = root and aimDirection(root) or Vector3.zAxis
+	if root then
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + direction)
+	end
 	playHit(humanoid, weapon, count)
-	punchEvent:FireServer(count)
+	punchEvent:FireServer(count, direction)
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
