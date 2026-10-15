@@ -129,7 +129,7 @@ function PhotoTeleport.Recast(player, character)
 			skillEffects:FireAllClients("PhotoPaste", photo.id, target, from, photo.point)
 			endPhoto(player, photo)
 			burst(player, character, photo.point)
-			Quests.Report(player, "Photoshop", "CutPaste")
+				Quests.Report(player, "Photoshop", "CutPaste")
 			return
 		end
 	end

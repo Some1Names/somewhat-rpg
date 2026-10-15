@@ -432,20 +432,6 @@
   "enabled": true
  },
  {
-  "file": "src/ServerScriptService/SpawnServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "SpawnServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
   "file": "src/ServerScriptService/SkyLight.luau",
   "names": [
    "ServerScriptService",
@@ -474,6 +460,112 @@
   "names": [
    "ServerScriptService",
    "QuestServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Reforge.luau",
+  "names": [
+   "ServerScriptService",
+   "Reforge"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/ReforgeServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "ReforgeServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Powers.luau",
+  "names": [
+   "ServerScriptService",
+   "Powers"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PowerSources.server.luau",
+  "names": [
+   "ServerScriptService",
+   "PowerSources"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/SpawnServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SpawnServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Drops.luau",
+  "names": [
+   "ServerScriptService",
+   "Drops"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/DropsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "DropsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/UpdateNotesServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "UpdateNotesServer"
   ],
   "classes": [
    "ServerScriptService",
@@ -806,30 +898,16 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerScriptService/Reforge.luau",
+  "file": "src/ServerScriptService/CombatState.luau",
   "names": [
    "ServerScriptService",
-   "Reforge"
+   "CombatState"
   ],
   "classes": [
    "ServerScriptService",
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/ReforgeServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "ReforgeServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/StarterPlayer/StarterPlayerScripts/HitFeedback.client.luau",
@@ -1338,22 +1416,6 @@
   "enabled": true
  },
  {
-  "file": "src/StarterPlayer/StarterPlayerScripts/SpawnNotice.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "SpawnNotice"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
   "file": "src/StarterPlayer/StarterPlayerScripts/QuestBoard.client.luau",
   "names": [
    "StarterPlayer",
@@ -1453,6 +1515,148 @@
    "StarterPlayer",
    "StarterPlayerScripts",
    "ReforgeMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Gacha.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Gacha"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/BriefcaseUse.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "BriefcaseUse"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SpawnNotice.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SpawnNotice"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/DropClient.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "DropClient"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/UpdateNotes.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "UpdateNotes"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Hub.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Hub"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/HubPose.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "HubPose"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/HubProfile.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "HubProfile"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/CombatTimer.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "CombatTimer"
   ],
   "classes": [
    "StarterPlayer",
@@ -1724,22 +1928,6 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
-  "names": [
-   "ServerStorage",
-   "BlackHoleTemplate",
-   "ClientEffect"
-  ],
-  "classes": [
-   "ServerStorage",
-   "Model",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Client",
-  "enabled": true
- },
- {
   "file": "src/ReplicatedStorage/PowerConfig.luau",
   "names": [
    "ReplicatedStorage",
@@ -1750,64 +1938,6 @@
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/Powers.luau",
-  "names": [
-   "ServerScriptService",
-   "Powers"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/PowerSources.server.luau",
-  "names": [
-   "ServerScriptService",
-   "PowerSources"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Gacha.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Gacha"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/BriefcaseUse.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "BriefcaseUse"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/ReplicatedStorage/DropConfig.luau",
@@ -1822,46 +1952,16 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerScriptService/Drops.luau",
+  "file": "src/ReplicatedStorage/UpdateNotes.luau",
   "names": [
-   "ServerScriptService",
-   "Drops"
+   "ReplicatedStorage",
+   "UpdateNotes"
   ],
   "classes": [
-   "ServerScriptService",
+   "ReplicatedStorage",
    "ModuleScript"
   ],
   "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/DropsServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "DropsServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/DropClient.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "DropClient"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
  },
  {
   "file": "src/ReplicatedStorage/HubPoses.luau",
@@ -1888,56 +1988,10 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Hub.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Hub"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/HubPose.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "HubPose"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/HubProfile.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "HubProfile"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/ReplicatedStorage/UpdateNotes.luau",
+  "file": "src/ReplicatedStorage/CombatRules.luau",
   "names": [
    "ReplicatedStorage",
-   "UpdateNotes"
+   "CombatRules"
   ],
   "classes": [
    "ReplicatedStorage",
@@ -1946,33 +2000,19 @@
   "class": "ModuleScript"
  },
  {
-  "file": "src/ServerScriptService/UpdateNotesServer.server.luau",
+  "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
   "names": [
-   "ServerScriptService",
-   "UpdateNotesServer"
+   "ServerStorage",
+   "BlackHoleTemplate",
+   "ClientEffect"
   ],
   "classes": [
-   "ServerScriptService",
+   "ServerStorage",
+   "Model",
    "Script"
   ],
   "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/UpdateNotes.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "UpdateNotes"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
+  "runContext": "Client",
   "enabled": true
  }
 ]
