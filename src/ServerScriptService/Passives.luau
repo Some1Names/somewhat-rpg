@@ -5,7 +5,8 @@
 -- Photoshop's edits (ResistEdit). Iridescent Requiem's Luminance:
 -- physical hits (melee and weapons) are cut in proportion to the light held
 -- (see LuminanceServer), and pass straight through him in Prism Form, where
--- an enemy's hit trains the set's mastery as dealing one would. Every hit on
+-- an enemy's hit trains the set's mastery as dealing one would. Aido's
+-- Half-Life: in Final Cut all damage taken is cut. Every hit on
 -- a player goes through Passives.Absorb first: Damage.Deal for players'
 -- attacks, EnemyAI for enemies' swings.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -35,6 +36,15 @@ function behaviours.Luminance(player, character, setName, set, amount, physical,
 	end
 	local luminance = player:GetAttribute(SkillSetConfig.LuminanceAttribute(setName)) or 0
 	return amount * (1 - set.passive.physicalReduction * luminance)
+end
+
+-- Aido's Half-Life: in Final Cut every hit on him is cut by the form's
+-- damageReduction, physical or not (his Fallout and Burnt bonus are in AidoUtil)
+behaviours["Half-Life"] = function(player, character, setName, set, amount)
+	if SkillSetConfig.InForm(character, setName) then
+		return amount * (1 - set.form.damageReduction)
+	end
+	return amount
 end
 
 -- Misremembered, if it's ready: it goes off (recharging) and returns true
