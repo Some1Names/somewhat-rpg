@@ -38,7 +38,7 @@ local STATUS_OPTIONS = { stat = "Superliminal", skillSet = "Photoshop", duration
 local function lightBound(model)
 	local _, setName = SkillSetConfig.Equipped(model)
 	local set = setName and SkillSetConfig.Sets[setName]
-	return set ~= nil and (set.flight ~= nil or set.form ~= nil or (set.passive ~= nil and set.passive.name == "Luminance"))
+	return set ~= nil and (set.flight ~= nil or (set.form ~= nil and set.form.minimumToStart ~= nil) or (set.passive ~= nil and set.passive.name == "Luminance"))
 end
 
 local function run(id, player, character, humanoid, center)
