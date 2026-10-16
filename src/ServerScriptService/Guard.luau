@@ -81,7 +81,7 @@ end
 -- straight through. `source` is where the hit comes from (nil counts as the
 -- front) and `attacker` the model that made it. Never deals damage itself.
 function Guard.Resolve(target, amount, kind, source, attacker)
-	if kind == nil or amount <= 0 or target:GetAttribute("Blocking") ~= true then
+	if not GuardConfig.Enabled or kind == nil or amount <= 0 or target:GetAttribute("Blocking") ~= true then
 		return amount
 	end
 	local root = target:FindFirstChild("HumanoidRootPart")
@@ -127,6 +127,9 @@ blockRemote.OnServerEvent:Connect(function(player, down)
 	if not down then
 		-- letting go is always taken, so a block can never get stuck on
 		setBlocking(character, false)
+		return
+	end
+	if not GuardConfig.Enabled then
 		return
 	end
 	local now = os.clock()

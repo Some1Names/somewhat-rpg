@@ -14,6 +14,8 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
+local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
 local HeadhunterConfig = require(ReplicatedStorage:WaitForChild("HeadhunterConfig"))
 local KillRecords = require(script.Parent:WaitForChild("KillRecords"))
@@ -25,6 +27,7 @@ local Reforge = require(script.Parent:WaitForChild("Reforge"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
+local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 
 local Damage = {}
 
@@ -71,7 +74,8 @@ local function payOutOnDeath(humanoid)
 			local level = character:GetAttribute("Level")
 			local rewardXP = character:GetAttribute("XPReward") or (level and StatConfig.EnemyXP(level)) or StatConfig.KillXP
 			PlayerStats.AddXP(killer, rewardXP)
-			PlayerStats.AddYen(killer, character:GetAttribute("YenReward") or (level and StatConfig.EnemyYen(level)) or StatConfig.KillYen)
+			local rewardYen = character:GetAttribute("YenReward") or (level and StatConfig.EnemyYen(level)) or StatConfig.KillYen
+			PlayerStats.AddYen(killer, math.floor(rewardYen * TalismanConfig.YenMultiplier(killer:GetAttribute(TalismanConfig.EquippedAttribute))))
 			-- finishing it is worth mastery to the set of the killing hit (a training
 			-- dummy only up to mastery DummyCap); none for a bare-handed kill
 			if hit and hit.skillSet then
@@ -148,6 +152,12 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	if not options.dot then
 		Guard.MarkCombat(attacker and attacker.Character)
 		Guard.MarkCombat(targetPlayer and humanoid.Parent)
+		-- fighting another player (not an enemy or a dummy) is what keeps you out of the shops
+		if attacker and attacker.Character and targetPlayer and targetPlayer ~= attacker then
+			local now = workspace:GetServerTimeNow()
+			attacker.Character:SetAttribute(CombatRules.PvPAttribute, now)
+			humanoid.Parent:SetAttribute(CombatRules.PvPAttribute, now)
+		end
 	end
 	local amount = baseAmount
 	if attacker and options.stat then
@@ -165,7 +175,24 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	if attacker and attacker.Character then
 		amount *= StatusConfig.OutgoingMultiplier(attacker.Character)
 	end
+	-- Overclock Chip: harder hits while it runs, then a crash where the user takes more
+	if attacker and attacker.Character and not options.dot then
+		amount *= ConsumableConfig.OutgoingMultiplier(attacker.Character:GetAttribute("OverclockUntil"), workspace:GetServerTimeNow())
+	end
+	-- a worn Glass Charm hits harder
+	if attacker and not options.dot then
+		amount *= TalismanConfig.OutgoingMultiplier(attacker:GetAttribute(TalismanConfig.EquippedAttribute))
+	end
 	if targetPlayer then
+		-- a worn Bulwark Talisman cuts what they take
+		if not options.dot then
+			amount *= TalismanConfig.IncomingMultiplier(targetPlayer:GetAttribute(TalismanConfig.EquippedAttribute))
+		end
+		amount *= ConsumableConfig.IncomingMultiplier(
+			humanoid.Parent:GetAttribute("OverclockUntil"),
+			humanoid.Parent:GetAttribute("CrashUntil"),
+			workspace:GetServerTimeNow()
+		)
 		-- a block cuts it first
 		if not options.dot then
 			local kind = options.guard or (options.melee and "melee" or "skill")

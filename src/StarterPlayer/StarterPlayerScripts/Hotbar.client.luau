@@ -14,6 +14,7 @@ local StarterGui = game:GetService("StarterGui")
 local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
+local HotbarRules = require(ReplicatedStorage:WaitForChild("HotbarRules"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -111,25 +112,33 @@ local function ownedTools()
 end
 
 -- the grid's tools (not a power or weapon set), in the order they first showed up, so slots don't shuffle
+local seen = {}
+-- slot -> tool: a Tool with a HotbarSlot attribute (the Backpack's EQUIP) keeps that slot, the rest fill the
+-- empty ones in the order they came (HotbarRules); there can be gaps
 local order = {}
 local function refreshOrder(owned)
 	local others = {}
 	for _, tool in ipairs(owned) do
 		local _, set = setOf(tool)
-		if not (set and (set.kind == "power" or set.kind == "weapon")) then
+		if HotbarRules.InGrid(set and set.kind) then
 			table.insert(others, tool)
 		end
 	end
-	for i = #order, 1, -1 do
-		if not table.find(others, order[i]) then
-			table.remove(order, i)
+	for i = #seen, 1, -1 do
+		if not table.find(others, seen[i]) then
+			table.remove(seen, i)
 		end
 	end
 	for _, tool in ipairs(others) do
-		if not table.find(order, tool) and #order < GRID_SLOTS then
-			table.insert(order, tool)
+		if not table.find(seen, tool) and #seen < GRID_SLOTS then
+			table.insert(seen, tool)
 		end
 	end
+	local entries = {}
+	for _, tool in ipairs(seen) do
+		table.insert(entries, { id = tool, slot = tool:GetAttribute(HotbarRules.Attribute) })
+	end
+	order = HotbarRules.Layout(entries, GRID_SLOTS)
 end
 
 -- equips the tool, or puts it away if it's in hand

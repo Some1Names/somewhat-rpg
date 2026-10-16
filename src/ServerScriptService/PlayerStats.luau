@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
@@ -20,6 +21,7 @@ local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
+local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
 local masteryEvent = ReplicatedStorage:WaitForChild("MasteryUp")
 local progressEvent = ReplicatedStorage:WaitForChild("Progress")
@@ -61,12 +63,19 @@ local TEXT_DEFAULTS = {
 	CurrentPower = "", -- the one power the player holds (PowerConfig, Powers)
 	PowerStorage = "", -- the spare powers in storage, comma separated (Powers)
 	LifetimePowers = "", -- powers bought with Robux, comma separated (Powers)
+	ConsumableStorage = "", -- consumables kept stored in the Backpack, "NanoSyringe:5,RiftSuture:-" (ConsumableConfig, Consumables)
 	SpawnPoint = "", -- where the player respawns, "x,y,z" set by a Spawn Keeper (SpawnServer)
 	SeenUpdate = "", -- the last update's version whose What's new modal the player saw (UpdateNotes, UpdateNotesServer)
+	TalismanOwned = "", -- the talismans the player owns, comma separated (TalismanConfig, Talismans)
+	TalismanEquipped = "", -- the ones they wear, comma separated (TalismanConfig, Talismans)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
-local TEXT_LENGTHS = { Challenges = QuestConfig.MaxSaveLength, Reforge = ReforgeConfig.MaxSaveLength }
+local TEXT_LENGTHS = {
+	Challenges = QuestConfig.MaxSaveLength,
+	Reforge = ReforgeConfig.MaxSaveLength,
+	ConsumableStorage = ConsumableConfig.MaxSaveLength,
+}
 
 local PlayerStats = {}
 
@@ -93,10 +102,18 @@ local function applyHealth(player, refill)
 	if not humanoid or not vitality or humanoid.Health <= 0 then
 		return
 	end
-	local maxHealth = StatConfig.MaxHealth(vitality)
+	local maxHealth = math.max(
+		math.floor(StatConfig.MaxHealth(vitality) * TalismanConfig.HealthMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute)) + 0.5),
+		1
+	)
 	local missing = humanoid.MaxHealth - humanoid.Health
 	humanoid.MaxHealth = maxHealth
 	humanoid.Health = refill and maxHealth or math.clamp(maxHealth - missing, 1, maxHealth)
+end
+
+-- max HP again (a worn talisman changed); the missing health stays missing
+function PlayerStats.RefreshHealth(player)
+	applyHealth(player, false)
 end
 
 local function spentPoints(player)
@@ -403,7 +420,7 @@ function PlayerStats.ResetProgress(player)
 	end
 	player:SetAttribute("Challenges", TEXT_DEFAULTS.Challenges)
 	player:SetAttribute("Reforge", TEXT_DEFAULTS.Reforge)
-	for _, field in ipairs({ "CurrentPower", "PowerStorage", "LifetimePowers" }) do
+	for _, field in ipairs({ "CurrentPower", "PowerStorage", "LifetimePowers", "ConsumableStorage" }) do
 		player:SetAttribute(field, TEXT_DEFAULTS[field])
 	end
 	updatePoints(player)

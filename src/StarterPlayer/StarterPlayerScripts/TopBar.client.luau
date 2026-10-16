@@ -87,6 +87,7 @@ make("UIListLayout", {
 
 -- bottom left, above the cards: the yen
 local cluster = make("Frame", {
+	Name = "YenCluster", -- HudSway sways it
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap)),

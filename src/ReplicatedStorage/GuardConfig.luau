@@ -10,6 +10,9 @@
 local Vector3 = Vector3 or require("@lune/roblox").Vector3
 
 local GuardConfig = {
+	-- Block is switched off for now (too much). Everything stays in place: set this back
+	-- to true and the key, the cuts, posture, the HUD bars and the hint all come back.
+	Enabled = false,
 	-- share of the damage a block cuts, by the hit's `options.guard` kind
 	Cuts = { melee = 0.6, ranged = 0.5, skill = 0.3, unblockable = 0 },
 	MaxPosture = 100,

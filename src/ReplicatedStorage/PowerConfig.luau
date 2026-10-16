@@ -38,11 +38,27 @@ PowerConfig.DealerRange = 14 -- studs from a Power Dealer (a Shop tagged model r
 PowerConfig.DeathDropTime = 60 -- seconds a dropped briefcase waits to be picked up
 PowerConfig.DeathPickupDelay = 1 -- seconds before the dead player's new character can grab theirs
 PowerConfig.BriefcaseAttribute = "PowerBriefcase" -- on a briefcase Tool: the set inside
+PowerConfig.BriefcaseStorageAttribute = "BriefcaseStorage" -- on the player: the briefcases kept in the Backpack (comma separated, not saved)
+PowerConfig.BriefcaseStorageLimit = 30 -- most briefcases kept in storage
 
 -- Developer Product ids for lifetime copies, { [setName] = productId }. The
 -- owner creates the products (Creator Dashboard -> Developer Products); a
 -- power with no entry has no Robux button.
 PowerConfig.RobuxProducts = {}
+
+-- A lifetime copy's price in Robux, by tier. These numbers are made up (a placeholder
+-- so the shop can show them); the owner sets the real prices with the products.
+PowerConfig.RobuxTierPrice = { S = 1500, A = 800, B = 400, C = 150 }
+
+-- the lifetime copy's price in Robux for a power of this tier (a power's Overrides entry
+-- can set its own `robuxPrice`); nil when there is none
+function PowerConfig.robuxPrice(setName, tier)
+	local override = PowerConfig.Overrides[setName]
+	if override and override.robuxPrice then
+		return override.robuxPrice
+	end
+	return PowerConfig.RobuxTierPrice[tier]
+end
 
 -- the dealer's price in yen for a power of this tier; nil = not for sale
 function PowerConfig.price(setName, tier)

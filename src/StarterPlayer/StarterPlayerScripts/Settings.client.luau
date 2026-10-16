@@ -15,6 +15,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
@@ -243,6 +244,9 @@ local function startCapture(id)
 end
 
 for _, action in ipairs(Keybinds.Actions) do
+	if action.id == "Block" and not GuardConfig.Enabled then
+		continue
+	end
 	local row = section(ROW_HEIGHT)
 	label(row, { Text = action.label, TextSize = 12, Size = UDim2.new(1, -KEY_WIDTH - 8, 1, 0) })
 	local keyButton = button(row, {

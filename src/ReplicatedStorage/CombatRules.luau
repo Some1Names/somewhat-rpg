@@ -6,7 +6,11 @@
 -- dealt or took damage, server time); OutOfCombatTime seconds after it they
 -- are out of combat, and the last CountdownTime of those are counted down on
 -- screen.
+-- The shops only count fighting other players: PvPAttribute on the character
+-- is the last time they dealt or took damage with another player (not an
+-- enemy or dummy), set by Damage.Deal, and the same 30 s apply.
 local CombatRules = {
+	PvPAttribute = "PvPCombatAt",
 	OutOfCombatTime = 30, -- seconds without dealing or taking damage
 	CountdownTime = 10, -- the last seconds of it that are shown
 	MaxMarks = 2, -- people one caster can have marked at a time

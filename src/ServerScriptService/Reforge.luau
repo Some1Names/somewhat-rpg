@@ -1,12 +1,10 @@
--- Reforge on the server: each player's reforge level and modifiers per skill
--- set, kept as the saved text attribute "Reforge" (ReforgeRules has the
--- format) and mirrored as Reforge_<Set> attributes for the client. The
--- actions (level up, reroll, keep or discard a reroll) check everything and
--- spend materials and yen; ReforgeServer calls them for the smith's menu.
--- Damage and SkillSetServer read the bonuses through the getters below, which
--- return a neutral value for anyone with nothing reforged.
--- A reroll is paid when it's rolled and waits as a candidate: Resolve keeps
--- it or drops it. Candidates live only in memory.
+-- Reforge on the server: each player's reforge level, chosen affinities and
+-- awakening per skill set, kept as the saved text attribute "Reforge"
+-- (ReforgeRules has the format) and mirrored as Reforge_<Set> attributes for
+-- the client. The actions (level up, choose an affinity, awaken a power) check
+-- everything and spend materials and yen; ReforgeServer calls them for the
+-- smith's menu. Damage and SkillSetServer read the bonuses through the
+-- getters below, which return a neutral value for anyone with nothing reforged.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -18,7 +16,6 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local Reforge = {}
 
 local decoded = setmetatable({}, { __mode = "k" }) -- player -> { text, states }
-local pending = setmetatable({}, { __mode = "k" }) -- player -> { [set] = candidate }
 
 local function isSet(name)
 	return SkillSetConfig.Sets[name] ~= nil
@@ -144,7 +141,7 @@ function Reforge.LevelUp(player, setName)
 	if not can then
 		return false, costOrReason
 	end
-	local nextState = { level = state.level + 1, mods = table.clone(state.mods) }
+	local nextState = { level = state.level + 1, mods = table.clone(state.mods), awakening = state.awakening }
 	-- (checked before spending: a refusal costs nothing)
 	local text = textWith(player, setName, nextState)
 	if not text then
@@ -157,66 +154,52 @@ function Reforge.LevelUp(player, setName)
 	return true, string.format("%s is now level %d", setName, nextState.level)
 end
 
--- pays for a reroll of one slot and holds the new roll as a candidate;
--- returns ok, message, { slot, old, new }
-function Reforge.Reroll(player, setName, slot)
+-- puts an affinity in one slot (paid for: the cost of that slot, even when the slot was empty)
+function Reforge.Choose(player, setName, slot, id)
 	local ok, reason = checkTarget(player, setName)
 	if not ok then
 		return false, reason
 	end
 	local state = Reforge.Get(player, setName)
-	local can, costOrReason = ReforgeRules.PlanReroll(state, slot, bagOf(player), player:GetAttribute("Yen"))
+	local can, costOrReason = ReforgeRules.PlanChoose(state, slot, id, bagOf(player), player:GetAttribute("Yen"))
 	if not can then
 		return false, costOrReason
+	end
+	local mods = table.clone(state.mods)
+	mods[slot] = { id = id }
+	local text = textWith(player, setName, { level = state.level, mods = mods, awakening = state.awakening })
+	if not text then
+		return false, "Too many reforged sets to save"
 	end
 	if not spend(player, costOrReason) then
 		return false, "Still loading"
 	end
-	local taken = {}
-	for otherSlot, mod in pairs(state.mods) do
-		if otherSlot ~= slot then
-			taken[mod.id] = true
-		end
-	end
-	local candidate = { slot = slot, old = state.mods[slot], new = ReforgeRules.Roll(math.random, taken) }
-	pending[player] = pending[player] or {}
-	pending[player][setName] = candidate
-	return true, "Rolled", candidate
+	player:SetAttribute(ReforgeConfig.Attribute, text)
+	return true, string.format("%s: %s in slot %d", setName, id, slot)
 end
 
--- the candidate waiting for the set, if any
-function Reforge.Pending(player, setName)
-	return pending[player] and pending[player][setName]
-end
-
--- keeps or drops the set's waiting candidate
-function Reforge.Resolve(player, setName, keep)
-	if typeof(setName) ~= "string" or typeof(keep) ~= "boolean" then
-		return false, "Bad request"
+-- one more awakening stage for a power at the top level
+function Reforge.Awaken(player, setName)
+	local ok, reason = checkTarget(player, setName)
+	if not ok then
+		return false, reason
 	end
-	local candidate = Reforge.Pending(player, setName)
-	if not candidate then
-		return false, "Nothing to keep"
-	end
-	if not keep then
-		pending[player][setName] = nil
-		return true, "Kept your old roll"
-	end
-	-- (a refused keep leaves the paid roll waiting, except one that can never apply)
 	local state = Reforge.Get(player, setName)
-	if candidate.slot > ReforgeRules.SlotsUnlocked(state.level) then
-		pending[player][setName] = nil
-		return false, "That slot is locked"
+	local isPower = SkillSetConfig.Sets[setName].kind == "power"
+	local can, costOrReason = ReforgeRules.PlanAwaken(state, isPower, bagOf(player), player:GetAttribute("Yen"))
+	if not can then
+		return false, costOrReason
 	end
-	local mods = table.clone(state.mods)
-	mods[candidate.slot] = candidate.new
-	local text = textWith(player, setName, { level = state.level, mods = mods })
+	local nextState = { level = state.level, mods = table.clone(state.mods), awakening = state.awakening + 1 }
+	local text = textWith(player, setName, nextState)
 	if not text then
 		return false, "Too many reforged sets to save"
 	end
-	pending[player][setName] = nil
+	if not spend(player, costOrReason) then
+		return false, "Still loading"
+	end
 	player:SetAttribute(ReforgeConfig.Attribute, text)
-	return true, "New roll kept"
+	return true, string.format("%s awakened to stage %d", setName, nextState.awakening)
 end
 
 return Reforge

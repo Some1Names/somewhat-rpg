@@ -13,6 +13,7 @@
 -- it can be bought again and again (the briefcase goes to the buyer's
 -- hotbar, see Powers), nothing is owned or saved, and its price comes from
 -- PowerConfig by the set's tier.
+local ConsumableConfig = require(script.Parent:WaitForChild("ConsumableConfig"))
 local PowerConfig = require(script.Parent:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(script.Parent:WaitForChild("SkillSetConfig"))
 
@@ -27,6 +28,7 @@ ShopConfig.DefaultShop = "General"
 ShopConfig.Shops = {
 	General = { title = "SHOP", color = Color3.fromRGB(255, 205, 60) },
 	Powers = { title = "POWERS", color = Color3.fromRGB(175, 90, 255) },
+	Supplies = { title = "SUPPLIES", color = Color3.fromRGB(60, 224, 230) },
 }
 
 -- in the order the menu lists them
@@ -135,6 +137,23 @@ ShopConfig.Items = {
 	},
 }
 
+-- the Supplies shopkeeper: every consumable (ConsumableConfig). A limited one
+-- is a `stack` item: it can be bought again and again, the Tool goes to the
+-- buyer's hotbar (Consumables) and nothing is owned or saved. A lifetime one
+-- is owned for good like any other item and the server hands the Tool over.
+for _, consumable in ipairs(ConsumableConfig.Items) do
+	table.insert(ShopConfig.Items, {
+		id = ConsumableConfig.ShopId(consumable),
+		name = consumable.name,
+		shop = "Supplies",
+		price = consumable.price,
+		consumable = consumable.key,
+		uses = ConsumableConfig.UsesText(consumable),
+		stack = consumable.kind == "limited",
+		description = consumable.description,
+	})
+end
+
 -- a briefcase item's yen price: its set's tier price (nil if the dealer doesn't sell it)
 for _, item in ipairs(ShopConfig.Items) do
 	if item.briefcase then
@@ -171,7 +190,7 @@ end
 
 -- whether buying the item gives the player something to own (and save)
 function ShopConfig.Ownable(item)
-	return not item.service and not item.starter and not item.comingSoon and not item.briefcase
+	return not item.service and not item.starter and not item.comingSoon and not item.briefcase and not item.stack
 end
 
 return ShopConfig

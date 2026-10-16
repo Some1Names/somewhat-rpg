@@ -8,17 +8,28 @@
 -- go through the PowerAction remote (Powers), and one that would lose a power
 -- asks CONFIRM first. Weapons come from the OwnedSets attribute the server
 -- keeps; equipping goes through the EquipSet remote, which checks ownership
--- (see Loadout).
+-- (see Loadout). The ITEMS tab (and ALL) also lists consumables: the Tools
+-- equipped on the hotbar and the stacks stored in the Backpack (the saved
+-- ConsumableStorage attribute); USE, STORE and EQUIP go through the
+-- ConsumableAction remote (Consumables). Power briefcases are items too: equipped on the
+-- hotbar or stored in the Backpack (the BriefcaseStorage attribute), with the power buttons
+-- plus EQUIP / UNEQUIP (the PowerAction remote). EQUIP asks which free hotbar slot (4 to 9)
+-- to use. The ALL tab groups the cards under POWERS, WEAPONS and ITEMS headers.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local HotbarRules = require(ReplicatedStorage:WaitForChild("HotbarRules"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local HubRules = require(ReplicatedStorage:WaitForChild("HubRules"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
+local talismanRemote = ReplicatedStorage:WaitForChild("TalismanAction")
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
+local itemRemote = ReplicatedStorage:WaitForChild("ConsumableAction")
 local powerAction = ReplicatedStorage:WaitForChild("PowerAction")
 
 local player = Players.LocalPlayer
@@ -30,7 +41,7 @@ local LEFT_WIDTH = 250
 local RIGHT_WIDTH = 330
 local HEADING_HEIGHT = 24 -- a column's title row
 local CARD_SIZE = 96
-local SLOT_HEIGHT = 84
+local SLOT_HEIGHT = 66
 local SLOT_GAP = 8
 local MATERIAL_ROW = 18
 local BUTTON_HEIGHT = 32
@@ -47,11 +58,22 @@ local SLOTS = {
 	{ kind = "weapon", title = "WEAPON", attribute = "WeaponSet" },
 	{ kind = "melee", title = "MELEE", reserved = true },
 }
+-- the ALL tab's groups of cards, top to bottom
+local SECTIONS = {
+	{ kind = "power", title = "POWERS" },
+	{ kind = "weapon", title = "WEAPONS" },
+	{ kind = "item", title = "ITEMS" },
+	{ kind = "talisman", title = "TALISMANS" },
+}
 local TABS = {
 	{ kind = "all", title = "ALL" },
 	{ kind = "power", title = "POWER" },
 	{ kind = "weapon", title = "WEAPON" },
+	{ kind = "item", title = "ITEMS" },
+	{ kind = "talisman", title = "TALISMAN", width = 66 },
 }
+local TALISMAN_ROW = 24 -- a worn-talisman line in the EQUIPPED column
+local TALISMAN_GAP = 4
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -191,7 +213,25 @@ local slotList = make("Frame", {
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = slotList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
-local MATERIALS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + 6
+-- under the slots: one line per talisman slot (worn, empty or locked)
+local TALISMANS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + 6
+local TALISMANS_HEIGHT = 16 + #TalismanConfig.SlotLevels * (TALISMAN_ROW + TALISMAN_GAP)
+label(leftColumn, {
+	Text = "TALISMANS",
+	Font = Enum.Font.GothamBold,
+	TextSize = 12,
+	TextColor3 = MUTED,
+	Position = UDim2.fromOffset(0, TALISMANS_TOP),
+	Size = UDim2.new(1, 0, 0, 16),
+})
+local talismanList = make("Frame", {
+	Parent = leftColumn,
+	Position = UDim2.fromOffset(0, TALISMANS_TOP + 18),
+	Size = UDim2.new(1, 0, 0, TALISMANS_HEIGHT - 16),
+	BackgroundTransparency = 1,
+})
+make("UIListLayout", { Parent = talismanList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, TALISMAN_GAP) })
+local MATERIALS_TOP = TALISMANS_TOP + TALISMANS_HEIGHT + 4
 label(leftColumn, {
 	Text = "MATERIALS",
 	Font = Enum.Font.GothamBold,
@@ -225,14 +265,9 @@ local grid = scroller(middleColumn, {
 	Position = UDim2.fromOffset(0, HEADING_HEIGHT + 4),
 	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 4 + 18)), -- room under it for the briefcase warning
 })
-make("UIGridLayout", {
-	Parent = grid,
-	CellSize = UDim2.fromOffset(CARD_SIZE, CARD_SIZE),
-	CellPadding = UDim2.fromOffset(8, 8),
-	SortOrder = Enum.SortOrder.LayoutOrder,
-})
--- the grid's cells start just inside, so selected cards' thick outlines show
-make("UIPadding", { Parent = grid, PaddingTop = UDim.new(0, 3), PaddingLeft = UDim.new(0, 3) })
+-- the grid is a list of sections (a header and a grid of cards each; ALL has a section per kind of card)
+make("UIListLayout", { Parent = grid, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
+local cardParent = grid -- where makeCard puts the card it makes
 local emptyLabel = label(middleColumn, {
 	Text = "Nothing here yet",
 	TextSize = 12,
@@ -245,7 +280,7 @@ local emptyLabel = label(middleColumn, {
 -- right: the selected set's info, with its buttons at the bottom
 local details = scroller(rightColumn, {
 	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
-	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 2 * BUTTON_HEIGHT + 40)),
+	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 3 * BUTTON_HEIGHT + 52)),
 })
 make("UIListLayout", { Parent = details, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) })
 local message = label(rightColumn, {
@@ -255,7 +290,7 @@ local message = label(rightColumn, {
 	TextWrapped = true,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
 	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 0, 1, -(2 * BUTTON_HEIGHT + 10)),
+	Position = UDim2.new(0, 0, 1, -(3 * BUTTON_HEIGHT + 22)),
 	Size = UDim2.new(1, 0, 0, 28),
 })
 local function makeButton(offset)
@@ -275,10 +310,11 @@ local function makeButton(offset)
 end
 local equipButton, equipStroke = makeButton(0) -- the main action
 local altButton, altStroke = makeButton(BUTTON_HEIGHT + 6) -- a second one, for powers
+local hotbarButton, hotbarStroke = makeButton(2 * (BUTTON_HEIGHT + 6)) -- a briefcase's EQUIP / UNEQUIP
 
--- a note under the grid while briefcases are carried (they aren't saved)
+-- a note under the grid while you have briefcases (they aren't saved)
 local warning = label(middleColumn, {
-	Text = "Unstored briefcases are lost when you leave.",
+	Text = "Briefcases are lost when you leave.",
 	TextSize = 11,
 	TextColor3 = DANGER,
 	AnchorPoint = Vector2.new(0, 1),
@@ -291,7 +327,8 @@ local selected -- the selected card's key: a set name, or "briefcase:<set>"
 local tab = "all"
 local busy = false
 local pending -- { action, set }: a power action waiting for CONFIRM
-local primaryAction, altAction -- what the two buttons do now
+local pickingSlot = false -- EQUIP was pressed: the hotbar slots are shown to pick from
+local primaryAction, altAction, hotbarAction -- what the buttons do now
 local refresh -- defined below; cards and tabs call it
 
 local BRIEFCASE_PREFIX = "briefcase:"
@@ -313,17 +350,24 @@ local function isLifetime(setName)
 	return SkillSetConfig.OwnAllSets or table.find(powerList("LifetimePowers"), setName) ~= nil
 end
 
--- the power sets of the briefcases being carried
-local function carriedBriefcases()
-	local found, seen = {}, {}
+-- every briefcase the player has: the Tools equipped on the hotbar, then the ones in storage
+-- ({ setName, tool } or { setName, storedIndex })
+local function allBriefcases()
+	local found = {}
 	local backpack = player:FindFirstChildOfClass("Backpack")
 	for _, container in ipairs({ player.Character, backpack }) do
 		for _, tool in ipairs(container and container:GetChildren() or {}) do
 			local setName = tool:IsA("Tool") and tool:GetAttribute(PowerConfig.BriefcaseAttribute)
-			if setName and SkillSetConfig.Sets[setName] and not seen[setName] then
-				seen[setName] = true
-				table.insert(found, setName)
+			if setName and SkillSetConfig.Sets[setName] then
+				table.insert(found, { setName = setName, tool = tool, equipped = true })
 			end
+		end
+	end
+	local index = 0
+	for setName in string.gmatch(player:GetAttribute(PowerConfig.BriefcaseStorageAttribute) or "", "[^,]+") do
+		index += 1
+		if SkillSetConfig.Sets[setName] then
+			table.insert(found, { setName = setName, storedIndex = index })
 		end
 	end
 	return found
@@ -354,8 +398,29 @@ local function entries()
 			end
 		end
 	end
-	for _, setName in ipairs(carriedBriefcases()) do
-		table.insert(list, { setName = setName, key = BRIEFCASE_PREFIX .. setName, kind = "power", briefcase = true, rank = 4 })
+	for index, found in ipairs(allBriefcases()) do
+		table.insert(list, {
+			setName = found.setName,
+			key = BRIEFCASE_PREFIX .. index .. ":" .. found.setName,
+			kind = "power",
+			category = "item",
+			briefcase = true,
+			equipped = found.equipped,
+			tool = found.tool,
+			storedIndex = found.storedIndex,
+			rank = found.equipped and 6.5 or 7.5,
+		})
+	end
+	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
+	for _, key in ipairs(TalismanConfig.Parse(player:GetAttribute(TalismanConfig.OwnedAttribute))) do
+		table.insert(list, {
+			kind = "talisman",
+			talisman = TalismanConfig.Get(key),
+			key = "talisman:" .. key,
+			equipped = table.find(worn, key) ~= nil,
+			rank = 8,
+			order = TalismanConfig.Order(key),
+		})
 	end
 	local ownedList = player:GetAttribute(SkillSetConfig.OwnedSetsAttribute) or ""
 	for setName in string.gmatch(ownedList, "[^,]+") do
@@ -364,10 +429,44 @@ local function entries()
 			table.insert(list, { setName = setName, key = setName, kind = "weapon", held = carried("weapon") == setName, rank = 5 })
 		end
 	end
-	-- held first, then stored, lifetime, briefcases, weapons; best tier, then name
+	-- consumables: the Tools equipped on the hotbar, then the stacks stored in the Backpack
+	for _, container in ipairs({ player.Character, player:FindFirstChildOfClass("Backpack") }) do
+		for _, tool in ipairs(container and container:GetChildren() or {}) do
+			local key = tool:IsA("Tool") and tool:GetAttribute(ConsumableConfig.Attribute)
+			local item = key and ConsumableConfig.Get(key)
+			if item then
+				local stackId = tool:GetAttribute(ConsumableConfig.StackAttribute) or 0
+				table.insert(list, {
+					kind = "item",
+					item = item,
+					tool = tool,
+					uses = tool:GetAttribute(ConsumableConfig.UsesAttribute),
+					equipped = true,
+					key = "stack:" .. stackId,
+					rank = 6,
+					order = stackId,
+				})
+			end
+		end
+	end
+	for index, stack in ipairs(ConsumableConfig.ParseStorage(player:GetAttribute(ConsumableConfig.StorageAttribute))) do
+		table.insert(list, {
+			kind = "item",
+			item = ConsumableConfig.Get(stack.key),
+			uses = stack.uses,
+			storedIndex = index,
+			key = "stored:" .. index,
+			rank = 7,
+			order = index,
+		})
+	end
+	-- held first, then stored, lifetime, briefcases, weapons, items; best tier, then name
 	table.sort(list, function(a, b)
 		if a.rank ~= b.rank then
 			return a.rank < b.rank
+		end
+		if a.kind == "item" or a.kind == "talisman" then
+			return a.order < b.order
 		end
 		local tierA = TIER_ORDER[SkillSetConfig.Sets[a.setName].tier] or 99
 		local tierB = TIER_ORDER[SkillSetConfig.Sets[b.setName].tier] or 99
@@ -381,7 +480,7 @@ end
 
 local function tagText(entry)
 	if entry.briefcase then
-		return "BRIEFCASE"
+		return entry.equipped and "EQUIPPED" or nil
 	elseif entry.kind == "weapon" then
 		return entry.held and "EQUIPPED" or nil
 	end
@@ -390,7 +489,7 @@ end
 
 local function stateText(entry)
 	if entry.briefcase then
-		return "Briefcase"
+		return entry.equipped and "Briefcase · equipped" or "Briefcase · stored"
 	elseif entry.kind == "weapon" then
 		return entry.held and "Equipped" or "Owned"
 	end
@@ -421,17 +520,166 @@ end
 local function selectKey(key)
 	selected = key
 	pending = nil
+	pickingSlot = false
 	message.Text = ""
 	refresh()
 end
 
+-- consumables: orange when limited, cyan for a lifetime item
+local function itemColor(item)
+	return item.kind == "lifetime" and Color3.fromRGB(60, 224, 230) or Color3.fromRGB(255, 154, 60)
+end
+
+-- a card for an equipped or stored consumable
+local function makeItemCard(entry, index)
+	local item = entry.item
+	local isSelected = entry.key == selected
+	local color = itemColor(item)
+	local card = make("TextButton", {
+		Parent = cardParent,
+		LayoutOrder = index,
+		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
+		BackgroundTransparency = 0.2,
+		Text = "",
+	})
+	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
+	label(card, {
+		Text = item.kind == "limited" and string.format("%d/%d", entry.uses or 0, item.maxUses) or "LIFE",
+		Font = Enum.Font.GothamBlack,
+		TextSize = item.kind == "limited" and 20 or 15,
+		TextColor3 = onPaper(color),
+		Position = UDim2.fromOffset(8, 6),
+		Size = UDim2.fromOffset(44, 22),
+	})
+	-- only an equipped item is tagged; a stored one has no tag
+	if entry.equipped then
+		label(card, {
+			Text = "EQUIPPED",
+			Font = Enum.Font.GothamBold,
+			TextSize = 9,
+			TextColor3 = BACKGROUND,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = TEXT,
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -6, 0, 30),
+			Size = UDim2.fromOffset(64, 14),
+		})
+	end
+	label(card, {
+		Text = item.name,
+		Font = Enum.Font.GothamBold,
+		TextSize = 12,
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		Position = UDim2.new(0, 8, 1, -52),
+		Size = UDim2.new(1, -16, 0, 30),
+	})
+	label(card, {
+		Text = item.kind == "limited" and "Limited use" or "Lifetime",
+		TextSize = 10,
+		TextColor3 = MUTED,
+		Position = UDim2.new(0, 8, 1, -20),
+		Size = UDim2.new(1, -16, 0, 12),
+	})
+	make("Frame", {
+		Parent = card,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 4),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+	})
+	card.Activated:Connect(function()
+		selectKey(entry.key)
+	end)
+end
+
+local function talismanColor(talisman)
+	return Color3.fromRGB(table.unpack(talisman.color))
+end
+
+-- a card for an owned talisman
+local function makeTalismanCard(entry, index)
+	local talisman = entry.talisman
+	local isSelected = entry.key == selected
+	local color = talismanColor(talisman)
+	local card = make("TextButton", {
+		Parent = cardParent,
+		LayoutOrder = index,
+		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
+		BackgroundTransparency = 0.2,
+		Text = "",
+	})
+	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
+	-- a diamond-ish mark: the first letter in the talisman's colour
+	label(card, {
+		Text = string.sub(talisman.name, 1, 1),
+		Font = Enum.Font.GothamBlack,
+		TextSize = 24,
+		TextColor3 = onPaper(color),
+		Position = UDim2.fromOffset(8, 4),
+		Size = UDim2.fromOffset(30, 28),
+	})
+	if entry.equipped then
+		label(card, {
+			Text = "WORN",
+			Font = Enum.Font.GothamBold,
+			TextSize = 9,
+			TextColor3 = BACKGROUND,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = TEXT,
+			BorderSizePixel = 0,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -6, 0, 8),
+			Size = UDim2.fromOffset(44, 14),
+		})
+	end
+	label(card, {
+		Text = talisman.name,
+		Font = Enum.Font.GothamBold,
+		TextSize = 12,
+		TextWrapped = true,
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		Position = UDim2.new(0, 8, 1, -52),
+		Size = UDim2.new(1, -16, 0, 30),
+	})
+	label(card, {
+		Text = "Talisman",
+		TextSize = 10,
+		TextColor3 = MUTED,
+		Position = UDim2.new(0, 8, 1, -20),
+		Size = UDim2.new(1, -16, 0, 12),
+	})
+	make("Frame", {
+		Parent = card,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 4),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+	})
+	card.Activated:Connect(function()
+		selectKey(entry.key)
+	end)
+end
+
 -- a square card in the inventory grid
 local function makeCard(entry, index)
+	if entry.kind == "item" then
+		makeItemCard(entry, index)
+		return
+	elseif entry.kind == "talisman" then
+		makeTalismanCard(entry, index)
+		return
+	end
 	local setName = entry.setName
 	local set = SkillSetConfig.Sets[setName]
 	local isSelected = entry.key == selected
 	local card = make("TextButton", {
-		Parent = grid,
+		Parent = cardParent,
 		LayoutOrder = index,
 		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
 		BackgroundTransparency = 0.2,
@@ -550,7 +798,7 @@ local function makeSlot(slot, index)
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Top,
 		Position = UDim2.fromOffset(46, 24),
-		Size = UDim2.new(1, -54, 0, 32),
+		Size = UDim2.new(1, -54, 0, 20),
 	})
 	label(frame, {
 		Text = masteryText(setName),
@@ -565,12 +813,51 @@ local function makeSlot(slot, index)
 	end)
 end
 
+-- the EQUIPPED column's talisman lines: a worn one (click to select it), an empty
+-- slot, or a locked one with the level that opens it
+local function makeTalismanSlots()
+	clear(talismanList)
+	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
+	local open = TalismanConfig.Slots(player:GetAttribute("Level") or 0)
+	for i, at in ipairs(TalismanConfig.SlotLevels) do
+		local key = worn[i]
+		local talisman = key and TalismanConfig.Get(key)
+		local isSelected = talisman ~= nil and "talisman:" .. key == selected
+		local row = make(talisman and "TextButton" or "Frame", {
+			Parent = talismanList,
+			LayoutOrder = i,
+			Size = UDim2.new(1, 0, 0, TALISMAN_ROW),
+			BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
+			BackgroundTransparency = talisman and 0.2 or 0.6,
+		})
+		if talisman then
+			row.Text = ""
+		end
+		outline(row, isSelected and 0 or (talisman and 0.35 or 0.8), talisman and onPaper(talismanColor(talisman)) or TEXT, isSelected and 2 or 1)
+		local text = talisman and talisman.name or (i <= open and "Empty" or string.format("Locked  ·  level %d", at))
+		label(row, {
+			Text = text,
+			Font = talisman and Enum.Font.GothamBold or Enum.Font.GothamMedium,
+			TextSize = 11,
+			TextColor3 = talisman and TEXT or MUTED,
+			Position = UDim2.fromOffset(10, 0),
+			Size = UDim2.new(1, -16, 1, 0),
+		})
+		if talisman then
+			make("Frame", { Parent = row, Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = talismanColor(talisman), BorderSizePixel = 0 })
+			row.Activated:Connect(function()
+				selectKey("talisman:" .. key)
+			end)
+		end
+	end
+end
+
 local tabButtons = {}
 for i, entry in ipairs(TABS) do
 	local button = make("TextButton", {
 		Parent = tabRow,
 		LayoutOrder = i,
-		Size = UDim2.fromOffset(entry.kind == "all" and 38 or 60, 20),
+		Size = UDim2.fromOffset(entry.width or (entry.kind == "all" and 38 or 60), 20),
 		BackgroundColor3 = TEXT,
 		Font = Enum.Font.GothamBold,
 		Text = entry.title,
@@ -627,18 +914,19 @@ local function setButton(button, stroke, text, quiet)
 end
 
 -- asks the server for a power action; a refusal that needs a yes becomes CONFIRM / CANCEL
-local function runPower(action, setName, confirm)
+local function runPower(action, setName, confirm, slot)
 	if busy then
 		return
 	end
 	busy = true
-	local ok, result, why, needsConfirm = pcall(powerAction.InvokeServer, powerAction, action, { set = setName, confirm = confirm })
+	local ok, result, why, needsConfirm = pcall(powerAction.InvokeServer, powerAction, action, { set = setName, confirm = confirm, slot = slot })
 	busy = false
 	pending = nil
 	if not ok then
 		message.Text = "Couldn't reach the server"
 	elseif result then
 		message.Text = ""
+		pickingSlot = false
 	elseif needsConfirm then
 		pending = { action = action, set = setName }
 		message.Text = why or "Are you sure?"
@@ -698,12 +986,194 @@ local function powerButtons(entry)
 	setButton(altButton, altStroke, altText, true)
 end
 
+-- the hotbar's item slots (the 4 to 9 keys) as they are now: slot -> the Tool in it
+local function hotbarOccupants()
+	local tools = {}
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	for _, container in ipairs({ player.Character, backpack }) do
+		for _, tool in ipairs(container and container:GetChildren() or {}) do
+			if tool:IsA("Tool") then
+				local set = SkillSetConfig.Sets[tool:GetAttribute("SkillSet")]
+				if HotbarRules.InGrid(set and set.kind) then
+					table.insert(tools, tool)
+				end
+			end
+		end
+	end
+	table.sort(tools, function(a, b)
+		local slotA, slotB = a:GetAttribute(HotbarRules.Attribute) or math.huge, b:GetAttribute(HotbarRules.Attribute) or math.huge
+		if slotA ~= slotB then
+			return slotA < slotB
+		end
+		return a.Name < b.Name
+	end)
+	local entries = {}
+	for _, tool in ipairs(tools) do
+		table.insert(entries, { id = tool, slot = tool:GetAttribute(HotbarRules.Attribute) })
+	end
+	return HotbarRules.Layout(entries)
+end
+
+-- a row of the six hotbar slots to pick from: a free one equips the item there, a taken one shows what's in it.
+-- `equipTo(slot)` does the equipping
+local function slotPicker(equipTo)
+	detailOrder += 1
+	local frame = make("Frame", { Parent = details, LayoutOrder = detailOrder, Size = UDim2.new(1, 0, 0, 74), BackgroundTransparency = 1 })
+	label(frame, { Text = "PICK A HOTBAR SLOT", Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+	local row = make("Frame", { Parent = frame, Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 54), BackgroundTransparency = 1 })
+	make("UIListLayout", { Parent = row, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
+	local occupants = hotbarOccupants()
+	for slot = 1, HotbarRules.Slots do
+		local tool = occupants[slot]
+		local box = make("TextButton", {
+			Parent = row,
+			LayoutOrder = slot,
+			Size = UDim2.new(1 / HotbarRules.Slots, -4, 1, 0),
+			BackgroundColor3 = TEXT,
+			BackgroundTransparency = tool and 0.85 or 0,
+			AutoButtonColor = tool == nil,
+			Text = "",
+		})
+		outline(box, tool and 0.7 or 0.4)
+		label(box, {
+			Text = tostring(3 + slot),
+			Font = Enum.Font.GothamBold,
+			TextSize = 14,
+			TextColor3 = tool and MUTED or BACKGROUND,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.fromOffset(0, 4),
+			Size = UDim2.new(1, 0, 0, 18),
+		})
+		label(box, {
+			Text = tool and tool.Name or "free",
+			TextSize = 8,
+			TextColor3 = tool and MUTED or BACKGROUND,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextWrapped = true,
+			TextTruncate = Enum.TextTruncate.None,
+			Position = UDim2.fromOffset(2, 24),
+			Size = UDim2.new(1, -4, 0, 26),
+		})
+		if not tool then
+			box.Activated:Connect(function()
+				equipTo(slot)
+			end)
+		end
+	end
+end
+
+-- asks the server to use, store or equip a consumable (`target` is the equipped Tool, or a stored stack's number)
+local function runItem(action, target, slot)
+	if busy then
+		return
+	end
+	busy = true
+	local ok, result, why = pcall(itemRemote.InvokeServer, itemRemote, action, target, slot)
+	busy = false
+	if not ok then
+		message.Text = "Couldn't reach the server"
+	elseif result then
+		message.Text = ""
+		pickingSlot = false
+	else
+		message.Text = why or "Couldn't do that"
+	end
+	refresh()
+end
+
+-- the info and buttons for a consumable: USE, and STORE (equipped) or EQUIP (stored)
+local function itemDetails(entry)
+	local item = entry.item
+	local color = onPaper(itemColor(item))
+	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
+	label(title, { Text = item.name, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
+	label(title, {
+		Text = string.format("%s  ·  %s", item.kind == "limited" and "Limited use" or "Lifetime", entry.equipped and "Equipped on the hotbar" or "Stored in the Backpack"),
+		Font = Enum.Font.GothamBold,
+		TextSize = 11,
+		TextColor3 = color,
+		Position = UDim2.fromOffset(0, 24),
+		Size = UDim2.new(1, 0, 0, 14),
+	})
+	if pickingSlot and not entry.equipped then
+		slotPicker(function(slot)
+			runItem("equip", entry.storedIndex, slot)
+		end)
+	end
+	detailRow("INFO", item.description)
+	detailRow("USES", item.kind == "limited" and string.format("%d of %d left", entry.uses or 0, item.maxUses) or "Unlimited")
+	local readyAt = player:GetAttribute("ConsumableReadyAt_" .. item.key)
+	local left = readyAt and readyAt - workspace:GetServerTimeNow() or 0
+	detailRow("COOLDOWN", string.format("%d s", item.cooldown), left > 0 and string.format("ready in %d s", math.ceil(left)) or "ready")
+	primaryAction = function()
+		runItem("use", entry.tool or entry.storedIndex)
+	end
+	altAction = function()
+		if entry.equipped then
+			runItem("store", entry.tool)
+		else
+			-- EQUIP shows the hotbar's slots to pick from
+			pickingSlot = not pickingSlot
+			refresh()
+		end
+	end
+	setButton(equipButton, equipStroke, "USE", false)
+	setButton(altButton, altStroke, entry.equipped and "STORE" or (pickingSlot and "CANCEL" or "EQUIP"), true)
+end
+
+-- the info and the WEAR / TAKE OFF button for a talisman
+local function talismanDetails(entry)
+	local talisman = entry.talisman
+	local color = onPaper(talismanColor(talisman))
+	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
+	label(title, { Text = talisman.name, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
+	label(title, {
+		Text = entry.equipped and "Talisman  ·  Worn" or "Talisman  ·  In your collection",
+		Font = Enum.Font.GothamBold,
+		TextSize = 11,
+		TextColor3 = color,
+		Position = UDim2.fromOffset(0, 24),
+		Size = UDim2.new(1, 0, 0, 14),
+	})
+	detailRow("EFFECT", talisman.description)
+	local level = player:GetAttribute("Level") or 0
+	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
+	local slots = TalismanConfig.Slots(level)
+	detailRow("SLOTS", string.format("%d of %d in use", #worn, slots), TalismanConfig.NextSlotLevel(level) and string.format("next slot at level %d", TalismanConfig.NextSlotLevel(level)) or nil)
+	local key = talisman.key
+	primaryAction = function()
+		if busy then
+			return
+		end
+		busy = true
+		local ok, result, why = pcall(talismanRemote.InvokeServer, talismanRemote, entry.equipped and "unequip" or "equip", key)
+		busy = false
+		if not ok then
+			message.Text = "Couldn't reach the server"
+		elseif not result then
+			message.Text = why or "Couldn't do that"
+		else
+			message.Text = ""
+		end
+		refresh()
+	end
+	setButton(equipButton, equipStroke, entry.equipped and "TAKE OFF" or "WEAR", entry.equipped)
+end
+
 local function showDetails(entry)
 	clear(details)
 	detailOrder = 0
-	primaryAction, altAction = nil, nil
+	primaryAction, altAction, hotbarAction = nil, nil, nil
 	setButton(equipButton, equipStroke, nil, false)
 	setButton(altButton, altStroke, nil, true)
+	setButton(hotbarButton, hotbarStroke, nil, true)
+	if entry and entry.kind == "item" then
+		itemDetails(entry)
+		return
+	elseif entry and entry.kind == "talisman" then
+		talismanDetails(entry)
+		return
+	end
 	local set = entry and SkillSetConfig.Sets[entry.setName]
 	if not set then
 		label(details, { Text = "Pick a set to see its moves.", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 20) })
@@ -722,6 +1192,11 @@ local function showDetails(entry)
 		Size = UDim2.new(1, 0, 0, 14),
 	})
 
+	if pickingSlot and entry.briefcase and not entry.equipped then
+		slotPicker(function(slot)
+			runPower("equipBriefcase", selectedSet, false, slot)
+		end)
+	end
 	local level = mastery(selectedSet)
 	-- a feature that isn't unlocked yet is dimmed with its mastery, like a locked skill
 	local function featureRow(key, feature, name, note)
@@ -771,6 +1246,21 @@ local function showDetails(entry)
 
 	if entry.kind == "power" then
 		powerButtons(entry)
+		if entry.briefcase and not pending then
+			-- a briefcase also goes on the hotbar and back
+			if entry.equipped then
+				hotbarAction = function()
+					runPower("unequipBriefcase", selectedSet, false)
+				end
+				setButton(hotbarButton, hotbarStroke, "UNEQUIP", true)
+			else
+				hotbarAction = function()
+					pickingSlot = not pickingSlot
+					refresh()
+				end
+				setButton(hotbarButton, hotbarStroke, pickingSlot and "CANCEL" or "EQUIP", true)
+			end
+		end
 		return
 	end
 	local isCarried = entry.held
@@ -845,11 +1335,25 @@ function refresh()
 		pending = nil
 	end
 	selected = selected or heldPower() or (list[1] and list[1].key)
+	-- the ITEMS and TALISMAN tabs select one of theirs (the first) when what's selected isn't
+	if tab == "item" or tab == "talisman" then
+		local current = selected and findEntry(list, selected)
+		if not (current and (current.category or current.kind) == tab) then
+			for _, entry in ipairs(list) do
+				if (entry.category or entry.kind) == tab then
+					selected = entry.key
+					pending = nil
+					break
+				end
+			end
+		end
+	end
 
 	clear(slotList)
 	for i, slot in ipairs(SLOTS) do
 		makeSlot(slot, i)
 	end
+	makeTalismanSlots()
 	showMaterials()
 
 	for kind, button in pairs(tabButtons) do
@@ -859,14 +1363,48 @@ function refresh()
 	end
 	clear(grid)
 	local count = 0
-	for _, entry in ipairs(list) do
-		if tab == "all" or entry.kind == tab then
-			count += 1
-			makeCard(entry, count)
+	-- a section is a header (ALL only) and a grid of cards under it
+	local sectionOrder = 0
+	local function newSection(title)
+		sectionOrder += 1
+		local section = make("Frame", { Parent = grid, LayoutOrder = sectionOrder, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+		make("UIListLayout", { Parent = section, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+		if title then
+			label(section, { Text = title, Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = MUTED, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 14) })
+		end
+		local cards = make("Frame", { Parent = section, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+		make("UIGridLayout", { Parent = cards, CellSize = UDim2.fromOffset(CARD_SIZE, CARD_SIZE), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+		-- the cells start just inside, so selected cards' thick outlines show
+		make("UIPadding", { Parent = cards, PaddingTop = UDim.new(0, 3), PaddingLeft = UDim.new(0, 3) })
+		return cards
+	end
+	if tab == "all" then
+		for _, group in ipairs(SECTIONS) do
+			local members = {}
+			for _, entry in ipairs(list) do
+				if (entry.category or entry.kind) == group.kind then
+					table.insert(members, entry)
+				end
+			end
+			if #members > 0 then
+				cardParent = newSection(group.title)
+				for i, entry in ipairs(members) do
+					count += 1
+					makeCard(entry, i)
+				end
+			end
+		end
+	else
+		cardParent = newSection(nil)
+		for _, entry in ipairs(list) do
+			if (entry.category or entry.kind) == tab then
+				count += 1
+				makeCard(entry, count)
+			end
 		end
 	end
 	emptyLabel.Visible = count == 0
-	warning.Visible = #carriedBriefcases() > 0
+	warning.Visible = #allBriefcases() > 0
 
 	showDetails(selected and findEntry(list, selected))
 end
@@ -879,6 +1417,11 @@ end)
 altButton.Activated:Connect(function()
 	if altAction then
 		altAction()
+	end
+end)
+hotbarButton.Activated:Connect(function()
+	if hotbarAction then
+		hotbarAction()
 	end
 end)
 
@@ -897,6 +1440,11 @@ local watched = {
 	PowerStorage = true,
 	LifetimePowers = true,
 	[Keybinds.Attribute] = true,
+	[ConsumableConfig.StorageAttribute] = true,
+	[PowerConfig.BriefcaseStorageAttribute] = true,
+	[TalismanConfig.OwnedAttribute] = true,
+	[TalismanConfig.EquippedAttribute] = true,
+	Level = true, -- opens talisman slots
 }
 for setName in pairs(SkillSetConfig.Sets) do
 	watched[SkillSetConfig.MasteryAttribute(setName)] = true
@@ -905,7 +1453,7 @@ for key in pairs(DropConfig.Materials) do
 	watched[DropConfig.Attribute(key)] = true
 end
 player.AttributeChanged:Connect(function(name)
-	if Hub.IsOpen("Backpack") and watched[name] then
+	if Hub.IsOpen("Backpack") and (watched[name] or string.find(name, "^ConsumableReadyAt_")) then
 		refresh()
 	end
 end)
@@ -925,7 +1473,19 @@ local function onToolsChanged()
 	end)
 end
 local function watchTools(container)
-	container.ChildAdded:Connect(onToolsChanged)
+	-- a consumable's uses change on the Tool itself
+	local function watchTool(tool)
+		if tool:IsA("Tool") then
+			tool.AttributeChanged:Connect(onToolsChanged)
+		end
+	end
+	for _, child in ipairs(container:GetChildren()) do
+		watchTool(child)
+	end
+	container.ChildAdded:Connect(function(child)
+		watchTool(child)
+		onToolsChanged()
+	end)
 	container.ChildRemoved:Connect(onToolsChanged)
 end
 local function watchCharacter(character)

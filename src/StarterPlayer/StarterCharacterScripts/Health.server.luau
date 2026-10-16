@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
+local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 
 local STEP = 0.5 -- seconds between heals
 local COMBAT_PAUSE = 3 -- seconds after taking damage before healing resumes
@@ -26,6 +27,7 @@ while humanoid.Health > 0 do
 	task.wait(STEP)
 	local vitality = player and player:GetAttribute("Vitality") or 0
 	if humanoid.Health > 0 and humanoid.Health < humanoid.MaxHealth and os.clock() - lastHurtAt >= COMBAT_PAUSE then
-		humanoid.Health = math.min(humanoid.Health + StatConfig.RegenPerSecond(vitality) * StatusConfig.HealMultiplier(character) * STEP, humanoid.MaxHealth)
+		local regen = StatConfig.RegenPerSecond(vitality) + TalismanConfig.Total(player and player:GetAttribute(TalismanConfig.EquippedAttribute), "regen")
+		humanoid.Health = math.min(humanoid.Health + regen * StatusConfig.HealMultiplier(character) * STEP, humanoid.MaxHealth)
 	end
 end

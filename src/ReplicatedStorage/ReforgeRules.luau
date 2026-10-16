@@ -1,10 +1,13 @@
 -- Reforge's rules, with no game services so they can be tested outside Roblox
--- (tests/ReforgeRules.spec.luau): what a level or reroll costs and whether a
--- player can pay, which modifier slots are open, rolling a modifier, the
--- combat multipliers, and the saved text. A state is
--- { level = 0..MaxLevel, mods = { [slot] = { id, value } } } (slots 1-2, may
--- be sparse). Saved text: sets joined by ";", each "Set=level:slot1,slot2",
--- a slot "id=value" or "-" (Revolver=7:Might=55,-).
+-- (tests/ReforgeRules.spec.luau): what a level, an affinity or an awakening costs
+-- and whether a player can pay, which affinity slots are open, an affinity's
+-- value at a level, the combat multipliers, and the saved text. A state is
+-- { level = 0..MaxLevel, mods = { [slot] = { id } }, awakening = 0..MaxAwakening }
+-- (slots 1-2, may be sparse). An affinity's value isn't stored: it comes from the
+-- level and the awakening (AffinityValue). Saved text: sets joined by ";", each
+-- "Set=level:slot1,slot2" or "Set=level:slot1,slot2:awakening", a slot an
+-- affinity's id or "-" (Revolver=7:Might,-  Mandela=10:Might,Swift:2). Older saves
+-- wrote "Might=55": the value after "=" is ignored.
 local ReforgeConfig = if script then require(script.Parent:WaitForChild("ReforgeConfig")) else require("./ReforgeConfig")
 
 local ReforgeRules = {}
@@ -12,10 +15,10 @@ local ReforgeRules = {}
 local SLOTS = #ReforgeConfig.SlotUnlockLevels
 
 function ReforgeRules.NewState()
-	return { level = 0, mods = {} }
+	return { level = 0, mods = {}, awakening = 0 }
 end
 
--- how many modifier slots a level has open
+-- how many affinity slots a level has open
 function ReforgeRules.SlotsUnlocked(level)
 	local count = 0
 	for _, unlockLevel in ipairs(ReforgeConfig.SlotUnlockLevels) do
@@ -51,15 +54,39 @@ function ReforgeRules.PlanLevelUp(state, bag, yen)
 	return true, cost
 end
 
--- a reroll of one slot's cost if it's open and the player can pay it
-function ReforgeRules.PlanReroll(state, slot, bag, yen)
+-- an affinity's value (tenths of a percent) at a level: its minimum at +0 up to its maximum at the top
+-- level, and stronger for each awakening stage
+function ReforgeRules.AffinityValue(id, level, awakening)
+	local config = ReforgeConfig.Modifier(id)
+	if not config then
+		return 0
+	end
+	local progress = math.clamp(level / ReforgeConfig.MaxLevel, 0, 1)
+	local base = config.min + (config.max - config.min) * progress
+	return math.floor(base * (1 + ReforgeConfig.AwakenAffinityBonus * (awakening or 0)) + 0.5)
+end
+
+-- choosing `id` for a slot: its cost if the slot is open, the affinity is real and not already
+-- there or in the other slot, and the player can pay; else false, why
+function ReforgeRules.PlanChoose(state, slot, id, bag, yen)
 	if typeof(slot) ~= "number" or slot % 1 ~= 0 or slot < 1 or slot > SLOTS then
 		return false, "No such slot"
 	end
 	if slot > ReforgeRules.SlotsUnlocked(state.level) then
 		return false, "That slot is still locked"
 	end
-	local cost = ReforgeConfig.RerollCosts[slot]
+	if typeof(id) ~= "string" or not ReforgeConfig.Modifier(id) then
+		return false, "No such affinity"
+	end
+	if state.mods[slot] and state.mods[slot].id == id then
+		return false, "It already has that affinity"
+	end
+	for otherSlot, mod in pairs(state.mods) do
+		if otherSlot ~= slot and mod.id == id then
+			return false, "The other slot already has that affinity"
+		end
+	end
+	local cost = ReforgeConfig.ChangeCosts[slot]
 	local ok, reason = afford(cost, bag, yen)
 	if not ok then
 		return false, reason
@@ -67,39 +94,52 @@ function ReforgeRules.PlanReroll(state, slot, bag, yen)
 	return true, cost
 end
 
--- a modifier not in `taken` (id -> true) and its value; random(lo, hi) returns
--- an integer in lo..hi (math.random)
-function ReforgeRules.Roll(random, taken)
-	local choices = {}
-	for _, modifier in ipairs(ReforgeConfig.Modifiers) do
-		if not taken[modifier.id] then
-			table.insert(choices, modifier)
-		end
+-- the next awakening stage's cost: only a power at the top level that isn't fully awakened,
+-- and only if the player can pay; else false, why
+function ReforgeRules.PlanAwaken(state, isPower, bag, yen)
+	if not isPower then
+		return false, "Only a power can awaken"
 	end
-	local modifier = choices[random(1, #choices)]
-	return { id = modifier.id, value = random(modifier.min, modifier.max) }
+	if state.level < ReforgeConfig.MaxLevel then
+		return false, string.format("Reach +%d first", ReforgeConfig.MaxLevel)
+	end
+	local cost = ReforgeConfig.AwakenCosts[state.awakening + 1]
+	if not cost then
+		return false, "Fully awakened"
+	end
+	local ok, reason = afford(cost, bag, yen)
+	if not ok then
+		return false, reason
+	end
+	return true, cost
 end
 
--- the summed value (tenths of a percent) of the state's modifiers that match
+-- the summed value (tenths of a percent) of the state's affinities that match
 local function total(state, matches)
 	local sum = 0
 	for slot = 1, SLOTS do
 		local mod = state.mods[slot]
 		local config = mod and ReforgeConfig.Modifier(mod.id)
 		if config and matches(config) then
-			sum += mod.value
+			sum += ReforgeRules.AffinityValue(mod.id, state.level, state.awakening)
 		end
 	end
 	return sum
 end
 
--- the factor on a hit's damage: levels and Might, the bonus halved against a player
-function ReforgeRules.DamageMultiplier(state, vsPlayer)
-	local bonus = state.level * ReforgeConfig.DamagePerLevel
+-- the bonus (0.12 = +12%) a state adds to damage before the PvP halving: levels, awakening and Might
+function ReforgeRules.DamageBonus(state)
+	return state.level * ReforgeConfig.DamagePerLevel
+		+ (state.awakening or 0) * ReforgeConfig.DamagePerAwakening
 		+ total(state, function(config)
 				return config.kind == "damage"
 			end)
 			/ 1000
+end
+
+-- the factor on a hit's damage: levels, awakening and Might, the bonus halved against a player
+function ReforgeRules.DamageMultiplier(state, vsPlayer)
+	local bonus = ReforgeRules.DamageBonus(state)
 	if vsPlayer then
 		bonus *= ReforgeConfig.PvPFactor
 	end
@@ -129,14 +169,18 @@ function ReforgeRules.Lifesteal(state)
 	end) / 1000
 end
 
--- "level:slot1,slot2"
+-- "level:slot1,slot2" (and ":awakening" once awakened)
 function ReforgeRules.EncodeState(state)
 	local slots = {}
 	for slot = 1, SLOTS do
 		local mod = state.mods[slot]
-		slots[slot] = mod and (mod.id .. "=" .. mod.value) or "-"
+		slots[slot] = mod and mod.id or "-"
 	end
-	return state.level .. ":" .. table.concat(slots, ",")
+	local text = state.level .. ":" .. table.concat(slots, ",")
+	if (state.awakening or 0) > 0 then
+		text ..= ":" .. state.awakening
+	end
+	return text
 end
 
 -- the state of one set's text; anything unreadable is dropped or clamped
@@ -145,11 +189,15 @@ function ReforgeRules.DecodeState(text)
 	if typeof(text) ~= "string" then
 		return state
 	end
-	local levelText, slotText = string.match(text, "^(%d+):(.*)$")
+	local levelText, slotText, awakeningText = string.match(text, "^(%d+):([^:]*):?(%d*)$")
 	if not levelText then
 		return state
 	end
 	state.level = math.min(tonumber(levelText), ReforgeConfig.MaxLevel)
+	-- an awakening only counts at the top level
+	if awakeningText ~= "" and state.level >= ReforgeConfig.MaxLevel then
+		state.awakening = math.min(tonumber(awakeningText), ReforgeConfig.MaxAwakening)
+	end
 	local open = ReforgeRules.SlotsUnlocked(state.level)
 	local used = {}
 	local slot = 0
@@ -158,11 +206,11 @@ function ReforgeRules.DecodeState(text)
 		if slot > open then
 			break
 		end
-		local id, valueText = string.match(part, "^(%a+)=(%d+)$")
+		local id = string.match(part, "^(%a+)")
 		local config = id and ReforgeConfig.Modifier(id)
 		if config and not used[id] then
 			used[id] = true
-			state.mods[slot] = { id = id, value = math.clamp(tonumber(valueText), config.min, config.max) }
+			state.mods[slot] = { id = id }
 		end
 	end
 	return state

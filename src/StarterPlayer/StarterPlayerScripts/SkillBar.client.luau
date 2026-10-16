@@ -37,6 +37,7 @@ local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
+local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
 local activateOvercharge = ReplicatedStorage:WaitForChild("ActivateOvercharge")
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
@@ -672,7 +673,8 @@ end)
 
 RunService.RenderStepped:Connect(function()
 	local setName = equippedSet()
-	gui.Enabled = setName ~= nil
+	-- (off while a shop or the smith has the screen: this switches itself back on every frame)
+	gui.Enabled = setName ~= nil and not ShopFocus.Active()
 	if not setName then
 		if aiming then
 			stopAiming()

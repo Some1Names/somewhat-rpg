@@ -5,12 +5,15 @@
 -- While SkillSetConfig.OwnAllSets is on, every power counts as lifetime. The
 -- PowerSet attribute mirrors CurrentPower for the older scripts that read it.
 --
--- A new power arrives as a briefcase: a Tool with the PowerBriefcase attribute
--- (from ServerStorage.TestBriefcase, later Briefcase, else a plain box). A
--- briefcase is one Tool; it's destroyed the moment it's used, stored, sold or dropped, in the same step as the check, so remotes racing each other
--- can't spend it twice. Carried briefcases aren't saved: on death they drop
+-- A new power arrives as a briefcase, which goes straight into the Backpack as a
+-- stored item (the BriefcaseStorage attribute, comma separated, not saved); the
+-- Backpack's EQUIP puts one on a free hotbar slot as a Tool with the
+-- PowerBriefcase attribute (from ServerStorage.TestBriefcase, later Briefcase,
+-- else a plain box), and takes it off again. A briefcase is gone the moment it's
+-- used, stored as a power, sold or dropped, in the same step as the check, so remotes racing each other
+-- can't spend it twice. Equipped briefcases aren't saved: on death they drop
 -- where you died for PowerConfig.DeathDropTime seconds, on leaving they're
--- lost. The inventory acts through the PowerAction remote; each action
+-- lost; the ones in storage stay with you through death. The inventory acts through the PowerAction remote; each action
 -- returns ok, message (and a third value, true, when it needs the player's
 -- confirm because a power would be lost).
 local Debris = game:GetService("Debris")
@@ -18,8 +21,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
+local HotbarRules = require(ReplicatedStorage:WaitForChild("HotbarRules"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local HotbarSlots = require(script.Parent:WaitForChild("HotbarSlots"))
 local tools = ServerStorage:WaitForChild("SkillSetTools")
 
 local ACTION_INTERVAL = 0.3 -- seconds between a player's actions
@@ -141,7 +146,7 @@ local function setCurrent(player, setName)
 	player:SetAttribute(ATTR.current, setName or "")
 end
 
-local function makeBriefcase(setName)
+local function makeBriefcase(setName, slot)
 	local name = Powers.DisplayName(setName) .. " Briefcase"
 	-- the owner's models: TestBriefcase for now, Briefcase when the final one is made
 	local template = ServerStorage:FindFirstChild("TestBriefcase") or ServerStorage:FindFirstChild("Briefcase")
@@ -162,16 +167,39 @@ local function makeBriefcase(setName)
 	tool.ToolTip = name
 	tool.CanBeDropped = false -- dropping goes through the inventory and death
 	tool:SetAttribute(PowerConfig.BriefcaseAttribute, setName)
+	tool:SetAttribute(HotbarRules.Attribute, slot)
 	return tool
 end
 
--- puts a briefcase for the power in the player's backpack
+-- the briefcases in storage (a power can repeat; the attribute isn't saved)
+local function storedBriefcases(player)
+	local list = {}
+	local text = player:GetAttribute(PowerConfig.BriefcaseStorageAttribute)
+	if typeof(text) == "string" then
+		for name in string.gmatch(text, "[^,]+") do
+			if hasBriefcase(name) and #list < PowerConfig.BriefcaseStorageLimit then
+				table.insert(list, name)
+			end
+		end
+	end
+	return list
+end
+
+local function setStoredBriefcases(player, list)
+	player:SetAttribute(PowerConfig.BriefcaseStorageAttribute, table.concat(list, ","))
+end
+
+-- a new briefcase goes into the Backpack's storage (it never lands on the hotbar by itself)
 function Powers.GiveBriefcase(player, setName)
-	local backpack = player:FindFirstChildOfClass("Backpack")
-	if not hasBriefcase(setName) or not backpack then
+	if not hasBriefcase(setName) then
 		return false
 	end
-	makeBriefcase(setName).Parent = backpack
+	local list = storedBriefcases(player)
+	if #list >= PowerConfig.BriefcaseStorageLimit then
+		return false
+	end
+	table.insert(list, setName)
+	setStoredBriefcases(player, list)
 	return true
 end
 
@@ -186,13 +214,62 @@ local function findBriefcase(player, setName)
 	return found
 end
 
--- takes one carried briefcase of the power; whether there was one
+-- whether the player has a briefcase of the power, equipped or stored
+function Powers.HasBriefcase(player, setName)
+	return findBriefcase(player, setName) ~= nil or table.find(storedBriefcases(player), setName) ~= nil
+end
+
+-- takes one briefcase of the power, the equipped one first; whether there was one
 function Powers.TakeBriefcase(player, setName)
 	local tool = findBriefcase(player, setName)
-	if not tool then
+	if tool then
+		tool:Destroy()
+		return true
+	end
+	local list = storedBriefcases(player)
+	local at = table.find(list, setName)
+	if not at then
 		return false
 	end
+	table.remove(list, at)
+	setStoredBriefcases(player, list)
+	return true
+end
+
+-- a stored briefcase onto a free hotbar slot (`slot`, or the first free one if nil)
+function Powers.EquipBriefcase(player, setName, slot)
+	local list = storedBriefcases(player)
+	local at = table.find(list, setName)
+	local backpack = player:FindFirstChildOfClass("Backpack")
+	if not at then
+		return false, "That briefcase isn't in storage"
+	end
+	if not backpack then
+		return false, "Try again in a moment"
+	end
+	local picked = HotbarSlots.Pick(player, slot)
+	if not picked then
+		return false, slot and "That slot is taken" or "The hotbar is full"
+	end
+	table.remove(list, at)
+	setStoredBriefcases(player, list)
+	makeBriefcase(setName, picked).Parent = backpack
+	return true
+end
+
+-- an equipped briefcase back into storage
+function Powers.UnequipBriefcase(player, setName)
+	local list = storedBriefcases(player)
+	if #list >= PowerConfig.BriefcaseStorageLimit then
+		return false, "Storage is full"
+	end
+	local tool = findBriefcase(player, setName)
+	if not tool then
+		return false, "You aren't carrying that briefcase"
+	end
 	tool:Destroy()
+	table.insert(list, setName)
+	setStoredBriefcases(player, list)
 	return true
 end
 
@@ -272,7 +349,7 @@ end
 
 Powers.DropPickup = dropPickup
 
--- on death, every carried briefcase drops where the player died
+-- on death, every equipped briefcase drops where the player died (the ones in storage stay)
 local function dropCarried(player, character)
 	local root = character:FindFirstChild("HumanoidRootPart")
 	local position = root and root.Position
@@ -309,13 +386,13 @@ end
 
 local actions = {}
 
--- a carried briefcase becomes the held power
+-- a briefcase (equipped or stored) becomes the held power
 function actions.use(player, setName, confirm)
 	if Powers.Owns(player, setName) then
 		return false, "You already own " .. Powers.DisplayName(setName) .. " (sell the briefcase instead)"
 	end
-	if not findBriefcase(player, setName) then
-		return false, "You aren't carrying that briefcase"
+	if not Powers.HasBriefcase(player, setName) then
+		return false, "You don't have that briefcase"
 	end
 	local current = Powers.Current(player)
 	if wouldLose(player, current) and not confirm then
@@ -326,7 +403,7 @@ function actions.use(player, setName, confirm)
 	return true, "You now hold " .. Powers.DisplayName(setName)
 end
 
--- a carried briefcase goes into a free storage slot
+-- a briefcase (equipped or stored) goes into a free power storage slot
 function actions.store(player, setName)
 	if Powers.Owns(player, setName) then
 		return false, "You already own " .. Powers.DisplayName(setName) .. " (sell the briefcase instead)"
@@ -335,12 +412,21 @@ function actions.store(player, setName)
 		return false, "Storage is full"
 	end
 	if not Powers.TakeBriefcase(player, setName) then
-		return false, "You aren't carrying that briefcase"
+		return false, "You don't have that briefcase"
 	end
 	local list = stored(player)
 	table.insert(list, setName)
 	setStored(player, list)
 	return true, Powers.DisplayName(setName) .. " is in storage"
+end
+
+-- a briefcase from the Backpack's storage onto the hotbar, and back
+function actions.equipBriefcase(player, setName, _, slot)
+	return Powers.EquipBriefcase(player, setName, slot)
+end
+
+function actions.unequipBriefcase(player, setName)
+	return Powers.UnequipBriefcase(player, setName)
 end
 
 -- a stored power comes back as a briefcase
@@ -404,10 +490,12 @@ local function onAction(player, action, args)
 		return false, "Unknown action"
 	end
 	local setName = typeof(args) == "table" and args.set
-	if typeof(setName) == "string" and hasBriefcase(setName) and not isPower(setName) then
+	-- equipping and unequipping a briefcase work for any power's, made or not
+	local briefcaseOnly = action == "equipBriefcase" or action == "unequipBriefcase"
+	if not briefcaseOnly and typeof(setName) == "string" and hasBriefcase(setName) and not isPower(setName) then
 		return false, Powers.DisplayName(setName) .. " isn't made yet. Sell the briefcase to the Power Dealer."
 	end
-	if typeof(setName) ~= "string" or not isPower(setName) then
+	if typeof(setName) ~= "string" or not (briefcaseOnly and hasBriefcase(setName) or isPower(setName)) then
 		return false, "Unknown power"
 	end
 	local now = os.clock()
@@ -415,14 +503,15 @@ local function onAction(player, action, args)
 		return false, "Slow down"
 	end
 	lastAction[player] = now
-	if not ready(player) then
+	if not briefcaseOnly and not ready(player) then
 		return false, "Still loading"
 	end
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	if not humanoid or humanoid.Health <= 0 then
 		return false, "Not now"
 	end
-	return actions[action](player, setName, args.confirm == true)
+	local slot = args.slot
+	return actions[action](player, setName, args.confirm == true, typeof(slot) == "number" and slot == math.floor(slot) and slot or nil)
 end
 
 -- wiring -----------------------------------------------------------------------------

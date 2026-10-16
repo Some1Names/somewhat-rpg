@@ -88,6 +88,9 @@ local filtered = PowerConfig.decodeList("a,Nope,b", function(name)
 end)
 check("decode drops names accept refuses", #filtered == 2 and filtered[2] == "b")
 
+check("robux price by tier", PowerConfig.robuxPrice("Nope", "S") == 1500 and PowerConfig.robuxPrice("Nope", "C") == 150)
+check("robux price missing for an unknown tier", PowerConfig.robuxPrice("Nope", "Z") == nil)
+
 if failures > 0 then
 	error(failures .. " failed")
 end

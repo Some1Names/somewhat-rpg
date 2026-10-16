@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
@@ -109,7 +110,7 @@ local function hints()
 		dashName = set.dash.name or dashName
 	end
 	local result = { { Keybinds.Text("Dash"), dashName } }
-	if Keybinds.Current().Block then
+	if GuardConfig.Enabled and Keybinds.Current().Block then
 		table.insert(result, { Keybinds.Text("Block"), "Block / Parry" })
 	end
 	if set and set.ranged then

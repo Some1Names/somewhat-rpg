@@ -42,7 +42,7 @@ end
 
 -- Block key
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed or Keybinds.Capturing() or input.KeyCode ~= Keybinds.Key("Block") then
+	if not GuardConfig.Enabled or gameProcessed or Keybinds.Capturing() or input.KeyCode ~= Keybinds.Key("Block") then
 		return
 	end
 	-- E is the prompt's while one is on screen

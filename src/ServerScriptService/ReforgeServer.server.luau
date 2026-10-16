@@ -1,4 +1,4 @@
--- Server side of the smith: a request to level up, reroll or keep a reroll only
+-- Server side of the smith: a request to level up, choose an affinity or awaken a power only
 -- goes through for a player standing next to a smith (a model tagged "Smith"),
 -- and Reforge does all the checking and spending. Also gives reforged hits their
 -- extras: the chance to apply a status and lifesteal. (That lives here and not
@@ -35,33 +35,28 @@ local function nearSmith(character)
 	return false
 end
 
--- (action, set, extra) -> ok, message, candidate
+-- (action, set, extra) -> ok, message
 --   "level"   (set)        one more level
---   "reroll"  (set, slot)  pay for a new roll of the slot; the candidate comes back
---   "resolve" (set, keep)  keep (true) or drop (false) the waiting candidate
---   "pending" (set)        the waiting candidate, if any (free; the menu reopened)
-remote.OnServerInvoke = function(player, action, setName, extra)
-	if action ~= "level" and action ~= "reroll" and action ~= "resolve" and action ~= "pending" then
+--   "choose"  (set, slot, affinity)  put the affinity in the slot
+--   "awaken"  (set)        one more awakening stage (a power at the top level)
+remote.OnServerInvoke = function(player, action, setName, slot, id)
+	if action ~= "level" and action ~= "choose" and action ~= "awaken" then
 		return false, "Unknown request"
 	end
-	if action ~= "pending" then
-		local now = os.clock()
-		if now - (lastAction[player] or 0) < ACTION_INTERVAL then
-			return false, "Slow down"
-		end
-		lastAction[player] = now
+	local now = os.clock()
+	if now - (lastAction[player] or 0) < ACTION_INTERVAL then
+		return false, "Slow down"
 	end
+	lastAction[player] = now
 	if not nearSmith(player.Character) then
 		return false, "Too far from the smith"
 	end
 	if action == "level" then
 		return Reforge.LevelUp(player, setName)
-	elseif action == "reroll" then
-		return Reforge.Reroll(player, setName, extra)
-	elseif action == "resolve" then
-		return Reforge.Resolve(player, setName, extra)
+	elseif action == "choose" then
+		return Reforge.Choose(player, setName, slot, id)
 	end
-	return true, "", typeof(setName) == "string" and Reforge.Pending(player, setName) or nil
+	return Reforge.Awaken(player, setName)
 end
 
 -- when each victim last caught each status from a reforged hit

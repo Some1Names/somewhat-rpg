@@ -12,6 +12,7 @@ local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
+local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
 
 local player = Players.LocalPlayer
@@ -118,6 +119,25 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
+-- the talismans: a line per slot (worn, empty, or locked until its level)
+chip(column, "TALISMANS", 6)
+local talismanBox = make("Frame", { Parent = column, LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+make("UIListLayout", { Parent = talismanBox, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3) })
+local talismanLines = {}
+for i = 1, #TalismanConfig.SlotLevels do
+	local line = make("Frame", { Parent = talismanBox, LayoutOrder = i, Size = UDim2.new(1, 0, 0, 18), BackgroundTransparency = 1 })
+	local bar = make("Frame", { Parent = line, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 })
+	local text = label(line, { Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -10, 1, 0), Font = Theme.BodyFont, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd })
+	local note = label(line, {
+		TextSize = 10,
+		TextColor3 = Theme.Muted,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Size = UDim2.new(1, 0, 1, 0),
+		TextTruncate = Enum.TextTruncate.AtEnd,
+	})
+	talismanLines[i] = { bar = bar, text = text, note = note }
+end
+
 -- at the top: the player's name with the level at the far right, the XP
 -- toward the next level as a bar, then yen; all plain on the paper
 local nameRow = make("Frame", { Parent = column, LayoutOrder = -5, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
@@ -218,6 +238,25 @@ local function refresh()
 		levelLabel.Text = string.format("%d / %d XP", xp, needed)
 		xpFill.Size = UDim2.fromScale(math.clamp(xp / needed, 0, 1), 1)
 	end
+	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
+	local open = TalismanConfig.Slots(level)
+	for i, line in ipairs(talismanLines) do
+		local talisman = worn[i] and TalismanConfig.Get(worn[i])
+		if talisman then
+			line.text.Text = talisman.name
+			line.text.TextColor3 = Theme.Ink
+			line.bar.BackgroundColor3 = Color3.fromRGB(table.unpack(talisman.color))
+			line.bar.BackgroundTransparency = 0
+			line.note.Text = talisman.description
+		else
+			local isOpen = i <= open
+			line.text.Text = isOpen and "EMPTY SLOT" or "LOCKED"
+			line.text.TextColor3 = Theme.Muted
+			line.bar.BackgroundColor3 = Theme.Muted
+			line.bar.BackgroundTransparency = 0.6
+			line.note.Text = isOpen and "WEAR ONE IN THE BACKPACK" or string.format("LEVEL %d", TalismanConfig.SlotLevels[i])
+		end
+	end
 	local points = player:GetAttribute("StatPoints") or 0
 	pointsButton.Text = string.format("%d UNSPENT POINT%s  →  STATS", points, points == 1 and "" or "S")
 	pointsButton.Visible = points > 0
@@ -238,6 +277,7 @@ local watched = {
 	XP = true,
 	Yen = true,
 	StatPoints = true,
+	[TalismanConfig.EquippedAttribute] = true,
 }
 player.AttributeChanged:Connect(function(name)
 	if Hub.IsOpen("Profile") and (watched[name] or string.find(name, "Mastery$") or string.find(name, "^Reforge_")) then

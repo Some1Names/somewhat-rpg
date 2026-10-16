@@ -49,7 +49,7 @@ and saved ownership + loadout (`Loadout` is session-only today).
 
 ## Combat depth ("deeper than Blox Fruits, simpler than Deepwoken")
 
-- **Block and posture** on Alt (moved from E; parry dropped for now): **built and in Studio** (synced 2026-10-13), spec
+- **Block and posture: switched OFF** (owner: too much; `GuardConfig.Enabled = false`, code kept, set it to true to bring it back). Was: on Alt (moved from E; parry dropped for now), **built and in Studio** (synced 2026-10-13), spec
   `docs/superpowers/specs/2026-10-09-block-parry-design.md`, plan `docs/superpowers/plans/2026-10-09-block-parry.md`.
   Waiting on a two-player playtest with
   `docs/superpowers/specs/2026-10-09-block-parry-checklist.md`. Later: a parry layer in `Guard.Resolve`.
@@ -82,6 +82,10 @@ and saved ownership + loadout (`Loadout` is session-only today).
 - **Enemy drops** (materials as glowing orbs, per-player, saved bag; spent in Reforge): **built and in Studio** (2026-10-14; a one-hit kill dropped orbs and walking onto them filled the bag)
   (plan `docs/superpowers/plans/2026-10-14-enemy-drops.md`, checklist `docs/superpowers/specs/2026-10-14-enemy-drops-checklist.md`).
   `DroppedItemOrb` is in `ReplicatedStorage.VFXPrefabs`. Left: the checklist (two players, visuals, UI).
+
+- **Yen chests** (walk over a chest for ¥50-150; 4 of the map's `TestChest` parts are out at once on random spots, a new one 45 s after a pickup; `ChestConfig`, `Chests` script): **built and in Studio** (2026-10-16; solo-tested pickup and respawn). Left: a pickup sound/popup (VFX is yours), the numbers, and real chest looks.
+
+- **Talismans** (worn in 3 slots opened at levels 0/15/40: Vigor +15% max HP, Regrowth +2 regen, Bulwark -8% damage taken, Magnate +30% yen, Second Wind heal on kill, Glass Charm +20% dealt / -15% max HP; found in yen chests, 20% chance for one you don't own; `TalismanConfig`, `Talismans`, Backpack TALISMAN tab + equipped lines, Profile lines, a "Found" toast): **built and in Studio** (2026-10-16). Solo-checked: grant, equip rules, max HP 115 with Vigor, Bulwark cut 100 to 92, the Backpack list. Profile lines and the other effects (regen, Glass Charm, Second Wind, Magnate on kills) not yet watched in-game. Later: more sources (enemies, shop, reforge-style reroll), icons, rarity.
 
 ## Getting powers
 

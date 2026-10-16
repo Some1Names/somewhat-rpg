@@ -43,9 +43,9 @@ otherwise.
   `QuestSpawn` parts (Training, Frontier, Outpost), `EnemyType` on the enemies. The quest flow was
   checked in a solo playtest (accept, 3 kills, payout, a challenge). Left: the UI by eye and the rest
   of `specs/2026-10-09-quests-checklist.md`.
-- [Block and posture](2026-10-09-block-parry.md): built and in Studio (parry dropped for now, 2026-10-13); compile-checked,
-  and the server rules smoke-tested. Left: the playtest with `specs/2026-10-09-block-parry-checklist.md`
-  (two players).
+- [Block and posture](2026-10-09-block-parry.md): built and in Studio, then **switched off** (owner: too much,
+  `GuardConfig.Enabled = false`, applied to Studio 2026-10-16; code kept). Its two-player playtest is
+  parked until it's turned back on.
 - [Death stakes and the Headhunter](2026-10-09-death-stakes.md): built and in Studio, checked
   solo. Left: the live-server half of `specs/2026-10-09-death-stakes-checklist.md` (2–3 players).
 - [Photoshop](2026-10-08-photoshop.md): built and in Studio. Playtest left:
