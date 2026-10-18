@@ -42,6 +42,9 @@ local CLOSE_ROOM = 48 -- the header stops short of the × at the top right
 local WHITE = Color3.new(1, 1, 1)
 
 local OPEN_TIME = 0.35 -- the nav sliding in
+local CLOSE_BLUR_TIME = 0.2
+local BLUR_SIZE = 24 -- the gaussian blur of the world behind the hub
+local PAPER_TRANSPARENCY = 0.25 -- how much of that world shows through the paper
 local PAGE_TIME = 0.3 -- a tab easing up into place, its title fading in
 local BAR_TIME = 0.45 -- the title's bar sweeping across
 local HOVER_TIME = 0.15
@@ -89,7 +92,9 @@ local gui = make("ScreenGui", {
 -- back to front: paper, the pose strip, the main column with the header and
 -- footer (both always the full width, so they don't move between tabs), the nav, the ×
 -- (Active: it catches clicks, so nothing behind the hub, the top bar's icons say, can be pressed)
-make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BorderSizePixel = 0, ZIndex = 1, Active = true })
+-- see-through paper: the world behind it is gaussian-blurred while the hub is open
+make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BackgroundTransparency = PAPER_TRANSPARENCY, BorderSizePixel = 0, ZIndex = 1, Active = true })
+local blur = make("BlurEffect", { Name = "HubBlur", Size = 0, Parent = game:GetService("Lighting") })
 -- everything else, below Roblox's band
 local body = make("Frame", {
 	Name = "Body",
@@ -419,6 +424,7 @@ local function close()
 		return
 	end
 	gui.Enabled = false
+	tween(blur, CLOSE_BLUR_TIME, { Size = 0 })
 	local last = current
 	current = nil
 	wanted = nil
@@ -433,6 +439,7 @@ function Hub.Open(name)
 	if not gui.Enabled then
 		placeBody()
 		gui.Enabled = true
+		tween(blur, OPEN_TIME, { Size = BLUR_SIZE })
 		UiSfx.Play("menuOpen") -- once as the hub opens; switching tabs inside it stays quiet
 		Menus.Open("Hub", close)
 		nav.Position = UDim2.fromOffset(-Theme.NavWidth, 0)
