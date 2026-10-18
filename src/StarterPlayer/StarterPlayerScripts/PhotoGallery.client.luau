@@ -143,6 +143,7 @@ local function button(parent, text, color, x)
 	return b
 end
 
+local setOpen -- opens and closes the gallery; defined below
 local rows = {} -- slot -> { place = TextLabel, go = TextButton }
 local function buildRows(count)
 	if #rows == count then
@@ -165,7 +166,7 @@ local function buildRows(count)
 		end)
 		go.Activated:Connect(function()
 			galleryRemote:FireServer("travel", slot)
-			gui.Enabled = false
+			setOpen(false) -- through Menus too, or it stays open and holds her still
 		end)
 		rows[slot] = { place = place, go = go }
 	end
@@ -275,7 +276,7 @@ local function updateWaypoints()
 end
 player:GetAttributeChangedSignal("PhotoGallery"):Connect(updateWaypoints)
 
-local function setOpen(open)
+function setOpen(open)
 	gui.Enabled = open
 	if open then
 		Menus.Open("Gallery", function()
