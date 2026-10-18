@@ -367,6 +367,20 @@ function effects.Block(character, point)
 	end
 end
 
+-- Dodge (Damage, EnemyAI): a hit that missed a dashing player. Guard/Dodge when the pack prefab
+-- exists, a small cyan spark burst on the character until then
+function effects.Dodge(character)
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	if VFX.Find("Guard/Dodge") then
+		VFX.Play("Guard/Dodge", root.Position)
+	else
+		VFX.Play("Shared/Sparks", root.Position, { color = Color3.fromRGB(120, 220, 255), scale = 0.6 })
+	end
+end
+
 -- DeathFade (Ragdoll): a body dissolving; Shared/DeathFade follows the torso
 function effects.DeathFade(torso)
 	if torso and torso.Parent then

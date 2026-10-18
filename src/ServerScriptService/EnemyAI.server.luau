@@ -21,6 +21,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Guard = require(ServerScriptService:WaitForChild("Guard"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
@@ -178,6 +179,11 @@ local function run(model)
 			end
 			-- nothing lands on someone untouchable right now (Lightstep)
 			if targetHumanoid.Parent and targetHumanoid.Parent:GetAttribute("Invulnerable") then
+				return
+			end
+			-- nor on someone in the i-frames of a dash
+			if targetHumanoid.Parent and CombatFeel.InDodge(targetHumanoid.Parent:GetAttribute("DodgeUntil"), workspace:GetServerTimeNow()) then
+				skillEffects:FireAllClients("Dodge", targetHumanoid.Parent)
 				return
 			end
 			if (targetRoot.Position - ownRoot.Position).Magnitude <= setting(model, "AttackRange") + REACH_TOLERANCE then

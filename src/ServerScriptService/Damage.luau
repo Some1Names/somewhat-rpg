@@ -15,6 +15,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
+local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
@@ -29,6 +30,7 @@ local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
+local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local Damage = {}
 
@@ -142,6 +144,8 @@ end
 --   hits or kills challenge
 -- options.guard: how a block treats it, "melee", "ranged", "skill" or
 --   "unblockable" (ultimates, grabs); default "melee" with options.melee, else "skill"
+-- options.unavoidable: lands even on a player who is dodging (a dash's i-frames; a status tick,
+--   options.dot, always does)
 -- Returns the health it actually took.
 function Damage.Deal(attacker, humanoid, baseAmount, options)
 	options = options or {}
@@ -150,6 +154,13 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	end
 	-- (a status effect's tick is neither combat nor blockable)
 	local targetPlayer = Players:GetPlayerFromCharacter(humanoid.Parent)
+	-- a player in the i-frames of a dash is missed
+	if targetPlayer and not options.dot and not options.unavoidable then
+		if CombatFeel.InDodge(humanoid.Parent:GetAttribute("DodgeUntil"), workspace:GetServerTimeNow()) then
+			skillEffects:FireAllClients("Dodge", humanoid.Parent)
+			return 0
+		end
+	end
 	if not options.dot then
 		Guard.MarkCombat(attacker and attacker.Character)
 		Guard.MarkCombat(targetPlayer and humanoid.Parent)

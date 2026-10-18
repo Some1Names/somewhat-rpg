@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
+local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -43,6 +44,10 @@ dashEffect.OnServerEvent:Connect(function(player, from, to)
 	if bucket.charges < 1 - TOLERANCE then
 		return
 	end
+	-- too soon after the last dash: no charge spent, no i-frames
+	if not CombatFeel.CanDodge(now + TOLERANCE, bucket.lastDodgeAt) then
+		return
+	end
 	local character = player.Character
 	local _, setName = SkillSetConfig.Equipped(character)
 	local dash = setName and SkillSetConfig.Sets[setName].dash
@@ -53,6 +58,11 @@ dashEffect.OnServerEvent:Connect(function(player, from, to)
 		return
 	end
 	bucket.charges -= 1
+	bucket.lastDodgeAt = now
+	-- the dash can't be hurt for a moment (Damage and EnemyAI read DodgeUntil)
+	if character then
+		character:SetAttribute("DodgeUntil", CombatFeel.DodgeUntil(workspace:GetServerTimeNow(), player:GetAttribute("Agility")))
+	end
 	if setDash then
 		bucket.lastSetDashAt = now
 	end

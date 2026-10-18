@@ -28,6 +28,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
+local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
@@ -317,6 +318,7 @@ local function firstWall(from, offset, character)
 end
 
 -- Lightstep: straight to the end of the dash as light, stopping short of walls
+local lastDashAt -- when the last dash started (CombatFeel.DodgeRecovery between two)
 local lastLightstepAt = -math.huge
 local function lightDash(character, humanoid, root, spec, setName, flying)
 	if os.clock() - lastLightstepAt < (spec.interval or 0) then
@@ -351,9 +353,10 @@ local function lightDash(character, humanoid, root, spec, setName, flying)
 	if distance < LIGHT_MIN_DISTANCE then
 		return
 	end
-	if not DodgeCharges.TryUse() then
+	if not CombatFeel.CanDodge(os.clock(), lastDashAt) or not DodgeCharges.TryUse() then
 		return
 	end
+	lastDashAt = os.clock()
 	lastLightstepAt = os.clock()
 	breakFree(root)
 
@@ -412,9 +415,10 @@ local function dash()
 		return
 	end
 
-	if not DodgeCharges.CanUse() or not Stamina.TryConsume(STAMINA_COST) then
+	if not CombatFeel.CanDodge(os.clock(), lastDashAt) or not DodgeCharges.CanUse() or not Stamina.TryConsume(STAMINA_COST) then
 		return
 	end
+	lastDashAt = os.clock()
 	DodgeCharges.TryUse()
 	breakFree(root)
 
