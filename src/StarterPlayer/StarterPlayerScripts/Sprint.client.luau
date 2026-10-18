@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 local StarterPlayer = game:GetService("StarterPlayer")
 local UserInputService = game:GetService("UserInputService")
 
+local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
@@ -78,12 +79,15 @@ RunService.Heartbeat:Connect(function(dt)
 	local stunned = (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
 	local blocking = character:GetAttribute("Blocking") == true
 	local swimming = character:GetAttribute("Swimming") == true
-	local sprinting = holding and moving and not stunned and not blocking and not swimming and Stamina.Drain(DRAIN_PER_SECOND * dt)
+	local swinging = os.clock() < (player:GetAttribute("SwingUntil") or 0)
+	local sprinting = holding and moving and not stunned and not blocking and not swimming and not swinging and Stamina.Drain(DRAIN_PER_SECOND * dt)
 	if stunned then
 		humanoid.WalkSpeed = 0
 		humanoid.Jump = false
 	elseif blocking then
 		humanoid.WalkSpeed = WALK_SPEED * GuardConfig.BlockWalkShare
+	elseif swinging then
+		humanoid.WalkSpeed = WALK_SPEED * CombatFeel.SwingWalkShare
 	else
 		humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
 	end

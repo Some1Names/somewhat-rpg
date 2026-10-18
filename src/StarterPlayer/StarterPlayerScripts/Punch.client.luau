@@ -5,15 +5,18 @@
 -- attack animations (turning the character to face where the camera looks),
 -- plus the weapon's hold pose while it's equipped. Left
 -- click is left to the Ranged script while it has the RangedReady attribute
--- set (a ranged move readied with right click, or a gun in hand).
+-- set (a ranged move readied with right click, or a gun in hand). Each swing
+-- costs stamina (CombatFeel) and slows your walk until it ends.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
+local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
+local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local punchEvent = ReplicatedStorage:WaitForChild("Punch")
 local player = Players.LocalPlayer
 
@@ -129,12 +132,15 @@ local function tryAttack()
 	if since < weapon.minInterval + rest then
 		return
 	end
-	if count < PunchConfig.ComboLength and since <= PunchConfig.ComboWindow then
-		count += 1
-	else
-		count = 1
+	local nextCount = (count < PunchConfig.ComboLength and since <= PunchConfig.ComboWindow) and count + 1 or 1
+	-- a swing costs stamina; with none to pay it, nothing happens (and the combo stays as it was)
+	if not Stamina.TryConsume(CombatFeel.SwingCost(weapon, nextCount == PunchConfig.ComboLength)) then
+		return
 	end
+	count = nextCount
 	lastHitAt = now
+	-- you walk slowly for as long as the swing lasts (Sprint)
+	player:SetAttribute("SwingUntil", now + weapon.hits[count].length)
 	-- turn the body into the swing, so what is drawn matches what is hit
 	local root = humanoid.RootPart
 	local direction = root and aimDirection(root) or Vector3.zAxis
