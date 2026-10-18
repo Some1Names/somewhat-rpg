@@ -1,7 +1,8 @@
--- The hub's Stats tab (M, or the hub's nav), with two sub-tabs. STATS: the level and its XP bar, what the stats add up to
+-- The hub's Stats tab (M, or the hub's nav), with three sub-tabs. STATS: the level and its XP bar, what the stats add up to
 -- (max HP, regen, damage, stamina boxes, dodge charges), and under them the points to spend on the four stats.
 -- MILESTONES: reward bars, one per track (the level, then each stat with milestones), in
--- segments with a pin under each reward. Unspent points show as a badge in the hub's nav.
+-- segments with a pin under each reward. TALENTS: the perks each stat opens at 15, 30 and 50 points,
+-- equipped with talent points (BuildRules, Talents). Unspent points show as a badge in the hub's nav.
 -- Also pops up XP gains and level ups. The numbers come from the player attributes the
 -- server keeps (see PlayerStats).
 local Debris = game:GetService("Debris")
@@ -9,9 +10,11 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
+local TalentConfig = require(ReplicatedStorage:WaitForChild("TalentConfig"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
@@ -102,7 +105,7 @@ local showTab -- defined below
 local subTabs = {}
 local subTabRow = make("Frame", { Parent = tabFrame, Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
 make("UIListLayout", { Parent = subTabRow, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 22), SortOrder = Enum.SortOrder.LayoutOrder })
-for order, name in ipairs({ "STATS", "MILESTONES" }) do
+for order, name in ipairs({ "STATS", "MILESTONES", "TALENTS" }) do
 	subTabs[name] = make("TextButton", {
 		Parent = subTabRow,
 		LayoutOrder = order,
@@ -163,11 +166,12 @@ end
 
 local statsHolder, statsPage = page("StatsPage")
 local rewardHolder, rewardPage = page("RewardPage")
+local talentsHolder, talentsPage = page("TalentsPage")
 
 -- STATS ---------------------------------------------------------------------------------------
 
 -- the points to spend, at the bottom: how many, how many each click adds, then a row per stat with its +
-local spendCard = frame(statsPage, { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 190) })
+local spendCard = frame(statsPage, { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 240) })
 make("UIPadding", { Parent = spendCard, PaddingTop = UDim.new(0, 8) })
 frame(spendCard, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, -8), BackgroundColor3 = BAR_BACK })
 local pointsRow = frame(spendCard, { Size = UDim2.new(1, 0, 0, 54) })
@@ -556,23 +560,103 @@ local function buildInfo()
 	end
 end
 
+-- TALENTS -------------------------------------------------------------------------------------
+
+local TALENT_ROW = 68
+local TALENT_NAME_WIDTH = 120
+
+-- a row per stat: its three talents, one for each tier. Click to equip or take off.
+local function buildTalents()
+	for _, child in ipairs(talentsPage:GetChildren()) do
+		if child:IsA("Frame") then
+			child:Destroy()
+		end
+	end
+	local level = player:GetAttribute("Level") or 0
+	local equipped = BuildRules.Equipped(player)
+	local total = BuildRules.TalentPoints(level)
+	local free = total - BuildRules.Spent(equipped)
+
+	local header = frame(talentsPage, { LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 54) })
+	label(header, { Text = "TALENT POINTS", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+	label(header, { Text = string.format("%d / %d", free, total), TextSize = 34, Position = UDim2.fromOffset(0, 16), Size = UDim2.fromOffset(160, 38) })
+	label(header, {
+		Text = string.format("1 point per %d levels  ·  tiers open at %s points in the stat", TalentConfig.LevelsPerPoint, table.concat(TalentConfig.Tiers, " / ")),
+		TextSize = 13,
+		TextColor3 = MUTED,
+		Position = UDim2.fromOffset(170, 30),
+		Size = UDim2.new(1, -170, 0, 18),
+	})
+
+	for order, stat in ipairs(StatConfig.Stats) do
+		local points = player:GetAttribute(stat.key) or 0
+		local row = frame(talentsPage, { LayoutOrder = order, Size = UDim2.new(1, 0, 0, TALENT_ROW) })
+		frame(row, { Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = BAR_BACK })
+		label(row, { Text = stat.key, TextSize = 18, Position = UDim2.fromOffset(0, 10), Size = UDim2.fromOffset(TALENT_NAME_WIDTH, 22) })
+		label(row, { Text = points .. " points", TextSize = 13, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 34), Size = UDim2.fromOffset(TALENT_NAME_WIDTH, 18) })
+		local cells = frame(row, { Position = UDim2.fromOffset(TALENT_NAME_WIDTH, 6), Size = UDim2.new(1, -TALENT_NAME_WIDTH, 1, -10) })
+		make("UIListLayout", { Parent = cells, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+		local index = 0
+		for _, talent in ipairs(TalentConfig.List) do
+			if talent.stat == stat.key then
+				index += 1
+				local on = table.find(equipped, talent.key) ~= nil
+				local open = BuildRules.TierUnlocked(points, talent.tier)
+				local textColor = on and BACKGROUND or open and TEXT or MUTED
+				local cell = make("TextButton", {
+					Parent = cells,
+					LayoutOrder = index,
+					Size = UDim2.new(1 / 3, -6, 1, 0),
+					BackgroundColor3 = on and ink or BAR_BACK,
+					BackgroundTransparency = (on or open) and 0 or 0.6,
+					BorderSizePixel = 0,
+					AutoButtonColor = false,
+					Text = "",
+				})
+				label(cell, { Text = talent.name, TextSize = 15, TextColor3 = textColor, Position = UDim2.fromOffset(8, 4), Size = UDim2.new(1, -16, 0, 18) })
+				label(cell, { Text = TalentConfig.Describe(talent), TextSize = 12, TextColor3 = textColor, Position = UDim2.fromOffset(8, 22), Size = UDim2.new(1, -16, 0, 16) })
+				label(cell, {
+					Text = on and "EQUIPPED" or open and ("Cost " .. talent.cost) or string.format("Needs %d points", talent.tier),
+					TextSize = 12,
+					TextColor3 = on and BACKGROUND or open and NEXT or MUTED,
+					Position = UDim2.fromOffset(8, 38),
+					Size = UDim2.new(1, -16, 0, 16),
+				})
+				cell.Activated:Connect(function()
+					local remote = ReplicatedStorage:FindFirstChild(TalentConfig.Remote)
+					if remote and (open or on) then
+						UiSfx.Play("statUp")
+						remote:FireServer(talent.key, not on)
+					end
+				end)
+			end
+		end
+	end
+end
+
 -- kept current while it's open
 player.AttributeChanged:Connect(function(name)
 	if rewardHolder.Visible and Hub.IsOpen("Stats") and (name == "Level" or StatConfig.Get(name) ~= nil) then
 		buildInfo()
 	end
+	if talentsHolder.Visible and Hub.IsOpen("Stats") and (name == "Level" or name == TalentConfig.SaveAttribute or StatConfig.Get(name) ~= nil) then
+		buildTalents()
+	end
 end)
 
--- shows the STATS or MILESTONES sub-tab
+-- shows the STATS, MILESTONES or TALENTS sub-tab
 function showTab(name)
 	if name == "MILESTONES" then
 		buildInfo()
+	elseif name == "TALENTS" then
+		buildTalents()
 	end
 	for tabName, button in pairs(subTabs) do
 		button.TextColor3 = tabName == name and TEXT or MUTED
 	end
 	statsHolder.Visible = name == "STATS"
 	rewardHolder.Visible = name == "MILESTONES"
+	talentsHolder.Visible = name == "TALENTS"
 end
 
 -- the hub always opens it on STATS
@@ -586,6 +670,9 @@ Hub.OnAccent(function(_, accentInk)
 	xpFill.BackgroundColor3 = ink
 	if rewardHolder.Visible then
 		buildInfo()
+	end
+	if talentsHolder.Visible then
+		buildTalents()
 	end
 end)
 local function showBadge()

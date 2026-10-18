@@ -18,6 +18,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local HotbarRules = require(ReplicatedStorage:WaitForChild("HotbarRules"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
@@ -703,6 +704,17 @@ local function makeTalismanCard(entry, index)
 end
 
 -- a square card in the inventory grid
+-- "Needs Strength 10" when the player is below the set's stat requirement
+local function needsText(setName)
+	local requires = SkillSetConfig.Sets[setName].requires
+	local stats = {}
+	for key in pairs(requires or {}) do
+		stats[key] = player:GetAttribute(key) or 0
+	end
+	local ok, missing = BuildRules.Meets(stats, requires)
+	return not ok and string.format("Needs %s %d", missing, requires[missing]) or nil
+end
+
 local function makeCard(entry, index)
 	if entry.kind == "item" then
 		makeItemCard(entry, index)
@@ -755,10 +767,11 @@ local function makeCard(entry, index)
 		Position = UDim2.new(0, 8, 1, -52),
 		Size = UDim2.new(1, -16, 0, 30),
 	})
+	local needs = needsText(setName)
 	label(card, {
-		Text = masteryText(setName),
+		Text = needs or masteryText(setName),
 		TextSize = 10,
-		TextColor3 = MUTED,
+		TextColor3 = needs and Color3.fromRGB(220, 70, 60) or MUTED,
 		Position = UDim2.new(0, 8, 1, -20),
 		Size = UDim2.new(1, -16, 0, 12),
 	})
