@@ -108,6 +108,13 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `BuildRules` (Lune-tested), `Talents` validates equips (`EquipTalent` remote, created by script) and prunes talents a
   player no longer qualifies for. Effects are read with `BuildRules.PlayerModifier(player, kind, damageStat)` in
   `Damage`, `Guard`, `StatusEffects`, `PlayerStats` (max HP), `Health` (regen) and `Stamina`.
+- **Combat feel**: the Q dash is the dodge. `DashRelay` accepts a dash (least `CombatFeel.DodgeRecovery` between two)
+  and sets the character's `DodgeUntil`; `Damage.Deal` and `EnemyAI`'s swing miss a player inside it (status ticks and
+  `options.unavoidable` still land); Agility widens the window. Enemies swing a quick or a heavy attack
+  (`EnemyAttackConfig`; heavy is slow, harder and can't be staggered out of) and tell clients to draw a
+  `SkillEffects` "Telegraph" for the wind-up. Melee swings cost stamina and slow your walk (`CombatFeel`, `Punch`,
+  `Sprint`). Block is not basekit: only a set or weapon with its own `block` table can block (`Guard.CanBlock`);
+  `GuardConfig.Enabled` is still off. Cues are placeholders until the owner's VFX.
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
   orange #FF9A3C / cyan #3CE0E6, Luminance passive, flight, Prism Form), Revolver (B weapon).
 
