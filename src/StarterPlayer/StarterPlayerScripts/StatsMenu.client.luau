@@ -22,6 +22,7 @@ local player = Players.LocalPlayer
 local AMOUNTS = { 1, 5, 10 } -- points added per click
 local SUBTABS_HEIGHT = 36 -- the STATS / MILESTONES titles, with the gap under them
 local PADDING = 14
+local POSE_ROOM = 150 -- px kept clear on the right, where the posed character reaches over the page
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local SPEND_ROW = 52
 local MILESTONE_GAP = 6 -- between the segments of a reward bar
@@ -128,7 +129,7 @@ local function page(name)
 		Name = name,
 		Parent = tabFrame,
 		Position = UDim2.fromOffset(0, SUBTABS_HEIGHT),
-		Size = UDim2.new(1, 0, 1, -SUBTABS_HEIGHT),
+		Size = UDim2.new(1, -POSE_ROOM, 1, -SUBTABS_HEIGHT),
 		BackgroundTransparency = 1,
 		Visible = false,
 	})
