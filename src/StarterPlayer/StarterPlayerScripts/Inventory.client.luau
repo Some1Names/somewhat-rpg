@@ -445,7 +445,7 @@ local function entries()
 		})
 	end
 	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
-	for _, key in ipairs(TalismanConfig.Parse(player:GetAttribute(TalismanConfig.OwnedAttribute))) do
+	for _, key in ipairs(TalismanConfig.Owned(player:GetAttribute(TalismanConfig.OwnedAttribute))) do
 		table.insert(list, {
 			kind = "talisman",
 			talisman = TalismanConfig.Get(key),

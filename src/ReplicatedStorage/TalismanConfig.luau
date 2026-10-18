@@ -16,6 +16,7 @@ TalismanConfig.FoundAttribute = "TalismanFound" -- on the player: "<key>:<server
 TalismanConfig.MaxSaveLength = 120
 TalismanConfig.SlotLevels = { 0, 15, 40 } -- the level that opens slot 1, 2, 3
 TalismanConfig.ChestChance = 0.2 -- chance a yen chest also holds a talisman you don't own yet
+TalismanConfig.OwnAll = true -- for now every player owns every talisman (like SkillSetConfig.OwnAllSets); the saved text is left alone
 
 -- in the order the Backpack lists them
 --   effects: maxHealthPct, regen (HP/s), damageReduction (share of damage taken
@@ -115,13 +116,25 @@ function TalismanConfig.YenMultiplier(equippedText)
 	return math.max(1 + TalismanConfig.Total(equippedText, "yenPct"), 0)
 end
 
+-- the talismans a player owns: all of them while OwnAll is on, else the saved text's
+function TalismanConfig.Owned(ownedText)
+	if TalismanConfig.OwnAll then
+		local all = {}
+		for _, item in ipairs(TalismanConfig.Items) do
+			table.insert(all, item.key)
+		end
+		return all
+	end
+	return TalismanConfig.Parse(ownedText)
+end
+
 -- wears `key`: the new worn list, or nil and why not. Slots are the level's;
 -- the worn text may hold more than that if a level was taken away (they stay on)
 function TalismanConfig.Equip(ownedText, equippedText, key, level)
 	if not byKey[key] then
 		return nil, "No such talisman"
 	end
-	if not table.find(TalismanConfig.Parse(ownedText), key) then
+	if not table.find(TalismanConfig.Owned(ownedText), key) then
 		return nil, "You don't own that talisman"
 	end
 	local worn = TalismanConfig.Parse(equippedText)
@@ -152,7 +165,7 @@ function TalismanConfig.Grant(ownedText, key)
 		return nil
 	end
 	local owned = TalismanConfig.Parse(ownedText)
-	if table.find(owned, key) then
+	if table.find(TalismanConfig.Owned(ownedText), key) then
 		return nil
 	end
 	table.insert(owned, key)
@@ -161,7 +174,7 @@ end
 
 -- a random talisman not yet owned (nil when they own them all); `roll(n)` gives 1..n
 function TalismanConfig.RollNew(ownedText, roll)
-	local owned = TalismanConfig.Parse(ownedText)
+	local owned = TalismanConfig.Owned(ownedText)
 	local missing = {}
 	for _, item in ipairs(TalismanConfig.Items) do
 		if not table.find(owned, item.key) then

@@ -81,7 +81,7 @@ end)
 -- a worn talisman the player no longer owns can't stay on (an admin took it, or a bad save)
 local function watchPlayer(player)
 	player:GetAttributeChangedSignal(TalismanConfig.OwnedAttribute):Connect(function()
-		local owned = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.OwnedAttribute))
+		local owned = TalismanConfig.Owned(player:GetAttribute(TalismanConfig.OwnedAttribute))
 		local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
 		local kept = {}
 		for _, key in ipairs(worn) do

@@ -1,6 +1,7 @@
 -- Unit tests for ReplicatedStorage.TalismanConfig (parsing, slots, totals,
 -- equipping, granting). Run with Lune, outside Roblox: tests/run.sh.
 local T = require("../src/ReplicatedStorage/TalismanConfig")
+T.OwnAll = false -- the tests are about real ownership
 
 local failures = 0
 local function check(name, condition)
