@@ -41,7 +41,7 @@ local swayFrames = {} -- the "Sway" frames in the HUD ScreenGuis
 
 local function wrap(gui, only)
 	local function swaying(child)
-		return child:IsA("GuiObject") and (only == true or table.find(only, child.Name) ~= nil)
+		return child:IsA("GuiObject") and child.Name ~= "UIScaleRoot" and (only == true or table.find(only, child.Name) ~= nil)
 	end
 	local sway = Instance.new("Frame")
 	sway.Name = "Sway"

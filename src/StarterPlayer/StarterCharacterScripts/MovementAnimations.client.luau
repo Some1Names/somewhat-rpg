@@ -2,6 +2,7 @@
 -- Animate script) for ours in ReplicatedStorage.MovementAnimations. One with
 -- an empty AnimationId (not published yet) leaves the default. Walk serves
 -- for both walking and running; sprinting has its own (Sprint).
+local ContentProvider = game:GetService("ContentProvider")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ours = ReplicatedStorage:WaitForChild("MovementAnimations")
@@ -17,6 +18,17 @@ local SLOTS = {
 	Jump = { "jump" },
 	Fall = { "fall" },
 }
+
+-- ours are downloaded before the swap, so the default keeps playing (no frozen pose
+-- while running) until they are ready
+local loading = {}
+for name in pairs(SLOTS) do
+	local animation = ours:FindFirstChild(name)
+	if animation and animation.AnimationId ~= "" then
+		table.insert(loading, animation)
+	end
+end
+pcall(ContentProvider.PreloadAsync, ContentProvider, loading)
 
 -- Animate notices the change and reloads that set
 for name, slots in pairs(SLOTS) do
