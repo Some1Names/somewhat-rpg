@@ -2396,5 +2396,19 @@
   "class": "Script",
   "runContext": "Client",
   "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/MouseIcon.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "MouseIcon"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
  }
 ]
