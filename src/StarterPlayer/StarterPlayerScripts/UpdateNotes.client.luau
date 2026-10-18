@@ -18,9 +18,9 @@ local COLUMN_GAP = 20
 local CARD_GAP = 18
 local CARD_PADDING = 18
 local TITLE_SIZE = 30
-local HEADING_SIZE = 22
-local NAME_SIZE = 18
-local TEXT_SIZE = 17
+local HEADING_SIZE = 20
+local NAME_SIZE = 20
+local TEXT_SIZE = 16
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local CARD = Hub.Theme.Panel
@@ -107,16 +107,24 @@ make("TextLabel", {
 	TextColor3 = TEXT,
 })
 
-local accentBars = {} -- the cards' left edges, in the held power's colour
-Hub.OnAccent(function(accent)
-	for _, bar in ipairs(accentBars) do
-		if bar.Parent then
-			bar.BackgroundColor3 = accent
+-- three clearly different levels: the group heading is a solid band in the held power's colour with
+-- dark capitals, a topic's name is bold and coloured with a square marker, and its info is plain
+-- light text, smaller and indented under it, with a thin rule between topics
+local tints = {} -- functions that colour the cards, called with the accent, the accent as drawn on dark, and the text on the accent
+local function onTint(fn)
+	table.insert(tints, fn)
+	fn(Hub.Accent(), Hub.InkAccent(), Hub.OnInk())
+end
+Hub.OnAccent(function(accent, ink)
+	local onAccent = Hub.OnInk()
+	for index = #tints, 1, -1 do
+		local ok = pcall(tints[index], accent, ink, onAccent)
+		if not ok then
+			table.remove(tints, index)
 		end
 	end
 end)
 
--- one topic: a card with an accent edge, its heading, then each line as a bold name over its description
 local function card(parent, section, order)
 	local heading, lines = section[1], section[2]
 	local frame = make("Frame", {
@@ -127,41 +135,96 @@ local function card(parent, section, order)
 		BackgroundColor3 = CARD,
 		BorderSizePixel = 0,
 	})
-	local bar = make("Frame", { Parent = frame, Size = UDim2.new(0, 4, 1, 0), BackgroundColor3 = Hub.Accent(), BorderSizePixel = 0 })
-	table.insert(accentBars, bar)
+	make("UIListLayout", { Parent = frame, SortOrder = Enum.SortOrder.LayoutOrder })
+	-- the heading band
+	local band = make("Frame", {
+		Parent = frame,
+		LayoutOrder = 0,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundColor3 = Hub.Accent(),
+		BorderSizePixel = 0,
+	})
+	make("UIPadding", {
+		Parent = band,
+		PaddingTop = UDim.new(0, 10),
+		PaddingBottom = UDim.new(0, 10),
+		PaddingLeft = UDim.new(0, CARD_PADDING),
+		PaddingRight = UDim.new(0, CARD_PADDING),
+	})
+	local bandText = label(band, { Text = string.upper(heading), Font = Hub.Theme.TitleFont, TextSize = HEADING_SIZE })
+	onTint(function(accent, _, onAccent)
+		band.BackgroundColor3 = accent
+		bandText.TextColor3 = onAccent
+	end)
+	-- the topics under it
 	local body = make("Frame", {
 		Parent = frame,
-		Position = UDim2.fromOffset(4, 0),
-		Size = UDim2.new(1, -4, 0, 0),
+		LayoutOrder = 1,
+		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 	})
 	make("UIPadding", {
 		Parent = body,
-		PaddingTop = UDim.new(0, CARD_PADDING),
-		PaddingBottom = UDim.new(0, CARD_PADDING),
+		PaddingTop = UDim.new(0, 8),
+		PaddingBottom = UDim.new(0, 8),
 		PaddingLeft = UDim.new(0, CARD_PADDING),
 		PaddingRight = UDim.new(0, CARD_PADDING),
 	})
-	make("UIListLayout", { Parent = body, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 12) })
-	label(body, { LayoutOrder = 0, Text = string.upper(heading), Font = Hub.Theme.TitleFont, TextSize = HEADING_SIZE })
+	make("UIListLayout", { Parent = body, SortOrder = Enum.SortOrder.LayoutOrder })
 	for index, line in ipairs(lines) do
 		local name, rest = string.match(line, "^(.-):%s*(.*)$")
 		if not name or rest == "" then
 			name, rest = nil, line
 		end
+		if index > 1 then
+			make("Frame", { -- the rule between topics
+				Parent = body,
+				LayoutOrder = index * 2 - 2,
+				Size = UDim2.new(1, 0, 0, 1),
+				BackgroundColor3 = Hub.Theme.BarBack,
+				BorderSizePixel = 0,
+			})
+		end
 		local entry = make("Frame", {
 			Parent = body,
-			LayoutOrder = index,
+			LayoutOrder = index * 2 - 1,
 			Size = UDim2.new(1, 0, 0, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 		})
-		make("UIListLayout", { Parent = entry, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
+		make("UIPadding", { Parent = entry, PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10) })
+		make("UIListLayout", { Parent = entry, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
 		if name then
-			label(entry, { LayoutOrder = 1, Text = name, TextSize = NAME_SIZE })
+			local top = make("Frame", {
+				Parent = entry,
+				LayoutOrder = 1,
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+			})
+			local marker = make("Frame", { Parent = top, Position = UDim2.fromOffset(0, 7), Size = UDim2.fromOffset(8, 8), BorderSizePixel = 0 })
+			local nameLabel = label(top, {
+				Text = name,
+				TextSize = NAME_SIZE,
+				Position = UDim2.fromOffset(18, 0),
+				Size = UDim2.new(1, -18, 0, 0),
+			})
+			onTint(function(_, ink)
+				marker.BackgroundColor3 = ink
+				nameLabel.TextColor3 = ink
+			end)
 		end
-		label(entry, { LayoutOrder = 2, Text = rest, TextSize = TEXT_SIZE, TextColor3 = name and BODY or TEXT })
+		local info = make("Frame", {
+			Parent = entry,
+			LayoutOrder = 2,
+			Size = UDim2.new(1, 0, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+		})
+		make("UIPadding", { Parent = info, PaddingLeft = UDim.new(0, name and 18 or 0) }) -- under the name, past its marker
+		label(info, { Text = rest, TextSize = TEXT_SIZE, TextColor3 = name and BODY or TEXT })
 	end
 	return frame
 end
@@ -182,7 +245,7 @@ local function build()
 		return
 	end
 	builtCount = count
-	accentBars = {}
+	tints = {}
 	columns:ClearAllChildren()
 	make("UIListLayout", {
 		Parent = columns,
