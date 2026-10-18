@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 
 local player = Players.LocalPlayer
@@ -15,6 +16,8 @@ local RECOVER_AT = 25 -- after running dry, sprinting waits until stamina is bac
 
 local function maxFromLevel()
 	return StatConfig.StaminaBoxes(player:GetAttribute("Level") or 0) * StatConfig.StaminaPerBox
+		+ StatConfig.AgilityStamina(player:GetAttribute("Agility") or 0)
+		+ BuildRules.PlayerModifier(player, "staminaMax")
 end
 
 local Stamina = { Max = maxFromLevel() }
@@ -66,12 +69,15 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 end)
 
--- a new box arrives full
-player:GetAttributeChangedSignal("Level"):Connect(function()
+-- a new box (or point of Agility, or a stamina talent) arrives full
+local function onMaxChanged()
 	local newMax = maxFromLevel()
 	value = math.clamp(value + newMax - Stamina.Max, 0, newMax)
 	Stamina.Max = newMax
-end)
+end
+player:GetAttributeChangedSignal("Level"):Connect(onMaxChanged)
+player:GetAttributeChangedSignal("Agility"):Connect(onMaxChanged)
+player:GetAttributeChangedSignal("Talents"):Connect(onMaxChanged)
 
 player.CharacterAdded:Connect(function()
 	value = Stamina.Max

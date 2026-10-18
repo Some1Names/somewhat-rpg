@@ -17,10 +17,12 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local PRESS_THROTTLE = 0.05 -- seconds between block presses a player may make
@@ -101,7 +103,14 @@ function Guard.Resolve(target, amount, kind, source, attacker)
 	local flat = Vector3.new(away.X, 0, away.Z)
 	local toward = flat.Magnitude > 1e-4 and flat.Unit or root.CFrame.LookVector
 	skillEffects:FireAllClients("Block", target, root.Position + toward * HIT_REACH + Vector3.new(0, HIT_HEIGHT, 0))
-	local posture, broke = GuardConfig.postureAfter(target:GetAttribute("Posture") or 0, prevented)
+	-- Willpower and the posture talents make a block cost less posture
+	local targetPlayer = Players:GetPlayerFromCharacter(target)
+	local postureTaken = prevented
+	if targetPlayer then
+		postureTaken *= StatConfig.WillpowerPostureMultiplier(targetPlayer:GetAttribute("Willpower") or 0)
+			* BuildRules.PlayerModifier(targetPlayer, "postureTaken")
+	end
+	local posture, broke = GuardConfig.postureAfter(target:GetAttribute("Posture") or 0, postureTaken)
 	target:SetAttribute("Posture", posture)
 	stateOf(target).lastAt = now
 	if broke then

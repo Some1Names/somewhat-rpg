@@ -8,7 +8,9 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local Damage = require(script.Parent:WaitForChild("Damage"))
+local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 
 local STEP = 0.1 -- seconds between checks
@@ -58,7 +60,14 @@ function StatusEffects.Apply(target, name, opts)
 	end
 	local now = workspace:GetServerTimeNow()
 	local stacks = math.min(effect.maxStacks, StatusConfig.Stacks(model, name) + (opts.stacks or 1))
-	model:SetAttribute(StatusConfig.EndsAttribute(name), now + (opts.duration or effect.duration))
+	-- Willpower and the status talents shorten what lands on a player
+	local duration = opts.duration or effect.duration
+	local victim = Players:GetPlayerFromCharacter(model)
+	if victim then
+		duration *= StatConfig.WillpowerStatusMultiplier(victim:GetAttribute("Willpower") or 0)
+			* BuildRules.PlayerModifier(victim, "statusDuration")
+	end
+	model:SetAttribute(StatusConfig.EndsAttribute(name), now + duration)
 	model:SetAttribute(StatusConfig.StacksAttribute(name), stacks)
 
 	active[model] = active[model] or {}

@@ -14,6 +14,7 @@ local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local Guard = require(script.Parent:WaitForChild("Guard"))
@@ -162,6 +163,7 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	local amount = baseAmount
 	if attacker and options.stat then
 		amount *= StatConfig.DamageMultiplier(options.stat, attacker:GetAttribute(options.stat) or 0)
+		amount *= BuildRules.PlayerModifier(attacker, "damage", options.stat)
 	end
 	-- lower-tier skill sets hit softer
 	if options.skillSet then
