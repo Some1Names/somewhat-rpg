@@ -29,7 +29,6 @@ local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
-local MouseIcon = require(script.Parent:WaitForChild("MouseIcon"))
 
 -- which server actions put something on (or take it off) and so make the equip sounds
 local ACTION_SOUNDS = {
@@ -950,9 +949,8 @@ local function detailRow(key, name, note, dim)
 		BackgroundTransparency = 1,
 	})
 	local color = dim and MUTED or TEXT
-	local mouseSide = MouseIcon.Side(key) -- LMB and RMB are drawn as a mouse
 	local keyBox = label(row, {
-		Text = mouseSide and "" or key,
+		Text = key,
 		Font = Enum.Font.Highway,
 		TextSize = 9,
 		TextColor3 = color,
@@ -960,9 +958,6 @@ local function detailRow(key, name, note, dim)
 		Size = UDim2.fromOffset(50, 20),
 	})
 	outline(keyBox, dim and 0.8 or 0.6)
-	if mouseSide then
-		MouseIcon.Make(keyBox, mouseSide, color)
-	end
 	label(row, {
 		Text = note and string.format('%s  <font color="#a5a5b4" size="10">%s</font>', name, note) or name,
 		RichText = true,

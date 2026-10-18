@@ -16,7 +16,6 @@ local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
-local MouseIcon = require(script.Parent:WaitForChild("MouseIcon"))
 
 local player = Players.LocalPlayer
 
@@ -74,24 +73,19 @@ local function line(order, key, name)
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Padding = UDim.new(0, 6),
 	})
-	local mouseSide = MouseIcon.Side(key) -- LMB and RMB are drawn as a mouse
 	local cap = make("TextLabel", {
 		Parent = row,
 		LayoutOrder = 1,
-		Size = mouseSide and UDim2.fromOffset(20, 15) or UDim2.fromOffset(0, 15),
-		AutomaticSize = mouseSide and Enum.AutomaticSize.None or Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 15),
+		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundColor3 = TEXT,
 		BorderSizePixel = 0,
 		Font = Enum.Font.Highway,
-		Text = mouseSide and "" or key,
+		Text = key,
 		TextSize = 9,
 		TextColor3 = KEYCAP_TEXT,
 	})
-	if mouseSide then
-		MouseIcon.Make(cap, mouseSide, KEYCAP_TEXT)
-	else
-		make("UIPadding", { Parent = cap, PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) })
-	end
+	make("UIPadding", { Parent = cap, PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) })
 	make("TextLabel", {
 		Parent = row,
 		LayoutOrder = 2,
