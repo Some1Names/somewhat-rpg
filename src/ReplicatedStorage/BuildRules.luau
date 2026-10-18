@@ -112,4 +112,14 @@ function BuildRules.Modifier(equipped, kind, damageStat)
 	return total
 end
 
+-- the player's equipped talents (the replicated `Talents` text attribute)
+function BuildRules.Equipped(player)
+	return BuildRules.Decode(player:GetAttribute(TalentConfig.SaveAttribute))
+end
+
+-- Modifier for a Player instance, on the server or the client
+function BuildRules.PlayerModifier(player, kind, damageStat)
+	return BuildRules.Modifier(BuildRules.Equipped(player), kind, damageStat)
+end
+
 return BuildRules

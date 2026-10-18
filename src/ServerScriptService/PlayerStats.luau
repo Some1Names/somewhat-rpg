@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
@@ -21,6 +22,7 @@ local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
+local TalentConfig = require(ReplicatedStorage:WaitForChild("TalentConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
 local masteryEvent = ReplicatedStorage:WaitForChild("MasteryUp")
@@ -60,6 +62,7 @@ local TEXT_DEFAULTS = {
 	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
 	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
 	Reforge = "", -- each set's reforge level and modifiers (ReforgeRules, Reforge)
+	Talents = "", -- the equipped talents, comma separated (TalentConfig, BuildRules, Talents)
 	CurrentPower = "", -- the one power the player holds (PowerConfig, Powers)
 	PowerStorage = "", -- the spare powers in storage, comma separated (Powers)
 	LifetimePowers = "", -- powers bought with Robux, comma separated (Powers)
@@ -74,6 +77,7 @@ local TEXT_MAX_LENGTH = 200
 local TEXT_LENGTHS = {
 	Challenges = QuestConfig.MaxSaveLength,
 	Reforge = ReforgeConfig.MaxSaveLength,
+	Talents = TalentConfig.MaxSaveLength,
 	ConsumableStorage = ConsumableConfig.MaxSaveLength,
 }
 
@@ -103,7 +107,12 @@ local function applyHealth(player, refill)
 		return
 	end
 	local maxHealth = math.max(
-		math.floor(StatConfig.MaxHealth(vitality) * TalismanConfig.HealthMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute)) + 0.5),
+		math.floor(
+			StatConfig.MaxHealth(vitality)
+				* TalismanConfig.HealthMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute))
+				* BuildRules.PlayerModifier(player, "maxHealth")
+				+ 0.5
+		),
 		1
 	)
 	local missing = humanoid.MaxHealth - humanoid.Health
@@ -420,6 +429,7 @@ function PlayerStats.ResetProgress(player)
 	end
 	player:SetAttribute("Challenges", TEXT_DEFAULTS.Challenges)
 	player:SetAttribute("Reforge", TEXT_DEFAULTS.Reforge)
+	player:SetAttribute("Talents", TEXT_DEFAULTS.Talents)
 	for _, field in ipairs({ "CurrentPower", "PowerStorage", "LifetimePowers", "ConsumableStorage" }) do
 		player:SetAttribute(field, TEXT_DEFAULTS[field])
 	end
@@ -454,6 +464,10 @@ local function onPlayerAdded(player)
 	player.CharacterAdded:Connect(function(character)
 		character:WaitForChild("Humanoid")
 		applyHealth(player, true)
+	end)
+	-- an equipped talent can change max HP
+	player:GetAttributeChangedSignal(TalentConfig.SaveAttribute):Connect(function()
+		applyHealth(player, false)
 	end)
 	load(player)
 end
