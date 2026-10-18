@@ -11,15 +11,21 @@
 -- R6 rigs: each socket points from the joint to the limb it carries, whatever
 -- the rig's joint frames are. A body standing straight would balance on its
 -- legs, so it's pushed over: away from whoever last hit it (Damage), or any
--- way if nobody did. The body lies there until it respawns
--- (Players.RespawnTime for players, DummyRespawn for NPCs).
+-- way if nobody did. The body lies there a moment, then fades out in a puff
+-- of particles, until it respawns (Players.RespawnTime for players,
+-- DummyRespawn for NPCs).
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Damage = require(script.Parent:WaitForChild("Damage"))
+local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
 local PUSH_SPEED = 14 -- studs/s the torso's top is shoved away
 local PUSH_LIFT = 4 -- and up
+local FADE_DELAY = 1.2 -- seconds the body lies there before it dissolves
+local FADE_TIME = 1.2 -- seconds the fade takes (short of the 3 s dummy respawn)
 
 -- per joint name: how far the limb may swing from where it was (degrees) and
 -- twist either way; joints not listed get DEFAULT_LIMIT
@@ -174,6 +180,29 @@ local function ragdoll(character, humanoid)
 	end
 end
 
+-- after the body has lain there a moment it dissolves: every part fades out
+-- while the VFXPrefabs.Shared.DeathFade effect plays on its torso
+local function fadeAway(character)
+	task.wait(FADE_DELAY)
+	if not character.Parent then
+		return
+	end
+
+	local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") or character.PrimaryPart
+	if torso then
+		skillEffects:FireAllClients("DeathFade", torso)
+	end
+
+	local info = TweenInfo.new(FADE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	for _, item in ipairs(character:GetDescendants()) do
+		if item:IsA("BasePart") then
+			TweenService:Create(item, info, { Transparency = 1 }):Play()
+		elseif item:IsA("Decal") then
+			TweenService:Create(item, info, { Transparency = 1 }):Play()
+		end
+	end
+end
+
 local function watch(humanoid)
 	local character = humanoid.Parent
 	if not character or not character:IsA("Model") then
@@ -182,6 +211,7 @@ local function watch(humanoid)
 	humanoid.BreakJointsOnDeath = false
 	humanoid.Died:Once(function()
 		ragdoll(character, humanoid)
+		task.spawn(fadeAway, character)
 	end)
 end
 

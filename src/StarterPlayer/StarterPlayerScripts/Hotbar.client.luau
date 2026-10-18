@@ -166,7 +166,7 @@ end
 local function newLabel(parent, props)
 	local l = Instance.new("TextLabel")
 	l.BackgroundTransparency = 1
-	l.Font = props.Font or Enum.Font.GothamBold
+	l.Font = props.Font or Enum.Font.Highway
 	l.TextColor3 = props.TextColor3 or TEXT
 	l.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Center
 	l.TextWrapped = true
@@ -246,7 +246,7 @@ local function slotAt(i)
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then
+	if gameProcessed or Menus.Blocks() then
 		return
 	end
 	local key = table.find(NUMBER_KEYS, input.KeyCode)

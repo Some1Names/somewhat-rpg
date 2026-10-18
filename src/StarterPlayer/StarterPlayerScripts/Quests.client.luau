@@ -20,9 +20,9 @@ local ROW_HEIGHT = 62
 local BACKGROUND = Hub.Theme.Paper -- text on gold buttons
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
-local GOLD = Color3.fromRGB(190, 130, 0) -- dark enough for the paper
+local GOLD = Color3.fromRGB(255, 190, 40)
 local BAR_BACK = Hub.Theme.BarBack
-local LOCKED = Color3.fromRGB(180, 180, 178)
+local LOCKED = Color3.fromRGB(70, 70, 76)
 local CARD = Hub.Theme.Panel
 
 local function make(className, props)
@@ -48,7 +48,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -82,7 +82,7 @@ for order, entry in ipairs({ { "bounty", "BOUNTY" }, { "challenges", "CHALLENGES
 		Size = UDim2.fromOffset(0, 26),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = entry[2],
 		TextSize = 14,
 		TextColor3 = MUTED,
@@ -153,7 +153,7 @@ local function showBounty()
 		BackgroundTransparency = 0,
 	})
 	make("UIPadding", { Parent = frame, PaddingTop = UDim.new(0, 10), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
-	label(frame, { Text = quest.title, Font = Enum.Font.GothamBold, TextSize = 15, Size = UDim2.new(1, 0, 0, 18) })
+	label(frame, { Text = quest.title, Font = Enum.Font.Highway, TextSize = 15, Size = UDim2.new(1, 0, 0, 18) })
 	label(frame, {
 		Text = string.format("Defeat %d %s  ·  Lv. %d", quest.count, QuestConfig.plural(quest), quest.level),
 		TextSize = 12,
@@ -175,7 +175,7 @@ local function showBounty()
 		Position = UDim2.fromScale(1, 1),
 		Size = UDim2.fromOffset(74, 24),
 		BackgroundColor3 = LOCKED,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = "Abandon",
 		TextSize = 11,
 		TextColor3 = TEXT,
@@ -239,13 +239,14 @@ local function showChallenges()
 			Size = UDim2.new(1 / #sets, -4, 1, 0),
 			BackgroundColor3 = color,
 			BackgroundTransparency = chosen and 0 or 1,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			Text = setLabel(setName),
 			TextSize = 10,
 			TextColor3 = chosen and (light and TEXT or BACKGROUND) or MUTED,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 		})
 		outline(button, chosen and 1 or 0.7)
+		button:SetAttribute("SectionSelect", true)
 		button.Activated:Connect(function()
 			pickedSet = setName
 			refresh()
@@ -287,7 +288,7 @@ local function showChallenges()
 		})
 		label(row, {
 			Text = done and "✓" or string.format("+%d", challenge.reward),
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = done and 20 or 13,
 			TextColor3 = done and GOLD or (locked and MUTED or GOLD),
 			TextXAlignment = Enum.TextXAlignment.Right,
@@ -313,6 +314,7 @@ function refresh()
 end
 
 for name, button in pairs(tabs) do
+	button:SetAttribute("SectionSelect", true)
 	button.Activated:Connect(function()
 		tab = name
 		refresh()

@@ -4,14 +4,14 @@
 -- not), what a tab's key does, and the order of the nav. tests/HubRules.spec.luau runs it outside Roblox.
 local HubRules = {}
 
-HubRules.InkLevel = 0.08 -- the ink's r, g and b
-HubRules.LightLuminance = 0.8 -- above this an accent is too light for the paper
-HubRules.GreyRange = 0.15 -- a light accent whose channels differ by less than this is grey: ink
+HubRules.InkLevel = 0.92 -- the ink's r, g and b
+HubRules.DarkLuminance = 0.2 -- below this an accent is too dark for the paper
+HubRules.GreyRange = 0.15 -- a dark accent whose channels differ by less than this is grey: ink
 
 -- r, g, b from 0 to 1: the colour to draw that accent with on the paper
 function HubRules.Ink(r, g, b)
 	local luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-	if luminance > HubRules.LightLuminance and math.max(r, g, b) - math.min(r, g, b) < HubRules.GreyRange then
+	if luminance < HubRules.DarkLuminance and math.max(r, g, b) - math.min(r, g, b) < HubRules.GreyRange then
 		return HubRules.InkLevel, HubRules.InkLevel, HubRules.InkLevel
 	end
 	return r, g, b

@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 
 local player = Players.LocalPlayer
 
@@ -52,6 +53,29 @@ task.spawn(function()
 	end
 end)
 
+-- yen chests: the sound plays as your body touches one, without waiting for the
+-- server to hand over the yen
+task.spawn(function()
+	local chests = workspace:WaitForChild("Chests")
+	local function watch(chest)
+		if not chest:IsA("BasePart") then
+			return
+		end
+		local played = false
+		chest.Touched:Connect(function(hit)
+			local character = player.Character
+			if not played and character and hit:IsDescendantOf(character) then
+				played = true
+				UiSfx.Play("getYen")
+			end
+		end)
+	end
+	chests.ChildAdded:Connect(watch)
+	for _, chest in ipairs(chests:GetChildren()) do
+		watch(chest)
+	end
+end)
+
 -- "+N Name" pop-ups
 
 local gui = Instance.new("ScreenGui")
@@ -78,7 +102,7 @@ local function popup(text)
 	label.LayoutOrder = popupCount
 	label.Size = UDim2.new(1, 0, 0, 20)
 	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamBold
+	label.Font = Enum.Font.Highway
 	label.TextSize = 16
 	label.TextColor3 = Color3.new(1, 1, 1)
 	label.TextStrokeColor3 = STROKE
@@ -105,7 +129,7 @@ for key, material in pairs(DropConfig.Materials) do
 		local value = player:GetAttribute(attribute)
 		if typeof(value) == "number" and typeof(last) == "number" and value > last then
 			popup(string.format("+%d %s", value - last, material.display))
-		end
+			UiSfx.Play(material.tier == "Common" and "collectOrb" or "rareDrop")		end
 		last = value
 	end)
 end

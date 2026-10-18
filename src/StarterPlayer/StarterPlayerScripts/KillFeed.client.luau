@@ -61,7 +61,7 @@ local function label(parent, text, color, font, order)
 	l.BackgroundTransparency = 1
 	l.AutomaticSize = Enum.AutomaticSize.X
 	l.Size = UDim2.fromOffset(0, LINE_HEIGHT)
-	l.Font = font or Enum.Font.GothamBold
+	l.Font = font or Enum.Font.Highway
 	l.TextSize = 14
 	l.TextColor3 = color
 	l.Text = text
@@ -166,16 +166,16 @@ local function addLine(victimId, victimName, killerId, killerName, setName)
 			tagPadding.PaddingLeft = UDim.new(0, 6)
 			tagPadding.PaddingRight = UDim.new(0, 6)
 			tagPadding.Parent = tag
-			local tagText = label(tag, set.tool or setName, set.color, Enum.Font.GothamMedium, 1)
+			local tagText = label(tag, set.tool or setName, set.color, Enum.Font.Highway, 1)
 			tagText.Size = UDim2.new(0, 0, 1, 0)
 			tagText.TextSize = 12
 		else
-			label(line, "killed", MUTED, Enum.Font.GothamMedium, 2)
+			label(line, "killed", MUTED, Enum.Font.Highway, 2)
 		end
 		label(line, victimName, TEXT, nil, 3)
 	else
 		label(line, victimName, TEXT, nil, 1)
-		label(line, "was defeated", MUTED, Enum.Font.GothamMedium, 2)
+		label(line, "was defeated", MUTED, Enum.Font.Highway, 2)
 	end
 	post(line)
 end
@@ -189,7 +189,7 @@ local function addHeadhunterLine(kind, nameA, nameB, xp, yen)
 		label(line, "is the Headhunter", HEADHUNTER, nil, 2)
 	elseif kind == "taken" then
 		label(line, nameB, TEXT, nil, 1)
-		label(line, "took", MUTED, Enum.Font.GothamMedium, 2)
+		label(line, "took", MUTED, Enum.Font.Highway, 2)
 		label(line, nameA .. "'s head", HEADHUNTER, nil, 3)
 		if xp and xp > 0 then
 			label(line, "+" .. withCommas(xp) .. " XP", REWARD, nil, 4)

@@ -27,6 +27,31 @@ local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
+local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
+
+-- which server actions put something on (or take it off) and so make the equip sounds
+local ACTION_SOUNDS = {
+	use = "equip",
+	swap = "equip",
+	takeOut = "equip",
+	switch = "equip",
+	equipBriefcase = "equip",
+	equip = "equip",
+	store = "unequip",
+	unequipBriefcase = "unequip",
+}
+
+-- The take-off sound plays as the button goes down (before the click finishes,
+-- see the buttons at the bottom) and again from the action: only the first counts.
+local lastUnequipAt = -math.huge
+local function playUnequip()
+	if os.clock() - lastUnequipAt > 0.5 then
+		lastUnequipAt = os.clock()
+		UiSfx.Play("unequip")
+	end
+end
+local PRESS_UNEQUIP = { "UNEQUIP", "TAKE OFF", "STORE" } -- button texts that take something off
 local talismanRemote = ReplicatedStorage:WaitForChild("TalismanAction")
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
 local itemRemote = ReplicatedStorage:WaitForChild("ConsumableAction")
@@ -46,7 +71,7 @@ local SLOT_GAP = 8
 local MATERIAL_ROW = 18
 local BUTTON_HEIGHT = 32
 local BACKGROUND = Hub.Theme.Panel -- cards, and the text on ink buttons
-local SELECTED_BACKGROUND = Color3.fromRGB(190, 190, 188)
+local SELECTED_BACKGROUND = Color3.fromRGB(58, 58, 66)
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local DANGER = Color3.fromRGB(226, 75, 74)
@@ -72,8 +97,8 @@ local TABS = {
 	{ kind = "item", title = "ITEMS" },
 	{ kind = "talisman", title = "TALISMAN", width = 66 },
 }
-local TALISMAN_ROW = 24 -- a worn-talisman line in the EQUIPPED column
-local TALISMAN_GAP = 4
+local TALISMAN_BOX = 70 -- a talisman slot in the EQUIPPED column: a square, three in a row
+local TALISMAN_GAP = 10
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -99,7 +124,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	if not props.TextWrapped then
@@ -151,7 +176,7 @@ local panel = make("Frame", {
 -- the panel fills the tab; a tab smaller than PANEL_SIZE shrinks it (UIScale), so all three columns stay in view
 local panelScale = make("UIScale", { Parent = panel })
 local function rescale()
-	local room = tabFrame.AbsoluteSize
+	local room = tabFrame.AbsoluteSize / UIScale.Get() -- real pixels to UI pixels
 	if room.X > 0 and room.Y > 0 then
 		local scale = math.min(1, room.X / PANEL_SIZE.X, room.Y / PANEL_SIZE.Y)
 		panelScale.Scale = scale
@@ -160,8 +185,9 @@ local function rescale()
 end
 rescale()
 tabFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(rescale)
+UIScale.OnChange(rescale)
 
--- a set's colour as text on the paper (a light one is darkened)
+-- a set's colour as text on the paper (a dark one is lightened)
 local function onPaper(color)
 	return Color3.new(HubRules.Ink(color.R, color.G, color.B))
 end
@@ -183,7 +209,7 @@ local function column(position, size, anchor, title)
 	padding(frame, COLUMN_PADDING)
 	label(frame, {
 		Text = title,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextColor3 = MUTED,
 		Size = UDim2.new(1, 0, 0, HEADING_HEIGHT - 6),
@@ -213,12 +239,12 @@ local slotList = make("Frame", {
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = slotList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
--- under the slots: one line per talisman slot (worn, empty or locked)
+-- under the slots: a row of square talisman slots (worn, empty or locked)
 local TALISMANS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + 6
-local TALISMANS_HEIGHT = 16 + #TalismanConfig.SlotLevels * (TALISMAN_ROW + TALISMAN_GAP)
+local TALISMANS_HEIGHT = 16 + TALISMAN_BOX
 label(leftColumn, {
 	Text = "TALISMANS",
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 12,
 	TextColor3 = MUTED,
 	Position = UDim2.fromOffset(0, TALISMANS_TOP),
@@ -230,11 +256,16 @@ local talismanList = make("Frame", {
 	Size = UDim2.new(1, 0, 0, TALISMANS_HEIGHT - 16),
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = talismanList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, TALISMAN_GAP) })
+make("UIListLayout", {
+	Parent = talismanList,
+	FillDirection = Enum.FillDirection.Horizontal,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, TALISMAN_GAP),
+})
 local MATERIALS_TOP = TALISMANS_TOP + TALISMANS_HEIGHT + 4
 label(leftColumn, {
 	Text = "MATERIALS",
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 12,
 	TextColor3 = MUTED,
 	Position = UDim2.fromOffset(0, MATERIALS_TOP),
@@ -300,7 +331,7 @@ local function makeButton(offset)
 		Position = UDim2.new(0, 0, 1, -offset),
 		Size = UDim2.new(1, 0, 0, BUTTON_HEIGHT),
 		BackgroundColor3 = TEXT,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 13,
 		TextColor3 = BACKGROUND,
 		Text = "",
@@ -518,6 +549,9 @@ local function masteryText(setName)
 end
 
 local function selectKey(key)
+	if key ~= selected then
+		UiSfx.Play("itemSelect")
+	end
 	selected = key
 	pending = nil
 	pickingSlot = false
@@ -545,7 +579,7 @@ local function makeItemCard(entry, index)
 	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
 	label(card, {
 		Text = item.kind == "limited" and string.format("%d/%d", entry.uses or 0, item.maxUses) or "LIFE",
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		TextSize = item.kind == "limited" and 20 or 15,
 		TextColor3 = onPaper(color),
 		Position = UDim2.fromOffset(8, 6),
@@ -555,7 +589,7 @@ local function makeItemCard(entry, index)
 	if entry.equipped then
 		label(card, {
 			Text = "EQUIPPED",
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 9,
 			TextColor3 = BACKGROUND,
 			TextXAlignment = Enum.TextXAlignment.Center,
@@ -569,7 +603,7 @@ local function makeItemCard(entry, index)
 	end
 	label(card, {
 		Text = item.name,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -616,7 +650,7 @@ local function makeTalismanCard(entry, index)
 	-- a diamond-ish mark: the first letter in the talisman's colour
 	label(card, {
 		Text = string.sub(talisman.name, 1, 1),
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		TextSize = 24,
 		TextColor3 = onPaper(color),
 		Position = UDim2.fromOffset(8, 4),
@@ -625,7 +659,7 @@ local function makeTalismanCard(entry, index)
 	if entry.equipped then
 		label(card, {
 			Text = "WORN",
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 9,
 			TextColor3 = BACKGROUND,
 			TextXAlignment = Enum.TextXAlignment.Center,
@@ -639,7 +673,7 @@ local function makeTalismanCard(entry, index)
 	end
 	label(card, {
 		Text = talisman.name,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -688,7 +722,7 @@ local function makeCard(entry, index)
 	outline(card, isSelected and 0 or 0.35, tierColor(set), isSelected and 3 or 1)
 	label(card, {
 		Text = set.tier or "",
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		TextSize = 20,
 		TextColor3 = tierColor(set),
 		Position = UDim2.fromOffset(8, 6),
@@ -698,7 +732,7 @@ local function makeCard(entry, index)
 	if tag then
 		label(card, {
 			Text = tag,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 9,
 			TextColor3 = BACKGROUND,
 			TextXAlignment = Enum.TextXAlignment.Center,
@@ -712,7 +746,7 @@ local function makeCard(entry, index)
 	end
 	label(card, {
 		Text = set.tool,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -758,7 +792,7 @@ local function makeSlot(slot, index)
 	outline(frame, isSelected and 0 or (set and 0.35 or 0.8), set and tierColor(set) or TEXT, isSelected and 3 or 1)
 	label(frame, {
 		Text = slot.title,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 10,
 		TextColor3 = MUTED,
 		Position = UDim2.fromOffset(12, 6),
@@ -784,7 +818,7 @@ local function makeSlot(slot, index)
 	})
 	label(frame, {
 		Text = set.tier or "",
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		TextSize = 24,
 		TextColor3 = tierColor(set),
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -793,7 +827,7 @@ local function makeSlot(slot, index)
 	})
 	label(frame, {
 		Text = set.tool,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 13,
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Top,
@@ -813,8 +847,8 @@ local function makeSlot(slot, index)
 	end)
 end
 
--- the EQUIPPED column's talisman lines: a worn one (click to select it), an empty
--- slot, or a locked one with the level that opens it
+-- the EQUIPPED column's talisman slots, three squares in a row: a worn one (click to
+-- select it), or a placeholder name for an empty or locked slot (with its level)
 local function makeTalismanSlots()
 	clear(talismanList)
 	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
@@ -823,29 +857,60 @@ local function makeTalismanSlots()
 		local key = worn[i]
 		local talisman = key and TalismanConfig.Get(key)
 		local isSelected = talisman ~= nil and "talisman:" .. key == selected
-		local row = make(talisman and "TextButton" or "Frame", {
+		local box = make(talisman and "TextButton" or "Frame", {
 			Parent = talismanList,
 			LayoutOrder = i,
-			Size = UDim2.new(1, 0, 0, TALISMAN_ROW),
+			Size = UDim2.fromOffset(TALISMAN_BOX, TALISMAN_BOX),
 			BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
 			BackgroundTransparency = talisman and 0.2 or 0.6,
 		})
 		if talisman then
-			row.Text = ""
+			box.Text = ""
 		end
-		outline(row, isSelected and 0 or (talisman and 0.35 or 0.8), talisman and onPaper(talismanColor(talisman)) or TEXT, isSelected and 2 or 1)
-		local text = talisman and talisman.name or (i <= open and "Empty" or string.format("Locked  ·  level %d", at))
-		label(row, {
-			Text = text,
-			Font = talisman and Enum.Font.GothamBold or Enum.Font.GothamMedium,
+		outline(box, isSelected and 0 or (talisman and 0.35 or 0.8), talisman and onPaper(talismanColor(talisman)) or TEXT, isSelected and 3 or 1)
+		-- the slot number, top left
+		label(box, {
+			Text = tostring(i),
+			Font = Enum.Font.Highway,
+			TextSize = 10,
+			TextColor3 = MUTED,
+			Position = UDim2.fromOffset(6, 4),
+			Size = UDim2.fromOffset(20, 12),
+		})
+		-- the worn talisman's name, or a placeholder name (with the level that opens a locked slot)
+		label(box, {
+			Text = talisman and talisman.name or string.format("Talisman %d", i),
+			Font = talisman and Enum.Font.Highway or Enum.Font.Highway,
 			TextSize = 11,
 			TextColor3 = talisman and TEXT or MUTED,
-			Position = UDim2.fromOffset(10, 0),
-			Size = UDim2.new(1, -16, 1, 0),
+			TextWrapped = true,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextYAlignment = Enum.TextYAlignment.Center,
+			Position = UDim2.fromOffset(4, 16),
+			Size = UDim2.new(1, -8, 1, -34),
 		})
+		if i > open then
+			label(box, {
+				Text = string.format("LV %d", at),
+				Font = Enum.Font.Highway,
+				TextSize = 9,
+				TextColor3 = MUTED,
+				TextXAlignment = Enum.TextXAlignment.Center,
+				AnchorPoint = Vector2.new(0, 1),
+				Position = UDim2.new(0, 0, 1, -8),
+				Size = UDim2.new(1, 0, 0, 12),
+			})
+		end
 		if talisman then
-			make("Frame", { Parent = row, Size = UDim2.new(0, 3, 1, 0), BackgroundColor3 = talismanColor(talisman), BorderSizePixel = 0 })
-			row.Activated:Connect(function()
+			make("Frame", {
+				Parent = box,
+				AnchorPoint = Vector2.new(0, 1),
+				Position = UDim2.fromScale(0, 1),
+				Size = UDim2.new(1, 0, 0, 4),
+				BackgroundColor3 = talismanColor(talisman),
+				BorderSizePixel = 0,
+			})
+			box.Activated:Connect(function()
 				selectKey("talisman:" .. key)
 			end)
 		end
@@ -859,11 +924,12 @@ for i, entry in ipairs(TABS) do
 		LayoutOrder = i,
 		Size = UDim2.fromOffset(entry.width or (entry.kind == "all" and 38 or 60), 20),
 		BackgroundColor3 = TEXT,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = entry.title,
 		TextSize = 10,
 	})
 	outline(button, 0.5)
+	button:SetAttribute("SectionSelect", true)
 	button.Activated:Connect(function()
 		tab = entry.kind
 		refresh()
@@ -885,7 +951,7 @@ local function detailRow(key, name, note, dim)
 	local color = dim and MUTED or TEXT
 	local keyBox = label(row, {
 		Text = key,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 9,
 		TextColor3 = color,
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -919,19 +985,27 @@ local function runPower(action, setName, confirm, slot)
 		return
 	end
 	busy = true
+	if ACTION_SOUNDS[action] == "unequip" then
+		playUnequip() -- at once, not after the trip to the server
+	end
 	local ok, result, why, needsConfirm = pcall(powerAction.InvokeServer, powerAction, action, { set = setName, confirm = confirm, slot = slot })
 	busy = false
 	pending = nil
 	if not ok then
 		message.Text = "Couldn't reach the server"
+		UiSfx.Play("denied")
 	elseif result then
 		message.Text = ""
 		pickingSlot = false
+		if ACTION_SOUNDS[action] == "equip" then -- (taking off already sounded when it was asked)
+			UiSfx.Play("equip")
+		end
 	elseif needsConfirm then
 		pending = { action = action, set = setName }
 		message.Text = why or "Are you sure?"
 	else
 		message.Text = why or "Couldn't do that"
+		UiSfx.Play("denied")
 	end
 	refresh()
 end
@@ -1019,7 +1093,7 @@ end
 local function slotPicker(equipTo)
 	detailOrder += 1
 	local frame = make("Frame", { Parent = details, LayoutOrder = detailOrder, Size = UDim2.new(1, 0, 0, 74), BackgroundTransparency = 1 })
-	label(frame, { Text = "PICK A HOTBAR SLOT", Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+	label(frame, { Text = "PICK A HOTBAR SLOT", Font = Enum.Font.Highway, TextSize = 10, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
 	local row = make("Frame", { Parent = frame, Position = UDim2.fromOffset(0, 18), Size = UDim2.new(1, 0, 0, 54), BackgroundTransparency = 1 })
 	make("UIListLayout", { Parent = row, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
 	local occupants = hotbarOccupants()
@@ -1037,7 +1111,7 @@ local function slotPicker(equipTo)
 		outline(box, tool and 0.7 or 0.4)
 		label(box, {
 			Text = tostring(3 + slot),
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 14,
 			TextColor3 = tool and MUTED or BACKGROUND,
 			TextXAlignment = Enum.TextXAlignment.Center,
@@ -1068,15 +1142,23 @@ local function runItem(action, target, slot)
 		return
 	end
 	busy = true
+	if ACTION_SOUNDS[action] == "unequip" then
+		playUnequip()
+	end
 	local ok, result, why = pcall(itemRemote.InvokeServer, itemRemote, action, target, slot)
 	busy = false
 	if not ok then
 		message.Text = "Couldn't reach the server"
+		UiSfx.Play("denied")
 	elseif result then
 		message.Text = ""
 		pickingSlot = false
+		if ACTION_SOUNDS[action] == "equip" then -- (taking off already sounded when it was asked)
+			UiSfx.Play("equip")
+		end
 	else
 		message.Text = why or "Couldn't do that"
+		UiSfx.Play("denied")
 	end
 	refresh()
 end
@@ -1086,10 +1168,10 @@ local function itemDetails(entry)
 	local item = entry.item
 	local color = onPaper(itemColor(item))
 	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = item.name, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
+	label(title, { Text = item.name, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
 	label(title, {
 		Text = string.format("%s  ·  %s", item.kind == "limited" and "Limited use" or "Lifetime", entry.equipped and "Equipped on the hotbar" or "Stored in the Backpack"),
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 11,
 		TextColor3 = color,
 		Position = UDim2.fromOffset(0, 24),
@@ -1126,10 +1208,10 @@ local function talismanDetails(entry)
 	local talisman = entry.talisman
 	local color = onPaper(talismanColor(talisman))
 	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = talisman.name, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
+	label(title, { Text = talisman.name, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
 	label(title, {
 		Text = entry.equipped and "Talisman  ·  Worn" or "Talisman  ·  In your collection",
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 11,
 		TextColor3 = color,
 		Position = UDim2.fromOffset(0, 24),
@@ -1146,14 +1228,22 @@ local function talismanDetails(entry)
 			return
 		end
 		busy = true
+		if entry.equipped then
+			playUnequip()
+		end
 		local ok, result, why = pcall(talismanRemote.InvokeServer, talismanRemote, entry.equipped and "unequip" or "equip", key)
 		busy = false
 		if not ok then
 			message.Text = "Couldn't reach the server"
+			UiSfx.Play("denied")
 		elseif not result then
 			message.Text = why or "Couldn't do that"
+			UiSfx.Play("denied")
 		else
 			message.Text = ""
+			if not entry.equipped then
+				UiSfx.Play("equip")
+			end
 		end
 		refresh()
 	end
@@ -1182,10 +1272,10 @@ local function showDetails(entry)
 	local selectedSet = entry.setName
 
 	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = set.tool, Font = Enum.Font.GothamBold, TextSize = 16, TextColor3 = set.color and onPaper(set.color) or TEXT, Size = UDim2.new(1, 0, 0, 22) })
+	label(title, { Text = set.tool, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = set.color and onPaper(set.color) or TEXT, Size = UDim2.new(1, 0, 0, 22) })
 	label(title, {
 		Text = string.format("%s-tier %s  ·  %s  ·  %s", set.tier or "?", set.kind, masteryText(selectedSet), stateText(entry)),
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 11,
 		TextColor3 = tierColor(set),
 		Position = UDim2.fromOffset(0, 24),
@@ -1270,14 +1360,22 @@ local function showDetails(entry)
 			return
 		end
 		busy = true
+		if isCarried then
+			playUnequip()
+		end
 		local ok, result, why = pcall(equipRemote.InvokeServer, equipRemote, not isCarried and selectedSet or nil, set.kind)
 		busy = false
 		if not ok then
 			message.Text = "Couldn't reach the server"
+			UiSfx.Play("denied")
 		elseif not result then
 			message.Text = why or "Couldn't do that"
+			UiSfx.Play("denied")
 		else
 			message.Text = ""
+			if not isCarried then
+				UiSfx.Play("equip")
+			end
 		end
 		refresh()
 	end
@@ -1297,33 +1395,32 @@ local function showMaterials()
 	clear(materialList)
 	local count = 0
 	for _, key in ipairs(DropConfig.Sorted()) do
+		-- every material is listed; the ones you hold none of are dimmed placeholders
 		local amount = player:GetAttribute(DropConfig.Attribute(key)) or 0
-		if amount > 0 then
-			count += 1
-			local info = DropConfig.Materials[key]
-			local row = make("Frame", {
-				Parent = materialList,
-				LayoutOrder = count,
-				Size = UDim2.new(1, 0, 0, MATERIAL_ROW),
-				BackgroundTransparency = 1,
-			})
-			label(row, {
-				Text = info.display,
-				TextSize = 12,
-				TextColor3 = DropConfig.TierColor(info.tier),
-				Size = UDim2.new(1, -40, 1, 0),
-			})
-			label(row, {
-				Text = tostring(amount),
-				Font = Enum.Font.GothamBold,
-				TextSize = 12,
-				TextXAlignment = Enum.TextXAlignment.Right,
-				Size = UDim2.new(1, 0, 1, 0),
-			})
-		end
-	end
-	if count == 0 then
-		label(materialList, { Text = "None yet", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, MATERIAL_ROW) })
+		count += 1
+		local info = DropConfig.Materials[key]
+		local row = make("Frame", {
+			Parent = materialList,
+			LayoutOrder = count,
+			Size = UDim2.new(1, 0, 0, MATERIAL_ROW),
+			BackgroundTransparency = 1,
+		})
+		label(row, {
+			Text = info.display,
+			TextSize = 12,
+			TextColor3 = DropConfig.TierColor(info.tier),
+			TextTransparency = amount > 0 and 0 or 0.6,
+			Size = UDim2.new(1, -40, 1, 0),
+		})
+		label(row, {
+			Text = tostring(amount),
+			Font = Enum.Font.Highway,
+			TextSize = 12,
+			TextColor3 = amount > 0 and TEXT or MUTED,
+			TextTransparency = amount > 0 and 0 or 0.4,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			Size = UDim2.new(1, 0, 1, 0),
+		})
 	end
 end
 
@@ -1370,7 +1467,7 @@ function refresh()
 		local section = make("Frame", { Parent = grid, LayoutOrder = sectionOrder, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 		make("UIListLayout", { Parent = section, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 		if title then
-			label(section, { Text = title, Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = MUTED, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 14) })
+			label(section, { Text = title, Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 14) })
 		end
 		local cards = make("Frame", { Parent = section, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 		make("UIGridLayout", { Parent = cards, CellSize = UDim2.fromOffset(CARD_SIZE, CARD_SIZE), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder })
@@ -1424,6 +1521,16 @@ hotbarButton.Activated:Connect(function()
 		hotbarAction()
 	end
 end)
+for _, button in ipairs({ equipButton, altButton, hotbarButton }) do
+	button.MouseButton1Down:Connect(function()
+		for _, text in ipairs(PRESS_UNEQUIP) do
+			if string.find(button.Text, text, 1, true) then
+				playUnequip()
+				return
+			end
+		end
+	end)
+end
 
 Hub.OnShown("Backpack", function()
 	message.Text = ""

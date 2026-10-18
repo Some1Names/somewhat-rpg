@@ -28,20 +28,20 @@ HudConfig.ClusterGap = 14 -- px between the yen and the cards
 -- px from the screen's bottom to the top of that left column: panels that open on the left stay above it
 HudConfig.LeftReserve = HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap + HudConfig.YenHeight + 10
 
--- the hub menu (Hub and its tabs): grey paper, black ink, one accent (the held
+-- the hub menu (Hub and its tabs): near-black paper, light ink, one accent (the held
 -- power's colour; NoPower when there's none), square everything
 HudConfig.HubTheme = {
-	Paper = Color3.fromRGB(228, 228, 226),
-	Panel = Color3.fromRGB(210, 210, 208),
-	BarBack = Color3.fromRGB(200, 200, 198), -- empty part of a progress bar
-	Ink = Color3.fromRGB(20, 20, 20),
-	Muted = Color3.fromRGB(119, 119, 119),
-	Nav = Color3.fromRGB(42, 42, 42),
+	Paper = Color3.fromRGB(20, 20, 23),
+	Panel = Color3.fromRGB(34, 34, 39), -- cards
+	BarBack = Color3.fromRGB(52, 52, 58), -- empty part of a progress bar
+	Ink = Color3.fromRGB(236, 236, 238), -- text, and the fill of an ink button
+	Muted = Color3.fromRGB(146, 146, 154),
+	Nav = Color3.fromRGB(9, 9, 11),
 	NavText = Color3.fromRGB(238, 238, 238),
 	NoPower = Color3.new(1, 1, 1),
-	TitleFont = Enum.Font.GothamBlack,
-	LabelFont = Enum.Font.GothamBold,
-	BodyFont = Enum.Font.Gotham,
+	TitleFont = Enum.Font.Highway,
+	LabelFont = Enum.Font.Highway,
+	BodyFont = Enum.Font.Highway,
 	NavWidth = 200,
 	HeaderHeight = 74,
 	FooterHeight = 30,

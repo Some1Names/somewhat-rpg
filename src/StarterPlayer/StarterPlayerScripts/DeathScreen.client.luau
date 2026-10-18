@@ -53,10 +53,10 @@ local function line(text, font, size, color, y, height)
 	return label
 end
 
-line("YOU DIED", Enum.Font.GothamBold, 36, DANGER, 14, 40)
-local cause = line("", Enum.Font.GothamMedium, 16, TEXT, 58, 20)
-local yenLost = line("", Enum.Font.GothamBold, 15, DANGER, 82, 18)
-local countdown = line("", Enum.Font.GothamMedium, 13, MUTED, 84, 18)
+line("YOU DIED", Enum.Font.Highway, 36, DANGER, 14, 40)
+local cause = line("", Enum.Font.Highway, 16, TEXT, 58, 20)
+local yenLost = line("", Enum.Font.Highway, 15, DANGER, 82, 18)
+local countdown = line("", Enum.Font.Highway, 13, MUTED, 84, 18)
 
 -- 12345 -> "12,345"
 local function withCommas(number)

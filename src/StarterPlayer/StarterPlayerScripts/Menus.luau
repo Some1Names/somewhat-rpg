@@ -6,11 +6,20 @@
 -- function the menu gave Menus.Register, and watch Menus.OnChange to enlarge
 -- the icon of the open one.
 local GuiService = game:GetService("GuiService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 
 local Menus = {}
+
+-- While a menu is open the player can't walk, jump or fight (ActionLock.MenuOpen,
+-- and Roblox's movement controls switched off). The Admin panel only takes the
+-- right side of the screen, so it leaves them on.
+local NOT_BLOCKING = { Admin = true }
+local controls -- Roblox's PlayerModule controls, once loaded
 
 local FIT_TOP = 12 -- px from the top of the screen below the top bar (the icon row is up in the bar)
 local FIT_BOTTOM = HudConfig.BottomReserve + 154 -- the skill bar's top edge (above the key hints line, 154 px tall with its header)
@@ -20,7 +29,35 @@ local openName, openClose
 local togglers = {} -- name -> function that toggles that menu like its key does
 local listeners = {}
 
+-- whether the open menu takes over the player (nothing open: no)
+function Menus.Blocks()
+	return openName ~= nil and not NOT_BLOCKING[openName]
+end
+
+local function applyBlocking()
+	local blocked = Menus.Blocks()
+	ActionLock.MenuOpen = blocked
+	if controls then
+		if blocked then
+			controls:Disable()
+		else
+			controls:Enable()
+		end
+	end
+end
+
+task.spawn(function()
+	local ok, module = pcall(function()
+		return require(Players.LocalPlayer:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+	end)
+	if ok then
+		controls = module:GetControls()
+		applyBlocking()
+	end
+end)
+
 local function changed()
+	applyBlocking()
 	for _, callback in ipairs(listeners) do
 		task.spawn(callback, openName)
 	end
@@ -51,6 +88,11 @@ function Menus.IsOpen(name)
 	return openName == name
 end
 
+-- whether any menu is open (the hub, Settings, the Shop...): combat input is ignored then
+function Menus.AnyOpen()
+	return openName ~= nil
+end
+
 -- `toggle()` opens or closes the menu, exactly as its key does
 function Menus.Register(name, toggle)
 	togglers[name] = toggle
@@ -73,12 +115,12 @@ function Menus.OnChange(callback)
 	table.insert(listeners, callback)
 end
 
--- the height of the screen below the top bar (a disabled ScreenGui reports 0, so ask the camera)
+-- the height of the screen below the top bar, in UI pixels (a disabled ScreenGui reports 0, so ask the camera)
 local function screenHeight(gui)
 	if gui.AbsoluteSize.Y > 0 then
-		return gui.AbsoluteSize.Y
+		return gui.AbsoluteSize.Y / UIScale.Get()
 	end
-	return workspace.CurrentCamera.ViewportSize.Y - GuiService:GetGuiInset().Y
+	return (workspace.CurrentCamera.ViewportSize.Y - GuiService:GetGuiInset().Y) / UIScale.Get()
 end
 
 -- where a panel sits for each side: its anchor, horizontal position, and the
@@ -114,6 +156,7 @@ function Menus.Fit(panel, side)
 	end
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update)
 	gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(update)
+	UIScale.OnChange(update)
 	update()
 end
 

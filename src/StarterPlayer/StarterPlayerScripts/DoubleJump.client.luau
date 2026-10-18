@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -101,7 +102,7 @@ player.CharacterAdded:Connect(watchCharacter)
 
 -- a fresh press only, so holding jump doesn't fire it by itself
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and JUMP_KEYS[input.KeyCode] then
+	if not gameProcessed and not Menus.Blocks() and JUMP_KEYS[input.KeyCode] then
 		tryDoubleJump()
 	end
 end)

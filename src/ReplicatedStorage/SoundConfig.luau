@@ -31,6 +31,34 @@ SoundConfig.Sounds = {
 	glassShatter = { ids = { 139826391278483, 132349765576039 }, volume = 0.7, range = 150 },
 	charge = { id = 72706642917206, volume = 0.65, range = 130 },
 	shock = { id = 115006783735743, volume = 0.65, range = 150 },
+	-- a body dissolving
+	deathFade = { id = 138498992667102, volume = 0.6, range = 90 },
+	-- Photoshop's punches: the first hits of the combo, then the last
+	photoshopMelee1 = { id = 110277370513474, volume = 0.6, range = 90 },
+	photoshopMelee2 = { id = 71903225173502, volume = 0.6, range = 100 },
+}
+
+-- Plain 2D clips for the interface and the feel of the game (UiSfx.Play).
+-- They are multiplied by MasterVolume too.
+local function ui(id, volume)
+	return { id = id, volume = volume or 0.6 }
+end
+SoundConfig.UI = {
+	menuSelect = ui(113194405128446), -- a side bar entry of the hub, or a section picked inside a tab
+	menuOpen = ui(132442985525251), -- the hub opening (once per opening, not per tab)
+	statUp = ui(3428115723),
+	equip = ui(79711108594022),
+	unequip = ui(90465624010385),
+	collectOrb = ui(93964427782359),
+	rareDrop = ui(108443140007873),
+	itemSelect = ui(542332175),
+	purchaseFail = ui(18453214291),
+	shopEnter = ui(131268007007000, 0.3),
+	shopLeave = ui(134221055367800),
+	crit = ui(367453005),
+	denied = ui(137710618443593), -- a refused action or an error
+	getYen = ui(94433663716765), -- a yen chest collected
+	buy = ui(98648158271351), -- a purchase going through
 }
 
 -- Sounds that start with a model rather than an event: the model's
@@ -55,7 +83,7 @@ SoundConfig.Effects = {
 	end,
 	FistHit = crit(3, "punchHit", "heavyHit"),
 	Slash = crit(3, "punchHit", "heavyHit"),
-	PhotoshopPunchHit = crit(2, "punchHit", "heavyHit"),
+	PhotoshopPunchHit = crit(2, "photoshopMelee1", "photoshopMelee2"),
 	-- thrown and fired things: the revolver's bullet, Mandela's knife
 	Projectile = function(_, model)
 		if model == "Bullet" then
@@ -65,6 +93,7 @@ SoundConfig.Effects = {
 		end
 		return nil
 	end,
+	DeathFade = "deathFade",
 	-- Mandela
 	AxeThrow = "swingHeavy",
 	SpineLash = "swingHeavy",

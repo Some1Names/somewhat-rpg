@@ -22,6 +22,7 @@ local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
+local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -57,7 +58,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -162,10 +163,10 @@ end
 
 -- header: what the shopkeeper's overhead tag used to say (the role big, the shop's line above), close
 local header = section(58)
-local subtitle = label(header, { Text = "", Font = Enum.Font.GothamBold, TextSize = 13, Size = UDim2.new(1, -30, 0, 16) })
+local subtitle = label(header, { Text = "", Font = Enum.Font.Highway, TextSize = 13, Size = UDim2.new(1, -30, 0, 16) })
 local title = label(header, {
 	Text = "SHOP",
-	Font = Enum.Font.GothamBlack,
+	Font = Enum.Font.Highway,
 	TextSize = 30,
 	Position = UDim2.fromOffset(0, 18),
 	Size = UDim2.new(1, -30, 0, 38),
@@ -183,7 +184,7 @@ local balanceBox = make("Frame", {
 make("UIStroke", { Parent = balanceBox, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 label(balanceBox, { Text = "CASH", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0.4, 0, 1, 0) })
 local balance = label(balanceBox, {
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 18,
 	TextColor3 = GOLD,
 	TextXAlignment = Enum.TextXAlignment.Right,
@@ -195,7 +196,7 @@ local closeButton = make("TextButton", {
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(22, 22),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
@@ -224,7 +225,7 @@ local leave = make("TextButton", {
 	BackgroundColor3 = Color3.new(0, 0, 0),
 	BackgroundTransparency = 0.4,
 	BorderSizePixel = 0,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "LEAVE SHOP",
 	TextSize = 13,
 	TextColor3 = TEXT,
@@ -235,6 +236,9 @@ local rows = {}
 local function setStatus(text, failed)
 	status.Text = text
 	status.TextColor3 = failed and DANGER or GOLD
+	if failed then
+		UiSfx.Play("purchaseFail")
+	end
 end
 
 -- whether the player has a briefcase of the power: equipped on the hotbar or stored in the Backpack
@@ -313,14 +317,18 @@ local function refresh()
 		end
 		local owned = owns(item)
 		local affordable = yen >= (item.price or 0)
+		-- carrying as many of a consumable as allowed: greyed out, FULL
+		local full = item.stack and not ConsumableConfig.CanCarryMore(consumableCount(item))
 		if item.comingSoon then
 			row.buy.Text = item.briefcase and "NOT FOR SALE" or "COMING SOON"
 		elseif owned then
 			row.buy.Text = "OWNED"
+		elseif full then
+			row.buy.Text = "FULL"
 		else
 			row.buy.Text = item.service and "USE" or "BUY"
 		end
-		local closed = owned or item.comingSoon
+		local closed = owned or item.comingSoon or full
 		row.buy.AutoButtonColor = not closed
 		row.buy.BackgroundTransparency = closed and 0.85 or (affordable and 0 or 0.55)
 		row.buy.TextColor3 = closed and MUTED or BACKGROUND
@@ -345,8 +353,32 @@ player.AttributeChanged:Connect(function()
 	end
 end)
 
+-- why the shop would turn the player away before it even asks the server (too
+-- poor, or already carrying all of a consumable they can), or nil
+local function refusal(item)
+	local yen = player:GetAttribute("Yen")
+	if yen and item.price and yen < item.price then
+		return string.format("You need ¥%d more", item.price - yen)
+	end
+	if item.stack and not ConsumableConfig.CanCarryMore(consumableCount(item)) then
+		return "You can't carry more " .. item.name
+	end
+	return nil
+end
+local pressedPoorAt = -math.huge -- when a press already told the player they can't afford it
+local pressedBuyAt = -math.huge -- when a press that could pay already played the buy sound
+local buySound -- that sound, so a refusal can cut it off
+
 local function buy(item)
 	if item.comingSoon or owns(item) then
+		return
+	end
+	-- too poor: say so (and sound it) now rather than after the trip to the server
+	local why = refusal(item)
+	if why then
+		if os.clock() - pressedPoorAt > 1 then -- (pressing the button already said it)
+			setStatus(why, true)
+		end
 		return
 	end
 	local ok, success, message = pcall(buyItem.InvokeServer, buyItem, item.id)
@@ -354,7 +386,14 @@ local function buy(item)
 		setStatus("Couldn't reach the shop", true)
 		return
 	end
+	if not success and buySound and os.clock() - pressedBuyAt < 5 then
+		buySound:Stop() -- the server said no (a full Backpack, say): not a bought sound, just the failed one
+	end
+	buySound = nil
 	setStatus(message, not success)
+	if success and os.clock() - pressedBuyAt > 5 then -- (a press that could pay already sounded)
+		UiSfx.Play("buy")
+	end
 	refresh() -- a bought briefcase can now be sold
 end
 
@@ -412,7 +451,7 @@ local function buildRows(shopId)
 				if not item.image then
 					label(picture, {
 						Text = tier or "?",
-						Font = Enum.Font.GothamBlack,
+						Font = Enum.Font.Highway,
 						TextSize = 34,
 						TextColor3 = tierColor,
 						TextTransparency = 0.4,
@@ -425,7 +464,7 @@ local function buildRows(shopId)
 				local tierColor = SkillSetConfig.Tiers[tier] and SkillSetConfig.Tiers[tier].color or SkillSetConfig.NoTierColor
 				local badge = label(row, {
 					Text = tier,
-					Font = Enum.Font.GothamBlack,
+					Font = Enum.Font.Highway,
 					TextSize = 18,
 					TextColor3 = tierColor,
 					TextXAlignment = Enum.TextXAlignment.Center,
@@ -439,7 +478,7 @@ local function buildRows(shopId)
 			local dim = item.comingSoon
 			label(row, {
 				Text = item.name,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Highway,
 				TextSize = 14,
 				TextColor3 = dim and MUTED or TEXT,
 				TextTruncate = Enum.TextTruncate.AtEnd,
@@ -451,7 +490,7 @@ local function buildRows(shopId)
 			if infoLine then
 				label(row, {
 					Text = infoLine,
-					Font = Enum.Font.GothamBold,
+					Font = Enum.Font.Highway,
 					TextSize = 11,
 					TextColor3 = GOLD,
 					Position = UDim2.fromOffset(textLeft, 19),
@@ -483,7 +522,7 @@ local function buildRows(shopId)
 			if item.price and not item.comingSoon then
 				label(row, {
 					Text = item.price == 0 and "FREE" or formatYen(item.price),
-					Font = Enum.Font.GothamBold,
+					Font = Enum.Font.Highway,
 					TextSize = 15,
 					TextColor3 = GOLD,
 					TextXAlignment = Enum.TextXAlignment.Right,
@@ -499,12 +538,27 @@ local function buildRows(shopId)
 				Size = item.briefcase and UDim2.fromOffset(112, 24) or UDim2.fromOffset(84, 28),
 				BackgroundColor3 = GOLD,
 				BorderSizePixel = 0,
-				Font = Enum.Font.GothamBold,
+				Font = Enum.Font.Highway,
 				TextSize = item.comingSoon and 10 or 12,
 				TextColor3 = BACKGROUND,
 			})
 			button.Activated:Connect(function()
 				buy(item)
+			end)
+			-- the failed sound plays as the button goes down, not when it's let go
+			button.MouseButton1Down:Connect(function()
+				if item.comingSoon or owns(item) then
+					return
+				end
+				local why = refusal(item)
+				if why then
+					pressedPoorAt = os.clock()
+					setStatus(why, true)
+				else
+					-- nothing to stop it: the buy sound plays now (cut short if the server refuses)
+					pressedBuyAt = os.clock()
+					buySound = UiSfx.Play("buy")
+				end
 			end)
 			local entry = { item = item, buy = button, ownedLabel = ownedLabel }
 			if item.briefcase then
@@ -517,7 +571,7 @@ local function buildRows(shopId)
 					Size = UDim2.fromOffset(112, 24),
 					BackgroundColor3 = GOLD,
 					BorderSizePixel = 0,
-					Font = Enum.Font.GothamBold,
+					Font = Enum.Font.Highway,
 					TextSize = 11,
 					TextColor3 = BACKGROUND,
 					Text = "SELL " .. formatYen(PowerConfig.sellPrice(item.set, set.tier)),
@@ -534,7 +588,7 @@ local function buildRows(shopId)
 						Size = UDim2.fromOffset(112, 24),
 						BackgroundColor3 = GOLD,
 						BorderSizePixel = 0,
-						Font = Enum.Font.GothamBold,
+						Font = Enum.Font.Highway,
 						TextSize = 10,
 						TextColor3 = BACKGROUND,
 						Text = "LIFETIME " .. formatRobux(robuxPrice),
@@ -567,7 +621,7 @@ end
 local noticeGui = make("ScreenGui", { Name = "ShopNotice", ResetOnSpawn = false, IgnoreGuiInset = true, DisplayOrder = 31, Parent = player:WaitForChild("PlayerGui") })
 local notice = label(noticeGui, {
 	Text = "",
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 18,
 	TextXAlignment = Enum.TextXAlignment.Center,
 	TextTransparency = 1,
@@ -579,6 +633,7 @@ local notice = label(noticeGui, {
 })
 local noticeCount = 0
 local function showNotice(text)
+	UiSfx.Play("denied")
 	noticeCount += 1
 	local mine = noticeCount
 	notice.Text = text
@@ -628,6 +683,9 @@ local lastRefresh = 0 -- when the rows were last refreshed (owned counts follow 
 
 local function close()
 	ShopFocus.End()
+	if gui.Enabled then
+		UiSfx.Play("shopLeave")
+	end
 	gui.Enabled = false
 	openAt = nil
 	Menus.Close("Shop")
@@ -656,6 +714,7 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		panel.CanvasPosition = Vector2.zero
 		Menus.Open("Shop", close)
 		gui.Enabled = true
+		UiSfx.Play("shopEnter")
 		-- the full-screen close-up on the shopkeeper (E leaves)
 		ShopFocus.Begin(shop, { ignoreGui = gui, onLeave = close })
 	end

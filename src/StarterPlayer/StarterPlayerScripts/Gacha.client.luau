@@ -15,6 +15,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local rollRemote = ReplicatedStorage:WaitForChild("RollGacha")
@@ -50,7 +51,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -112,9 +113,9 @@ end
 
 -- header: title, your yen, close
 local header = section(22)
-label(header, { Text = "POWER GACHA", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.fromScale(0.5, 1) })
+label(header, { Text = "POWER GACHA", Font = Enum.Font.Highway, TextSize = 16, Size = UDim2.fromScale(0.5, 1) })
 local balance = label(header, {
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 14,
 	TextColor3 = GOLD,
 	TextXAlignment = Enum.TextXAlignment.Right,
@@ -128,7 +129,7 @@ local closeButton = make("TextButton", {
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(22, 22),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
@@ -173,7 +174,7 @@ local reelHint = label(reel, {
 local resultSection = section(22)
 local resultLabel = label(resultSection, {
 	Text = "",
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 16,
 	TextXAlignment = Enum.TextXAlignment.Center,
 	Size = UDim2.fromScale(1, 1),
@@ -193,7 +194,7 @@ local rollButton = make("TextButton", {
 	Size = UDim2.fromScale(1, 1),
 	BackgroundColor3 = ACCENT,
 	BorderSizePixel = 0,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 14,
 	TextColor3 = TEXT,
 	Text = "ROLL",
@@ -294,7 +295,7 @@ local function spin(setName)
 		make("UIStroke", { Parent = cell, Color = color, Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 		label(cell, {
 			Text = tiers[index],
-			Font = Enum.Font.GothamBlack,
+			Font = Enum.Font.Highway,
 			TextSize = 34,
 			TextColor3 = color,
 			TextXAlignment = Enum.TextXAlignment.Center,
@@ -311,7 +312,7 @@ local function spin(setName)
 	end
 	reelHint.Visible = false
 	resultLabel.Text = ""
-	local window = reel.AbsoluteSize.X
+	local window = reel.AbsoluteSize.X / UIScale.Get()
 	-- the strip's offset that puts a card's centre under the marker
 	local function positionFor(index)
 		return -((index - 1) * (CELL_WIDTH + CELL_GAP) + CELL_GAP + CELL_WIDTH / 2 - window / 2)
@@ -346,7 +347,7 @@ end
 
 -- squares thrown out from the result card, in its tier colour
 local function burst(card, color, count)
-	local x = card.AbsolutePosition.X + card.AbsoluteSize.X / 2 - resultSection.AbsolutePosition.X
+	local x = (card.AbsolutePosition.X + card.AbsoluteSize.X / 2 - resultSection.AbsolutePosition.X) / UIScale.Get()
 	local y = -(10 + REEL_HEIGHT / 2) -- the reel's middle, above the result line
 	local random = Random.new()
 	for _ = 1, count do

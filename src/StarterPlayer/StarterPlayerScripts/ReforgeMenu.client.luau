@@ -56,7 +56,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -181,10 +181,10 @@ make("UIPadding", {
 })
 
 -- header: the smith's role big with the line above it (like a shop's), close
-local subtitle = label(panel, { Text = "Reforge", Font = Enum.Font.GothamBold, TextSize = 13, TextColor3 = FORGE, Size = UDim2.new(1, -30, 0, 16) })
+local subtitle = label(panel, { Text = "Reforge", Font = Enum.Font.Highway, TextSize = 13, TextColor3 = FORGE, Size = UDim2.new(1, -30, 0, 16) })
 local title = label(panel, {
 	Text = "SMITH",
-	Font = Enum.Font.GothamBlack,
+	Font = Enum.Font.Highway,
 	TextSize = 30,
 	Position = UDim2.fromOffset(0, 18),
 	Size = UDim2.new(1, -30, 0, 38),
@@ -195,7 +195,7 @@ local closeButton = make("TextButton", {
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(22, 22),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
@@ -214,7 +214,7 @@ local balanceBox = make("Frame", {
 make("UIStroke", { Parent = balanceBox, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 label(balanceBox, { Text = "CASH", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0.4, 0, 1, 0) })
 local balance = label(balanceBox, {
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 18,
 	TextColor3 = GOLD,
 	TextXAlignment = Enum.TextXAlignment.Right,
@@ -230,7 +230,7 @@ local leave = make("TextButton", {
 	BackgroundColor3 = Color3.new(0, 0, 0),
 	BackgroundTransparency = 0.4,
 	BorderSizePixel = 0,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "LEAVE SMITH",
 	TextSize = 13,
 	TextColor3 = TEXT,
@@ -278,8 +278,8 @@ local detail = make("Frame", {
 	Size = UDim2.new(1, -DETAIL_LEFT, 1, 0),
 	BackgroundTransparency = 1,
 })
-local detailTitle = label(detail, { Text = "", Font = Enum.Font.GothamBold, TextSize = 18, Size = UDim2.new(1, 0, 0, 22) })
-local detailSub = label(detail, { Text = "", Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 14) })
+local detailTitle = label(detail, { Text = "", Font = Enum.Font.Highway, TextSize = 18, Size = UDim2.new(1, 0, 0, 22) })
+local detailSub = label(detail, { Text = "", Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 14) })
 local tabRow = make("Frame", { Parent = detail, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
 make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
 local content = make("ScrollingFrame", {
@@ -329,7 +329,7 @@ local function nextOrder()
 end
 
 local function heading(text)
-	label(content, { LayoutOrder = nextOrder(), Text = text, Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+	label(content, { LayoutOrder = nextOrder(), Text = text, Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
 end
 
 -- "Damage        +12%  →  +16%"
@@ -338,7 +338,7 @@ local function preview(name, from, to, dim)
 	label(row, { Text = name, TextSize = 12, TextColor3 = dim and MUTED or TEXT, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
 	label(row, {
 		Text = to and string.format("%s   →   %s", from, to) or from,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextColor3 = to and FORGE or TEXT,
 		TextXAlignment = Enum.TextXAlignment.Right,
@@ -357,7 +357,7 @@ local function costRows(cost, yen)
 	}
 	for _, entry in ipairs(rows) do
 		local row = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0 })
-		label(row, { Text = entry.name, Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = entry.color, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
+		label(row, { Text = entry.name, Font = Enum.Font.Highway, TextSize = 12, TextColor3 = entry.color, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
 		label(row, {
 			Text = entry.text,
 			TextSize = 12,
@@ -377,7 +377,7 @@ local function wideButton(text, enabled, onClick)
 		BackgroundColor3 = FORGE,
 		BackgroundTransparency = enabled and 0 or 0.6,
 		BorderSizePixel = 0,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 13,
 		TextColor3 = BACKGROUND,
 		Text = text,
@@ -398,7 +398,7 @@ local function strengthenTab(setName, state, yen)
 	label(content, {
 		LayoutOrder = nextOrder(),
 		Text = atMax and string.format("+%d   MAX", state.level) or string.format("+%d   →   +%d", state.level, state.level + 1),
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		TextSize = 28,
 		TextColor3 = FORGE,
 		Size = UDim2.new(1, 0, 0, 34),
@@ -441,7 +441,7 @@ local function affinityTab(setName, state, yen)
 		else
 			current = "empty"
 		end
-		label(block, { LayoutOrder = 1, Text = string.format("SLOT %d    %s", slot, current), Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = slot > open and MUTED or TEXT, Size = UDim2.new(1, 0, 0, 16) })
+		label(block, { LayoutOrder = 1, Text = string.format("SLOT %d    %s", slot, current), Font = Enum.Font.Highway, TextSize = 12, TextColor3 = slot > open and MUTED or TEXT, Size = UDim2.new(1, 0, 0, 16) })
 		if slot <= open then
 			local cost = ReforgeConfig.ChangeCosts[slot]
 			local info = DropConfig.Materials[cost.material]
@@ -473,7 +473,7 @@ local function affinityTab(setName, state, yen)
 					Text = "",
 					AutoButtonColor = not isCurrent and not blocked,
 				})
-				label(option, { Text = config.name .. (blocked and ("  (slot " .. otherSlot .. ")") or ""), Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = isCurrent and BACKGROUND or (blocked and MUTED or TEXT), Position = UDim2.fromOffset(8, 3), Size = UDim2.new(1, -16, 0, 16) })
+				label(option, { Text = config.name .. (blocked and ("  (slot " .. otherSlot .. ")") or ""), Font = Enum.Font.Highway, TextSize = 12, TextColor3 = isCurrent and BACKGROUND or (blocked and MUTED or TEXT), Position = UDim2.fromOffset(8, 3), Size = UDim2.new(1, -16, 0, 16) })
 				label(option, {
 					Text = describeValue(config.id, ReforgeRules.AffinityValue(config.id, state.level, state.awakening)),
 					TextSize = 10,
@@ -498,7 +498,7 @@ local function awakenTab(setName, state, yen)
 	-- the stages as squares
 	local pips = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1 })
 	make("UIListLayout", { Parent = pips, FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
-	label(pips, { LayoutOrder = 0, Text = "AWAKENING", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = MUTED, Size = UDim2.fromOffset(86, 20) })
+	label(pips, { LayoutOrder = 0, Text = "AWAKENING", Font = Enum.Font.Highway, TextSize = 12, TextColor3 = MUTED, Size = UDim2.fromOffset(86, 20) })
 	for index = 1, ReforgeConfig.MaxAwakening do
 		local lit = index <= stage
 		local pip = make("Frame", { Parent = pips, LayoutOrder = index, Size = UDim2.fromOffset(20, 20), BackgroundColor3 = lit and FORGE or Color3.new(0, 0, 0), BackgroundTransparency = lit and 0 or 0.5, BorderSizePixel = 0 })
@@ -516,13 +516,13 @@ local function awakenTab(setName, state, yen)
 		end
 	end
 	if atMax then
-		label(content, { LayoutOrder = nextOrder(), Text = "Fully awakened", Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = FORGE, Size = UDim2.new(1, 0, 0, 20) })
+		label(content, { LayoutOrder = nextOrder(), Text = "Fully awakened", Font = Enum.Font.Highway, TextSize = 14, TextColor3 = FORGE, Size = UDim2.new(1, 0, 0, 20) })
 		return
 	end
 	heading("REQUIRED")
 	local reached = state.level >= ReforgeConfig.MaxLevel
 	local levelRow = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0 })
-	label(levelRow, { Text = "Level", Font = Enum.Font.GothamBold, TextSize = 12, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
+	label(levelRow, { Text = "Level", Font = Enum.Font.Highway, TextSize = 12, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
 	label(levelRow, { Text = string.format("+%d / +%d", state.level, ReforgeConfig.MaxLevel), TextSize = 12, TextColor3 = reached and TEXT or DANGER, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(1, -10, 1, 0) })
 	costRows(ReforgeConfig.AwakenCosts[stage + 1], yen)
 	local can = ReforgeRules.PlanAwaken(state, true, bag, yen)
@@ -539,7 +539,7 @@ for index, entry in ipairs(TABS) do
 		LayoutOrder = index,
 		Size = UDim2.fromOffset(112, 26),
 		BackgroundColor3 = TEXT,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = entry.title,
 		TextSize = 11,
 		BorderSizePixel = 0,
@@ -585,18 +585,18 @@ render = function()
 		if isSelected then
 			make("UIStroke", { Parent = row, Color = FORGE, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 		end
-		label(row, { Text = set.tier or "", Font = Enum.Font.GothamBlack, TextSize = 18, TextColor3 = tierColor(setName), TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 0), Size = UDim2.new(0, 26, 1, 0) })
-		label(row, { Text = displayName(setName), Font = Enum.Font.GothamBold, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -96, 1, 0) })
+		label(row, { Text = set.tier or "", Font = Enum.Font.Highway, TextSize = 18, TextColor3 = tierColor(setName), TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 0), Size = UDim2.new(0, 26, 1, 0) })
+		label(row, { Text = displayName(setName), Font = Enum.Font.Highway, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -96, 1, 0) })
 		label(row, {
 			Text = state.level > 0 and ("+" .. state.level) or "",
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 14,
 			TextColor3 = FORGE,
 			TextXAlignment = Enum.TextXAlignment.Right,
 			Size = UDim2.new(1, -10, 1, 0),
 		})
 		if state.awakening > 0 then
-			label(row, { Text = "AWK " .. state.awakening, Font = Enum.Font.GothamBold, TextSize = 9, TextColor3 = GOLD, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -4), Size = UDim2.fromOffset(50, 10) })
+			label(row, { Text = "AWK " .. state.awakening, Font = Enum.Font.Highway, TextSize = 9, TextColor3 = GOLD, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -4), Size = UDim2.fromOffset(50, 10) })
 		end
 		row.Activated:Connect(function()
 			selected = setName

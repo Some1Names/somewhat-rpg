@@ -13,6 +13,7 @@ local TweenService = game:GetService("TweenService")
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
+local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
 local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 
@@ -33,7 +34,7 @@ local MUTED = Hub.Theme.Muted
 local BAR_BACK = Hub.Theme.BarBack
 local WHITE = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 60) -- same as critical hit numbers: the popups
-local NEXT = Color3.fromRGB(190, 130, 0) -- the milestone you're working towards: gold dark enough for the paper
+local NEXT = Color3.fromRGB(255, 190, 40) -- the milestone you're working towards
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -58,7 +59,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	props.TextTruncate = Enum.TextTruncate.AtEnd
@@ -101,12 +102,13 @@ for order, name in ipairs({ "STATS", "MILESTONES" }) do
 		Size = UDim2.fromOffset(0, 26),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = name,
 		TextSize = 14,
 		TextColor3 = MUTED,
 		TextXAlignment = Enum.TextXAlignment.Left,
 	})
+	subTabs[name]:SetAttribute("SectionSelect", true)
 	subTabs[name].Activated:Connect(function()
 		showTab(name)
 	end)
@@ -139,7 +141,7 @@ make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, P
 local header = section(1, 22)
 header.Parent = panel
 local levelLabel = label(header, {
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	AnchorPoint = Vector2.new(1, 0),
@@ -181,7 +183,7 @@ local boxesLabel = label(xpSection, {
 -- unspent points and how many each click adds
 local pointsSection = section(3, 24)
 pointsSection.Parent = panel
-local pointsLabel = label(pointsSection, { Font = Enum.Font.GothamBold, TextSize = 13, Size = UDim2.new(1, -120, 1, 0) })
+local pointsLabel = label(pointsSection, { Font = Enum.Font.Highway, TextSize = 13, Size = UDim2.new(1, -120, 1, 0) })
 local amount = AMOUNTS[1]
 local chips = {}
 local function showChips()
@@ -198,7 +200,7 @@ for i, value in ipairs(AMOUNTS) do
 		Position = UDim2.new(1, -(#AMOUNTS - i) * 38, 0.5, 0),
 		Size = UDim2.fromOffset(34, 22),
 		BackgroundColor3 = TEXT,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = "x" .. value,
 		TextSize = 11,
 	})
@@ -225,9 +227,9 @@ local rows = {}
 for i, stat in ipairs(StatConfig.Stats) do
 	local rowFrame = section(4 + i, STAT_ROW_HEIGHT)
 	rowFrame.Parent = panel
-	label(rowFrame, { Text = stat.key, Font = Enum.Font.GothamBold, TextSize = 14, Size = UDim2.new(1, -90, 0, 18) })
+	label(rowFrame, { Text = stat.key, Font = Enum.Font.Highway, TextSize = 14, Size = UDim2.new(1, -90, 0, 18) })
 	local value = label(rowFrame, {
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 16,
 		TextXAlignment = Enum.TextXAlignment.Right,
 		AnchorPoint = Vector2.new(1, 0),
@@ -241,12 +243,18 @@ for i, stat in ipairs(StatConfig.Stats) do
 		Position = UDim2.fromScale(1, 0.5),
 		Size = UDim2.fromOffset(32, 32),
 		BackgroundColor3 = TEXT,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = "+",
 		TextSize = 20,
 		TextColor3 = BACKGROUND,
 	})
 	plus.Activated:Connect(function()
+		local maxed = (player:GetAttribute(stat.key) or 0) >= StatConfig.StatCap(stat.key)
+		if (player:GetAttribute("StatPoints") or 0) > 0 and not maxed then
+			UiSfx.Play("statUp")
+		else
+			UiSfx.Play("denied")
+		end
 		allocateEvent:FireServer(stat.key, amount)
 	end)
 	rows[i] = { stat = stat, value = value, effect = effect, plus = plus }
@@ -273,7 +281,7 @@ for i, caption in ipairs(CURRENT) do
 	local tile = make("Frame", { Parent = tiles, LayoutOrder = i, BackgroundColor3 = Hub.Theme.Panel, BorderSizePixel = 0 })
 	tileBars[i] = make("Frame", { Parent = tile, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 })
 	label(tile, { Text = caption, TextSize = 10, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 10), Size = UDim2.new(1, -18, 0, 12) })
-	currentValues[i] = label(tile, { Font = Enum.Font.GothamBlack, TextSize = 28, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -18, 0, 34) })
+	currentValues[i] = label(tile, { Font = Enum.Font.Highway, TextSize = 28, Position = UDim2.fromOffset(12, 28), Size = UDim2.new(1, -18, 0, 34) })
 end
 
 local function showCurrent(level)
@@ -410,7 +418,7 @@ local function infoHeading(text, first)
 	local line = infoLine(first and 18 or 28)
 	label(line, {
 		Text = text,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextColor3 = MUTED,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -450,7 +458,7 @@ local function infoMilestones(entries, current, base)
 		})
 		label(bar, {
 			Text = entry.label,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 12,
 			TextColor3 = color,
 			Position = UDim2.fromOffset(8, 0),
@@ -466,7 +474,7 @@ local function infoMilestones(entries, current, base)
 		-- how far along, on the one you're working towards
 		label(bar, {
 			Text = isNext and string.format("%d/%d", current, entry.at) or "",
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			TextSize = 11,
 			TextColor3 = NEXT,
 			TextXAlignment = Enum.TextXAlignment.Right,
@@ -582,7 +590,7 @@ local function popup(text, color, size, height, lifetime, xOffset)
 		Position = UDim2.new(0.5, xOffset or 0, height, 0),
 		Size = UDim2.fromOffset(400, size + 8),
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		Text = text,
 		TextSize = size,
 		TextColor3 = color,

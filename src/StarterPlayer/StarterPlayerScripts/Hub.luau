@@ -23,6 +23,8 @@ local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 
 local player = Players.LocalPlayer
 local Theme = HudConfig.HubTheme
@@ -86,7 +88,8 @@ local gui = make("ScreenGui", {
 
 -- back to front: paper, the pose strip, the main column with the header and
 -- footer (both always the full width, so they don't move between tabs), the nav, the ×
-make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BorderSizePixel = 0, ZIndex = 1 })
+-- (Active: it catches clicks, so nothing behind the hub, the top bar's icons say, can be pressed)
+make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BorderSizePixel = 0, ZIndex = 1, Active = true })
 -- everything else, below Roblox's band
 local body = make("Frame", {
 	Name = "Body",
@@ -97,13 +100,14 @@ local body = make("Frame", {
 -- the nav column's colour runs up through the band, behind Roblox's buttons
 local navCap = make("Frame", { Parent = gui, BackgroundColor3 = Theme.Nav, BorderSizePixel = 0, ZIndex = 2 })
 local function placeBody()
-	local band = GuiService:GetGuiInset().Y
-	band = band > 0 and band or ROBLOX_BAR_FALLBACK
+	local band = GuiService:GetGuiInset().Y / UIScale.Get() -- Roblox's band is in real pixels
+	band = band > 0 and band or ROBLOX_BAR_FALLBACK / UIScale.Get()
 	body.Position = UDim2.fromOffset(0, band)
 	body.Size = UDim2.new(1, 0, 1, -band)
 	navCap.Size = UDim2.fromOffset(Theme.NavWidth, band)
 end
 placeBody()
+UIScale.OnChange(placeBody)
 
 -- between the header and the footer, so the character never covers the top
 local poseStrip = make("Frame", {
@@ -136,13 +140,14 @@ local top = make("Frame", {
 -- the strip shows on wide screens, on tabs that have a pose; the main column ends where it starts
 local stripWanted = true -- the showing tab has a pose
 local function layout()
-	local shown = stripWanted and workspace.CurrentCamera.ViewportSize.X >= Theme.PoseMinScreen
+	local shown = stripWanted and workspace.CurrentCamera.ViewportSize.X / UIScale.Get() >= Theme.PoseMinScreen
 	poseStrip.Visible = shown
 	local height = -(Theme.HeaderHeight + Theme.FooterHeight)
 	main.Size = shown and UDim2.new(1 - Theme.PoseShare, -Theme.NavWidth, 1, height) or UDim2.new(1, -Theme.NavWidth, 1, height)
 end
 layout()
 workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(layout)
+UIScale.OnChange(layout)
 
 -- header: a line of microtext, then #TITLE, the accent bar and (0n)
 label(top, {
@@ -428,6 +433,7 @@ function Hub.Open(name)
 	if not gui.Enabled then
 		placeBody()
 		gui.Enabled = true
+		UiSfx.Play("menuOpen") -- once as the hub opens; switching tabs inside it stays quiet
 		Menus.Open("Hub", close)
 		nav.Position = UDim2.fromOffset(-Theme.NavWidth, 0)
 		tween(nav, OPEN_TIME, { Position = UDim2.new() })
@@ -477,7 +483,7 @@ end
 -- the text colour for writing on an InkAccent fill
 function Hub.OnInk()
 	local r, g, b = ink.R, ink.G, ink.B
-	return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 and Theme.Ink or WHITE
+	return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 and Theme.Nav or WHITE
 end
 
 -- `fn(accent, ink)` now and whenever the held power changes
@@ -592,6 +598,7 @@ function Hub.Tab(name, opts)
 			Visible = false,
 		})
 		tab.button.Activated:Connect(function()
+			UiSfx.Play("menuSelect") -- (pressing the tab already showing sounds too)
 			show(name)
 		end)
 		-- hover: the entry nudges right and takes the accent
@@ -677,6 +684,13 @@ local function hoverLine(button)
 end
 content.DescendantAdded:Connect(function(item)
 	if item:IsA("GuiButton") then
+		-- choosing a section (a sub-tab, a category) sounds like the side bar:
+		-- those buttons set SectionSelect, and it plays as they go down
+		item.MouseButton1Down:Connect(function()
+			if item:GetAttribute("SectionSelect") then
+				UiSfx.Play("menuSelect")
+			end
+		end)
 		task.defer(function()
 			if item.Parent then
 				hoverLine(item)

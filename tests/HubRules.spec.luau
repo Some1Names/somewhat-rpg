@@ -13,11 +13,12 @@ local function check(name, condition)
 end
 
 local function isInk(r, g, b)
-	return r == 0.08 and g == 0.08 and b == 0.08
+	return r == 0.92 and g == 0.92 and b == 0.92
 end
 
-check("white turns to ink", isInk(HubRules.Ink(1, 1, 1)))
-check("pale grey turns to ink", isInk(HubRules.Ink(0.9, 0.9, 0.88)))
+check("white stays white", select(1, HubRules.Ink(1, 1, 1)) == 1)
+check("black turns to ink", isInk(HubRules.Ink(0, 0, 0)))
+check("dark grey turns to ink", isInk(HubRules.Ink(0.1, 0.1, 0.12)))
 do
 	local r, g, b = HubRules.Ink(0.667, 1, 0.784) -- Mandela's mint
 	check("light mint stays as it is", r == 0.667 and g == 1 and b == 0.784)

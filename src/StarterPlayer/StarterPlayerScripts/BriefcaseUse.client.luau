@@ -61,7 +61,7 @@ local function label(order, props)
 	props.Parent = box
 	props.LayoutOrder = order
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextWrapped = true
 	props.TextXAlignment = Enum.TextXAlignment.Left
@@ -70,7 +70,7 @@ local function label(order, props)
 	props.Size = UDim2.new(1, 0, 0, 0)
 	return make("TextLabel", props)
 end
-local title = label(1, { Font = Enum.Font.GothamBold, TextSize = 15 })
+local title = label(1, { Font = Enum.Font.Highway, TextSize = 15 })
 local body = label(2, { TextSize = 12, TextColor3 = MUTED })
 local errorText = label(3, { TextSize = 12, TextColor3 = DANGER, Visible = false })
 
@@ -83,7 +83,7 @@ local function button(text, anchorX, filled)
 		Size = UDim2.new(0.5, -4, 1, 0),
 		BackgroundColor3 = TEXT,
 		BackgroundTransparency = filled and 0 or 1,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 13,
 		TextColor3 = filled and BACKGROUND or TEXT,
 		Text = text,

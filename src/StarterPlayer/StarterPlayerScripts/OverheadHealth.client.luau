@@ -214,7 +214,7 @@ local function track(humanoid)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Position = UDim2.fromOffset(0, ICON_ROW)
 	nameLabel.Size = UDim2.new(1, 0, 0, NAME_HEIGHT)
-	nameLabel.Font = Enum.Font.GothamMedium
+	nameLabel.Font = Enum.Font.Highway
 	nameLabel.TextSize = 12
 	nameLabel.TextColor3 = NAME_COLOR
 	nameLabel.TextStrokeTransparency = 0.6

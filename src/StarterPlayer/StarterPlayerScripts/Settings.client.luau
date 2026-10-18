@@ -53,7 +53,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -98,27 +98,27 @@ local function section(height)
 end
 
 local header = section(22)
-label(header, { Text = "SETTINGS", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -24, 1, 0) })
+label(header, { Text = "SETTINGS", Font = Enum.Font.Highway, TextSize = 16, Size = UDim2.new(1, -24, 1, 0) })
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(22, 22),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
 })
 
-label(section(16), { Text = "KEYBINDS", Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = ACCENT, Size = UDim2.fromScale(1, 1) })
+label(section(16), { Text = "KEYBINDS", Font = Enum.Font.Highway, TextSize = 12, TextColor3 = ACCENT, Size = UDim2.fromScale(1, 1) })
 
 local function button(parent, props)
 	props.Parent = parent
 	props.BackgroundColor3 = props.BackgroundColor3 or BUTTON
 	props.BorderSizePixel = 0
 	props.AutoButtonColor = true
-	props.Font = props.Font or Enum.Font.GothamBold
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextSize = props.TextSize or 12
 	props.TextColor3 = props.TextColor3 or TEXT
 	local b = make("TextButton", props)
@@ -276,7 +276,7 @@ local lastSection
 for _, option in ipairs(Preferences.Options) do
 	if option.section ~= lastSection then
 		lastSection = option.section
-		label(section(16), { Text = option.section, Font = Enum.Font.GothamBold, TextSize = 12, TextColor3 = ACCENT, Size = UDim2.fromScale(1, 1) })
+		label(section(16), { Text = option.section, Font = Enum.Font.Highway, TextSize = 12, TextColor3 = ACCENT, Size = UDim2.fromScale(1, 1) })
 	end
 	local row = section(ROW_HEIGHT)
 	label(row, { Text = option.label, TextSize = 12, Size = UDim2.new(1, -KEY_WIDTH - 8, 1, 0) })

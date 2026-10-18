@@ -367,6 +367,13 @@ function effects.Block(character, point)
 	end
 end
 
+-- DeathFade (Ragdoll): a body dissolving; Shared/DeathFade follows the torso
+function effects.DeathFade(torso)
+	if torso and torso.Parent then
+		VFX.Play("Shared/DeathFade", torso)
+	end
+end
+
 -- GuardBreak (Guard): the block cracks open. Guard/GuardBreak, else a red
 -- burst on the body and a light shake near it
 local GUARD_BREAK_COLOR = Color3.fromRGB(230, 60, 50)
@@ -1238,7 +1245,7 @@ function effects.Misremember(character, color)
 	local text = Instance.new("TextLabel")
 	text.BackgroundTransparency = 1
 	text.Size = UDim2.fromScale(1, 1)
-	text.Font = Enum.Font.GothamBlack
+	text.Font = Enum.Font.Highway
 	text.TextSize = 16
 	text.TextColor3 = color
 	text.TextStrokeTransparency = 0.4

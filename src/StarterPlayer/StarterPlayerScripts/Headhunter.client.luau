@@ -64,7 +64,7 @@ local function tagCharacter(character, token)
 	local text = Instance.new("TextLabel")
 	text.BackgroundTransparency = 1
 	text.Size = UDim2.fromScale(1, 1)
-	text.Font = Enum.Font.GothamBold
+	text.Font = Enum.Font.Highway
 	text.TextSize = 14
 	text.TextColor3 = RED
 	text.Text = "HEADHUNTER"

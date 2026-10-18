@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 
@@ -48,20 +49,26 @@ local function wrap(gui, only)
 	sway.BorderSizePixel = 0
 	sway.Active = false
 	sway.Size = UDim2.fromScale(1, 1)
-	sway.Parent = gui
-	for _, child in ipairs(gui:GetChildren()) do
-		if child ~= sway and swaying(child) then
-			child.Parent = sway
-		end
-	end
-	-- anything the HUD script adds later goes in too
-	gui.ChildAdded:Connect(function(child)
-		if child ~= sway and swaying(child) then
-			task.defer(function()
+	-- inside the UI scale's root frame (the gui itself when it isn't scaled)
+	local root = UIScale.Root(gui)
+	sway.Parent = root
+	for _, container in ipairs({ gui, root }) do
+		for _, child in ipairs(container:GetChildren()) do
+			if child ~= sway and swaying(child) then
 				child.Parent = sway
-			end)
+			end
 		end
-	end)
+		-- anything the HUD script adds later goes in too
+		container.ChildAdded:Connect(function(child)
+			if child ~= sway and swaying(child) then
+				task.defer(function()
+					if child.Parent == container then
+						child.Parent = sway
+					end
+				end)
+			end
+		end)
+	end
 	table.insert(swayFrames, sway)
 end
 

@@ -72,6 +72,7 @@ end
 
 -- one pill as wide as its icons, right-aligned; the layout skips hidden icons, so no gap is left
 local row = pill(make("Frame", {
+	Name = "ButtonRow", -- UIScale leaves it in real pixels, lined up with Roblox's bar
 	Parent = gui,
 	AnchorPoint = Vector2.new(1, 0.5),
 	Size = UDim2.fromOffset(0, BUTTON_HEIGHT),
@@ -143,7 +144,7 @@ local yenLabel = make("TextLabel", {
 	Size = UDim2.fromOffset(0, HudConfig.YenHeight),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = YEN_TEXT_SIZE,
 	TextColor3 = GOLD,
 	TextXAlignment = Enum.TextXAlignment.Left,
@@ -183,7 +184,7 @@ for order, icon in ipairs(ICONS) do
 			Position = UDim2.fromScale(0.5, 0.5),
 			Size = UDim2.fromScale(1, 1),
 			BackgroundTransparency = 1,
-			Font = Enum.Font.GothamBold,
+			Font = Enum.Font.Highway,
 			Text = config.glyph,
 			TextSize = HudConfig.IconSize - 6,
 			TextColor3 = TEXT,
@@ -200,7 +201,7 @@ for order, icon in ipairs(ICONS) do
 		Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.Highway,
 		Text = icon.key and string.format("%s  [%s]", icon.title, icon.key) or icon.title,
 		TextSize = 12,
 		TextColor3 = TEXT,
@@ -224,6 +225,10 @@ for order, icon in ipairs(ICONS) do
 		end
 	end)
 	holder.Activated:Connect(function()
+		-- with a menu open, its own icon closes it; the others wait
+		if Menus.Blocks() and not Menus.IsOpen(icon.name) then
+			return
+		end
 		Menus.Toggle(icon.name)
 	end)
 
@@ -253,7 +258,7 @@ local badge = make("TextLabel", {
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundColor3 = GOLD,
 	BorderSizePixel = 0,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	TextSize = 10,
 	TextColor3 = Color3.fromRGB(20, 20, 28),
 	Visible = false,

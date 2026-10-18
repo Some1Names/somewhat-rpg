@@ -44,8 +44,8 @@ check("every event and model loop names a clip, loops loop", namesExist)
 check("fist hit", SoundConfig.KeyFor("FistHit", "p", "d", false, "c") == "punchHit")
 check("fist finisher", SoundConfig.KeyFor("FistHit", "p", "d", true, "c") == "heavyHit")
 check("slash with no critical flag", SoundConfig.KeyFor("Slash", "p", "d", nil, "c") == "punchHit")
-check("Photoshop punch finisher", SoundConfig.KeyFor("PhotoshopPunchHit", "p", true) == "heavyHit")
-check("Photoshop punch", SoundConfig.KeyFor("PhotoshopPunchHit", "p", false) == "punchHit")
+check("Photoshop punch finisher", SoundConfig.KeyFor("PhotoshopPunchHit", "p", true) == "photoshopMelee2")
+check("Photoshop punch", SoundConfig.KeyFor("PhotoshopPunchHit", "p", false) == "photoshopMelee1")
 
 -- swings: a weapon's is heavier than fists'
 check("armed swing", SoundConfig.KeyFor("MeleeSwing", "character", true) == "swingHeavy")

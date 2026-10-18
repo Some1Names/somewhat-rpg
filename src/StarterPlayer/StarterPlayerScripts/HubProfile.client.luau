@@ -17,7 +17,6 @@ local Hub = require(script.Parent:WaitForChild("Hub"))
 
 local player = Players.LocalPlayer
 local Theme = Hub.Theme
-local WHITE = Color3.new(1, 1, 1)
 
 local LEFT_SHARE = 0.62 -- the text column; the rest is the faded number
 
@@ -42,13 +41,13 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
--- a black chip of microtext
+-- an ink chip of microtext (dark text on the light ink)
 local function chip(parent, text, order)
 	return label(parent, {
 		LayoutOrder = order,
 		Text = " " .. text .. " ",
 		TextSize = 11,
-		TextColor3 = WHITE,
+		TextColor3 = Theme.Paper,
 		BackgroundColor3 = Theme.Ink,
 		BackgroundTransparency = 0,
 		Size = UDim2.fromOffset(0, 16),

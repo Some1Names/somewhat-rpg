@@ -120,15 +120,19 @@ function Sfx.AttachFor(model)
 	return nil
 end
 
--- every clip is fetched at startup, so the first hit of a fight is not silent
+-- every clip is fetched at startup, so the first hit of a fight is not silent.
+-- Preloading Sounds (not just ids) and keeping them means a new Sound of the
+-- same clip starts at once instead of fetching it first.
+local preloaded = {}
 task.spawn(function()
-	local assets = {}
 	for _, entry in pairs(SoundConfig.Sounds) do
 		for _, id in ipairs(entry.ids or { entry.id }) do
-			table.insert(assets, "rbxassetid://" .. id)
+			local sound = Instance.new("Sound")
+			sound.SoundId = "rbxassetid://" .. id
+			table.insert(preloaded, sound)
 		end
 	end
-	ContentProvider:PreloadAsync(assets)
+	ContentProvider:PreloadAsync(preloaded)
 end)
 
 return Sfx

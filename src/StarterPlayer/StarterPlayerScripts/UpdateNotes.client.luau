@@ -16,7 +16,6 @@ local PANEL_WIDTH = 560
 local SECTION_GAP = 14 -- extra space above each topic after the first
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
-local WHITE = Color3.new(1, 1, 1)
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -32,7 +31,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = Enum.TextXAlignment.Left
 	props.TextYAlignment = Enum.TextYAlignment.Top
@@ -75,7 +74,7 @@ make("TextLabel", {
 	Font = Hub.Theme.LabelFont,
 	Text = " " .. string.upper(UpdateNotes.Version) .. " ",
 	TextSize = 11,
-	TextColor3 = WHITE,
+	TextColor3 = Hub.Theme.Paper,
 })
 label(panel, { LayoutOrder = nextOrder(), Text = string.upper(UpdateNotes.Title), Font = Hub.Theme.TitleFont, TextSize = 22 })
 

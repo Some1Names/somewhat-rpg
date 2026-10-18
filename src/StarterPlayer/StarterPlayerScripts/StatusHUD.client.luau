@@ -113,7 +113,7 @@ local function icon(group, glyph)
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromOffset(14, ROW_HEIGHT)
-	label.Font = Enum.Font.GothamBold
+	label.Font = Enum.Font.Highway
 	label.Text = glyph
 	label.TextSize = 14
 	label.TextColor3 = Color3.new(1, 1, 1)
@@ -138,7 +138,7 @@ local nameGroup = row(1)
 local nameLabel = Instance.new("TextLabel")
 nameLabel.BackgroundTransparency = 1
 nameLabel.Size = UDim2.fromScale(1, 1)
-nameLabel.Font = Enum.Font.GothamMedium
+nameLabel.Font = Enum.Font.Highway
 nameLabel.TextSize = 12
 nameLabel.TextColor3 = Color3.new(1, 1, 1)
 nameLabel.TextStrokeTransparency = 0.6

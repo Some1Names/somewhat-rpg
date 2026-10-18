@@ -102,7 +102,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
-	props.Font = props.Font or Enum.Font.GothamBold
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	return make("TextLabel", props)
 end
@@ -973,7 +973,7 @@ local function popup(text, color, size, height, lifetime)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, height),
 		Size = UDim2.fromOffset(400, size + 8),
-		Font = Enum.Font.GothamBlack,
+		Font = Enum.Font.Highway,
 		Text = text,
 		TextSize = size,
 		TextColor3 = color,

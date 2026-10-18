@@ -10,6 +10,10 @@ local Water = require(script.Parent:WaitForChild("Water"))
 
 local ActionLock = {}
 
+-- set by Menus on a client while a menu that takes over the screen is open: the
+-- player can't fight then. (The server never sets it.)
+ActionLock.MenuOpen = false
+
 -- whether the character has a power briefcase in hand
 function ActionLock.HoldingBriefcase(character)
 	local tool = character and character:FindFirstChildOfClass("Tool")
@@ -20,7 +24,8 @@ function ActionLock.Locked(character)
 	if not character then
 		return false
 	end
-	return ActionLock.HoldingBriefcase(character)
+	return ActionLock.MenuOpen
+		or ActionLock.HoldingBriefcase(character)
 		or character:GetAttribute("Rewinding") == true
 		or character:GetAttribute("Blocking") == true
 		or (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()

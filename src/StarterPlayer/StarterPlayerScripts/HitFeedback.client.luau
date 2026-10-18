@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
+local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 
 local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
@@ -21,6 +22,7 @@ local CRIT_TEXT_COLOR = Color3.fromRGB(255, 205, 60)
 local CRIT_OUTLINE_COLOR = Color3.fromRGB(60, 30, 0)
 local CRIT_SIZE = 1.5 -- times the normal number size
 local CRIT_SPARK_COUNT = 18
+local CRIT_SOUND_RANGE = 60 -- studs from the camera a critical can be heard from
 -- the server marks a critical just before its damage, so a mark seen this
 -- recently belongs to the health drop that follows
 local CRIT_WINDOW = 0.1
@@ -57,7 +59,7 @@ local function showNumber(anchor, amount, critical)
 	label.Position = UDim2.fromScale(0.5, 0.5)
 	label.Size = UDim2.fromScale(0.5, 0.5)
 	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamBlack
+	label.Font = Enum.Font.Highway
 	label.Text = formatAmount(amount) .. (critical and "!" or "")
 	label.TextColor3 = critical and CRIT_TEXT_COLOR or TEXT_COLOR
 	label.TextScaled = true
@@ -125,6 +127,13 @@ local function onHit(humanoid, amount, critical)
 		showNumber(head, amount, critical)
 	end
 	flash(character)
+	if critical and root then
+		-- only crits near the camera, so a far-off fight isn't heard
+		local camera = workspace.CurrentCamera
+		if camera and (camera.CFrame.Position - root.Position).Magnitude <= CRIT_SOUND_RANGE then
+			UiSfx.Play("crit")
+		end
+	end
 	if root then
 		sparks(root, critical and CRIT_SPARK_COUNT or SPARK_COUNT)
 	end

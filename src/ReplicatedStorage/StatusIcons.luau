@@ -60,7 +60,7 @@ function StatusIcons.new(parent, alignment, position)
 		local glyph = Instance.new("TextLabel")
 		glyph.BackgroundTransparency = 1
 		glyph.Size = UDim2.fromScale(1, 1)
-		glyph.Font = Enum.Font.GothamBold
+		glyph.Font = Enum.Font.Highway
 		glyph.Text = effect.glyph
 		glyph.TextSize = 11
 		glyph.TextColor3 = Color3.new(1, 1, 1)
@@ -71,7 +71,7 @@ function StatusIcons.new(parent, alignment, position)
 		stacks.AnchorPoint = Vector2.new(1, 1)
 		stacks.Position = UDim2.new(1, 2, 1, 1)
 		stacks.Size = UDim2.fromOffset(8, 9)
-		stacks.Font = Enum.Font.GothamBlack
+		stacks.Font = Enum.Font.Highway
 		stacks.TextSize = 9
 		stacks.TextColor3 = Color3.new(1, 1, 1)
 		stacks.TextStrokeTransparency = 0

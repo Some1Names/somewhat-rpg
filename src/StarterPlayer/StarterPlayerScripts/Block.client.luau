@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local blockRemote = ReplicatedStorage:WaitForChild("Block")
 
@@ -42,7 +43,7 @@ end
 
 -- Block key
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not GuardConfig.Enabled or gameProcessed or Keybinds.Capturing() or input.KeyCode ~= Keybinds.Key("Block") then
+	if not GuardConfig.Enabled or gameProcessed or Menus.Blocks() or Keybinds.Capturing() or input.KeyCode ~= Keybinds.Key("Block") then
 		return
 	end
 	-- E is the prompt's while one is on screen

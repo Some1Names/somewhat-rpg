@@ -29,6 +29,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -521,7 +522,7 @@ end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	-- the player's own dash key (Keybinds; Q unless rebound in Settings)
-	if not gameProcessed and not Keybinds.Capturing() and input.KeyCode == Keybinds.Key("Dash") then
+	if not gameProcessed and not Menus.Blocks() and not Keybinds.Capturing() and input.KeyCode == Keybinds.Key("Dash") then
 		dash()
 	end
 end)

@@ -56,7 +56,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -96,8 +96,8 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, 10),
 })
 make("UIListLayout", { Parent = tracker, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
-local trackerKind = label(tracker, { LayoutOrder = 1, Text = "BOUNTY", Font = Enum.Font.GothamBold, TextSize = 10, TextColor3 = GOLD, Size = UDim2.new(1, 0, 0, 12) })
-local trackerTitle = label(tracker, { LayoutOrder = 2, Font = Enum.Font.GothamBold, TextSize = 13, Size = UDim2.new(1, 0, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
+local trackerKind = label(tracker, { LayoutOrder = 1, Text = "BOUNTY", Font = Enum.Font.Highway, TextSize = 10, TextColor3 = GOLD, Size = UDim2.new(1, 0, 0, 12) })
+local trackerTitle = label(tracker, { LayoutOrder = 2, Font = Enum.Font.Highway, TextSize = 13, Size = UDim2.new(1, 0, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 local trackerCount = label(tracker, { LayoutOrder = 3, TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
 
 local adminOpen = false -- the Admin panel takes the right side, so the tracker steps aside
@@ -134,14 +134,14 @@ make("UIPadding", {
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
 
 local header = make("Frame", { Parent = panel, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
-local panelTitle = label(header, { Text = "BOUNTY HUNTER", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
+local panelTitle = label(header, { Text = "BOUNTY HUNTER", Font = Enum.Font.Highway, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(22, 22),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
@@ -176,7 +176,7 @@ local function card(giverId, quest, order)
 	outline(frame, 0.85)
 	make("UIPadding", { Parent = frame, PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
 	local dim = locked and MUTED or TEXT
-	label(frame, { Text = quest.title, Font = Enum.Font.GothamBold, TextSize = 14, TextColor3 = dim, Size = UDim2.new(1, -70, 0, 16) })
+	label(frame, { Text = quest.title, Font = Enum.Font.Highway, TextSize = 14, TextColor3 = dim, Size = UDim2.new(1, -70, 0, 16) })
 	label(frame, {
 		Text = string.format("Defeat %d %s", quest.count, QuestConfig.plural(quest)),
 		TextSize = 12,
@@ -192,7 +192,7 @@ local function card(giverId, quest, order)
 		Position = UDim2.fromScale(1, 0.5),
 		Size = UDim2.fromOffset(62, 26),
 		BackgroundColor3 = locked and LOCKED or current and BACKGROUND or GOLD,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = locked and ("Lv. " .. quest.level) or current and "Active" or "Accept",
 		TextSize = 11,
 		TextColor3 = locked and MUTED or current and GOLD or BACKGROUND,
@@ -261,7 +261,7 @@ local function popup(text, color, size, height, lifetime)
 		Position = UDim2.fromScale(0.5, height),
 		Size = UDim2.fromOffset(500, size + 6),
 		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = text,
 		TextSize = size,
 		TextColor3 = color,

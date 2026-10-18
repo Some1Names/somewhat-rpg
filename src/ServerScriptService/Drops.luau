@@ -123,7 +123,7 @@ local function spawnOrb(player, material, amount, position, enemy)
 	text.Name = "Text"
 	text.BackgroundTransparency = 1
 	text.Size = UDim2.fromScale(1, 1)
-	text.Font = Enum.Font.GothamBold
+	text.Font = Enum.Font.Highway
 	text.TextSize = 14
 	text.TextColor3 = color
 	text.TextStrokeTransparency = 0

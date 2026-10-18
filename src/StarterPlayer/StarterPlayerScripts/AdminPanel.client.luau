@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -86,7 +87,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	props.TextTruncate = Enum.TextTruncate.AtEnd
@@ -96,7 +97,7 @@ end
 local function button(parent, text, props)
 	props.Parent = parent
 	props.BackgroundColor3 = props.BackgroundColor3 or TEXT
-	props.Font = Enum.Font.GothamBold
+	props.Font = Enum.Font.Highway
 	props.Text = text
 	props.TextSize = 12
 	props.TextColor3 = props.TextColor3 or BACKGROUND
@@ -143,23 +144,25 @@ local function fitPanel()
 	if screen <= 0 then -- a disabled ScreenGui reports 0, so ask the camera
 		screen = workspace.CurrentCamera.ViewportSize.Y - GuiService:GetGuiInset().Y
 	end
+	screen /= UIScale.Get() -- real pixels to UI pixels
 	local available = screen - PANEL_TOP - HudConfig.BottomReserve
 	panel.Size = UDim2.fromOffset(PANEL_WIDTH, math.min(PANEL_HEIGHT, math.max(available, PANEL_MIN_HEIGHT)))
 	panel.Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, PANEL_TOP + available / 2)
 end
 gui:GetPropertyChangedSignal("AbsoluteSize"):Connect(fitPanel)
+UIScale.OnChange(fitPanel)
 fitPanel()
 
 -- header
 local header = make("Frame", { Parent = panel, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
-label(header, { Text = "ADMIN", Font = Enum.Font.GothamBold, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
+label(header, { Text = "ADMIN", Font = Enum.Font.Highway, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(22, 22),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
@@ -280,7 +283,7 @@ local function section(height)
 end
 
 local function heading(text)
-	label(section(18), { Text = text, Font = Enum.Font.GothamBold, TextSize = 11, TextColor3 = MUTED, Size = UDim2.fromScale(1, 1) })
+	label(section(18), { Text = text, Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, Size = UDim2.fromScale(1, 1) })
 end
 
 -- a row of equal buttons: entries are { text, function }
@@ -318,7 +321,7 @@ local function inputRow(labelText, buttonText, submit, maxValue)
 		Size = UDim2.fromOffset(boxWidth, 26),
 		BackgroundColor3 = Color3.new(0, 0, 0),
 		BackgroundTransparency = 0.5,
-		Font = Enum.Font.GothamMedium,
+		Font = Enum.Font.Highway,
 		TextSize = 13,
 		TextColor3 = TEXT,
 		PlaceholderText = "0",

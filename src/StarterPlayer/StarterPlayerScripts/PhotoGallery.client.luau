@@ -47,7 +47,7 @@ end
 local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = props.Font or Enum.Font.GothamMedium
+	props.Font = props.Font or Enum.Font.Highway
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -112,14 +112,14 @@ local function section(height)
 end
 
 local header = section(20)
-local title = label(header, { Text = "GALLERY", Font = Enum.Font.GothamBold, TextSize = 15, TextColor3 = PINK, Size = UDim2.new(1, -24, 1, 0) })
+local title = label(header, { Text = "GALLERY", Font = Enum.Font.Highway, TextSize = 15, TextColor3 = PINK, Size = UDim2.new(1, -24, 1, 0) })
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.fromOffset(20, 20),
 	BackgroundTransparency = 1,
-	Font = Enum.Font.GothamBold,
+	Font = Enum.Font.Highway,
 	Text = "×",
 	TextSize = 20,
 	TextColor3 = MUTED,
@@ -134,7 +134,7 @@ local function button(parent, text, color, x)
 		BackgroundColor3 = BUTTON,
 		BorderSizePixel = 0,
 		AutoButtonColor = true,
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		Text = text,
 		TextSize = 12,
 		TextColor3 = color,
@@ -150,7 +150,7 @@ local function buildRows(count)
 	end
 	for slot = #rows + 1, count do
 		local row = section(ROW_HEIGHT)
-		label(row, { Text = "PHOTO " .. slot, Font = Enum.Font.GothamBold, TextSize = 12, Size = UDim2.new(0, 64, 1, 0) })
+		label(row, { Text = "PHOTO " .. slot, Font = Enum.Font.Highway, TextSize = 12, Size = UDim2.new(0, 64, 1, 0) })
 		local place = label(row, {
 			TextSize = 11,
 			TextColor3 = MUTED,
@@ -225,14 +225,14 @@ local function waypoint(slot)
 	make("UIStroke", { Parent = square, Color = PINK, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	label(square, {
 		Text = tostring(slot),
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 22,
 		TextColor3 = PINK,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.fromScale(1, 1),
 	})
 	local distance = label(board, {
-		Font = Enum.Font.GothamBold,
+		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextStrokeTransparency = 0.4,
 		TextXAlignment = Enum.TextXAlignment.Center,

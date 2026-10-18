@@ -180,7 +180,7 @@ return function(helpers)
 		local number = Instance.new("TextLabel")
 		number.BackgroundTransparency = 1
 		number.Size = UDim2.fromScale(1, 1)
-		number.Font = Enum.Font.GothamBlack
+		number.Font = Enum.Font.Highway
 		number.TextScaled = true
 		number.TextColor3 = WHITE
 		number.TextStrokeColor3 = Color3.fromRGB(60, 0, 0)

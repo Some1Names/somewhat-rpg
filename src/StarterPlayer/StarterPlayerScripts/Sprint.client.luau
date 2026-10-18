@@ -10,7 +10,8 @@ local UserInputService = game:GetService("UserInputService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
-local sprintAnimation = ReplicatedStorage:WaitForChild("SprintAnimation")
+local Menus = require(script.Parent:WaitForChild("Menus"))
+local sprintAnimation = ReplicatedStorage:WaitForChild("SprintAnimation", 10) -- nil: sprinting works without it
 
 local player = Players.LocalPlayer
 
@@ -22,10 +23,11 @@ local BLEND_TIME = 0.15 -- seconds to fade between the normal run and the sprint
 
 local holding = false
 local sprintTracks = setmetatable({}, { __mode = "k" })
+local nextLoadTry = 0 -- a failed load is retried after a pause, not every frame
 
 local function sprintTrack(humanoid)
-	-- sprinting still works before the animation has been published
-	if sprintAnimation.AnimationId == "" then
+	-- sprinting still works before the animation has been published or while it hasn't loaded
+	if not sprintAnimation or sprintAnimation.AnimationId == "" then
 		return nil
 	end
 	local animator = humanoid:FindFirstChildOfClass("Animator")
@@ -34,16 +36,28 @@ local function sprintTrack(humanoid)
 	end
 	local track = sprintTracks[animator]
 	if not track then
-		track = animator:LoadAnimation(sprintAnimation)
+		if os.clock() < nextLoadTry then
+			return nil
+		end
+		local ok, loaded = pcall(animator.LoadAnimation, animator, sprintAnimation)
+		if not ok or not loaded then
+			nextLoadTry = os.clock() + 3
+			return nil
+		end
+		track = loaded
 		track.Priority = Enum.AnimationPriority.Movement
 		track.Looped = true
 		sprintTracks[animator] = track
+	end
+	-- a track whose animation hasn't loaded (or failed to) has no length yet: don't play it
+	if track.Length <= 0 then
+		return nil
 	end
 	return track
 end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == SPRINT_KEY then
+	if not gameProcessed and not Menus.Blocks() and input.KeyCode == SPRINT_KEY then
 		holding = true
 	end
 end)

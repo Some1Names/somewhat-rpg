@@ -12,6 +12,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local punchEvent = ReplicatedStorage:WaitForChild("Punch")
 local player = Players.LocalPlayer
@@ -109,6 +110,7 @@ local function tryAttack()
 		or player:GetAttribute("Dashing")
 		or player:GetAttribute("RangedReady")
 		or ActionLock.Busy(character) -- Undo carrying her back, a block, a stun, the water
+		or Menus.Blocks() -- a menu is up: a click is for the menu (the hub's empty paper isn't a button)
 	then
 		return
 	end
