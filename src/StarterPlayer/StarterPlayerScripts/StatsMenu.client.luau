@@ -215,6 +215,11 @@ local function perPoint(stat)
 	if stat.key == "Vitality" then
 		return string.format("+%d max HP per point", StatConfig.HealthPerVitality)
 	end
+	if stat.key == "Agility" then
+		return string.format("+%d max stamina per point", StatConfig.AgilityStamina(1))
+	elseif stat.key == "Willpower" then
+		return "-1% posture taken and status time per point"
+	end
 	local kinds = { Strength = "melee", Superliminal = "skill", Firearm = "gun" }
 	return string.format("+%s%% %s damage per point", formatNumber(stat.damageBonus * 100), kinds[stat.key] or "")
 end

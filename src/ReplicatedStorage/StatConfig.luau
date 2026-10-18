@@ -45,6 +45,8 @@ StatConfig.DodgeChargeLevels = {
 	{ level = 25, charges = 2 },
 	{ level = 60, charges = 3 },
 }
+-- the most points one stat can hold (300 points at level 100 can't fill six)
+StatConfig.MaxStatPoints = 50
 StatConfig.BaseHealth = 100
 StatConfig.HealthPerVitality = 10
 
@@ -82,6 +84,14 @@ StatConfig.Stats = {
 		damageBonus = 0.05,
 		milestones = {},
 	},
+	{
+		key = "Agility", -- more max stamina (StatConfig.AgilityStamina)
+		milestones = {},
+	},
+	{
+		key = "Willpower", -- less posture taken blocking and shorter statuses on you
+		milestones = {},
+	},
 }
 
 local byKey = {}
@@ -95,7 +105,7 @@ end
 
 -- the most points this stat can hold
 function StatConfig.StatCap(key)
-	return math.min(byKey[key].max or math.huge, StatConfig.MaxLevel)
+	return math.min(byKey[key].max or StatConfig.MaxStatPoints, StatConfig.MaxLevel)
 end
 
 -- the highest milestone these points have reached, and the next one (if any)
@@ -149,6 +159,21 @@ end
 -- how much an attack tagged with this stat is multiplied by
 function StatConfig.DamageMultiplier(key, points)
 	return 1 + (byKey[key].damageBonus or 0) * points
+end
+
+-- extra max stamina from Agility (stamina units; one box is StaminaPerBox)
+function StatConfig.AgilityStamina(points)
+	return points
+end
+
+-- how much of the posture a block would take Willpower lets through
+function StatConfig.WillpowerPostureMultiplier(points)
+	return 1 - 0.01 * points
+end
+
+-- how long a status lasts on you, as a fraction of its normal time
+function StatConfig.WillpowerStatusMultiplier(points)
+	return 1 - 0.01 * points
 end
 
 return StatConfig
