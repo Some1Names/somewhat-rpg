@@ -1301,7 +1301,7 @@ local function showDetails(entry)
 		featureRow("PASSIVE", "passive", set.passive.name)
 	end
 	if set.ranged then
-		detailRow(set.ranged.primary and "LMB" or "RMB+LMB", set.ranged.name)
+		detailRow(set.ranged.primary and "LMB" or "RANGED", set.ranged.name)
 	end
 	if set.dash then
 		featureRow(Keybinds.Text("Dash"), "dash", set.dash.name)
