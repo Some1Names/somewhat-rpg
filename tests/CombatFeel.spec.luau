@@ -31,7 +31,9 @@ check("the end moment is not dodging", CombatFeel.InDodge(10, 10) == false)
 -- the recovery between dashes
 check("the first dash is always allowed", CombatFeel.CanDodge(5, nil) == true)
 check("a dash 0.2 s after the last is too soon", CombatFeel.CanDodge(5.2, 5) == false)
-check("a dash 0.35 s after the last is allowed", CombatFeel.CanDodge(5.35, 5) == true)
+check("a dash 0.3 s after the last is still too soon", CombatFeel.CanDodge(5.3, 5) == false)
+check("a dash 0.4 s after the last is allowed", CombatFeel.CanDodge(5.4, 5) == true)
+check("the recovery boundary is inclusive", CombatFeel.CanDodge(0.5 + CombatFeel.DodgeRecovery, 0.5) == true)
 
 -- swing cost
 check("a hit costs 6", CombatFeel.SwingCost({}, false) == 6)
