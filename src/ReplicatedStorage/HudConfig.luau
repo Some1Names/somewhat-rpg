@@ -32,10 +32,10 @@ HudConfig.LeftReserve = HudConfig.BottomReserve + HudConfig.CardHeight + HudConf
 -- power's colour; NoPower when there's none), square everything
 HudConfig.HubTheme = {
 	Paper = Color3.fromRGB(20, 20, 23),
-	Panel = Color3.fromRGB(34, 34, 39), -- cards
-	BarBack = Color3.fromRGB(52, 52, 58), -- empty part of a progress bar
+	Panel = Color3.fromRGB(50, 50, 58), -- cards
+	BarBack = Color3.fromRGB(80, 80, 90), -- empty part of a progress bar
 	Ink = Color3.fromRGB(236, 236, 238), -- text, and the fill of an ink button
-	Muted = Color3.fromRGB(146, 146, 154),
+	Muted = Color3.fromRGB(190, 190, 198),
 	Nav = Color3.fromRGB(9, 9, 11),
 	NavText = Color3.fromRGB(238, 238, 238),
 	NoPower = Color3.new(1, 1, 1),

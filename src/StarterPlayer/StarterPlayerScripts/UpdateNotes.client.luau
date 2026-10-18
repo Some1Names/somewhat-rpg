@@ -88,7 +88,7 @@ local function richLine(line)
 	if not name or rest == "" then
 		return "•  " .. escape(line)
 	end
-	return string.format('•  <b>%s:</b>  <font color="#4A4A4A">%s</font>', escape(name), escape(rest))
+	return string.format('•  <b>%s:</b>  <font color="#C4C4CC">%s</font>', escape(name), escape(rest))
 end
 
 for index, section in ipairs(UpdateNotes.Sections) do
