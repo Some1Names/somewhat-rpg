@@ -241,7 +241,8 @@ local slotList = make("Frame", {
 })
 make("UIListLayout", { Parent = slotList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
 -- under the slots: a row of square talisman slots (worn, empty or locked)
-local TALISMANS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + 6
+local SECTION_GAP = 20 -- between the EQUIPPED slots, the talismans and the materials
+local TALISMANS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + SECTION_GAP
 local TALISMANS_HEIGHT = 16 + TALISMAN_BOX
 label(leftColumn, {
 	Text = "TALISMANS",
@@ -263,7 +264,7 @@ make("UIListLayout", {
 	SortOrder = Enum.SortOrder.LayoutOrder,
 	Padding = UDim.new(0, TALISMAN_GAP),
 })
-local MATERIALS_TOP = TALISMANS_TOP + TALISMANS_HEIGHT + 4
+local MATERIALS_TOP = TALISMANS_TOP + TALISMANS_HEIGHT + SECTION_GAP
 label(leftColumn, {
 	Text = "MATERIALS",
 	Font = Enum.Font.Highway,
