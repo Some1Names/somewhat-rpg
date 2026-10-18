@@ -24,6 +24,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
+local EnemyAttackConfig = require(ReplicatedStorage:WaitForChild("EnemyAttackConfig"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local VFX = require(ReplicatedStorage:WaitForChild("VFX"))
@@ -365,6 +366,23 @@ function effects.Block(character, point)
 	else
 		VFX.Play("Shared/Sparks", point, { color = WHITE, scale = 0.6 })
 	end
+end
+
+-- Telegraph (EnemyAI): an enemy winding up a swing. A placeholder flash on its body, white for a
+-- quick swing and red for a heavy one, fading out as the hit lands.
+function effects.Telegraph(model, attackType, windUp)
+	local attack = EnemyAttackConfig.Get(attackType)
+	if not attack or not model or not model.Parent then
+		return
+	end
+	local flash = Instance.new("Highlight")
+	flash.FillColor = attack.color
+	flash.FillTransparency = attackType == "heavy" and 0.35 or 0.6
+	flash.OutlineTransparency = 1
+	flash.DepthMode = Enum.HighlightDepthMode.Occluded
+	flash.Parent = model
+	TweenService:Create(flash, TweenInfo.new(windUp, Enum.EasingStyle.Linear), { FillTransparency = 1 }):Play()
+	Debris:AddItem(flash, windUp)
 end
 
 -- Dodge (Damage, EnemyAI): a hit that missed a dashing player. Guard/Dodge when the pack prefab

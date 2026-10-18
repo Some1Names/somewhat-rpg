@@ -6,7 +6,7 @@
 -- then it runs home without stopping to fight. Back home, a hurt enemy slowly
 -- regains health until it's full or something hits it.
 -- It waits while a skill is moving it, it's stunned, it's staggered by a melee
--- hit (HitstunUntil, which also cancels a swing it's winding up) or it's in
+-- hit (HitstunUntil, which also cancels a quick swing it's winding up) or it's in
 -- the air.
 -- An enemy with a Level attribute gets its health and hit from that level
 -- (StatConfig.EnemyHealth / EnemyDamage) when it spawns. One above
@@ -14,7 +14,7 @@
 -- DASH_COOLDOWN seconds, when they're a few strides away.
 -- Optional attributes on the model: FightsBack, MaxHealth, AttackDamage
 -- (both otherwise from its Level), AttackRange, AttackCooldown, LeashRange,
--- ChaseSpeed.
+-- ChaseSpeed, HeavyChance (0 to 1, the share of its swings that are slow heavy ones).
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -25,6 +25,7 @@ local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Guard = require(ServerScriptService:WaitForChild("Guard"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
+local EnemyAttackConfig = require(ReplicatedStorage:WaitForChild("EnemyAttackConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -38,7 +39,6 @@ local RETURN_SPEED = 26 -- studs per second running home after giving up a chase
 local REGEN_PER_SECOND = 0.08 -- share of max health regained per second once back home
 local GIVE_UP_DISTANCE = 70 -- studs between it and its target
 local CHASE_STUCK_TIME = 3 -- seconds chasing without getting anywhere before it gives up
-local WIND_UP = 0.35 -- seconds from starting a swing to it landing
 local REACH_TOLERANCE = 1.5 -- extra studs the target may have moved during the wind-up
 local DASH_ABOVE_LEVEL = 25 -- enemies above this level can dash
 local DASH_COOLDOWN = 30 -- seconds between dashes
@@ -165,15 +165,22 @@ local function run(model)
 		return (model:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
 	end
 
+	-- quick or heavy (EnemyAttackConfig); a heavy never follows a heavy
+	local lastWasHeavy = false
 	local function swingAt(targetHumanoid, targetRoot)
+		local attackType = EnemyAttackConfig.Choose(math.random(), EnemyAttackConfig.Chance(model:GetAttribute("HeavyChance")), lastWasHeavy)
+		lastWasHeavy = attackType == "heavy"
+		local attack = EnemyAttackConfig.Get(attackType)
 		slashTrack:Play(0.1)
-		task.delay(WIND_UP, function()
+		skillEffects:FireAllClients("Telegraph", model, attackType, attack.windUp)
+		task.delay(attack.windUp, function()
 			-- it may have been stunned, staggered or killed, or the target got away, during the wind-up
 			local ownRoot = humanoid.RootPart
 			if not ownRoot or ownRoot.Anchored or humanoid.Health <= 0 or targetHumanoid.Health <= 0 or not targetRoot.Parent then
 				return
 			end
-			if staggered() then
+			-- (a heavy swing can't be staggered out of)
+			if staggered() and not attack.uninterruptible then
 				slashTrack:Stop(0.05)
 				return
 			end
@@ -188,7 +195,7 @@ local function run(model)
 			end
 			if (targetRoot.Position - ownRoot.Position).Magnitude <= setting(model, "AttackRange") + REACH_TOLERANCE then
 				-- a player's passive may erase the hit
-				local amount = attackDamage(model) * StatusConfig.OutgoingMultiplier(model) -- softer while Weakened
+				local amount = attackDamage(model) * attack.damage * StatusConfig.OutgoingMultiplier(model) -- softer while Weakened
 				local victim = Players:GetPlayerFromCharacter(targetHumanoid.Parent)
 				if victim then
 					Guard.MarkCombat(victim.Character)
