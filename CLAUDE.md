@@ -101,6 +101,13 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   Menu icon), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
   every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
   `HudConfig`).
+- **Build depth**: six stats (Vitality, Strength, Superliminal, Firearm, Agility, Willpower), each capped at 50 points
+  (`StatConfig.MaxStatPoints`). A set can have `requires = { Stat = points }` in `SkillSetConfig`; `BuildCheck` (server)
+  refuses its skills, shots, swings and equip below it. Talents (`TalentConfig`: a tier opens at 15/30/50 points in its
+  stat, equipping costs talent points, 1 per 5 levels) are the saved, replicated `Talents` text; the pure rules are in
+  `BuildRules` (Lune-tested), `Talents` validates equips (`EquipTalent` remote, created by script) and prunes talents a
+  player no longer qualifies for. Effects are read with `BuildRules.PlayerModifier(player, kind, damageStat)` in
+  `Damage`, `Guard`, `StatusEffects`, `PlayerStats` (max HP), `Health` (regen) and `Stamina`.
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
   orange #FF9A3C / cyan #3CE0E6, Luminance passive, flight, Prism Form), Revolver (B weapon).
 
