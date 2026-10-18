@@ -40,6 +40,7 @@ local ACTION_SOUNDS = {
 	equip = "equip",
 	store = "unequip",
 	unequipBriefcase = "unequip",
+	unequip = "unequip",
 }
 
 -- The take-off sound plays as the button goes down (before the click finishes,
@@ -1043,7 +1044,7 @@ local function powerButtons(entry)
 			end
 		end
 	elseif entry.stored then
-		primaryText, altText = "SWAP WITH HELD", "TAKE OUT"
+		primaryText, altText = heldPower() and "SWAP WITH HELD" or "EQUIP", "TAKE OUT"
 		primaryAction = function()
 			runPower("swap", setName, false)
 		end
@@ -1054,6 +1055,11 @@ local function powerButtons(entry)
 		primaryText = "SWITCH TO IT"
 		primaryAction = function()
 			runPower("switch", setName, false)
+		end
+	elseif entry.held then
+		primaryText = "UNEQUIP"
+		primaryAction = function()
+			runPower("unequip", setName, false)
 		end
 	end
 	setButton(equipButton, equipStroke, primaryText, false)

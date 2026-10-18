@@ -429,6 +429,24 @@ function actions.unequipBriefcase(player, setName)
 	return Powers.UnequipBriefcase(player, setName)
 end
 
+-- the held power is put away: into a free storage slot (a lifetime power needs none, it is
+-- still yours); nothing is held until you equip one
+function actions.unequip(player, setName)
+	if Powers.Current(player) ~= setName then
+		return false, "You aren't holding that power"
+	end
+	if not Powers.IsLifetime(player, setName) then
+		if slotsFree(player) <= 0 then
+			return false, "Storage is full"
+		end
+		local list = stored(player)
+		table.insert(list, setName)
+		setStored(player, list)
+	end
+	setCurrent(player, nil)
+	return true, "You put away " .. Powers.DisplayName(setName)
+end
+
 -- a stored power comes back as a briefcase
 function actions.takeOut(player, setName)
 	local list = stored(player)
