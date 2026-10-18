@@ -17,6 +17,8 @@ local UserInputService = game:GetService("UserInputService")
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
+local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
+local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local blockRemote = ReplicatedStorage:WaitForChild("Block")
 
 local player = Players.LocalPlayer
@@ -28,6 +30,20 @@ local pressed = false -- we sent true and haven't sent false
 local promptsShown = 0
 local inCombat = false
 local switchedOff = setmetatable({}, { __mode = "k" }) -- prompts we disabled -> true
+
+-- whether the held set or melee weapon has its own block (Guard's ownBlock): nothing else can block
+local function canBlock()
+	local character = player.Character
+	if not character then
+		return false
+	end
+	local _, setName = SkillSetConfig.Equipped(character)
+	if setName then
+		return SkillSetConfig.Sets[setName].block ~= nil
+	end
+	local _, weapon = PunchConfig.WeaponFor(character)
+	return weapon ~= nil and weapon.block ~= nil
+end
 
 -- prompts are triggered with E
 local function sharesPromptKey()
@@ -51,7 +67,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-	if not humanoid or humanoid.Health <= 0 then
+	if not humanoid or humanoid.Health <= 0 or not canBlock() then
 		return
 	end
 	pressed = true
@@ -92,7 +108,7 @@ local function combatNow()
 end
 
 local function refreshCombat()
-	local combat = sharesPromptKey() and combatNow()
+	local combat = sharesPromptKey() and canBlock() and combatNow()
 	if combat == inCombat then
 		return
 	end

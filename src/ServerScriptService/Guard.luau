@@ -94,7 +94,12 @@ function Guard.Resolve(target, amount, kind, source, attacker)
 	if not GuardConfig.isFront(root.CFrame.LookVector, away) then
 		return amount
 	end
-	local cut = GuardConfig.cut(kind, ownBlock(target))
+	-- only a set or weapon with its own block can block
+	local own = ownBlock(target)
+	if not own then
+		return amount
+	end
+	local cut = GuardConfig.cut(kind, own)
 	if cut <= 0 then
 		return amount
 	end
@@ -119,6 +124,11 @@ function Guard.Resolve(target, amount, kind, source, attacker)
 	return amount - prevented
 end
 
+-- whether this character's set or weapon gives it a block at all
+function Guard.CanBlock(character)
+	return ownBlock(character) ~= nil
+end
+
 -- The Block remote: true when E goes down, false when it comes up
 local blockRemote = Instance.new("RemoteEvent")
 blockRemote.Name = "Block"
@@ -138,7 +148,7 @@ blockRemote.OnServerEvent:Connect(function(player, down)
 		setBlocking(character, false)
 		return
 	end
-	if not GuardConfig.Enabled then
+	if not GuardConfig.Enabled or not Guard.CanBlock(character) then
 		return
 	end
 	local now = os.clock()

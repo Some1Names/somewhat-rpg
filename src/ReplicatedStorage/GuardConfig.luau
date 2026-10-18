@@ -6,7 +6,10 @@
 -- is added to the blocker's posture. A full bar is a guard break: stunned for
 -- BreakStun, no blocking for BreakLockout after that. Posture drains back down
 -- once you stop being hit. A skill set or melee weapon can bring its own cuts
--- (`block = { melee =, ranged =, skill = }`) that replace the base ones.
+-- (`block = { melee =, ranged =, skill = }`) that replace the base ones. Block is
+-- not basekit: only a set or weapon with such a table can block at all; fists and
+-- the base kit can't, so the base Cuts below are only the fallback for a `block`
+-- table that leaves a kind out.
 local Vector3 = Vector3 or require("@lune/roblox").Vector3
 
 local GuardConfig = {
