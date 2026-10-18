@@ -17,6 +17,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local BuildCheck = require(ServerScriptService:WaitForChild("BuildCheck"))
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
 local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
@@ -320,6 +321,10 @@ punchEvent.OnServerEvent:Connect(function(player, index, aim)
 
 	local now = os.clock()
 	local weaponName, weapon = PunchConfig.WeaponFor(character)
+	-- a set's weapon needs the set's stat requirement (BuildCheck)
+	if weapon.skillSet and not BuildCheck.SetMeets(player, weapon.skillSet) then
+		return
+	end
 	-- a thrown weapon (Axe Boomerang) can't swing until it's caught
 	if weapon.skillSet and character:GetAttribute("WeaponThrown") then
 		return

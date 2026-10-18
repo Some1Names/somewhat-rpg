@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
+local BuildCheck = require(script.Parent:WaitForChild("BuildCheck"))
 local Powers = require(script.Parent:WaitForChild("Powers"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -147,6 +148,10 @@ local function onEquip(player, setName, kind)
 	end
 	if SkillSetConfig.Sets[setName].kind ~= "weapon" then
 		return false, "Powers are managed in the inventory's power rows"
+	end
+	local meets, needs = BuildCheck.SetMeets(player, setName)
+	if not meets then
+		return false, needs
 	end
 	if player:GetAttribute(ATTRIBUTES[SkillSetConfig.Sets[setName].kind]) ~= setName then
 		Loadout.Give(player, setName)

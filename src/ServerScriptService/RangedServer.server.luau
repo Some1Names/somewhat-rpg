@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+local BuildCheck = require(ServerScriptService:WaitForChild("BuildCheck"))
 local Projectiles = require(ServerScriptService:WaitForChild("Projectiles"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -120,7 +121,7 @@ fireRanged.OnServerEvent:Connect(function(player, action, origin, direction, id,
 	end
 	local _, setName = SkillSetConfig.Equipped(character)
 	local ranged = setName and SkillSetConfig.RangedFor(character, setName)
-	if not ranged then
+	if not ranged or not BuildCheck.SetMeets(player, setName) then
 		return
 	end
 	if action == "reload" then

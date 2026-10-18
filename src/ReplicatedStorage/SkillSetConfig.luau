@@ -120,11 +120,14 @@ end
 SkillSetConfig.AidoRed = Color3.fromRGB(255, 64, 48)
 SkillSetConfig.AidoCore = Color3.fromRGB(255, 196, 120)
 
+-- A set can have `requires = { Stat = points }`: below it the player can't use
+-- the set (BuildCheck on the server; the menus show what's missing).
 SkillSetConfig.Sets = {
 	Mandela = {
 		tool = "Mandela",
 		kind = "power",
 		tier = "S",
+		requires = { Superliminal = 10 },
 		color = Color3.fromRGB(170, 255, 200),
 		-- Misremembered: the next hit you'd take is erased, unless it scales
 		-- with Superliminal (skills and ranged moves), then it recharges
@@ -223,6 +226,7 @@ SkillSetConfig.Sets = {
 		tool = "Iridescent Requiem",
 		kind = "power",
 		tier = "S",
+		requires = { Superliminal = 20 },
 		color = Color3.fromRGB(60, 224, 230), -- the cyan of its palette (IridescentColor)
 		-- Luminance runs 0 to 1: it fills in sunlight (cloudMultiplier times as
 		-- fast above cloudHeight). In shade it can only hold shadeCap: above
@@ -591,6 +595,7 @@ SkillSetConfig.Sets = {
 		tool = "Revolver",
 		kind = "weapon",
 		tier = "B",
+		requires = { Firearm = 10 },
 		color = Color3.fromRGB(230, 70, 80),
 		ranged = {
 			name = "Revolver",

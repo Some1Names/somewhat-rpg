@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 
+local BuildCheck = require(ServerScriptService:WaitForChild("BuildCheck"))
 local CombatState = require(ServerScriptService:WaitForChild("CombatState"))
 local Overcharge = require(ServerScriptService:WaitForChild("Overcharge"))
 local Reforge = require(ServerScriptService:WaitForChild("Reforge"))
@@ -267,6 +268,10 @@ useSkill.OnServerEvent:Connect(function(player, key, aim)
 		return
 	end
 	if (player:GetAttribute(SkillSetConfig.MasteryAttribute(setName)) or 0) < skill.mastery then
+		return
+	end
+	-- below the set's stat requirement (BuildCheck)
+	if not BuildCheck.SetMeets(player, setName) then
 		return
 	end
 	-- an ultimate only works while the set is overcharged
