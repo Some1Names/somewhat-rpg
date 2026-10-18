@@ -1,6 +1,5 @@
--- The hub's Stats tab (M, or the hub's nav), with two sub-tabs. STATS: a radar of the four
--- stats beside the points to spend on them, the level and its XP bar, and what the stats add
--- up to (max HP, regen, damage, stamina boxes, dodge charges).
+-- The hub's Stats tab (M, or the hub's nav), with two sub-tabs. STATS: the level and its XP bar, what the stats add up to
+-- (max HP, regen, damage, stamina boxes, dodge charges), and under them the points to spend on the four stats.
 -- MILESTONES: reward bars, one per track (the level, then each stat with milestones), in
 -- segments with a pin under each reward. Unspent points show as a badge in the hub's nav.
 -- Also pops up XP gains and level ups. The numbers come from the player attributes the
@@ -24,9 +23,6 @@ local AMOUNTS = { 1, 5, 10 } -- points added per click
 local SUBTABS_HEIGHT = 36 -- the STATS / MILESTONES titles, with the gap under them
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
-local RADAR_WIDTH = 380
-local RADAR_HEIGHT = 290
-local RADAR_RADIUS = 96
 local SPEND_ROW = 52
 local MILESTONE_GAP = 6 -- between the segments of a reward bar
 local BACKGROUND = Hub.Theme.Paper -- text on ink buttons
@@ -36,8 +32,8 @@ local BAR_BACK = Hub.Theme.BarBack
 local WHITE = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 60) -- same as critical hit numbers: the popups
 local NEXT = Color3.fromRGB(255, 190, 40) -- the milestone you're working towards
-local CYAN = Color3.fromRGB(60, 224, 230) -- stamina boxes
-local PALE = Color3.fromRGB(200, 240, 242) -- dodge charges
+local CYAN = Color3.fromRGB(55, 138, 221) -- stamina boxes, as in the HUD
+local PALE = Color3.new(1, 1, 1) -- dodge charges, as in the HUD
 
 local ink = Hub.InkAccent() -- the held power's colour on the dark, kept current by OnAccent below
 
@@ -169,123 +165,10 @@ local rewardHolder, rewardPage = page("RewardPage")
 
 -- STATS ---------------------------------------------------------------------------------------
 
--- top: the radar on the left, the points to spend on the right
-local topRow = frame(statsPage, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, RADAR_HEIGHT) })
-
-local radarCard = frame(topRow, { Size = UDim2.fromOffset(RADAR_WIDTH, RADAR_HEIGHT) })
-local plot = frame(radarCard, { Size = UDim2.fromScale(1, 1) }) -- the radar's lines and labels, rebuilt when the stats change
-local radarCentre = Vector2.new(RADAR_WIDTH / 2, RADAR_HEIGHT / 2)
-local radarSignature
-
--- a straight line from a to b as a thin rotated frame
-local function line(parent, a, b, thickness, color, zIndex)
-	local delta = b - a
-	local length = delta.Magnitude
-	if length < 0.5 then
-		return
-	end
-	frame(parent, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromOffset((a.X + b.X) / 2, (a.Y + b.Y) / 2),
-		Size = UDim2.fromOffset(length, thickness),
-		Rotation = math.deg(math.atan2(delta.Y, delta.X)),
-		BackgroundColor3 = color,
-		ZIndex = zIndex or 1,
-	})
-end
-
--- the four stats' tips sit at the top, right, bottom and left
-local ANGLES = { -math.pi / 2, 0, math.pi / 2, math.pi }
-
-local function drawRadar()
-	local stats = StatConfig.Stats
-	local values, top = {}, 10
-	for i, stat in ipairs(stats) do
-		values[i] = player:GetAttribute(stat.key) or 0
-		top = math.max(top, math.ceil(values[i] / 10) * 10)
-	end
-	local signature = table.concat(values, ",") .. "|" .. top .. "|" .. tostring(ink)
-	if signature == radarSignature then
-		return
-	end
-	radarSignature = signature
-	plot:ClearAllChildren()
-
-	local function tip(index, share)
-		local angle = ANGLES[index]
-		return radarCentre + Vector2.new(math.cos(angle), math.sin(angle)) * RADAR_RADIUS * share
-	end
-	-- the rings at a quarter, half, three quarters and all of the scale, and the axes
-	for ring = 1, 4 do
-		for i = 1, #stats do
-			line(plot, tip(i, ring / 4), tip(i % #stats + 1, ring / 4), 1, BAR_BACK, 1)
-		end
-	end
-	for i = 1, #stats do
-		line(plot, radarCentre, tip(i, 1), 1, BAR_BACK, 1)
-	end
-	-- the scale along the top axis
-	for ring = 1, 4 do
-		local at = tip(1, ring / 4)
-		label(plot, {
-			Text = tostring(top * ring / 4),
-			TextSize = 11,
-			TextColor3 = MUTED,
-			Position = UDim2.fromOffset(at.X + 4, at.Y - 7),
-			Size = UDim2.fromOffset(30, 12),
-			ZIndex = 2,
-		})
-	end
-	-- the shape: filled with lines from the centre to its edge, then outlined
-	local points = {}
-	for i = 1, #stats do
-		points[i] = tip(i, math.clamp(values[i] / top, 0, 1))
-	end
-	local fill = Color3.new(ink.R * 0.45 + BACKGROUND.R * 0.55, ink.G * 0.45 + BACKGROUND.G * 0.55, ink.B * 0.45 + BACKGROUND.B * 0.55)
-	for i = 1, #points do
-		local from, to = points[i], points[i % #points + 1]
-		local steps = math.max(1, math.ceil((to - from).Magnitude / 2))
-		for step = 0, steps do
-			line(plot, radarCentre, from:Lerp(to, step / steps), 3, fill, 3)
-		end
-	end
-	for i = 1, #points do
-		line(plot, points[i], points[i % #points + 1], 2, ink, 4)
-		frame(plot, {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromOffset(points[i].X, points[i].Y),
-			Size = UDim2.fromOffset(8, 8),
-			BackgroundColor3 = ink,
-			ZIndex = 5,
-		})
-	end
-	-- each stat's name and points at its tip
-	for i, stat in ipairs(stats) do
-		local at = tip(i, 1)
-		local x, y, align, anchor = at.X, at.Y, Enum.TextXAlignment.Center, Vector2.new(0.5, 0.5)
-		if i == 1 then
-			y -= 28
-		elseif i == 3 then
-			y += 28
-		elseif i == 2 then
-			x += 12
-			align, anchor = Enum.TextXAlignment.Left, Vector2.new(0, 0.5)
-		else
-			x -= 12
-			align, anchor = Enum.TextXAlignment.Right, Vector2.new(1, 0.5)
-		end
-		local holder = frame(plot, { AnchorPoint = anchor, Position = UDim2.fromOffset(x, y), Size = UDim2.fromOffset(92, 38), ZIndex = 6 })
-		label(holder, { Text = string.upper(stat.key), TextSize = 12, TextColor3 = MUTED, TextXAlignment = align, Size = UDim2.new(1, 0, 0, 14) })
-		label(holder, { Text = tostring(values[i]), TextSize = 20, TextXAlignment = align, Position = UDim2.fromOffset(0, 14), Size = UDim2.new(1, 0, 0, 24) })
-	end
-end
-
--- the points to spend: how many, how many each click adds, then a row per stat with its +
-local spendCard = frame(topRow, {
-	Position = UDim2.fromOffset(RADAR_WIDTH + 14, 0),
-	Size = UDim2.new(1, -(RADAR_WIDTH + 14), 1, 0),
-})
-make("UIPadding", { Parent = spendCard, PaddingTop = UDim.new(0, 14), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 14) })
+-- the points to spend, at the bottom: how many, how many each click adds, then a row per stat with its +
+local spendCard = frame(statsPage, { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 190) })
+make("UIPadding", { Parent = spendCard, PaddingTop = UDim.new(0, 8) })
+frame(spendCard, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, -8), BackgroundColor3 = BAR_BACK })
 local pointsRow = frame(spendCard, { Size = UDim2.new(1, 0, 0, 54) })
 label(pointsRow, { Text = "POINTS TO SPEND", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, -130, 0, 14) })
 local pointsLabel = label(pointsRow, { TextSize = 34, Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, -130, 0, 38) })
@@ -319,7 +202,12 @@ end
 showChips()
 
 local rowsHolder = frame(spendCard, { Position = UDim2.fromOffset(0, 64), Size = UDim2.new(1, 0, 1, -64) })
-make("UIListLayout", { Parent = rowsHolder, SortOrder = Enum.SortOrder.LayoutOrder })
+make("UIGridLayout", {
+	Parent = rowsHolder,
+	CellSize = UDim2.new(0.5, -12, 0, SPEND_ROW),
+	CellPadding = UDim2.fromOffset(24, 0),
+	SortOrder = Enum.SortOrder.LayoutOrder,
+})
 
 -- what a point in each stat gives, in words
 local function perPoint(stat)
@@ -332,8 +220,8 @@ end
 
 local rows = {}
 for i, stat in ipairs(StatConfig.Stats) do
-	local rowFrame = frame(rowsHolder, { LayoutOrder = i, Size = UDim2.new(1, 0, 0, SPEND_ROW) })
-	if i > 1 then
+	local rowFrame = frame(rowsHolder, { LayoutOrder = i })
+	if i > 2 then
 		frame(rowFrame, { Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = BAR_BACK })
 	end
 	label(rowFrame, { Text = stat.key, TextSize = 18, Position = UDim2.fromOffset(0, 8), Size = UDim2.new(1, -110, 0, 22) })
@@ -375,28 +263,8 @@ for i, stat in ipairs(StatConfig.Stats) do
 	rows[i] = { stat = stat, value = value, effect = effect, plus = plus }
 end
 
--- side by side on a wide tab; on a narrow one the points to spend go under the radar
-local STACK_BELOW = 700 -- tab width (UI pixels)
-local SPEND_HEIGHT = 300
-local function layoutTop()
-	local width = statsHolder.AbsoluteSize.X / UIScale.Get() -- the page's, not shrunk with its content
-	local wide = width >= STACK_BELOW or width == 0
-	if wide then
-		topRow.Size = UDim2.new(1, 0, 0, RADAR_HEIGHT)
-		spendCard.Position = UDim2.fromOffset(RADAR_WIDTH + 14, 0)
-		spendCard.Size = UDim2.new(1, -(RADAR_WIDTH + 14), 1, 0)
-	else
-		topRow.Size = UDim2.new(1, 0, 0, RADAR_HEIGHT + 14 + SPEND_HEIGHT)
-		spendCard.Position = UDim2.fromOffset(0, RADAR_HEIGHT + 14)
-		spendCard.Size = UDim2.new(1, 0, 0, SPEND_HEIGHT)
-	end
-end
-layoutTop()
-statsHolder:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTop)
-UIScale.OnChange(layoutTop)
-
 -- the level and its XP bar across the page
-local levelBlock = frame(statsPage, { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 78) })
+local levelBlock = frame(statsPage, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 78) })
 local levelLabel = label(levelBlock, { TextSize = 28, Size = UDim2.new(0.5, 0, 0, 32) })
 local xpLabel = label(levelBlock, {
 	TextSize = 15,
@@ -417,7 +285,7 @@ local boxesLabel = label(levelBlock, {
 })
 
 -- what the stats add up to: big numbers, then the stamina boxes and dodge charges
-local totalsCard = frame(statsPage, { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 190) })
+local totalsCard = frame(statsPage, { LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 190) })
 make("UIPadding", { Parent = totalsCard, PaddingTop = UDim.new(0, 6) })
 frame(totalsCard, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, -6), BackgroundColor3 = BAR_BACK })
 local CURRENT = { "MAX HP", "MELEE", "SKILL DMG", "GUN DMG" }
@@ -439,7 +307,7 @@ local function unitsRow(order, caption, y)
 	return frame(totalsCard, { Position = UDim2.fromOffset(100, y), Size = UDim2.new(1, -100, 0, 30) })
 end
 local staminaRow = unitsRow(1, "STAMINA", 90)
-local dodgeRow = unitsRow(2, "DODGES", 134)
+local dodgeRow = unitsRow(2, "CHARGE", 134)
 local STAMINA_TOTAL = StatConfig.StaminaBoxLevels[#StatConfig.StaminaBoxLevels].boxes
 local DODGE_TOTAL = StatConfig.DodgeChargeLevels[#StatConfig.DodgeChargeLevels].charges
 local staminaBoxes, dodgeDiamonds = {}, {}
@@ -522,7 +390,6 @@ local function refresh()
 		row.plus.TextTransparency = canAdd and 0 or 0.5
 	end
 	showCurrent(level)
-	drawRadar()
 end
 refresh()
 player.AttributeChanged:Connect(refresh)
@@ -711,7 +578,6 @@ end)
 Hub.OnAccent(function(_, accentInk)
 	ink = accentInk
 	xpFill.BackgroundColor3 = ink
-	drawRadar()
 	if rewardHolder.Visible then
 		buildInfo()
 	end
