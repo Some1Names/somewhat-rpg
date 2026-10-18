@@ -7,7 +7,7 @@ local Players = game:GetService("Players")
 
 local UIScale = {}
 
-local REFERENCE_HEIGHT = 675 -- the screen height where the UI is its drawn size (1080p comes out 1.6x)
+local REFERENCE_HEIGHT = 771 -- the screen height where the UI is its drawn size (1080p comes out 1.4x)
 local MAX_SCALE = 3
 
 -- guis (by name) that keep real pixels: the MenuButton lines up with Roblox's own bar,
