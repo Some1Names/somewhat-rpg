@@ -43,8 +43,8 @@ local WHITE = Color3.new(1, 1, 1)
 
 local OPEN_TIME = 0.35 -- the nav sliding in
 local CLOSE_BLUR_TIME = 0.2
-local BLUR_SIZE = 24 -- the gaussian blur of the world behind the hub
-local PAPER_TRANSPARENCY = 0.25 -- how much of that world shows through the paper
+local BLUR_SIZE = 40 -- the gaussian blur of the world behind the hub
+local PAPER_TRANSPARENCY = 0.06 -- how much of that world shows through the paper (almost none)
 local PAGE_TIME = 0.3 -- a tab easing up into place, its title fading in
 local BAR_TIME = 0.45 -- the title's bar sweeping across
 local HOVER_TIME = 0.15
@@ -419,12 +419,60 @@ local function show(name)
 	end
 end
 
+-- the rest of the HUD (every ScreenGui under the hub, and the billboards over characters) is
+-- hidden while the hub is open: each gui's scale-root frame (and the top bar's pill) is turned
+-- invisible, so the HUD scripts themselves are left alone
+local hiddenHud = {} -- { instance, property } pairs to turn back on
+local hudWatch
+local function hideHudGui(other)
+	if other == gui or other.Name == "MenuButton" then
+		return
+	end
+	if other:IsA("BillboardGui") then
+		if other.Enabled then
+			other.Enabled = false
+			table.insert(hiddenHud, { other, "Enabled" })
+		end
+	elseif other:IsA("ScreenGui") and other.DisplayOrder < gui.DisplayOrder then
+		UIScale.Root(other) -- makes sure the gui has its root frame
+		for _, child in ipairs(other:GetChildren()) do
+			if child:IsA("GuiObject") and child.Visible and (child.Name == "UIScaleRoot" or UIScale.SkipChild[child.Name]) then
+				child.Visible = false
+				table.insert(hiddenHud, { child, "Visible" })
+			end
+		end
+	end
+end
+local function hideHud()
+	local playerGui = player:WaitForChild("PlayerGui")
+	for _, other in ipairs(playerGui:GetChildren()) do
+		hideHudGui(other)
+	end
+	-- a gui that appears meanwhile goes too
+	hudWatch = playerGui.ChildAdded:Connect(function(other)
+		task.defer(hideHudGui, other)
+	end)
+end
+local function showHud()
+	if hudWatch then
+		hudWatch:Disconnect()
+		hudWatch = nil
+	end
+	for _, entry in ipairs(hiddenHud) do
+		if entry[1].Parent then
+			entry[1][entry[2]] = true
+		end
+	end
+	hiddenHud = {}
+end
+
 local function close()
 	if not gui.Enabled then
 		return
 	end
 	gui.Enabled = false
 	tween(blur, CLOSE_BLUR_TIME, { Size = 0 })
+	showHud()
 	local last = current
 	current = nil
 	wanted = nil
@@ -440,6 +488,7 @@ function Hub.Open(name)
 		placeBody()
 		gui.Enabled = true
 		tween(blur, OPEN_TIME, { Size = BLUR_SIZE })
+		hideHud()
 		UiSfx.Play("menuOpen") -- once as the hub opens; switching tabs inside it stays quiet
 		Menus.Open("Hub", close)
 		nav.Position = UDim2.fromOffset(-Theme.NavWidth, 0)
