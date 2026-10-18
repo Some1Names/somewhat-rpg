@@ -14,6 +14,7 @@
 -- the × turns, and every button in a tab gets an accent line under it.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -44,7 +45,7 @@ local WHITE = Color3.new(1, 1, 1)
 local OPEN_TIME = 0.35 -- the nav sliding in
 local CLOSE_BLUR_TIME = 0.2
 local BLUR_SIZE = 40 -- the gaussian blur of the world behind the hub
-local PAPER_TRANSPARENCY = 0.14 -- how much of that world shows through the paper
+local PAPER_TRANSPARENCY = 0.10 -- how much of that world shows through the paper
 local PAGE_TIME = 0.3 -- a tab easing up into place, its title fading in
 local BAR_TIME = 0.45 -- the title's bar sweeping across
 local HOVER_TIME = 0.15
@@ -453,6 +454,26 @@ local function hideHud()
 		task.defer(hideHudGui, other)
 	end)
 end
+-- the world behind the hub is out of reach: no "press E" prompts (the shop's) and a frozen camera
+-- (a right click held before it opened would otherwise keep turning it)
+local savedCamera
+local function lockWorld()
+	ProximityPromptService.Enabled = false
+	local camera = workspace.CurrentCamera
+	if camera and camera.CameraType ~= Enum.CameraType.Scriptable then
+		savedCamera = camera.CameraType
+		camera.CameraType = Enum.CameraType.Scriptable
+	end
+end
+local function unlockWorld()
+	ProximityPromptService.Enabled = true
+	local camera = workspace.CurrentCamera
+	if savedCamera and camera then
+		camera.CameraType = savedCamera
+	end
+	savedCamera = nil
+end
+
 local function showHud()
 	if hudWatch then
 		hudWatch:Disconnect()
@@ -473,6 +494,7 @@ local function close()
 	gui.Enabled = false
 	tween(blur, CLOSE_BLUR_TIME, { Size = 0 })
 	showHud()
+	unlockWorld()
 	local last = current
 	current = nil
 	wanted = nil
@@ -489,6 +511,7 @@ function Hub.Open(name)
 		gui.Enabled = true
 		tween(blur, OPEN_TIME, { Size = BLUR_SIZE })
 		hideHud()
+		lockWorld()
 		UiSfx.Play("menuOpen") -- once as the hub opens; switching tabs inside it stays quiet
 		Menus.Open("Hub", close)
 		nav.Position = UDim2.fromOffset(-Theme.NavWidth, 0)
