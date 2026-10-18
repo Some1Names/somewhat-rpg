@@ -25,15 +25,14 @@ local SUBTABS_HEIGHT = 36 -- the STATS / MILESTONES titles, with the gap under t
 local PADDING = 14
 local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local RADAR_WIDTH = 380
-local RADAR_HEIGHT = 320
-local RADAR_RADIUS = 104
+local RADAR_HEIGHT = 290
+local RADAR_RADIUS = 96
 local SPEND_ROW = 52
 local MILESTONE_GAP = 6 -- between the segments of a reward bar
 local BACKGROUND = Hub.Theme.Paper -- text on ink buttons
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local BAR_BACK = Hub.Theme.BarBack
-local CARD = Hub.Theme.Panel
 local WHITE = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 60) -- same as critical hit numbers: the popups
 local NEXT = Color3.fromRGB(255, 190, 40) -- the milestone you're working towards
@@ -125,37 +124,55 @@ for order, name in ipairs({ "STATS", "MILESTONES" }) do
 	end)
 end
 
--- a scrolling page under the sub-tabs
+-- a page under the sub-tabs: no scrolling, its content shrinks to fit the room there is
+-- (never below MIN_FIT). Returns the holder (show and hide it), the content (build in it) and the shrink.
+local MIN_FIT = 0.55
 local function page(name)
-	local scroller = make("ScrollingFrame", {
+	local holder = make("Frame", {
 		Name = name,
 		Parent = tabFrame,
 		Position = UDim2.fromOffset(0, SUBTABS_HEIGHT),
 		Size = UDim2.new(1, 0, 1, -SUBTABS_HEIGHT),
-		CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.Y,
-		ScrollBarThickness = 4,
-		ScrollBarImageColor3 = MUTED,
-		ScrollingDirection = Enum.ScrollingDirection.Y,
-		VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
-		BorderSizePixel = 0,
 		BackgroundTransparency = 1,
 		Visible = false,
 	})
-	make("UIPadding", { Parent = scroller, PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, PADDING), PaddingRight = UDim.new(0, 12) })
-	make("UIListLayout", { Parent = scroller, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 14) })
-	return scroller
+	local content = make("Frame", {
+		Parent = holder,
+		Position = UDim2.fromOffset(0, 6),
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+	})
+	local shrink = make("UIScale", { Parent = content })
+	local layout = make("UIListLayout", { Parent = content, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 14) })
+	local function fit()
+		local factor = UIScale.Get() * shrink.Scale
+		local contentHeight = layout.AbsoluteContentSize.Y / factor
+		local room = holder.AbsoluteSize.Y / UIScale.Get() - 6 - PADDING
+		if contentHeight <= 0 or room <= 0 then
+			return
+		end
+		local fitted = math.clamp(room / contentHeight, MIN_FIT, 1)
+		if math.abs(fitted - shrink.Scale) > 0.005 then
+			shrink.Scale = fitted
+			content.Size = UDim2.new(1 / fitted, 0, 0, 0)
+		end
+	end
+	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(fit)
+	holder:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+	UIScale.OnChange(fit)
+	return holder, content, shrink
 end
 
-local statsPage = page("StatsPage")
-local rewardPage = page("RewardPage")
+local statsHolder, statsPage = page("StatsPage")
+local rewardHolder, rewardPage = page("RewardPage")
 
 -- STATS ---------------------------------------------------------------------------------------
 
 -- top: the radar on the left, the points to spend on the right
 local topRow = frame(statsPage, { LayoutOrder = 1, Size = UDim2.new(1, 0, 0, RADAR_HEIGHT) })
 
-local radarCard = frame(topRow, { Size = UDim2.fromOffset(RADAR_WIDTH, RADAR_HEIGHT), BackgroundColor3 = CARD })
+local radarCard = frame(topRow, { Size = UDim2.fromOffset(RADAR_WIDTH, RADAR_HEIGHT) })
 local plot = frame(radarCard, { Size = UDim2.fromScale(1, 1) }) -- the radar's lines and labels, rebuilt when the stats change
 local radarCentre = Vector2.new(RADAR_WIDTH / 2, RADAR_HEIGHT / 2)
 local radarSignature
@@ -224,7 +241,7 @@ local function drawRadar()
 	for i = 1, #stats do
 		points[i] = tip(i, math.clamp(values[i] / top, 0, 1))
 	end
-	local fill = Color3.new(ink.R * 0.45 + CARD.R * 0.55, ink.G * 0.45 + CARD.G * 0.55, ink.B * 0.45 + CARD.B * 0.55)
+	local fill = Color3.new(ink.R * 0.45 + BACKGROUND.R * 0.55, ink.G * 0.45 + BACKGROUND.G * 0.55, ink.B * 0.45 + BACKGROUND.B * 0.55)
 	for i = 1, #points do
 		local from, to = points[i], points[i % #points + 1]
 		local steps = math.max(1, math.ceil((to - from).Magnitude / 2))
@@ -267,9 +284,8 @@ end
 local spendCard = frame(topRow, {
 	Position = UDim2.fromOffset(RADAR_WIDTH + 14, 0),
 	Size = UDim2.new(1, -(RADAR_WIDTH + 14), 1, 0),
-	BackgroundColor3 = CARD,
 })
-make("UIPadding", { Parent = spendCard, PaddingTop = UDim.new(0, 14), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 18), PaddingRight = UDim.new(0, 18) })
+make("UIPadding", { Parent = spendCard, PaddingTop = UDim.new(0, 14), PaddingBottom = UDim.new(0, 10), PaddingLeft = UDim.new(0, 14) })
 local pointsRow = frame(spendCard, { Size = UDim2.new(1, 0, 0, 54) })
 label(pointsRow, { Text = "POINTS TO SPEND", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, -130, 0, 14) })
 local pointsLabel = label(pointsRow, { TextSize = 34, Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, -130, 0, 38) })
@@ -363,7 +379,8 @@ end
 local STACK_BELOW = 700 -- tab width (UI pixels)
 local SPEND_HEIGHT = 300
 local function layoutTop()
-	local wide = topRow.AbsoluteSize.X / UIScale.Get() >= STACK_BELOW or topRow.AbsoluteSize.X == 0
+	local width = statsHolder.AbsoluteSize.X / UIScale.Get() -- the page's, not shrunk with its content
+	local wide = width >= STACK_BELOW or width == 0
 	if wide then
 		topRow.Size = UDim2.new(1, 0, 0, RADAR_HEIGHT)
 		spendCard.Position = UDim2.fromOffset(RADAR_WIDTH + 14, 0)
@@ -375,7 +392,7 @@ local function layoutTop()
 	end
 end
 layoutTop()
-topRow:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTop)
+statsHolder:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTop)
 UIScale.OnChange(layoutTop)
 
 -- the level and its XP bar across the page
@@ -400,8 +417,9 @@ local boxesLabel = label(levelBlock, {
 })
 
 -- what the stats add up to: big numbers, then the stamina boxes and dodge charges
-local totalsCard = frame(statsPage, { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 206), BackgroundColor3 = CARD })
-make("UIPadding", { Parent = totalsCard, PaddingTop = UDim.new(0, 16), PaddingBottom = UDim.new(0, 14), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) })
+local totalsCard = frame(statsPage, { LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 190) })
+make("UIPadding", { Parent = totalsCard, PaddingTop = UDim.new(0, 6) })
+frame(totalsCard, { Size = UDim2.new(1, 0, 0, 1), Position = UDim2.fromOffset(0, -6), BackgroundColor3 = BAR_BACK })
 local CURRENT = { "MAX HP", "MELEE", "SKILL DMG", "GUN DMG" }
 local currentValues = {}
 local regenLabel
@@ -523,8 +541,8 @@ local function rewardTrack(title, currentText, current, entries)
 		return a.at < b.at
 	end)
 	infoOrder += 1
-	local card = frame(rewardPage, { LayoutOrder = infoOrder, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = CARD })
-	make("UIPadding", { Parent = card, PaddingTop = UDim.new(0, 16), PaddingBottom = UDim.new(0, 16), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) })
+	local card = frame(rewardPage, { LayoutOrder = infoOrder, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y })
+	make("UIPadding", { Parent = card, PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) })
 	make("UIListLayout", { Parent = card, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 12) })
 
 	-- the title, how far along, and what comes next
@@ -667,7 +685,7 @@ end
 
 -- kept current while it's open
 player.AttributeChanged:Connect(function(name)
-	if rewardPage.Visible and Hub.IsOpen("Stats") and (name == "Level" or StatConfig.Get(name) ~= nil) then
+	if rewardHolder.Visible and Hub.IsOpen("Stats") and (name == "Level" or StatConfig.Get(name) ~= nil) then
 		buildInfo()
 	end
 end)
@@ -680,8 +698,8 @@ function showTab(name)
 	for tabName, button in pairs(subTabs) do
 		button.TextColor3 = tabName == name and TEXT or MUTED
 	end
-	statsPage.Visible = name == "STATS"
-	rewardPage.Visible = name == "MILESTONES"
+	statsHolder.Visible = name == "STATS"
+	rewardHolder.Visible = name == "MILESTONES"
 end
 
 -- the hub always opens it on STATS
@@ -694,7 +712,7 @@ Hub.OnAccent(function(_, accentInk)
 	ink = accentInk
 	xpFill.BackgroundColor3 = ink
 	drawRadar()
-	if rewardPage.Visible then
+	if rewardHolder.Visible then
 		buildInfo()
 	end
 end)
