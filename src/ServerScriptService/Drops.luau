@@ -1,6 +1,7 @@
 -- Enemy drops. When an enemy (a model tagged "Enemy") dies, every player who
 -- dealt at least DropConfig.ContributionShare of its max health rolls their
 -- own drops (DropConfig.Rolls) and gets an orb for each, in workspace.Drops.
+-- An enemy type (EnemyConfig) can name its own drop table and a talisman to roll.
 -- An orb is the owner's alone for OwnerWindow seconds, then anyone's for
 -- PublicWindow more. Walking close takes it into the Mat_<key> bag
 -- (PlayerStats saves it). All decided here; the client only hides orbs that
@@ -11,7 +12,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Damage = require(script.Parent:WaitForChild("Damage"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local EnemyConfig = require(ReplicatedStorage:WaitForChild("EnemyConfig"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
+local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
+local Talismans = require(script.Parent:WaitForChild("Talismans"))
 
 local Drops = {}
 
@@ -158,7 +162,8 @@ local function onKill(_killer, character, _hit, victimIsPlayer)
 	local position = character:GetPivot().Position
 	local maxHealth = humanoid.MaxHealth
 	local level = character:GetAttribute("Level")
-	local tableName = character:GetAttribute(DropConfig.TableAttribute)
+	local entry = EnemyConfig.Get(character:GetAttribute("EnemyType"))
+	local tableName = character:GetAttribute(DropConfig.TableAttribute) or (entry and entry.dropTable)
 	-- the killing blow's Damage.OnDealt may not have run yet: wait for it
 	task.defer(function()
 		local ledger = damageBy[character]
@@ -170,6 +175,11 @@ local function onKill(_killer, character, _hit, victimIsPlayer)
 			if player.Parent and DropConfig.IsHelper(damage, maxHealth) then
 				for _, drop in ipairs(DropConfig.Rolls(level, tableName, math.random)) do
 					spawnOrb(player, drop.material, drop.amount, position, character)
+				end
+				local owned = TalismanConfig.Owned(player:GetAttribute(TalismanConfig.OwnedAttribute))
+				local talisman = EnemyConfig.TalismanDrop(entry, owned, math.random)
+				if talisman then
+					Talismans.Grant(player, talisman)
 				end
 			end
 		end
