@@ -19,7 +19,7 @@ check("henchman has an entry", type(henchman) == "table")
 check("unknown, missing and non-string types have none", E.Get("Nope") == nil and E.Get(nil) == nil and E.Get(5) == nil)
 check(
 	"henchman numbers",
-	henchman.AggroRange == 25 and henchman.comboPause == 1.2 and henchman.dropTable == "Henchman"
+	henchman.AggroRange == 50 and henchman.GiveUpDistance == 140 and henchman.comboPause == 1.2 and henchman.dropTable == "Henchman"
 )
 check(
 	"henchman combo is jab, jab, heavy with a lunge on the heavy",
@@ -33,7 +33,7 @@ check("henchman talisman", henchman.talisman.key == "ThugKnuckle" and henchman.t
 
 -- attribute, then entry, then default
 check("an attribute wins", E.Setting(30, "Henchman", "AggroRange", 0) == 30)
-check("then the type's entry", E.Setting(nil, "Henchman", "AggroRange", 0) == 25)
+check("then the type's entry", E.Setting(nil, "Henchman", "AggroRange", 0) == 50)
 check("then the default for an unknown type", E.Setting(nil, "Nope", "AggroRange", 7) == 7)
 check("and for no type", E.Setting(nil, nil, "AttackRange", 5) == 5)
 
@@ -46,8 +46,8 @@ check("a bad index counts as the first step", E.NextAttack(henchman, 4).type == 
 check("no combo without attacks", E.NextAttack(nil, 1) == nil and E.NextAttack({}, 1) == nil)
 
 -- aggro
-check("inside aggro range", E.InAggro(henchman, 25) == true and E.InAggro(henchman, 3) == true)
-check("outside aggro range", E.InAggro(henchman, 25.01) == false)
+check("inside aggro range", E.InAggro(henchman, 50) == true and E.InAggro(henchman, 3) == true)
+check("outside aggro range", E.InAggro(henchman, 50.01) == false)
 check("no aggro range means passive", E.InAggro({}, 1) == false and E.InAggro(nil, 1) == false)
 
 -- talisman roll

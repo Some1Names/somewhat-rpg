@@ -4,6 +4,7 @@
 -- the entry beats EnemyAI's defaults, and an enemy with no entry behaves as it
 -- always has (passive until hit, a random quick or heavy swing).
 --   AggroRange: studs; a player closer than this (inside its leash) gets chased
+--   GiveUpDistance: studs between it and its target before it gives up the chase
 --   attacks: the combo, in order: { type = "quick"|"heavy", damage = multiplier?, lunge = studs? }
 --   comboPause: seconds of rest after the last step, instead of AttackCooldown
 --   dropTable: a key of DropConfig.Tables (the model's DropTable attribute wins)
@@ -12,7 +13,8 @@ local EnemyConfig = {}
 
 EnemyConfig.Types = {
 	Henchman = {
-		AggroRange = 25,
+		AggroRange = 50,
+		GiveUpDistance = 140,
 		attacks = {
 			{ type = "quick" },
 			{ type = "quick" },

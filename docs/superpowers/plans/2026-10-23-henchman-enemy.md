@@ -15,7 +15,7 @@
 - Square UI, nothing visual added; cues stay placeholders (white quick / red heavy `Telegraph` via `EnemyAttackConfig`).
 - All player damage still goes through the existing swing path (`Guard.Resolve`, `Passives.Absorb`, dodge and `Invulnerable` checks); `Damage.luau` is not edited.
 - Pure modules in `ReplicatedStorage` use no Roblox types so Lune can load them (see `tests/TalismanConfig.spec.luau` for the `check` style). New spec files go in `tests/*.spec.luau`; `tests/run.sh` picks them up.
-- Henchman placeholders: `AggroRange = 25`; combo quick, quick, heavy; heavy `lunge = 6`; `comboPause = 1.2`; talisman `ThugKnuckle` chance `0.03`; Thug Badge tier Rare.
+- Henchman placeholders: `AggroRange = 50`; `GiveUpDistance = 140`; combo quick, quick, heavy; heavy `lunge = 6`; `comboPause = 1.2`; talisman `ThugKnuckle` chance `0.03`; Thug Badge tier Rare.
 - Lookup order for any setting: model attribute, then `EnemyConfig` entry, then `EnemyAI` `DEFAULTS`.
 - Match surrounding code: comment density, tabs, naming. Commit only the files a task names (the working tree has unrelated uncommitted changes).
 - No Studio connection here: say what could not be verified; the owner playtests.

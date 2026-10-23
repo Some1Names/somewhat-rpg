@@ -35,7 +35,7 @@ Keyed by the model's `EnemyType` attribute. An entry may set any of: `AttackRang
 
 ### Henchman entry (placeholder numbers)
 
-- `AggroRange = 25`
+- `AggroRange = 50`, `GiveUpDistance = 140` (the give-up distance becomes a per-type setting; default 70)
 - Combo: quick, quick, heavy. The heavy finisher has `lunge = 6` studs toward the target
   during its wind-up. `comboPause = 1.2` s after the finisher (a window to hit back).
 - Damage multipliers come from `EnemyAttackConfig` (quick 1, heavy 1.8). Telegraph cues
@@ -111,6 +111,6 @@ The `DroppedItemOrb` prefab already has Common/Rare/Gold/Dark orb parts; Thug Ba
   `ThugKnuckle` effects add into `Total`. `EnemyConfig.TalismanDrop` passes below the chance,
   fails above it, and is skipped when already owned.
 - Owner playtest (the code can't be checked in-game here): walk toward a Henchman and see it
-  aggro at about 25 studs; the jab, jab, heavy rhythm and the lunge; dodging the finisher with
+  aggro at about 50 studs; the jab, jab, heavy rhythm and the lunge; dodging the finisher with
   Q; the pause after the finisher; leash and give-up still work; an untyped enemy still sits
   passive until hit.

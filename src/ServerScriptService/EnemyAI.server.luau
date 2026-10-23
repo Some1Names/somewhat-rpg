@@ -19,7 +19,7 @@
 -- resting comboPause after the last, and a step with a `lunge` closes in on them.
 -- Optional attributes on the model: EnemyType, FightsBack, MaxHealth, AttackDamage
 -- (both otherwise from its Level), AttackRange, AttackCooldown, LeashRange,
--- ChaseSpeed, AggroRange, HeavyChance (0 to 1, the share of its swings that are slow heavy ones).
+-- ChaseSpeed, GiveUpDistance, AggroRange, HeavyChance (0 to 1, the share of its swings that are slow heavy ones).
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -43,7 +43,6 @@ local ARRIVE_DISTANCE = 1.5 -- studs from its spot that count as home
 local STUCK_TIME = 12 -- seconds heading home before it's put back instead
 local RETURN_SPEED = 26 -- studs per second running home after giving up a chase
 local REGEN_PER_SECOND = 0.08 -- share of max health regained per second once back home
-local GIVE_UP_DISTANCE = 70 -- studs between it and its target
 local CHASE_STUCK_TIME = 3 -- seconds chasing without getting anywhere before it gives up
 local REACH_TOLERANCE = 1.5 -- extra studs the target may have moved during the wind-up
 local DASH_ABOVE_LEVEL = 25 -- enemies above this level can dash
@@ -57,6 +56,7 @@ local DEFAULTS = {
 	AttackCooldown = 1.4, -- seconds between swings
 	LeashRange = 45, -- studs from its spot it will chase to
 	ChaseSpeed = 15, -- a little slower than a player walking
+	GiveUpDistance = 70, -- studs between it and its target before it gives up
 }
 -- used when the model's own Animate script has none
 local WALK_ANIMATIONS = {
@@ -321,7 +321,7 @@ local function run(model)
 				or awayFromHome > leash
 				-- they've left its territory
 				or flat(targetRoot.Position - home.Position).Magnitude > leash + setting(model, "AttackRange")
-				or (targetRoot.Position - root.Position).Magnitude > GIVE_UP_DISTANCE
+				or (targetRoot.Position - root.Position).Magnitude > setting(model, "GiveUpDistance")
 				or now - lastProgressAt > CHASE_STUCK_TIME
 			then
 				goHome(true)
