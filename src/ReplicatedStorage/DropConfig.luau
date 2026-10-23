@@ -69,6 +69,7 @@ DropConfig.Materials = {
 	Crystal = { tier = "Gold", display = "Crystal" },
 	Essence = { tier = "Dark", display = "Essence" },
 	WolfFang = { tier = "Rare", display = "Wolf Fang" },
+	ThugBadge = { tier = "Rare", display = "Thug Badge" },
 }
 
 -- what any enemy of at least `minLevel` rolls, per helper
@@ -83,6 +84,12 @@ DropConfig.Generic = {
 -- `exclusive = true` replaces the generic rolls instead of adding to them
 DropConfig.Tables = {
 	Wolf = { { material = "WolfFang", chance = 0.1, min = 1, max = 1 } },
+	-- the Henchman (EnemyConfig names it): a thug carries junk and the odd badge
+	Henchman = {
+		{ material = "Scrap", chance = 0.6, min = 1, max = 3 },
+		{ material = "ThugBadge", chance = 0.15, min = 1, max = 1 },
+		{ material = "Core", chance = 0.1, min = 1, max = 1 },
+	},
 	-- the test dummies in the map ("Drop Test - <material>"): always that one material
 	TestScrap = { exclusive = true, { material = "Scrap", chance = 1, min = 1, max = 1 } },
 	TestCore = { exclusive = true, { material = "Core", chance = 1, min = 1, max = 1 } },

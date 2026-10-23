@@ -145,8 +145,41 @@ check("the attribute name matches Reforge's", DropConfig.Attribute("Scrap") == R
 local sorted = DropConfig.Sorted()
 check(
 	"sorted by tier, then display name",
-	#sorted == 5 and table.concat(sorted, ",") == "Scrap,Core,WolfFang,Crystal,Essence"
+	#sorted == 6 and table.concat(sorted, ",") == "Scrap,Core,ThugBadge,WolfFang,Crystal,Essence"
 )
+
+-- the Henchman's table (EnemyConfig names it): extra rolls on top of the generic ones
+check("thug badge is a rare material", DropConfig.Materials.ThugBadge.tier == "Rare")
+local tablesNameRealMaterials = true
+for _, entries in pairs(DropConfig.Tables) do
+	for _, entry in ipairs(entries) do
+		if not DropConfig.Materials[entry.material] then
+			tablesNameRealMaterials = false
+		end
+	end
+end
+check("every table entry names a real material", tablesNameRealMaterials)
+local function count(rolls, material)
+	local n = 0
+	for _, roll in ipairs(rolls) do
+		if roll.material == material then
+			n += 1
+		end
+	end
+	return n
+end
+local lucky = DropConfig.Rolls(10, "Henchman", function()
+	return 0
+end)
+check("a lucky henchman kill has the badge and doubles of scrap and core", count(lucky, "ThugBadge") == 1 and count(lucky, "Scrap") == 2 and count(lucky, "Core") == 2)
+check("an unlucky one has nothing", #DropConfig.Rolls(10, "Henchman", function()
+	return 0.99
+end) == 0)
+check("an unknown table is ignored", #DropConfig.Rolls(10, "NoSuchTable", function()
+	return 0
+end) == #DropConfig.Rolls(10, nil, function()
+	return 0
+end))
 
 if failures > 0 then
 	error(failures .. " failed")
