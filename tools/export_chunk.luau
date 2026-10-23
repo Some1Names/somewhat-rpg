@@ -5,7 +5,7 @@ local START_I, START_OFF = __START_I__, __START_OFF__
 local HttpService = game:GetService("HttpService")
 
 local list, scripts = {}, {}
-for _, svc in ipairs({ game.ServerScriptService, game.StarterPlayer, game.ReplicatedStorage, game.ServerStorage }) do
+for _, svc in ipairs({ game.ServerScriptService, game.StarterPlayer, game.ReplicatedStorage, game.ServerStorage, game.ReplicatedFirst }) do
 	for _, d in ipairs(svc:GetDescendants()) do
 		if d:IsA("LuaSourceContainer") then
 			local names, classes = {}, {}

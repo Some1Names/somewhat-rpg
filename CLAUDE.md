@@ -98,7 +98,7 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `HubPoses`), `SkillBar`, `AdminPanel`, `ShopMenu`,
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
   popups), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row, the yen and the
-  Menu icon), `KeyHints` (bottom-left move hints), and `Menus` (module: one menu open at a time;
+  Menu icon), `KeyHints` (bottom-left move hints), `PreloadAnimations` (loads every animation on join), `LoadingScreen` (in `ReplicatedFirst`; fades once `TitleMenu` is Ready), `TitleMenu` (on join: PLAY / SETTINGS / UPDATES over a camera drifting through the `workspace.MenuCameras` parts, a Persistent model, or circling the spawn), and `Menus` (module: one menu open at a time;
   every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
   `HudConfig`).
 - **Build depth**: six stats (Vitality, Strength, Superliminal, Firearm, Agility, Willpower), each capped at 50 points
