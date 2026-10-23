@@ -6,7 +6,8 @@
 -- PlayerStats, Health and Chests read the totals.
 -- A player owns each talisman once (the saved TalismanOwned text, keys comma
 -- separated) and wears up to Slots(level) of them (the saved TalismanEquipped
--- text). They drop from yen chests (ChestChance); more sources can come later.
+-- text). They drop from yen chests (ChestChance), and a dropOnly one only from
+-- the enemy that names it in EnemyConfig; more sources can come later.
 -- Fractions are of the stat they change: maxHealthPct 0.15 is +15% max HP.
 local TalismanConfig = {}
 
@@ -33,6 +34,15 @@ TalismanConfig.Items = {
 		color = { 255, 154, 60 },
 		effects = { damageDealt = 0.2, maxHealthPct = -0.15 },
 		description = "+20% damage dealt, but -15% max HP.",
+	},
+	-- dropOnly: not in the yen chests' pool; an enemy drops it (EnemyConfig talisman)
+	{
+		key = "ThugKnuckle",
+		name = "Thug's Knuckle Talisman",
+		color = { 150, 80, 60 },
+		effects = { damageDealt = 0.1, healOnKill = 0.02 },
+		dropOnly = true,
+		description = "+10% damage dealt. Heal 2% max HP on every kill.",
 	},
 }
 
@@ -172,12 +182,12 @@ function TalismanConfig.Grant(ownedText, key)
 	return TalismanConfig.Encode(owned)
 end
 
--- a random talisman not yet owned (nil when they own them all); `roll(n)` gives 1..n
+-- a random chest talisman (not dropOnly) not yet owned (nil when they own them all); `roll(n)` gives 1..n
 function TalismanConfig.RollNew(ownedText, roll)
 	local owned = TalismanConfig.Owned(ownedText)
 	local missing = {}
 	for _, item in ipairs(TalismanConfig.Items) do
-		if not table.find(owned, item.key) then
+		if not item.dropOnly and not table.find(owned, item.key) then
 			table.insert(missing, item.key)
 		end
 	end

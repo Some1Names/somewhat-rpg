@@ -70,6 +70,17 @@ check("roll never picks an owned one", T.RollNew("Vigor", function()
 	return 1
 end) ~= "Vigor")
 
+-- the Thug's Knuckle: only an enemy gives it (EnemyConfig), never a yen chest
+check("thug's knuckle is drop only", T.Get("ThugKnuckle").dropOnly == true and T.Get("Vigor").dropOnly == nil)
+check("thug's knuckle effects add up", near(T.Total("ThugKnuckle,Vigor", "damageDealt"), 0.1) and near(T.Total("ThugKnuckle", "healOnKill"), 0.02))
+check("a roll never picks it", T.RollNew("", function(n)
+	return n
+end) == "GlassCharm")
+check("a roll is nil with every common one owned", T.RollNew(owned .. ",GlassCharm", function()
+	return 1
+end) == nil)
+check("it can be granted once", T.Grant("Vigor", "ThugKnuckle") == "Vigor,ThugKnuckle" and T.Grant("Vigor,ThugKnuckle", "ThugKnuckle") == nil)
+
 if failures > 0 then
 	error(failures .. " failed")
 end
