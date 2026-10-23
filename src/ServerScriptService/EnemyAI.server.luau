@@ -12,9 +12,14 @@
 -- (StatConfig.EnemyHealth / EnemyDamage) when it spawns. One above
 -- DASH_ABOVE_LEVEL also dashes at whoever it's chasing, once every
 -- DASH_COOLDOWN seconds, when they're a few strides away.
--- Optional attributes on the model: FightsBack, MaxHealth, AttackDamage
+-- An enemy whose EnemyType has an entry in EnemyConfig takes its settings from
+-- there (a model's own attribute still wins). One with an AggroRange also goes
+-- for any player who walks that close, inside its leash, without being hit; one
+-- with an `attacks` combo swings those in order instead of rolling quick or heavy,
+-- resting comboPause after the last, and a step with a `lunge` closes in on them.
+-- Optional attributes on the model: EnemyType, FightsBack, MaxHealth, AttackDamage
 -- (both otherwise from its Level), AttackRange, AttackCooldown, LeashRange,
--- ChaseSpeed, HeavyChance (0 to 1, the share of its swings that are slow heavy ones).
+-- ChaseSpeed, AggroRange, HeavyChance (0 to 1, the share of its swings that are slow heavy ones).
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -26,6 +31,7 @@ local Damage = require(ServerScriptService:WaitForChild("Damage"))
 local Guard = require(ServerScriptService:WaitForChild("Guard"))
 local Passives = require(ServerScriptService:WaitForChild("Passives"))
 local EnemyAttackConfig = require(ReplicatedStorage:WaitForChild("EnemyAttackConfig"))
+local EnemyConfig = require(ReplicatedStorage:WaitForChild("EnemyConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
@@ -63,7 +69,7 @@ local SLASH_ANIMATIONS = {
 }
 
 local function setting(model, key)
-	return model:GetAttribute(key) or DEFAULTS[key]
+	return EnemyConfig.Setting(model:GetAttribute(key), model:GetAttribute("EnemyType"), key, DEFAULTS[key])
 end
 
 local function attackDamage(model)
@@ -92,6 +98,10 @@ local function run(model)
 	end
 	local home = root.CFrame
 	local baseSpeed = humanoid.WalkSpeed
+	local enemyType = model:GetAttribute("EnemyType")
+	local entry = EnemyConfig.Get(enemyType)
+	local aggroRange = EnemyConfig.Setting(model:GetAttribute("AggroRange"), enemyType, "AggroRange", nil)
+	local aggroEntry = aggroRange and { AggroRange = aggroRange }
 	-- as tough as its level says, unless it sets its own
 	local level = model:GetAttribute("Level")
 	local maxHealth = model:GetAttribute("MaxHealth") or (level and StatConfig.EnemyHealth(level))
@@ -119,6 +129,7 @@ local function run(model)
 	local regenerating = false -- healing up at home; any hit stops it
 	local lastTickAt = os.clock()
 	local nextDashAt = 0
+	local comboIndex = 1 -- the next step of its combo, if it has one
 
 	-- a burst along the ground at the target, ending about in reach of them
 	local function dashAt(direction, distance)
@@ -145,6 +156,7 @@ local function run(model)
 		state = "returning"
 		target = nil
 		retreating = retreat
+		comboIndex = 1
 		returningSince = os.clock()
 		humanoid.WalkSpeed = retreat and RETURN_SPEED or baseSpeed
 		humanoid:MoveTo(home.Position)
@@ -165,12 +177,28 @@ local function run(model)
 		return (model:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
 	end
 
-	-- quick or heavy (EnemyAttackConfig); a heavy never follows a heavy
+	-- the next step of its combo, or else quick or heavy (EnemyAttackConfig) with
+	-- no heavy after a heavy. Returns whether this swing ends its combo.
 	local lastWasHeavy = false
 	local function swingAt(targetHumanoid, targetRoot)
-		local attackType = EnemyAttackConfig.Choose(math.random(), EnemyAttackConfig.Chance(model:GetAttribute("HeavyChance")), lastWasHeavy)
-		lastWasHeavy = attackType == "heavy"
+		local step, nextIndex, finishes = EnemyConfig.NextAttack(entry, comboIndex)
+		local attackType
+		if step then
+			comboIndex = nextIndex
+			attackType = step.type
+		else
+			local chance = EnemyAttackConfig.Chance(EnemyConfig.Setting(model:GetAttribute("HeavyChance"), enemyType, "HeavyChance", nil))
+			attackType = EnemyAttackConfig.Choose(math.random(), chance, lastWasHeavy)
+			lastWasHeavy = attackType == "heavy"
+		end
 		local attack = EnemyAttackConfig.Get(attackType)
+		-- a lunge closes the gap during the wind-up
+		if step and step.lunge then
+			local gap = flat(targetRoot.Position - root.Position)
+			if gap.Magnitude > 3 then
+				dashAt(gap.Unit, step.lunge + setting(model, "AttackRange") - 1)
+			end
+		end
 		slashTrack:Play(0.1)
 		skillEffects:FireAllClients("Telegraph", model, attackType, attack.windUp)
 		task.delay(attack.windUp, function()
@@ -195,7 +223,7 @@ local function run(model)
 			end
 			if (targetRoot.Position - ownRoot.Position).Magnitude <= setting(model, "AttackRange") + REACH_TOLERANCE then
 				-- a player's passive may erase the hit
-				local amount = attackDamage(model) * attack.damage * StatusConfig.OutgoingMultiplier(model) -- softer while Weakened
+				local amount = attackDamage(model) * attack.damage * (step and step.damage or 1) * StatusConfig.OutgoingMultiplier(model) -- softer while Weakened
 				local victim = Players:GetPlayerFromCharacter(targetHumanoid.Parent)
 				if victim then
 					Guard.MarkCombat(victim.Character)
@@ -208,6 +236,28 @@ local function run(model)
 				end
 			end
 		end)
+		return finishes == true
+	end
+
+	-- the nearest living player inside its aggro range and its territory
+	local function findAggroTarget()
+		local best, bestDistance
+		for _, player in ipairs(Players:GetPlayers()) do
+			local character = player.Character
+			local theirHumanoid = character and character:FindFirstChildOfClass("Humanoid")
+			local theirRoot = theirHumanoid and theirHumanoid.RootPart
+			if theirRoot and theirHumanoid.Health > 0 and not character:GetAttribute("Invulnerable") then
+				local distance = (theirRoot.Position - root.Position).Magnitude
+				if
+					EnemyConfig.InAggro(aggroEntry, distance)
+					and flat(theirRoot.Position - home.Position).Magnitude <= setting(model, "LeashRange")
+					and (not bestDistance or distance < bestDistance)
+				then
+					best, bestDistance = player, distance
+				end
+			end
+		end
+		return best
 	end
 
 	-- turning on whoever hurt it
@@ -225,6 +275,9 @@ local function run(model)
 		if attacker and attacker.Character then
 			if state ~= "chasing" then
 				lastProgressAt = os.clock()
+			end
+			if target ~= attacker then
+				comboIndex = 1
 			end
 			target = attacker
 			state = "chasing"
@@ -290,7 +343,10 @@ local function run(model)
 					end
 					if now >= nextAttackAt then
 						nextAttackAt = now + setting(model, "AttackCooldown")
-						swingAt(targetHumanoid, targetRoot)
+						if swingAt(targetHumanoid, targetRoot) then
+							-- the end of a combo: a longer rest
+							nextAttackAt = now + EnemyConfig.Setting(nil, enemyType, "comboPause", setting(model, "AttackCooldown"))
+						end
 					end
 				elseif
 					(model:GetAttribute("Level") or 0) > DASH_ABOVE_LEVEL
@@ -316,6 +372,19 @@ local function run(model)
 			end
 		elseif awayFromHome > WANDER_RANGE and not busy then
 			goHome(false)
+		end
+
+		-- or on whoever walked up to it
+		if aggroEntry and not busy and (state == "idle" or (state == "returning" and not retreating)) then
+			local found = findAggroTarget()
+			if found then
+				target = found
+				state = "chasing"
+				comboIndex = 1
+				lastProgressAt = now
+				regenerating = false
+				humanoid.WalkSpeed = setting(model, "ChaseSpeed")
+			end
 		end
 
 		-- the walk plays at however fast it's actually moving
