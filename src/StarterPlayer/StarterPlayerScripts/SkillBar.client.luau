@@ -69,9 +69,11 @@ local function lockOf(setName, key)
 	return nil
 end
 
-local SLOT_SIZE = 58
 local SLOT_GAP = HudConfig.SideGap -- as the Hotbar's slots
 local HEADER_HEIGHT = 38
+-- the bar and the tool row under it stand as tall as the Hotbar's cards; up to five skill slots fit the cards' width
+local SLOT_WIDTH = (HudConfig.SideWidth - 4 * HudConfig.SideGap) / 5
+local SLOT_HEIGHT = HudConfig.CardHeight - HEADER_HEIGHT - HudConfig.SideGap - HudConfig.CompactToolHeight
 local STACK_ROW_Y = 23
 local STACK_HEIGHT = 8
 local STACK_LABEL_WIDTH = 96
@@ -132,7 +134,7 @@ local bar = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(1, 1),
 	Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -BOTTOM_MARGIN),
-	Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_SIZE),
+	Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_HEIGHT),
 	BackgroundTransparency = 1,
 })
 
@@ -241,8 +243,8 @@ local slots = {}
 for i, key in ipairs(keys) do
 	local frame = make("Frame", {
 		Parent = bar,
-		Position = UDim2.fromOffset((i - 1) * (SLOT_SIZE + SLOT_GAP), HEADER_HEIGHT),
-		Size = UDim2.fromOffset(SLOT_SIZE, SLOT_SIZE),
+		Position = UDim2.fromOffset((i - 1) * (SLOT_WIDTH + SLOT_GAP), HEADER_HEIGHT),
+		Size = UDim2.fromOffset(SLOT_WIDTH, SLOT_HEIGHT),
 		BackgroundColor3 = BACKGROUND,
 		BackgroundTransparency = Style.GlassTransparency,
 		Visible = false,
@@ -374,12 +376,12 @@ local function layout(setName)
 		local slot = slots[key]
 		slot.frame.Visible = skills[key] ~= nil
 		if skills[key] then
-			slot.frame.Position = UDim2.fromOffset(shown * (SLOT_SIZE + SLOT_GAP), HEADER_HEIGHT)
+			slot.frame.Position = UDim2.fromOffset(shown * (SLOT_WIDTH + SLOT_GAP), HEADER_HEIGHT)
 			shown += 1
 		end
 	end
-	barWidth = shown * SLOT_SIZE + math.max(shown - 1, 0) * SLOT_GAP
-	bar.Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_SIZE)
+	barWidth = shown * SLOT_WIDTH + math.max(shown - 1, 0) * SLOT_GAP
+	bar.Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_HEIGHT)
 end
 
 local predictedReadyAt = {} -- ["Mandela.X"] = os.clock() the skill is ready again
@@ -970,7 +972,7 @@ RunService.RenderStepped:Connect(function()
 	local miniOffset = SLOT_GAP
 	for _, mini in ipairs({ dashSlot, rangedSlot }) do
 		if mini.frame.Visible then
-			mini.frame.Position = UDim2.fromOffset(-miniOffset, HEADER_HEIGHT + SLOT_SIZE - MINI_SLOT_SIZE)
+			mini.frame.Position = UDim2.fromOffset(-miniOffset, HEADER_HEIGHT + SLOT_HEIGHT - MINI_SLOT_SIZE)
 			miniOffset += MINI_SLOT_SIZE + SLOT_GAP
 		end
 	end

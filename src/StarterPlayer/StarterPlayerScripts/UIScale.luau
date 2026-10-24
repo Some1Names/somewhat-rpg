@@ -10,10 +10,9 @@ local UIScale = {}
 local REFERENCE_HEIGHT = 771 -- the screen height where the UI is its drawn size (1080p comes out 1.4x)
 local MAX_SCALE = 3
 
--- guis (by name) that keep real pixels: the MenuButton lines up with Roblox's own bar,
--- the crosshairs follow the mouse or a lock-on target, the loading screen scales itself (it
+-- guis (by name) that keep real pixels: the crosshairs follow the mouse or a lock-on target, the loading screen scales itself (it
 -- shows before this starts)
-UIScale.SkipGui = { MenuButton = true, RangedCrosshair = true, ShiftLockCrosshair = true, LoadingScreen = true }
+UIScale.SkipGui = { RangedCrosshair = true, ShiftLockCrosshair = true, LoadingScreen = true }
 -- frames (by name) that stay out of the scaling, in an otherwise scaled gui (TopBar's pill sits in Roblox's bar)
 UIScale.SkipChild = { ButtonRow = true, UIScaleRoot = true }
 

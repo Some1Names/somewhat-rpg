@@ -1,8 +1,8 @@
 -- The HUD's icons, up in Roblox's top bar and dressed like its own buttons
 -- (dark see-through pills, white icons). Top right, one pill: Settings,
--- and Admin (`) for admins. Top left, just right of Roblox's chat button: the
--- Menu button (its own gui, above the hub, so it can close it too). Bottom
--- left, above the Hotbar's equipment cards: the player's yen as gold text.
+-- and Admin (`) for admins. Bottom left, above the Hotbar's equipment cards: the
+-- player's yen as gold text, and at the cards' right end the Menu button, a plain
+-- icon with no pill (its own gui, above the hub, so it can close it too).
 -- Menu opens the hub (Hub) on Profile; B, J and M open it on Backpack, Quests
 -- and Map. The icon whose menu is open is a little larger, and a label with
 -- its key shows under whichever is hovered (or held, on touch). Each
@@ -31,7 +31,6 @@ local BUTTON_HEIGHT = 44
 local BUTTON_COLOR = Color3.fromRGB(18, 18, 21)
 local BUTTON_TRANSPARENCY = 0.08
 local BUTTON_TOP = 12
-local BUTTON_GAP = 8
 local BUTTON_EDGE = 16
 
 -- left to right within each group (`top` = beside Roblox's buttons at the top
@@ -104,9 +103,8 @@ make("UIListLayout", {
 	Padding = UDim.new(0, ICON_GAP),
 })
 
--- the Menu button: in Roblox's bar right of its buttons, in a gui of its own drawn
--- over the hub (DisplayOrder 8), so it shows and closes the hub while it's open
-local MENU_FALLBACK_X = 164 -- where Roblox's buttons end, if it hasn't said yet
+-- the Menu button: above the cards' right end, level with the yen, in a gui of its own drawn
+-- over the hub (DisplayOrder 9), so it shows and closes the hub while it's open
 local menuGui = make("ScreenGui", {
 	Name = "MenuButton",
 	ResetOnSpawn = false,
@@ -114,18 +112,19 @@ local menuGui = make("ScreenGui", {
 	DisplayOrder = 9,
 	Parent = player:WaitForChild("PlayerGui"),
 })
-local menuSlot = pill(make("Frame", {
+local MENU_SIZE = HudConfig.IconSizeOpen
+local menuSlot = make("Frame", {
 	Parent = menuGui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Size = UDim2.fromOffset(BUTTON_HEIGHT, BUTTON_HEIGHT),
-}))
--- in line with Roblox's buttons: Menu just after them, the pill at the far right
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(0, HudConfig.EdgeMargin + HudConfig.SideWidth, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap)),
+	Size = UDim2.fromOffset(MENU_SIZE, MENU_SIZE),
+	BackgroundTransparency = 1,
+})
+-- the pill sits at the far right of Roblox's bar
 local function placeButtons()
 	local inset = GuiService.TopbarInset
-	local left = inset.Min.X > 0 and inset.Min.X or MENU_FALLBACK_X
 	local right = inset.Max.X > 0 and inset.Max.X or workspace.CurrentCamera.ViewportSize.X
 	local middle = inset.Min.Y + BUTTON_TOP + BUTTON_HEIGHT / 2
-	menuSlot.Position = UDim2.fromOffset(left + BUTTON_GAP, middle)
 	row.Position = UDim2.fromOffset(right - BUTTON_EDGE, middle)
 end
 placeButtons()
@@ -161,7 +160,7 @@ for order, icon in ipairs(ICONS) do
 		Name = icon.name,
 		Parent = icon.top and menuSlot or row,
 		LayoutOrder = order,
-		Size = UDim2.fromOffset(BUTTON_HEIGHT, BUTTON_HEIGHT),
+		Size = icon.top and UDim2.fromOffset(MENU_SIZE, MENU_SIZE) or UDim2.fromOffset(BUTTON_HEIGHT, BUTTON_HEIGHT),
 		BackgroundTransparency = 1,
 		Text = "",
 		AutoButtonColor = false,
@@ -191,13 +190,13 @@ for order, icon in ipairs(ICONS) do
 		})
 	end
 
-	-- the hover label hangs under its icon: ending at a top-right icon's right edge so it
-	-- stays on screen, starting at the Menu icon's left edge
+	-- the hover label hangs under its icon, ending at a top-right icon's right edge so it
+	-- stays on screen; the Menu icon's sits above it, ending at its right edge
 	local hover = make("TextLabel", {
 		Parent = holder,
 		Visible = false,
-		AnchorPoint = icon.top and Vector2.new(0, 0) or Vector2.new(1, 0),
-		Position = icon.top and UDim2.new(0, 0, 1, 2) or UDim2.new(1, 0, 1, 2),
+		AnchorPoint = icon.top and Vector2.new(1, 1) or Vector2.new(1, 0),
+		Position = icon.top and UDim2.new(1, 0, 0, -2) or UDim2.new(1, 0, 1, 2),
 		Size = UDim2.fromOffset(0, 16),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
