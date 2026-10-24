@@ -63,6 +63,25 @@ PunchConfig.Weapons = {
 			{ impact = 0.28, length = 0.6 }, -- overhead chop
 		},
 	},
+	-- The shop's katana: a quick 4-hit slash combo on Strength. Uses the
+	-- fists' animations until it has its own.
+	Katana = {
+		tool = "Katana",
+		skillSet = "Katana", -- katana hits earn Katana mastery
+		baseDamage = 13,
+		minInterval = 0.34,
+		finisherCooldown = 0.65,
+		hitboxSize = Vector3.new(9, 6, 9),
+		hitboxForward = 5,
+		animationFolder = "PunchAnimations",
+		animationPrefix = "Punch",
+		hits = {
+			{ impact = 0.05, length = 0.38 },
+			{ impact = 0.05, length = 0.4 },
+			{ impact = 0.23, length = 0.37 },
+			{ impact = 0.15, length = 0.52 }, -- finisher
+		},
+	},
 	-- Photoshop's punches: her fists with Photoshop out, scaling with
 	-- Superliminal. Right click held still readies Shutter instead (Ranged).
 	PhotoshopPunch = {

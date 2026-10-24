@@ -25,6 +25,7 @@ local HotbarRules = require(ReplicatedStorage:WaitForChild("HotbarRules"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local HotbarSlots = require(script.Parent:WaitForChild("HotbarSlots"))
+local BuildCheck = require(script.Parent:WaitForChild("BuildCheck"))
 local tools = ServerStorage:WaitForChild("SkillSetTools")
 
 local ACTION_INTERVAL = 0.3 -- seconds between a player's actions
@@ -394,6 +395,10 @@ function actions.use(player, setName, confirm)
 	if not Powers.HasBriefcase(player, setName) then
 		return false, "You don't have that briefcase"
 	end
+	local meets, needs = BuildCheck.SetMeets(player, setName)
+	if not meets then
+		return false, needs
+	end
 	local current = Powers.Current(player)
 	if wouldLose(player, current) and not confirm then
 		return false, string.format("Use %s? You'll lose %s.", Powers.DisplayName(setName), Powers.DisplayName(current)), true
@@ -470,6 +475,10 @@ function actions.swap(player, setName)
 	if not at then
 		return false, "That isn't in storage"
 	end
+	local meets, needs = BuildCheck.SetMeets(player, setName)
+	if not meets then
+		return false, needs
+	end
 	local current = Powers.Current(player)
 	table.remove(list, at)
 	-- a lifetime power never takes a slot
@@ -489,6 +498,10 @@ function actions.switch(player, setName, confirm)
 	local current = Powers.Current(player)
 	if current == setName then
 		return false, "You already hold it"
+	end
+	local meets, needs = BuildCheck.SetMeets(player, setName)
+	if not meets then
+		return false, needs
 	end
 	if wouldLose(player, current) then
 		if slotsFree(player) > 0 then

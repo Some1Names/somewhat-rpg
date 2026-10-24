@@ -8,12 +8,14 @@
 -- A limited consumable (a `stack` item) is paid for and handed over as a Tool
 -- (Consumables: into the Backpack's storage, never straight onto the hotbar), up to the carry cap; a lifetime one is bought once like any
 -- owned item and Consumables gives its Tool. Nothing is bought or sold while the
--- buyer is in combat (CombatRules).
+-- buyer is in combat (CombatRules). A faction rank can take a share off every yen price (Factions).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local Consumables = require(script.Parent:WaitForChild("Consumables"))
+local Factions = require(script.Parent:WaitForChild("Factions"))
+local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
@@ -80,6 +82,12 @@ buyItem.OnServerInvoke = function(player, id)
 	end
 	if not nearShop(player.Character, ShopConfig.ShopOf(item)) then
 		return false, "Too far from the shopkeeper"
+	end
+	-- a faction rank's discount comes off every yen price
+	local discount = Factions.ShopDiscount(player)
+	if discount > 0 and item.price then
+		item = table.clone(item)
+		item.price = FactionConfig.DiscountedPrice(item.price, discount)
 	end
 	if item.briefcase then
 		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")

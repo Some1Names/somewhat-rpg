@@ -1,12 +1,13 @@
 -- The hub's Profile tab, its cover page: the player's name with the level,
 -- an XP bar, yen, then the power held (big, in caps), its tier, mastery and
--- reforge level, the bounty taken, and unspent
+-- reforge level, the bounty taken, the faction and its rank, and unspent
 -- stat points (a link to Stats). The right side is left to the posed character
 -- (HubPose), with a huge faded "01" behind it.
 -- Everything comes from player attributes other systems keep.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
@@ -118,9 +119,19 @@ local bountyBar = make("Frame", { Parent = bounty, Size = UDim2.new(0, 3, 1, 0),
 label(bounty, { Text = "ACTIVE BOUNTY", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
 local bountyLabel = label(bounty, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
 
+-- the faction card: its colour for the rank down the left edge, the rank and name,
+-- and the standing toward the next rank
+local factionCard = make("Frame", { Parent = column, LayoutOrder = 6, Size = UDim2.new(1, 0, 0, 58), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
+local factionBar = make("Frame", { Parent = factionCard, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0 })
+label(factionCard, { Text = "FACTION", TextSize = 10, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
+local factionLabel = label(factionCard, { Font = Theme.BodyFont, TextSize = 13, Position = UDim2.fromOffset(12, 22), Size = UDim2.new(1, -24, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
+local factionBack = make("Frame", { Parent = factionCard, Position = UDim2.new(0, 12, 1, -12), Size = UDim2.new(1, -24, 0, 4), BackgroundColor3 = Theme.BarBack, BorderSizePixel = 0 })
+local factionFill = make("Frame", { Parent = factionBack, Size = UDim2.fromScale(0, 1), BorderSizePixel = 0 })
+local factionNote = label(factionCard, { TextSize = 10, TextColor3 = Theme.Muted, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.fromOffset(12, 7), Size = UDim2.new(1, -24, 0, 12) })
+
 -- the talismans: a line per slot (worn, empty, or locked until its level)
-chip(column, "TALISMANS", 6)
-local talismanBox = make("Frame", { Parent = column, LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+chip(column, "TALISMANS", 7)
+local talismanBox = make("Frame", { Parent = column, LayoutOrder = 8, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 make("UIListLayout", { Parent = talismanBox, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 3) })
 local talismanLines = {}
 for i = 1, #TalismanConfig.SlotLevels do
@@ -186,7 +197,7 @@ local yenFigure = label(yenRow, { Font = Theme.TitleFont, TextSize = 26, Positio
 make("Frame", { Parent = column, LayoutOrder = -1, Size = UDim2.new(1, 0, 0, 6), BackgroundTransparency = 1 })
 local pointsButton = make("TextButton", {
 	Parent = column,
-	LayoutOrder = 8,
+	LayoutOrder = 9,
 	Size = UDim2.fromOffset(0, 14),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
@@ -224,6 +235,33 @@ local function refresh()
 		bountyLabel.Text = string.format("%s   %d / %d", quest.title, player:GetAttribute("QuestProgress") or 0, quest.count)
 	else
 		bountyLabel.Text = "NO BOUNTY. TALK TO A BOUNTY HUNTER."
+	end
+
+	local factionKey = player:GetAttribute("Faction")
+	local faction = factionKey and FactionConfig.Get(factionKey)
+	if faction then
+		local standing = player:GetAttribute("FactionStanding") or 0
+		local color = Color3.fromRGB(table.unpack(FactionConfig.RankColor(factionKey, standing)))
+		factionLabel.Text = string.format("%s  %s", FactionConfig.Title(factionKey, standing), faction.name)
+		factionLabel.TextColor3 = color
+		factionBar.BackgroundColor3 = color
+		factionFill.BackgroundColor3 = color
+		local nextStanding = FactionConfig.NextRankStanding(standing)
+		if nextStanding then
+			factionNote.Text = string.format("%d / %d STANDING", standing, nextStanding)
+			local base = FactionConfig.Ranks[FactionConfig.RankIndex(standing)].standing
+			factionFill.Size = UDim2.fromScale(math.clamp((standing - base) / (nextStanding - base), 0, 1), 1)
+		else
+			factionNote.Text = "TOP RANK"
+			factionFill.Size = UDim2.fromScale(1, 1)
+		end
+		factionBack.Visible = true
+	else
+		factionLabel.Text = "NO FACTION. FIND A RECRUITER."
+		factionLabel.TextColor3 = Theme.Muted
+		factionBar.BackgroundColor3 = Theme.Muted
+		factionNote.Text = ""
+		factionBack.Visible = false
 	end
 
 	local level = player:GetAttribute("Level") or 1
@@ -276,6 +314,8 @@ local watched = {
 	XP = true,
 	Yen = true,
 	StatPoints = true,
+	Faction = true,
+	FactionStanding = true,
 	[TalismanConfig.EquippedAttribute] = true,
 }
 player.AttributeChanged:Connect(function(name)

@@ -246,7 +246,7 @@ return function(helpers)
 	end
 
 	function effects.Snapshot(character, model)
-		local hand = character and (character:FindFirstChild("RightHand") or rootOf(character))
+		local hand = character and (character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm") or rootOf(character))
 		local root = rootOf(model)
 		if hand then
 			flash(hand.Position, WHITE, 0.4, 2.5, 0.1)

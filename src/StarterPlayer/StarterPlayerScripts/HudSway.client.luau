@@ -1,5 +1,6 @@
--- HUD sway: the screen HUD (Hotbar, SkillBar, KeyHints, the yen above the cards and the
--- bounty tracker) and your HP and stamina billboard (StatusHUD) drift a few pixels against your movement and camera
+-- HUD sway: the screen HUD (Hotbar, SkillBar, KeyHints, the yen above the cards, the
+-- bounty tracker, the party HUD, the compass, the XP bar, the combo counter and the zone
+-- name) and your HP and stamina billboard (StatusHUD) drift a few pixels against your movement and camera
 -- turns, then ease back to rest, so the HUD feels attached to the camera.
 -- Strafing shifts it sideways, jumping and falling shift it up and down,
 -- running forward nudges it down, and a camera pan pushes it the opposite
@@ -26,6 +27,11 @@ local TARGETS = {
 	KeyHints = true,
 	TopBar = { "YenCluster" },
 	QuestBoard = { "Tracker" },
+	PartyHUD = true,
+	Compass = true,
+	XPBar = true,
+	ComboCounter = true,
+	ZoneName = true,
 }
 local MAX_OFFSET = 8 -- pixels, the furthest the HUD drifts
 local SMOOTHING = 9 -- how fast it eases to its target, per second

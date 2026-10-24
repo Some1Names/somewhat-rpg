@@ -54,10 +54,10 @@ function HotbarRules.FreeSlots(entries, slots)
 	return free
 end
 
--- whether a Tool of a skill set of this kind sits in the item grid (powers and weapons have
--- their own cards; `kind` is nil for a Tool that isn't a set's)
+-- whether a Tool of a skill set of this kind sits in the item grid (powers, weapons and
+-- melee weapons have their own cards; `kind` is nil for a Tool that isn't a set's)
 function HotbarRules.InGrid(kind)
-	return kind ~= "power" and kind ~= "weapon"
+	return kind ~= "power" and kind ~= "weapon" and kind ~= "melee"
 end
 
 return HotbarRules

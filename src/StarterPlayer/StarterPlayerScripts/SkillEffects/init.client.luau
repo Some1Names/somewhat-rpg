@@ -441,7 +441,7 @@ end
 function effects.AxeThrow(character, from, to, startedAt, outTime, returnSpeed, color)
 	local worn = character:FindFirstChild("SkillSetWearables")
 	worn = worn and worn:FindFirstChild("Axe")
-	local hand = character:FindFirstChild("RightHand")
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not worn or not hand then
 		return
 	end
@@ -525,7 +525,7 @@ local BONE_COLOR = Color3.fromRGB(60, 52, 50)
 local LASH_SPACING = 1.1 -- studs between vertebrae
 
 function effects.SpineLash(character, from, to, extendTime, retractTime, color)
-	local hand = character:FindFirstChild("LeftHand") or character:FindFirstChild("HumanoidRootPart")
+	local hand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm") or character:FindFirstChild("HumanoidRootPart")
 	if not hand then
 		return
 	end

@@ -32,9 +32,11 @@ local function same(a, b)
 end
 
 -- stats and the cap
-check("Vitality caps at 50", StatConfig.StatCap("Vitality") == 50)
-check("Agility caps at 50", StatConfig.StatCap("Agility") == 50)
+check("Vitality caps at a quarter of the level points", StatConfig.StatCap("Vitality") == StatConfig.MaxLevel * StatConfig.PointsPerLevel / 4)
+check("Agility has the same cap", StatConfig.StatCap("Agility") == StatConfig.StatCap("Vitality"))
 check("Willpower exists", StatConfig.Get("Willpower") ~= nil)
+check("the level points can't max every stat", StatConfig.MaxLevel * StatConfig.PointsPerLevel < StatConfig.MaxStatPoints * #StatConfig.Stats)
+check("they can max four", StatConfig.MaxLevel * StatConfig.PointsPerLevel >= StatConfig.MaxStatPoints * 4)
 check("50 Agility is 50 extra stamina", StatConfig.AgilityStamina(50) == 50)
 check("no Willpower lets all the posture through", StatConfig.WillpowerPostureMultiplier(0) == 1)
 check("50 Willpower halves posture taken", StatConfig.WillpowerPostureMultiplier(50) == 0.5)

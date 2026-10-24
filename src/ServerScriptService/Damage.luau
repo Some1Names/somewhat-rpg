@@ -237,6 +237,10 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	if dealt ~= dealt then
 		dealt = amount
 	end
+	-- a landed hit, for the attacker's combo counter (ComboCounter); a status tick isn't one
+	if attacker and not options.dot and dealt > 0 and humanoid.Parent ~= attacker.Character then
+		attacker:SetAttribute("HitsLanded", (attacker:GetAttribute("HitsLanded") or 0) + 1)
+	end
 	if attacker and options.skillSet then
 		Overcharge.AddDamage(attacker, options.skillSet, dealt, options.melee)
 		local perDamage = SkillSetConfig.MasteryXPPerDamage

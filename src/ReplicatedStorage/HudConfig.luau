@@ -28,6 +28,24 @@ HudConfig.ClusterGap = 14 -- px between the yen and the cards
 -- px from the screen's bottom to the top of that left column: panels that open on the left stay above it
 HudConfig.LeftReserve = HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap + HudConfig.YenHeight + 10
 
+-- the compass strip up in Roblox's top bar row (Compass): the degrees it shows and its size
+HudConfig.CompassSpan = 180
+HudConfig.CompassWidth = 420
+HudConfig.CompassHeight = 36
+-- the combo counter (ComboCounter): seconds after a hit before it ends, the fewest
+-- hits it shows, and its colour from each count up
+HudConfig.ComboWindow = 3
+HudConfig.ComboMin = 2
+HudConfig.ComboTiers = {
+	{ from = 0, color = Color3.new(1, 1, 1) },
+	{ from = 10, color = Color3.fromRGB(255, 205, 60) },
+	{ from = 25, color = Color3.fromRGB(255, 80, 70) },
+}
+-- the red screen edges (LowHealth): they start below this share of max health and
+-- pulse below the second
+HudConfig.LowHealthStart = 0.3
+HudConfig.LowHealthPulse = 0.15
+
 -- the hub menu (Hub and its tabs): near-black paper, light ink, one accent (the held
 -- power's colour; NoPower when there's none), square everything
 HudConfig.HubTheme = {

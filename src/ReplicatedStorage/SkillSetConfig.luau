@@ -10,9 +10,10 @@ SkillSetConfig.OverchargeKey = "G"
 SkillSetConfig.FlightKey = "G" -- the same key: a set has an overcharge or flight, not both
 
 -- Kinds: every set is a `power` (a character's abilities, like Mandela, or a
--- power like Kintsugi) or a `weapon` (a sword like Monotwister). A player
+-- power like Kintsugi), a `weapon` (a gun like the Revolver) or a `melee`
+-- weapon (a katana: it has the hotbar's MELEE slot and a swing combo). A player
 -- carries at most CarryLimit of each kind at once.
-SkillSetConfig.CarryLimit = { power = 1, weapon = 1 }
+SkillSetConfig.CarryLimit = { power = 1, weapon = 1, melee = 1 }
 
 -- Owning: the inventory (client Inventory, B) lists the sets a player owns
 -- and lets them pick which to carry. They own the starting power and the sets
@@ -29,10 +30,10 @@ SkillSetConfig.OwnedSetsAttribute = "OwnedSets"
 -- ones to find. `color` outlines the set's tool in the hotbar; tools that
 -- aren't skill sets get NoTierColor.
 SkillSetConfig.Tiers = {
-	S = { powerSlots = 5, weaponSlots = 4, damageScale = 1, color = Color3.fromRGB(175, 90, 255) },
-	A = { powerSlots = 4, weaponSlots = 3, damageScale = 0.9, color = Color3.fromRGB(226, 75, 74) },
-	B = { powerSlots = 4, weaponSlots = 2, damageScale = 0.75, color = Color3.fromRGB(90, 165, 255) },
-	C = { powerSlots = 3, weaponSlots = 1, damageScale = 0.65, color = Color3.fromRGB(90, 210, 110) },
+	S = { powerSlots = 5, weaponSlots = 4, meleeSlots = 4, damageScale = 1, color = Color3.fromRGB(175, 90, 255) },
+	A = { powerSlots = 4, weaponSlots = 3, meleeSlots = 3, damageScale = 0.9, color = Color3.fromRGB(226, 75, 74) },
+	B = { powerSlots = 4, weaponSlots = 2, meleeSlots = 2, damageScale = 0.75, color = Color3.fromRGB(90, 165, 255) },
+	C = { powerSlots = 3, weaponSlots = 1, meleeSlots = 1, damageScale = 0.65, color = Color3.fromRGB(90, 210, 110) },
 }
 SkillSetConfig.NoTierColor = Color3.fromRGB(165, 165, 180)
 SkillSetConfig.AimAssistRadius = 4 -- studs, the circle round a target while aiming a ranged move
@@ -625,6 +626,17 @@ SkillSetConfig.Sets = {
 				aim = { kind = "lock", range = 120, cone = 25 },
 			},
 		},
+	},
+
+	-- The shop's katana, a B-tier melee weapon. Left click swings a 4-hit combo
+	-- (PunchConfig.Weapons.Katana); no moves yet.
+	Katana = {
+		tool = "Katana",
+		kind = "melee",
+		tier = "B",
+		requires = { Strength = 5 },
+		color = Color3.fromRGB(200, 205, 215),
+		skills = {},
 	},
 }
 

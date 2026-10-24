@@ -306,7 +306,7 @@ RunService.RenderStepped:Connect(function()
 			card.stroke.Transparency = 0.6
 			card.icon.Visible = false
 			card.name.Visible = true
-			card.name.Text = card.kind == "melee" and "Coming soon" or "Empty"
+			card.name.Text = "Empty"
 			card.name.TextColor3 = MUTED
 			card.mastery.Text = ""
 		end

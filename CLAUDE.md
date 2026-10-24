@@ -90,19 +90,30 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `Damage.OnKill`, and runs the pickup loop; orbs are parts in `workspace.Drops` cloned from
   `VFXPrefabs.DroppedItemOrb`, owner-only for 30 s. The bag is the saved `Mat_<key>` attributes (Reforge spends
   them). `DropClient` hides others' orbs and pops up "+N".
+- **Enemy types**: a model's `EnemyType` attribute picks an entry in `EnemyConfig` (pure, Lune-tested): per-type settings, an
+  `AggroRange` (it goes for players who walk close, inside its leash), a `attacks` combo with an optional lunge, a `dropTable` and a
+  drop-only `talisman` roll. Order: the model's attribute, then the entry, then `EnemyAI`'s defaults. The Henchman is the first
+  (jab, jab, lunging heavy; Thug Badge material; Thug's Knuckle talisman). `TalismanConfig` items with `dropOnly` stay out of the chests.
 - **Client UI**: `Hub` (module: the full-screen hub menu, LEGACY/Arknights editorial style; tabs
   are scripts that call `Hub.Tab(name, opts)` and build in the frame it returns; pure rules in
   `HubRules`, Lune-tested; the accent is the held power's colour), its tabs `HubProfile` (Profile),
-  `Inventory` (Backpack, B), `Quests` (J), `StatsMenu` (Stats, M, with a Milestones sub-tab) and
+  `Inventory` (Backpack, B), `Quests` (J), `StatsMenu` (Stats, with a Milestones sub-tab), `MapMenu` (Map, M: a 3D model in a ViewportFrame, opens on the player, right-drag tilts it, built from `MapLayout`, which
+  `tools/bake_map.luau` bakes from the parts, re-bake after map changes; NPC and far party-mate
+  positions from `MapServer`, since streaming is on; grey until a player has been near, then painted in the parts' colours, saved as the
+  `Explored` text) and
   `UpdateNotes` (Updates), `HubPose` (the player's posed character over the hub; poses in
   `HubPoses`), `SkillBar`, `AdminPanel`, `ShopMenu`,
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
   popups), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row, the yen and the
-  Menu icon), `KeyHints` (bottom-left move hints), `PreloadAnimations` (loads every animation on join), `LoadingScreen` (in `ReplicatedFirst`; fades once `TitleMenu` is Ready), `TitleMenu` (on join: PLAY / SETTINGS / UPDATES over a camera drifting through the `workspace.MenuCameras` parts, a Persistent model, or circling the spawn), and `Menus` (module: one menu open at a time;
+  Menu icon), `KeyHints` (bottom-left move hints), `Compass` (a strip in the middle of Roblox's top bar: points,
+  the Headhunter, party mates and the bounty's nearest target, far ones from `MapServer`'s `MapPosition`/`QuestTarget`), `XPBar` (bottom left, under the cards), `ComboCounter`
+  (hits landed: `Damage.Deal` bumps the player's `HitsLanded` attribute), `LowHealth` (red screen edges), `ZoneName`
+  (area names from `ZoneConfig`, a mockup until the map is done; their numbers in `HudConfig`, pure rules in `HudRules`,
+  Lune-tested), `PreloadAnimations` (loads every animation on join), `LoadingScreen` (in `ReplicatedFirst`; fades once `TitleMenu` is Ready), `TitleMenu` (on join: PLAY / SETTINGS / UPDATES over a camera drifting through the `workspace.MenuCameras` parts, a Persistent model, or circling the spawn), and `Menus` (module: one menu open at a time;
   every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in
   `HudConfig`).
-- **Build depth**: six stats (Vitality, Strength, Superliminal, Firearm, Agility, Willpower), each capped at 50 points
-  (`StatConfig.MaxStatPoints`). A set can have `requires = { Stat = points }` in `SkillSetConfig`; `BuildCheck` (server)
+- **Build depth**: six stats (Vitality, Strength, Superliminal, Firearm, Agility, Willpower), each capped at a quarter of the
+  level points (`StatConfig.MaxStatPoints`, 75 at level 100; it rises with `MaxLevel`, so four stats can max, not six). A set can have `requires = { Stat = points }` in `SkillSetConfig`; `BuildCheck` (server)
   refuses its skills, shots, swings and equip below it. Talents (`TalentConfig`: a tier opens at 15/30/50 points in its
   stat, equipping costs talent points, 1 per 5 levels) are the saved, replicated `Talents` text; the pure rules are in
   `BuildRules` (Lune-tested), `Talents` validates equips (`EquipTalent` remote, created by script) and prunes talents a
@@ -115,6 +126,10 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `SkillEffects` "Telegraph" for the wind-up. Melee swings cost stamina and slow your walk (`CombatFeel`, `Punch`,
   `Sprint`). Block is not basekit: only a set or weapon with its own `block` table can block (`Guard.CanBlock`);
   `GuardConfig.Enabled` is still off. Cues are placeholders until the owner's VFX.
+- **Factions and parties**: `FactionConfig` (three factions, their rank names, colours and shop discount; pure rules, Lune-tested), `Factions` + `FactionServer` (join at a model tagged `FactionRecruiter`, standing from kills; saved `FactionData`), the overhead title in `OverheadHealth` and a card in `HubProfile`. Parties: `PartyRules` (pure, Lune-tested), `Party` + `PartyServer` (the `PartyAction` remote), the hub tab `PartyMenu` and `PartyHUD`.
+- **Melee weapons**: a set with `kind = "melee"` fills the hotbar's MELEE slot (saved as the `MeleeSet` attribute, kept by `Loadout`
+  like `WeaponSet`) and swings a combo from `PunchConfig.Weapons`. Its Tool needs a `SkillSet` attribute. Katana (B, needs 5 Strength,
+  shop ¥1,200) is the first; no moves yet.
 - Sets so far: Mandela (S power, green; overcharge "Backbone Power"), Iridescent Requiem (S power,
   orange #FF9A3C / cyan #3CE0E6, Luminance passive, flight, Prism Form), Revolver (B weapon).
 

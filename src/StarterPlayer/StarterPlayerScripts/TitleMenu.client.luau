@@ -9,8 +9,9 @@
 -- before the cut.
 -- While it's up the title is the open menu to Menus (the character can't move
 -- or fight), the rest of the HUD is hidden the way the hub hides it, and "press
--- E" prompts are off. SETTINGS and UPDATES open the Settings menu and the hub's
--- Updates tab: opening them closes the column, and it comes back when they
+-- E" prompts are off, and the hub's tab keys do nothing (Hub checks for this
+-- gui). SETTINGS opens the Settings menu, UPDATES the hub's Updates page alone
+-- (Hub.OpenOnly): opening them closes the column, and it comes back when they
 -- close. PLAY fades through black, hands the camera back to the character and
 -- shows the HUD. Square everything; the accent is the hub's.
 local GuiService = game:GetService("GuiService")
@@ -442,7 +443,7 @@ button(2, "SETTINGS", 22, function()
 	Menus.Toggle("Settings")
 end)
 button(3, "UPDATES", 22, function()
-	Hub.Open("Updates")
+	Hub.OpenOnly("Updates")
 end)
 
 if not game:IsLoaded() then

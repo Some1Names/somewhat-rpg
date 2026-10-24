@@ -34,8 +34,8 @@ local free = HotbarRules.FreeSlots({ { id = "a", slot = 2 }, { id = "b" } })
 check("free slots skip the taken ones", #free == 4 and free[1] == 3 and free[4] == 6)
 check("free slots when full", #HotbarRules.FreeSlots({ { id = "1" }, { id = "2" }, { id = "3" }, { id = "4" }, { id = "5" }, { id = "6" } }) == 0)
 
-check("power and weapon tools are not in the grid", not HotbarRules.InGrid("power") and not HotbarRules.InGrid("weapon"))
-check("other tools are", HotbarRules.InGrid(nil) and HotbarRules.InGrid("melee"))
+check("power, weapon and melee tools are not in the grid", not HotbarRules.InGrid("power") and not HotbarRules.InGrid("weapon") and not HotbarRules.InGrid("melee"))
+check("other tools are", HotbarRules.InGrid(nil))
 
 if failures > 0 then
 	error(failures .. " check(s) failed")

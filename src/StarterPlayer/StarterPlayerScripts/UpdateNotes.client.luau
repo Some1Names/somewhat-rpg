@@ -50,7 +50,7 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
-local tabFrame = Hub.Tab("Updates", { order = 5, title = "UPDATES" })
+local tabFrame = Hub.Tab("Updates", { order = 6, title = "UPDATES" })
 
 -- the whole tab scrolls: the version and title, then the topics as cards in one or two columns
 local panel = make("ScrollingFrame", {

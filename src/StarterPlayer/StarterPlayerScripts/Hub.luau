@@ -1,11 +1,13 @@
--- The hub: one full-screen menu holding Profile, Backpack (Inventory), Quests,
+-- The hub: one full-screen menu holding Profile, Backpack (Inventory), Map, Quests,
 -- Stats and Updates, with locked slots for later features. The first script to
 -- require it builds the screen: grey paper, the dark nav column on the left,
 -- the header (#TITLE, the accent bar and the tab's number), the
 -- footer, and on the right the strip HubPose draws the posed character in.
 -- Each tab is a script that asks Hub.Tab(name, opts) for a frame and builds in
 -- it; a tab's key (B, J, M) opens the hub on it, closes it if it's the one
--- showing, or switches to it. Esc closes. To Menus the hub is the one menu
+-- showing, or switches to it; not while the title menu is up, nor when
+-- Hub.OpenOnly showed one tab alone (the title's UPDATES), with the nav's list
+-- of tabs hidden. Esc closes. To Menus the hub is the one menu
 -- "Hub", so opening Settings or the Shop closes it and the other way round.
 -- The accent is the held power's colour (white with none); on the paper it's
 -- drawn through HubRules.Ink so a light one stays visible. Square everything.
@@ -329,6 +331,7 @@ local closeButton = make("TextButton", {
 -- state
 local tabs = {} -- name -> { name, order, title, key, locked, pose, frame, button, nameLabel, marker, badge }
 local current -- the tab showing, while the hub is open
+local only = false -- opened by Hub.OpenOnly: that tab alone
 local wanted -- a tab asked for before it registered
 local shownListeners = {} -- name -> { fn }
 local changedListeners = {}
@@ -498,6 +501,8 @@ local function close()
 	local last = current
 	current = nil
 	wanted = nil
+	only = false
+	navList.Visible = true
 	for _, fn in ipairs(closedListeners) do
 		task.spawn(fn, last)
 	end
@@ -518,6 +523,14 @@ function Hub.Open(name)
 		tween(nav, OPEN_TIME, { Position = UDim2.new() })
 	end
 	show(name)
+end
+
+-- opens the hub on `name` alone: the nav's list of tabs is hidden and the tab keys
+-- don't switch away; closing puts the hub back as it was
+function Hub.OpenOnly(name)
+	only = true
+	navList.Visible = false
+	Hub.Open(name)
 end
 
 function Hub.Close()
@@ -610,7 +623,7 @@ function Hub.Tab(name, opts)
 	}
 	tab.button = make("TextButton", {
 		Parent = navList,
-		LayoutOrder = opts.order,
+		LayoutOrder = opts.order * 10, -- in tenths: a tab can slot in between (Map's 2.5)
 		Size = UDim2.new(1, 0, 0, NAV_ROW),
 		BackgroundTransparency = 1,
 		Text = "",
@@ -708,6 +721,10 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		return
 	end
 	if gameProcessed or Keybinds.Capturing() then
+		return
+	end
+	-- no tab keys on the title menu (its gui is there until PLAY, Settings opened from it too) or one tab alone
+	if only or player.PlayerGui:FindFirstChild("TitleMenu") then
 		return
 	end
 	for name, tab in pairs(tabs) do

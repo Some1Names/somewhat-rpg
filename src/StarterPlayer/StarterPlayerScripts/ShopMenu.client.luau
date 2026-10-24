@@ -20,6 +20,7 @@ local TweenService = game:GetService("TweenService")
 
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
@@ -30,6 +31,14 @@ local buyItem = ReplicatedStorage:WaitForChild("BuyItem")
 local sellItem = ReplicatedStorage:WaitForChild("SellItem")
 local buyLifetime = ReplicatedStorage:WaitForChild("BuyLifetime")
 local player = Players.LocalPlayer
+
+-- the yen price the player pays: the listed price less their faction rank's discount
+local function priceOf(item)
+	if not item.price then
+		return nil
+	end
+	return FactionConfig.DiscountedPrice(item.price, player:GetAttribute("FactionDiscount") or 0)
+end
 
 local PANEL_WIDTH = 440
 local PADDING = 14
@@ -233,6 +242,59 @@ local leave = make("TextButton", {
 
 local rows = {}
 
+-- the shopkeeper's speech box, bottom right under them (the list is on the left): their name and a line
+-- that types out. Square, white text with a dark stroke over a see-through dark box.
+local speech = make("Frame", {
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.695, 0, 1, -60), -- its bottom edge lines up with the list panel's
+	Size = UDim2.new(0.36, 0, 0, 120),
+	BackgroundColor3 = Color3.new(0, 0, 0),
+	BackgroundTransparency = 0.35,
+	BorderSizePixel = 0,
+	Visible = false,
+})
+local speechStroke = make("UIStroke", { Parent = speech, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+make("UIPadding", { Parent = speech, PaddingTop = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) })
+local speakerLabel = label(speech, { Text = "", TextSize = 16, TextColor3 = GOLD, Size = UDim2.new(1, 0, 0, 20) })
+local speechText = label(speech, {
+	Text = "",
+	TextSize = 22,
+	TextWrapped = true,
+	TextYAlignment = Enum.TextYAlignment.Top,
+	TextStrokeColor3 = Color3.new(0, 0, 0),
+	TextStrokeTransparency = 0.4,
+	Position = UDim2.fromOffset(0, 28),
+	Size = UDim2.new(1, 0, 1, -28),
+})
+local currentShopId = ShopConfig.DefaultShop
+local speakCount = 0
+local TYPE_SPEED = 0.008 -- seconds per letter
+
+-- the shopkeeper says a line for a moment (greet, buy, poor, full, fail, sell), typed out letter by letter
+local function say(kind, itemName)
+	local line = ShopConfig.Line(currentShopId, kind, itemName)
+	if line == "" then
+		return
+	end
+	speakCount += 1
+	local mine = speakCount
+	speech.Visible = true
+	speechText.Text = line
+	speechText.MaxVisibleGraphemes = 0
+	task.spawn(function()
+		local total = utf8.len(line) or #line
+		for shown = 1, total do
+			if mine ~= speakCount then
+				return
+			end
+			speechText.MaxVisibleGraphemes = shown
+			task.wait(TYPE_SPEED)
+		end
+		speechText.MaxVisibleGraphemes = -1
+	end)
+end
+
 local function setStatus(text, failed)
 	status.Text = text
 	status.TextColor3 = failed and DANGER or GOLD
@@ -316,7 +378,7 @@ local function refresh()
 			end
 		end
 		local owned = owns(item)
-		local affordable = yen >= (item.price or 0)
+		local affordable = yen >= (priceOf(item) or 0)
 		-- carrying as many of a consumable as allowed: greyed out, FULL
 		local full = item.stack and not ConsumableConfig.CanCarryMore(consumableCount(item))
 		if item.comingSoon then
@@ -354,14 +416,16 @@ player.AttributeChanged:Connect(function()
 end)
 
 -- why the shop would turn the player away before it even asks the server (too
--- poor, or already carrying all of a consumable they can), or nil
+-- poor, or already carrying all of a consumable they can), or nil; the second value is the
+-- shopkeeper's line for it ("poor" or "full")
 local function refusal(item)
 	local yen = player:GetAttribute("Yen")
-	if yen and item.price and yen < item.price then
-		return string.format("You need ¥%d more", item.price - yen)
+	local price = priceOf(item)
+	if yen and price and yen < price then
+		return string.format("You need ¥%d more", price - yen), "poor"
 	end
 	if item.stack and not ConsumableConfig.CanCarryMore(consumableCount(item)) then
-		return "You can't carry more " .. item.name
+		return "You can't carry more " .. item.name, "full"
 	end
 	return nil
 end
@@ -374,16 +438,18 @@ local function buy(item)
 		return
 	end
 	-- too poor: say so (and sound it) now rather than after the trip to the server
-	local why = refusal(item)
+	local why, kind = refusal(item)
 	if why then
 		if os.clock() - pressedPoorAt > 1 then -- (pressing the button already said it)
 			setStatus(why, true)
+			say(kind, item.name)
 		end
 		return
 	end
 	local ok, success, message = pcall(buyItem.InvokeServer, buyItem, item.id)
 	if not ok then
 		setStatus("Couldn't reach the shop", true)
+		say("fail", item.name)
 		return
 	end
 	if not success and buySound and os.clock() - pressedBuyAt < 5 then
@@ -394,20 +460,24 @@ local function buy(item)
 	if success and os.clock() - pressedBuyAt > 5 then -- (a press that could pay already sounded)
 		UiSfx.Play("buy")
 	end
+	say(success and "buy" or "fail", item.name)
 	refresh() -- a bought briefcase can now be sold
 end
 
 local function sell(item)
 	if not carriesBriefcase(item.set) then
 		setStatus("You aren't carrying a " .. item.name .. " briefcase", true)
+		say("fail", item.name)
 		return
 	end
 	local ok, success, message = pcall(sellItem.InvokeServer, sellItem, item.set)
 	if not ok then
 		setStatus("Couldn't reach the shop", true)
+		say("fail", item.name)
 		return
 	end
 	setStatus(message, not success)
+	say(success and "sell" or "fail", item.name)
 	refresh()
 end
 
@@ -521,7 +591,7 @@ local function buildRows(shopId)
 			-- the price sits top right, the BUY button bottom right
 			if item.price and not item.comingSoon then
 				label(row, {
-					Text = item.price == 0 and "FREE" or formatYen(item.price),
+					Text = item.price == 0 and "FREE" or formatYen(priceOf(item)),
 					Font = Enum.Font.Highway,
 					TextSize = 15,
 					TextColor3 = GOLD,
@@ -550,10 +620,11 @@ local function buildRows(shopId)
 				if item.comingSoon or owns(item) then
 					return
 				end
-				local why = refusal(item)
+				local why, kind = refusal(item)
 				if why then
 					pressedPoorAt = os.clock()
 					setStatus(why, true)
+					say(kind, item.name)
 				else
 					-- nothing to stop it: the buy sound plays now (cut short if the server refuses)
 					pressedBuyAt = os.clock()
@@ -601,6 +672,7 @@ local function buildRows(shopId)
 							buyLifetime:FireServer(item.set)
 						else
 							setStatus("The lifetime copy isn't on sale yet", true)
+							say("fail", item.name)
 						end
 					end)
 				end
@@ -687,6 +759,8 @@ local function close()
 		UiSfx.Play("shopLeave")
 	end
 	gui.Enabled = false
+	speakCount += 1 -- stops a line still typing
+	speech.Visible = false
 	openAt = nil
 	Menus.Close("Shop")
 end
@@ -708,8 +782,13 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		subtitle.Text = shop:GetAttribute("ShopSubtitle") or ""
 		subtitle.TextColor3 = info.color
 		panelStroke.Color = info.color
+		speechStroke.Color = info.color
+		speakerLabel.TextColor3 = info.color
+		speakerLabel.Text = string.upper(shop:GetAttribute("ShopkeeperName") or title.Text)
+		currentShopId = shopId
 		buildRows(shopId)
 		setStatus("")
+		say("greet")
 		refresh()
 		panel.CanvasPosition = Vector2.zero
 		Menus.Open("Shop", close)

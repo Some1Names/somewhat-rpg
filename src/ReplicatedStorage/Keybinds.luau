@@ -37,7 +37,7 @@ for _, action in ipairs(Keybinds.Actions) do
 end
 
 -- every key an action may be put on (Enum.KeyCode names). Letters but
--- W A S D (movement), B, M and J (Inventory, Stats, Quests), P (Settings) and I and O
+-- W A S D (movement), B, M and J (Inventory, Map, Quests), P (Settings) and I and O
 -- (Roblox's camera zoom); F1-F8 (F9 is the console, F11 fullscreen); the
 -- number pad (KeypadZero..KeypadNine); some punctuation, not . (emotes) or
 -- , (camera turning)

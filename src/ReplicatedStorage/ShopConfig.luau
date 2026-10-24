@@ -31,6 +31,48 @@ ShopConfig.Shops = {
 	Supplies = { title = "SUPPLIES", color = Color3.fromRGB(60, 224, 230) },
 }
 
+-- what the shopkeeper says, by moment: greet (menu opens), buy (a purchase went through), poor (can't
+-- afford it), full (can't carry more), fail (the server said no), sell (a briefcase bought back).
+-- "{item}" becomes the item's name. A shop with no lines of its own uses General's.
+ShopConfig.Dialogue = {
+	General = {
+		greet = { "Welcome! Take a look around.", "Oh, a customer. Browse all you like.", "Come in, come in. Prices are fair, I promise." },
+		buy = { "{item}? Good pick. Pleasure doing business.", "Sold! Don't lose it.", "Thank you kindly." },
+		poor = { "Hm, you're a little short on yen.", "Come back when your pockets are heavier.", "I don't do credit, sorry." },
+		full = { "You can't carry any more of that.", "Your hands are full. Use some first." },
+		fail = { "That's not going to work.", "Sorry, I can't do that right now." },
+		sell = { "I'll take that off your hands.", "A fair price. Here you go." },
+	},
+	Powers = {
+		greet = { "So you want power. Everything here has a price.", "Looking for something dangerous? Good, I sell it.", "Mind the briefcases. They bite." },
+		buy = { "{item}. Try not to get yourself killed.", "A fine choice. Use it well.", "It's yours now. Don't make me regret it." },
+		poor = { "Power isn't free. Come back with more yen.", "Not enough. Power costs, kid.", "Your wallet can't hold that power." },
+		full = { "You can't hold any more. Make some room.", "Your storage is full. Sort yourself out first." },
+		fail = { "No deal.", "That's not something I can hand over." },
+		sell = { "I'll buy it back. A little less than you paid, of course.", "Another one returned. Business is business." },
+	},
+	Supplies = {
+		greet = { "Stocking up? Smart.", "Supplies for every fight. What do you need?", "Hey there. Don't go out unprepared." },
+		buy = { "{item}, coming right up.", "Good call. That one saves lives.", "Here you go. Use it wisely." },
+		poor = { "Not enough yen for that one.", "Short on cash? Come back after a few fights." },
+		full = { "You're carrying all you can already.", "No room left in your bag for that." },
+		fail = { "I can't sell you that right now.", "Something's off. Try again in a moment." },
+		sell = { "I'll take it.", "Thanks. It'll go back on the shelf." },
+	},
+}
+
+-- a random line for a moment in a shop's dialogue ("" if there is none)
+function ShopConfig.Line(shopId, kind, itemName)
+	local shop = ShopConfig.Dialogue[shopId] or ShopConfig.Dialogue[ShopConfig.DefaultShop]
+	local lines = shop[kind] or ShopConfig.Dialogue[ShopConfig.DefaultShop][kind]
+	if not lines or #lines == 0 then
+		return ""
+	end
+	return (string.gsub(lines[math.random(#lines)], "{item}", function()
+		return itemName or "That"
+	end))
+end
+
 -- in the order the menu lists them
 ShopConfig.Items = {
 	{
@@ -45,6 +87,13 @@ ShopConfig.Items = {
 		price = 1500,
 		set = "Revolver",
 		description = "B-tier weapon. Left click shoots, right click aims, R reloads. Moves: Fan the Hammer, Dead Eye.",
+	},
+	{
+		id = "Katana",
+		name = "Katana",
+		price = 1200,
+		set = "Katana",
+		description = "B-tier melee weapon. Left click swings a four-hit combo. Needs 5 Strength.",
 	},
 	{
 		id = "ResetStats",

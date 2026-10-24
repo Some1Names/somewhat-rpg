@@ -47,7 +47,7 @@ UpdateNotes.Sections = {
 	{
 		"INTERFACE",
 		{
-			"The hub: one full-screen menu for Profile, Backpack (B), Quests (J), Stats (M) and Updates, in a new dark style with a new font.",
+			"The hub: one full-screen menu for Profile, Backpack (B), Map (M), Quests (J), Stats and Updates, in a new dark style with a new font.",
 			"Menu button in Roblox's top bar, next to the chat button.",
 			"Menus hold you still: you can't walk, jump or fight while one is open.",
 			"Shop: a close-up on the shopkeeper, and the BUY button greys out and says FULL when you can't carry more of an item.",

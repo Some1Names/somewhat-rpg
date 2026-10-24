@@ -12,10 +12,13 @@
 -- A thin white posture bar (Guard) sits under the boxes while their Posture
 -- attribute is above 0, red and flashing while they're guard-broken.
 -- The Headhunter's name (ReplicatedStorage's Headhunter attribute) is red.
+-- A player in a faction shows their rank as a title before the name, in the
+-- faction's colour for that rank (FactionConfig).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusIcons = require(ReplicatedStorage:WaitForChild("StatusIcons"))
@@ -116,6 +119,22 @@ local function showName(entry)
 	local owner = not entry.enemy and Players:GetPlayerFromCharacter(entry.model)
 	if owner and owner.UserId == ReplicatedStorage:GetAttribute("Headhunter") then
 		color = DANGER_COLOR
+	end
+	-- the label is rich text, so a name with & < > must not read as markup
+	text = string.gsub(string.gsub(string.gsub(text, "&", "&amp;"), "<", "&lt;"), ">", "&gt;")
+	if owner then
+		local key = owner:GetAttribute("Faction")
+		local rankColor = FactionConfig.RankColor(key, owner:GetAttribute("FactionStanding") or 0)
+		if rankColor then
+			text = string.format(
+				'<font color="#%02X%02X%02X">%s</font> %s',
+				rankColor[1],
+				rankColor[2],
+				rankColor[3],
+				FactionConfig.Title(key, owner:GetAttribute("FactionStanding") or 0),
+				text
+			)
+		end
 	end
 	if entry.nameLabel.Text ~= text then
 		entry.nameLabel.Text = text
@@ -218,6 +237,7 @@ local function track(humanoid)
 	nameLabel.TextSize = 12
 	nameLabel.TextColor3 = NAME_COLOR
 	nameLabel.TextStrokeTransparency = 0.6
+	nameLabel.RichText = true
 	nameLabel.TextTruncate = Enum.TextTruncate.AtEnd
 	nameLabel.Visible = nameShown
 	nameLabel.Parent = billboard

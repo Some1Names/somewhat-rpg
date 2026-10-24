@@ -1,4 +1,4 @@
--- The hub's Stats tab (M, or the hub's nav), with three sub-tabs. STATS: the level and its XP bar, what the stats add up to
+-- The hub's Stats tab (from the hub's nav), with three sub-tabs. STATS: the level and its XP bar, what the stats add up to
 -- (max HP, regen, damage, stamina boxes, dodge charges), and under them the points to spend on the four stats.
 -- MILESTONES: reward bars, one per track (the level, then each stat with milestones), in
 -- segments with a pin under each reward. TALENTS: the perks each stat opens at 15, 30 and 50 points,
@@ -84,7 +84,7 @@ local function formatNumber(n)
 	return n % 1 == 0 and tostring(n) or string.format("%.1f", n)
 end
 
-local tabFrame = Hub.Tab("Stats", { order = 4, title = "STATS", key = Enum.KeyCode.M, pose = "Guard" })
+local tabFrame = Hub.Tab("Stats", { order = 4, title = "STATS", pose = "Guard" })
 
 -- the popups get a full-screen gui (no top inset), so their heights are fractions of the real screen
 local popupGui = make("ScreenGui", {

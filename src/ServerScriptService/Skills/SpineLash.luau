@@ -151,7 +151,7 @@ local function lash(player, character, aim)
 	if not root or humanoid.Health <= 0 then
 		return
 	end
-	local hand = character:FindFirstChild("LeftHand") or root
+	local hand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm") or root
 	local from = hand.Position
 	-- at the locked-on target if there is one, otherwise toward where they
 	-- aimed, up or down (SkillBar raises a point on the floor to chest height)

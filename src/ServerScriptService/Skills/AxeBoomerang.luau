@@ -142,7 +142,7 @@ local function fly(player, character, from, to, outTime)
 	local flight = { recalled = false }
 	flights[character] = flight
 	player:SetAttribute(RECALL_ATTRIBUTE, true)
-	local hand = character:FindFirstChild("RightHand")
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	local overlap = OverlapParams.new()
 	overlap.FilterType = Enum.RaycastFilterType.Exclude
 	overlap.FilterDescendantsInstances = { character }
@@ -194,7 +194,7 @@ local function throw(player, character, aim)
 	task.wait(CONFIG.ReleaseDelay)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	local root = humanoid and humanoid.RootPart
-	local hand = character:FindFirstChild("RightHand")
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")
 	if not root or not hand or humanoid.Health <= 0 then
 		character:SetAttribute(THROWN_ATTRIBUTE, nil)
 		return
@@ -227,7 +227,7 @@ function AxeBoomerang.Cast(player, character, aim)
 	if character:GetAttribute(THROWN_ATTRIBUTE) or not (folder and folder:FindFirstChild(WEAPON_NAME)) then
 		return false
 	end
-	if not character:FindFirstChild("RightHand") then
+	if not (character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm")) then
 		return false
 	end
 	-- swings stop from the moment of the throw, not just the release

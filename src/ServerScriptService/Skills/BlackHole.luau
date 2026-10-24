@@ -335,7 +335,7 @@ function BlackHole.Cast(player, character, aim)
 	if not center then
 		return false
 	end
-	local hand = character:FindFirstChild("LeftHand") or root
+	local hand = character:FindFirstChild("LeftHand") or character:FindFirstChild("Left Arm") or root
 	local launchFrom = hand.Position
 	local travelTime = math.clamp((center - launchFrom).Magnitude / CONFIG.OrbSpeed, CONFIG.MinTravelTime, CONFIG.MaxTravelTime)
 	task.spawn(runBlackHole, player, character, center, launchFrom, travelTime, variantName)

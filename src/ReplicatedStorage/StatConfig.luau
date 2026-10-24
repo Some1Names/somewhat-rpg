@@ -45,8 +45,10 @@ StatConfig.DodgeChargeLevels = {
 	{ level = 25, charges = 2 },
 	{ level = 60, charges = 3 },
 }
--- the most points one stat can hold (300 points at level 100 can't fill six)
-StatConfig.MaxStatPoints = 50
+-- the most points one stat can hold: a quarter of every point the levels give (75
+-- at level 100), so the points fill four of the six stats and no build maxes them
+-- all. It rises with MaxLevel, so a new region's levels keep paying out.
+StatConfig.MaxStatPoints = math.floor(StatConfig.MaxLevel * StatConfig.PointsPerLevel / 4)
 StatConfig.BaseHealth = 100
 StatConfig.HealthPerVitality = 10
 

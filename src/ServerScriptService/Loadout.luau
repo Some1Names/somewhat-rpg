@@ -1,11 +1,11 @@
--- What each player carries: one weapon here, and one power (SkillSetConfig.CarryLimit).
+-- What each player carries: one weapon and one melee weapon here, and one power (SkillSetConfig.CarryLimit).
 -- Powers belong to the Powers module (the held power, storage, lifetime and
--- briefcases, all saved); Loadout only hands out the weapon, kept as the
--- WeaponSet attribute, and tells who owns what: the OwnedSets attribute lists
+-- briefcases, all saved); Loadout only hands out the weapon and the melee weapon, kept as the
+-- WeaponSet and MeleeSet attributes, and tells who owns what: the OwnedSets attribute lists
 -- the powers they hold, store or own for life and the weapons they've
 -- bought, for the client. A weapon bought in the shop (a ShopConfig item with
--- `set`, like the Revolver) is carried as soon as it's owned, unless a
--- weapon already is. Players swap weapons through the inventory (client
+-- `set`, like the Revolver) is carried when the save loads (unless a
+-- weapon already is), but not on buying it: it waits in the backpack. Players swap weapons through the inventory (client
 -- Inventory -> EquipSet remote), only for weapons they own (Loadout.Owns).
 -- Its tools come from ServerStorage.SkillSetTools, handed out every spawn.
 local Players = game:GetService("Players")
@@ -13,13 +13,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local BuildCheck = require(script.Parent:WaitForChild("BuildCheck"))
+local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
 local Powers = require(script.Parent:WaitForChild("Powers"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local tools = ServerStorage:WaitForChild("SkillSetTools")
 local equipRemote = ReplicatedStorage:WaitForChild("EquipSet")
 
-local ATTRIBUTES = { weapon = "WeaponSet" }
+local ATTRIBUTES = { weapon = "WeaponSet", melee = "MeleeSet" }
 local EQUIP_INTERVAL = 0.3 -- seconds between a player's swaps
 
 local Loadout = {}
@@ -137,7 +138,7 @@ local function onEquip(player, setName, kind)
 	end
 	lastEquip[player] = now
 	if setName == nil then
-		if kind ~= "weapon" then
+		if not ATTRIBUTES[kind] then
 			return false, "Unknown slot"
 		end
 		Loadout.Remove(player, kind)
@@ -146,7 +147,7 @@ local function onEquip(player, setName, kind)
 	if typeof(setName) ~= "string" or not Loadout.Owns(player, setName) then
 		return false, "You don't own that"
 	end
-	if SkillSetConfig.Sets[setName].kind ~= "weapon" then
+	if not ATTRIBUTES[SkillSetConfig.Sets[setName].kind] then
 		return false, "Powers are managed in the inventory's power rows"
 	end
 	local meets, needs = BuildCheck.SetMeets(player, setName)
@@ -163,7 +164,7 @@ end
 local function carryOwned(player)
 	for _, item in ipairs(ShopConfig.Items) do
 		local set = item.set and SkillSetConfig.Sets[item.set]
-		if set and set.kind == "weapon" and player:GetAttribute(ShopConfig.OwnedAttribute(item.id)) == 1 and player:GetAttribute(ATTRIBUTES[set.kind]) == nil then
+		if set and ATTRIBUTES[set.kind] and player:GetAttribute(ShopConfig.OwnedAttribute(item.id)) == 1 and player:GetAttribute(ATTRIBUTES[set.kind]) == nil then
 			Loadout.Give(player, item.set)
 		end
 	end
@@ -194,7 +195,11 @@ function Loadout.Start()
 			if item.set then
 				player:GetAttributeChangedSignal(ShopConfig.OwnedAttribute(item.id)):Connect(function()
 					refreshOwned(player)
-					carryOwned(player)
+					-- a weapon bought in the shop goes to the backpack, to equip from there;
+					-- ones owned from the save are carried as the save loads
+					if not PlayerStats.JustBought(player) then
+						carryOwned(player)
+					end
 				end)
 			end
 		end

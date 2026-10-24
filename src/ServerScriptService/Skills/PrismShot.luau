@@ -78,7 +78,7 @@ local function fire(player, character, aim, inForm)
 	if not root or humanoid.Health <= 0 then
 		return
 	end
-	local hand = character:FindFirstChild("RightHand") or root
+	local hand = character:FindFirstChild("RightHand") or character:FindFirstChild("Right Arm") or root
 	local origin = hand.Position
 	local ahead = aim - origin
 	if flat(ahead).Magnitude < 1 then

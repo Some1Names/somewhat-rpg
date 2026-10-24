@@ -92,7 +92,7 @@ check("keypad_names_are_real", Keybinds.Allowed.KeypadOne and Keybinds.Allowed.K
 check("roblox_keys_not_allowed", not Keybinds.Allowed.I and not Keybinds.Allowed.O
 	and not Keybinds.Allowed.Period and not Keybinds.Allowed.Comma)
 
--- menu keys (B inventory, M stats, P settings, J quests) are never skill keys
+-- menu keys (B inventory, M map, P settings, J quests) are never skill keys
 check("menu_keys_not_allowed", not Keybinds.Allowed.B and not Keybinds.Allowed.M and not Keybinds.Allowed.P and not Keybinds.Allowed.J)
 check("saved_j_is_ignored", Keybinds.Parse("SkillZ=J").SkillZ == "Z")
 

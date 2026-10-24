@@ -4,7 +4,7 @@
 -- Menu button (its own gui, above the hub, so it can close it too). Bottom
 -- left, above the Hotbar's equipment cards: the player's yen as gold text.
 -- Menu opens the hub (Hub) on Profile; B, J and M open it on Backpack, Quests
--- and Stats. The icon whose menu is open is a little larger, and a label with
+-- and Map. The icon whose menu is open is a little larger, and a label with
 -- its key shows under whichever is hovered (or held, on touch). Each
 -- icon toggles its menu through Menus exactly as the key does; the menus
 -- register themselves there. Icon images come from HudConfig.Icons; until the

@@ -16,9 +16,11 @@ local RunService = game:GetService("RunService")
 local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local MapRules = require(ReplicatedStorage:WaitForChild("MapRules"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
+local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -62,6 +64,7 @@ local TEXT_DEFAULTS = {
 	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
 	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
 	Reforge = "", -- each set's reforge level and modifiers (ReforgeRules, Reforge)
+	FactionData = "", -- the faction joined, "<key>:<standing>:<joinedAt>" (FactionConfig, Factions)
 	Talents = "", -- the equipped talents, comma separated (TalentConfig, BuildRules, Talents)
 	CurrentPower = "", -- the one power the player holds (PowerConfig, Powers)
 	PowerStorage = "", -- the spare powers in storage, comma separated (Powers)
@@ -71,14 +74,17 @@ local TEXT_DEFAULTS = {
 	SeenUpdate = "", -- the last update's version whose What's new modal the player saw (UpdateNotes, UpdateNotesServer)
 	TalismanOwned = "", -- the talismans the player owns, comma separated (TalismanConfig, Talismans)
 	TalismanEquipped = "", -- the ones they wear, comma separated (TalismanConfig, Talismans)
+	Explored = "", -- the map cells the player has been near (MapRules, MapServer)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
 local TEXT_LENGTHS = {
 	Challenges = QuestConfig.MaxSaveLength,
 	Reforge = ReforgeConfig.MaxSaveLength,
+	FactionData = FactionConfig.MaxSaveLength,
 	Talents = TalentConfig.MaxSaveLength,
 	ConsumableStorage = ConsumableConfig.MaxSaveLength,
+	Explored = MapRules.MaxSaveLength,
 }
 
 local PlayerStats = {}
@@ -284,6 +290,13 @@ function PlayerStats.AddYen(player, amount)
 	progressEvent:FireClient(player, 0, 0, amount)
 end
 
+-- os.clock() of each player's last shop purchase; Loadout reads it so a bought
+-- weapon waits in the backpack instead of being carried
+local boughtAt = {}
+function PlayerStats.JustBought(player)
+	return boughtAt[player] ~= nil and os.clock() - boughtAt[player] < 2
+end
+
 -- spends yen on a shop item; returns whether it worked and why not
 function PlayerStats.Buy(player, item)
 	local yen = player:GetAttribute("Yen")
@@ -297,6 +310,7 @@ function PlayerStats.Buy(player, item)
 	if yen < item.price then
 		return false, string.format("You need ¥%d more", item.price - yen)
 	end
+	boughtAt[player] = os.clock()
 	player:SetAttribute("Yen", yen - item.price)
 	player:SetAttribute(ownedKey, 1)
 	return true, "Bought " .. item.name

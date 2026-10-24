@@ -79,16 +79,17 @@ local MUTED = Hub.Theme.Muted
 local DANGER = Color3.fromRGB(226, 75, 74)
 local TIER_ORDER = { S = 1, A = 2, B = 3, C = 4 }
 -- the carry slots, top to bottom, with the player attribute Loadout keeps
--- each in; `reserved` ones are shown but can't hold anything yet
+-- each in; `reserved` ones (none now) are shown but can't hold anything yet
 local SLOTS = {
 	{ kind = "power", title = "POWER", attribute = "PowerSet" },
 	{ kind = "weapon", title = "WEAPON", attribute = "WeaponSet" },
-	{ kind = "melee", title = "MELEE", reserved = true },
+	{ kind = "melee", title = "MELEE", attribute = "MeleeSet" },
 }
 -- the ALL tab's groups of cards, top to bottom
 local SECTIONS = {
 	{ kind = "power", title = "POWERS" },
 	{ kind = "weapon", title = "WEAPONS" },
+	{ kind = "melee", title = "MELEE" },
 	{ kind = "item", title = "ITEMS" },
 	{ kind = "talisman", title = "TALISMANS" },
 }
@@ -96,6 +97,7 @@ local TABS = {
 	{ kind = "all", title = "ALL" },
 	{ kind = "power", title = "POWER" },
 	{ kind = "weapon", title = "WEAPON" },
+	{ kind = "melee", title = "MELEE" },
 	{ kind = "item", title = "ITEMS" },
 	{ kind = "talisman", title = "TALISMAN", width = 66 },
 }
@@ -459,8 +461,8 @@ local function entries()
 	local ownedList = player:GetAttribute(SkillSetConfig.OwnedSetsAttribute) or ""
 	for setName in string.gmatch(ownedList, "[^,]+") do
 		local set = SkillSetConfig.Sets[setName]
-		if set and set.kind == "weapon" then
-			table.insert(list, { setName = setName, key = setName, kind = "weapon", held = carried("weapon") == setName, rank = 5 })
+		if set and (set.kind == "weapon" or set.kind == "melee") then
+			table.insert(list, { setName = setName, key = setName, kind = set.kind, held = carried(set.kind) == setName, rank = 5 })
 		end
 	end
 	-- consumables: the Tools equipped on the hotbar, then the stacks stored in the Backpack
@@ -515,7 +517,7 @@ end
 local function tagText(entry)
 	if entry.briefcase then
 		return entry.equipped and "EQUIPPED" or nil
-	elseif entry.kind == "weapon" then
+	elseif entry.kind == "weapon" or entry.kind == "melee" then
 		return entry.held and "EQUIPPED" or nil
 	end
 	return entry.held and "HELD" or entry.stored and "STORED" or entry.lifetime and "LIFETIME" or nil
@@ -524,7 +526,7 @@ end
 local function stateText(entry)
 	if entry.briefcase then
 		return entry.equipped and "Briefcase · equipped" or "Briefcase · stored"
-	elseif entry.kind == "weapon" then
+	elseif entry.kind == "weapon" or entry.kind == "melee" then
 		return entry.held and "Equipped" or "Owned"
 	end
 	local parts = {}
@@ -1076,6 +1078,12 @@ local function powerButtons(entry)
 			runPower("unequip", setName, false)
 		end
 	end
+	-- below the set's stat requirement, a power can't be held: say what's missing instead
+	local needs = primaryAction and (entry.briefcase or entry.stored or (entry.lifetime and not entry.held)) and needsText(setName)
+	if needs then
+		message.Text = needs
+		primaryText, primaryAction = nil, nil
+	end
 	setButton(equipButton, equipStroke, primaryText, false)
 	setButton(altButton, altStroke, altText, true)
 end
@@ -1563,6 +1571,7 @@ local watched = {
 	[SkillSetConfig.OwnedSetsAttribute] = true,
 	PowerSet = true,
 	WeaponSet = true,
+	MeleeSet = true,
 	CurrentPower = true,
 	PowerStorage = true,
 	LifetimePowers = true,
