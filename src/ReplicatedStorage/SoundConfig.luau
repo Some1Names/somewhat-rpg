@@ -148,6 +148,7 @@ SoundConfig.Music = {
 	combat = {
 		{ id = 1836019934, name = "Combat 1" },
 		{ id = 119869321896015, name = "Combat 2" },
+		{ id = 140658568629873, name = "Combat 3" },
 	},
 }
 
