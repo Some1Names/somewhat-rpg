@@ -228,7 +228,7 @@ Preferences.Options = {
 		max = 100,
 		step = 5,
 		suffix = "%",
-		default = 50,
+		default = 100,
 		description = "The background music. 0 turns it off.",
 	},
 }
