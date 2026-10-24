@@ -276,7 +276,7 @@ end
 
 -- what a reward came from, for the client's pickup feed (PickupFeed): XP and yen given
 -- with the same source show as one entry, edged in the colour of `tier` (a DropConfig
--- tier). Rewards given without one (refunds, sales, admin) don't show there.
+-- tier, or "Admin": an admin's grant, outlined in its own colour).
 local sourceCount = 0
 function PlayerStats.Source(label, tier)
 	sourceCount += 1

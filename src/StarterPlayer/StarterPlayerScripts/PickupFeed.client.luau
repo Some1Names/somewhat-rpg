@@ -35,6 +35,7 @@ local FADE_TIME = 0.4
 local SLIDE = 16 -- px a line slides in from
 local EDGE_WIDTH = 3
 local GOLD = Color3.fromRGB(255, 205, 60)
+local ADMIN = Color3.fromRGB(255, 70, 160) -- an admin's grant ("Admin" source tier)
 local Style = HudConfig.Style
 
 local gui = Instance.new("ScreenGui")
@@ -214,13 +215,20 @@ local function touch(key, line, lifetime)
 	end)
 end
 
--- XP and yen, one line per source; rewards without a source (refunds, sales) don't show
+-- XP and yen, one line per source (an admin's grant outlined, like a milestone); one
+-- given without a source gets a line of its own
+local unsourced = 0
 progressEvent.OnClientEvent:Connect(function(xp, _levels, yen, source)
-	if typeof(source) ~= "table" or (xp <= 0 and yen <= 0) then
+	if xp <= 0 and yen <= 0 then
 		return
 	end
+	if typeof(source) ~= "table" then
+		unsourced += 1
+		source = { id = "none" .. unsourced, label = "Reward" }
+	end
+	local admin = source.tier == "Admin"
 	local key = "source:" .. tostring(source.id)
-	local line = lineFor(key, tostring(source.label or ""), tierColor(source.tier))
+	local line = lineFor(key, tostring(source.label or ""), admin and ADMIN or tierColor(source.tier), admin)
 	line.xp += xp
 	line.yen += yen
 	local parts = {}

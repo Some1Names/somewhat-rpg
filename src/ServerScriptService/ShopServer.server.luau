@@ -99,7 +99,7 @@ buyItem.OnServerInvoke = function(player, id)
 			return false, yen and string.format("You need ¥%d more", item.price - yen) or "Still loading"
 		end
 		if not Powers.GiveBriefcase(player, item.set) then
-			PlayerStats.AddYen(player, item.price)
+			PlayerStats.AddYen(player, item.price, PlayerStats.Source("Refund"))
 			return false, "Your Backpack storage is full"
 		end
 		print(string.format("[Shop] %s bought %s for ¥%d", player.Name, item.name, item.price))
@@ -120,7 +120,7 @@ buyItem.OnServerInvoke = function(player, id)
 		end
 		-- it goes into the Backpack's storage; the player equips it onto a hotbar slot from there
 		if not Consumables.Grant(player, item.consumable) then
-			PlayerStats.AddYen(player, item.price)
+			PlayerStats.AddYen(player, item.price, PlayerStats.Source("Refund"))
 			return false, "Your Backpack storage is full"
 		end
 		print(string.format("[Shop] %s bought %s for ¥%d", player.Name, item.name, item.price))
@@ -171,7 +171,7 @@ sellItem.OnServerInvoke = function(player, setName)
 		return false, "You aren't carrying that briefcase"
 	end
 	local price = PowerConfig.sellPrice(setName, set.tier)
-	PlayerStats.AddYen(player, price)
+	PlayerStats.AddYen(player, price, PlayerStats.Source("Sold briefcase"))
 	print(string.format("[Shop] %s sold a %s briefcase for ¥%d", player.Name, setName, price))
 	return true, string.format("Sold for ¥%d", price)
 end

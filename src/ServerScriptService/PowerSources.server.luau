@@ -129,7 +129,7 @@ rollGacha.OnServerInvoke = function(player)
 	end, pool[tier])
 	if not setName then
 		if not free then
-			PlayerStats.AddYen(player, gacha.price)
+			PlayerStats.AddYen(player, gacha.price, PlayerStats.Source("Refund"))
 		end
 		return false, "Nothing to roll"
 	end

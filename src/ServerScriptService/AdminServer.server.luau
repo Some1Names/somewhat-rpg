@@ -74,7 +74,7 @@ function actions.GiveXP(target, amount)
 	if target:GetAttribute("Level") == nil then
 		return false, loadingMessage(target)
 	end
-	PlayerStats.AddXP(target, amount)
+	PlayerStats.AddXP(target, amount, PlayerStats.Source("[ADMIN]", "Admin"))
 	return true, string.format("Gave %s %d XP", target.Name, amount)
 end
 
@@ -86,7 +86,7 @@ function actions.GiveYen(target, amount)
 	if target:GetAttribute("Yen") == nil then
 		return false, loadingMessage(target)
 	end
-	PlayerStats.AddYen(target, amount)
+	PlayerStats.AddYen(target, amount, PlayerStats.Source("[ADMIN]", "Admin"))
 	return true, string.format("Gave %s ¥%d", target.Name, amount)
 end
 

@@ -3,12 +3,10 @@
 -- MILESTONES: reward bars, one per track (the level, then each stat with milestones), in
 -- segments with a pin under each reward. TALENTS: the perks each stat opens at 15, 30 and 50 points,
 -- equipped with talent points (BuildRules, Talents). Unspent points show as a badge in the hub's nav.
--- Also pops up XP gains and level ups. The numbers come from the player attributes the
--- server keeps (see PlayerStats).
-local Debris = game:GetService("Debris")
+-- The numbers come from the player attributes the server keeps (see PlayerStats); XP,
+-- yen and level ups show in the pickup feed (PickupFeed).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
@@ -18,7 +16,6 @@ local TalentConfig = require(ReplicatedStorage:WaitForChild("TalentConfig"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local allocateEvent = ReplicatedStorage:WaitForChild("AllocateStat")
-local progressEvent = ReplicatedStorage:WaitForChild("Progress")
 
 local player = Players.LocalPlayer
 
@@ -26,15 +23,12 @@ local AMOUNTS = { 1, 5, 10 } -- points added per click
 local SUBTABS_HEIGHT = 36 -- the STATS / MILESTONES titles, with the gap under them
 local PADDING = 14
 local POSE_ROOM = 150 -- px kept clear on the right, where the posed character reaches over the page
-local POPUP_OFFSET = 120 -- px right of centre for the +XP / +¥ popups, clear of the refusal text
 local SPEND_ROW = 52
 local MILESTONE_GAP = 6 -- between the segments of a reward bar
 local BACKGROUND = Hub.Theme.Paper -- text on ink buttons
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local BAR_BACK = Hub.Theme.BarBack
-local WHITE = Color3.new(1, 1, 1)
-local GOLD = Color3.fromRGB(255, 205, 60) -- same as critical hit numbers: the popups
 local NEXT = Color3.fromRGB(255, 190, 40) -- the milestone you're working towards
 local CYAN = Color3.fromRGB(55, 138, 221) -- stamina boxes, as in the HUD
 local PALE = Color3.new(1, 1, 1) -- dodge charges, as in the HUD
@@ -85,20 +79,6 @@ local function formatNumber(n)
 end
 
 local tabFrame = Hub.Tab("Stats", { order = 4, title = "STATS", pose = "Guard" })
-
--- the popups get a full-screen gui (no top inset), so their heights are fractions of the real screen
-local popupGui = make("ScreenGui", {
-	Name = "StatsPopups",
-	ResetOnSpawn = false,
-	IgnoreGuiInset = true,
-	Parent = player:WaitForChild("PlayerGui"),
-})
-
-local function formatYen(amount)
-	local digits = tostring(math.floor(amount))
-	local grouped = digits:reverse():gsub("(%d%d%d)", "%1,"):reverse():gsub("^,", "")
-	return "¥" .. grouped
-end
 
 -- the sub-tabs as plain titles, like the Quests tab's: the one showing in ink
 local showTab -- defined below
@@ -681,35 +661,3 @@ local function showBadge()
 end
 player:GetAttributeChangedSignal("StatPoints"):Connect(showBadge)
 showBadge()
-
--- a line of text that drifts up and fades, for XP and level ups
-local function popup(text, color, size, height, lifetime, xOffset)
-	local popupLabel = make("TextLabel", {
-		Parent = popupGui,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0.5, xOffset or 0, height, 0),
-		Size = UDim2.fromOffset(400, size + 8),
-		BackgroundTransparency = 1,
-		Font = Enum.Font.Highway,
-		Text = text,
-		TextSize = size,
-		TextColor3 = color,
-		TextStrokeTransparency = 0.5,
-	})
-	TweenService:Create(popupLabel, TweenInfo.new(lifetime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Position = UDim2.new(0.5, xOffset or 0, height - 0.03, 0),
-	}):Play()
-	local fade = TweenInfo.new(lifetime / 2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, 0, false, lifetime / 2)
-	TweenService:Create(popupLabel, fade, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
-	Debris:AddItem(popupLabel, lifetime)
-end
-
-progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained, source)
-	-- a reward with a source shows in the pickup feed (PickupFeed) instead
-	if xpGained > 0 and not source then
-		popup(string.format("+%d XP", xpGained), WHITE, 18, 0.62, 1.2, POPUP_OFFSET)
-	end
-	if yenGained and yenGained > 0 and not source then
-		popup("+" .. formatYen(yenGained), GOLD, 18, 0.66, 1.2, POPUP_OFFSET)
-	end
-end)
