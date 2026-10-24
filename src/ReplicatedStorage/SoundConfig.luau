@@ -127,20 +127,27 @@ function SoundConfig.KeyFor(kind, ...)
 	return entry
 end
 
--- Background music (the Music client script): `menuTheme` loops on the title menu; in the
--- game these tracks, shuffled, one after another, with a quiet stretch between them. All
--- through the Music volume setting. The ids are Creator Store audio the owner picked.
---   volume  0..1 before the setting;  fade  seconds in and out;  gap  { min, max } seconds of
---   quiet between tracks (and after the menu theme)
+-- Background music (the Music client script): `menuTheme` loops on the title menu; while
+-- fighting another player the `combat` tracks play in turn, back to back; otherwise `tracks`,
+-- shuffled, with a quiet stretch between them. All through the Music volume setting. The ids
+-- are Creator Store audio the owner picked.
+--   volume  0..1 before the setting;  fade  seconds in and out;  combatFade  seconds the
+--   music takes to fade out as combat cuts in;  gap  { min, max } seconds of quiet between
+--   explore tracks (and after the menu theme or a fight)
 SoundConfig.Music = {
 	volume = 0.08, -- quiet: 100% on the Music setting is a soft background
 	fade = 2,
+	combatFade = 0.75,
 	gap = { 25, 50 },
 	menuTheme = { id = 119540755571209, name = "Menu theme" },
 	tracks = {
 		{ id = 80310690201416, name = "Track 1" },
 		{ id = 72501922894463, name = "Track 2" },
 		{ id = 78866602003326, name = "Track 3" },
+	},
+	combat = {
+		{ id = 1836019934, name = "Combat 1" },
+		{ id = 119869321896015, name = "Combat 2" },
 	},
 }
 

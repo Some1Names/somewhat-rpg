@@ -1,15 +1,21 @@
 -- Background music (SoundConfig.Music), through the Music volume setting (AudioMix's Music
--- group). The menu theme loops while the title menu is up (TitleMenu's gui, gone once PLAY
--- has faded in); then, after a quiet stretch, the game tracks play shuffled, one after
--- another (never the same one twice in a row), each fading in and out with a quiet stretch
--- of `gap` seconds between them. A track that won't load is skipped. One Sound in
--- SoundService. While any menu but the title is open (Menus: the hub, settings, a shop...)
--- it's muffled: the highs cut and a little quieter, as if from the next room.
+-- group), in three moods:
+--   title    the menu theme, looping while the title menu is up (TitleMenu's gui, gone once
+--            PLAY has faded in)
+--   combat   while you're fighting another player (CombatRules' PvP attribute on your
+--            character, the same 30 s as the shops): the combat tracks in turn, back to back
+--   explore  otherwise: the game tracks shuffled (never the same one twice in a row), each
+--            fading in and out with a quiet stretch of `gap` seconds after it
+-- A change of mood fades the playing track out (combat cuts in quickly, even mid-silence),
+-- and leaving combat or the title is followed by a quiet stretch. A track that won't load
+-- is skipped. One Sound in SoundService. While any menu but the title is open (Menus: the
+-- hub, settings, a shop...) it's muffled: the highs cut and a little quieter.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
+local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local AudioMix = require(script.Parent:WaitForChild("AudioMix"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
@@ -17,11 +23,13 @@ local Menus = require(script.Parent:WaitForChild("Menus"))
 local MUSIC = SoundConfig.Music
 local LOAD_TIMEOUT = 10 -- seconds to wait for a track before skipping it
 local TITLE_WAIT = 10 -- seconds to wait for the title menu to show up on join
+local CHECK = 0.25 -- seconds between looks at the mood
 local UNMUFFLED_MENUS = { Title = true } -- the menus the music stays clear in
 local MUFFLE = { HighGain = -30, MidGain = -12, LowGain = -2 } -- dB while muffled
 local MUFFLE_TIME = 0.35
 
-local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
 
 local sound = Instance.new("Sound")
 sound.Name = "Music"
@@ -41,8 +49,22 @@ Menus.OnChange(function(openName)
 	}):Play()
 end)
 
-local function fade(to)
-	local tween = TweenService:Create(sound, TweenInfo.new(MUSIC.fade), { Volume = to })
+local title = playerGui:WaitForChild("TitleMenu", TITLE_WAIT)
+
+local function mood()
+	if title and title.Parent then
+		return "title"
+	end
+	local character = player.Character
+	local at = character and character:GetAttribute(CombatRules.PvPAttribute)
+	if not CombatRules.OutOfCombat(at, workspace:GetServerTimeNow()) then
+		return "combat"
+	end
+	return "explore"
+end
+
+local function fade(to, seconds)
+	local tween = TweenService:Create(sound, TweenInfo.new(seconds or MUSIC.fade), { Volume = to })
 	tween:Play()
 	tween.Completed:Wait()
 end
@@ -52,7 +74,7 @@ local function load(track)
 	sound.SoundId = "rbxassetid://" .. track.id
 	local waited = 0
 	while not sound.IsLoaded and waited < LOAD_TIMEOUT do
-		waited += task.wait(0.25)
+		waited += task.wait(CHECK)
 	end
 	if not sound.IsLoaded or sound.TimeLength <= 0 then
 		warn("[Music] couldn't load " .. track.name .. " (" .. track.id .. "), skipping")
@@ -61,27 +83,35 @@ local function load(track)
 	return true
 end
 
-local function silence()
-	task.wait(math.random(MUSIC.gap[1], MUSIC.gap[2]))
-end
-
--- the menu theme, looping for as long as the title menu is up
-local title = playerGui:WaitForChild("TitleMenu", TITLE_WAIT)
-if title and title.Parent and load(MUSIC.menuTheme) then
-	sound.Looped = true
+-- plays `track` (looping, if `looped`) while the mood stays `want`; fades it out at its end
+-- or when the mood changes (quickly into combat)
+local function play(track, want, looped)
+	if not load(track) then
+		return
+	end
+	sound.Looped = looped == true
+	sound.Volume = 0
 	sound.TimePosition = 0
 	sound:Play()
 	fade(MUSIC.volume)
-	while title.Parent do
-		task.wait(0.25)
+	local endAt = os.clock() + sound.TimeLength - 2 * MUSIC.fade
+	while mood() == want and (looped or os.clock() < endAt) do
+		task.wait(CHECK)
 	end
-	fade(0)
+	fade(0, mood() == "combat" and MUSIC.combatFade or MUSIC.fade)
 	sound:Stop()
 	sound.Looped = false
-	silence()
 end
 
--- the tracks in a new random order, not starting with `last`
+-- a quiet stretch, cut short if combat starts
+local function silence()
+	local untilAt = os.clock() + math.random(MUSIC.gap[1], MUSIC.gap[2])
+	while os.clock() < untilAt and mood() ~= "combat" do
+		task.wait(CHECK)
+	end
+end
+
+-- the explore tracks in a new random order, not starting with `last`
 local function shuffled(last)
 	local order = table.clone(MUSIC.tracks)
 	for i = #order, 2, -1 do
@@ -94,24 +124,26 @@ local function shuffled(last)
 	return order
 end
 
-local function play(track)
-	if not load(track) then
-		return
-	end
-	sound.Volume = 0
-	sound.TimePosition = 0
-	sound:Play()
-	fade(MUSIC.volume)
-	task.wait(math.max(0, sound.TimeLength - 2 * MUSIC.fade))
-	fade(0)
-	sound:Stop()
-	silence()
-end
-
-local last
+local queue, nextInQueue, lastExplore = {}, 1, nil
+local combatTurn = 0
 while true do
-	for _, track in ipairs(shuffled(last)) do
-		play(track)
-		last = track
+	local now = mood()
+	if now == "title" then
+		play(MUSIC.menuTheme, "title", true)
+		silence()
+	elseif now == "combat" then
+		combatTurn = combatTurn % #MUSIC.combat + 1
+		play(MUSIC.combat[combatTurn], "combat")
+		if mood() ~= "combat" then
+			silence()
+		end
+	else
+		if nextInQueue > #queue then
+			queue, nextInQueue = shuffled(lastExplore), 1
+		end
+		lastExplore = queue[nextInQueue]
+		nextInQueue += 1
+		play(lastExplore, "explore")
+		silence()
 	end
 end
