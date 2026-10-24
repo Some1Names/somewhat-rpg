@@ -79,39 +79,9 @@ grid.Size = UDim2.fromOffset(HudConfig.SideWidth, HudConfig.SideHeight)
 grid.BackgroundTransparency = 1
 grid.Parent = gui
 
--- the Admin panel takes the right side of the screen, so the grid steps aside while it's open;
--- a held power or weapon with skills shrinks it to one row of six, under its skill bar (SkillBar)
-local adminOpen = false
-local compact = false
-local slots = {}
-local function layoutGrid()
-	local width = compact and (HudConfig.SideWidth - (GRID_SLOTS - 1) * SLOT_GAP) / GRID_SLOTS or SLOT_WIDTH
-	local height = compact and HudConfig.CompactToolHeight or SLOT_HEIGHT
-	grid.Size = UDim2.fromOffset(HudConfig.SideWidth, compact and height or HudConfig.SideHeight)
-	for i, slot in pairs(slots) do
-		local column, rowIndex = (i - 1) % GRID_COLUMNS, math.floor((i - 1) / GRID_COLUMNS)
-		if compact then
-			column, rowIndex = i - 1, 0
-		end
-		slot.button.Size = UDim2.fromOffset(width, height)
-		slot.button.Position = UDim2.fromOffset(column * (width + SLOT_GAP), rowIndex * (height + SLOT_GAP))
-		slot.icon.Size = UDim2.fromScale(compact and 0.6 or 0.7, compact and 0.6 or 0.7)
-		slot.number.TextSize = compact and 8 or 10
-		slot.name.TextSize = compact and 8 or 11
-	end
-end
-local function updateGridVisible()
-	local _, heldSet = SkillSetConfig.Equipped(player.Character)
-	local hasMoves = heldSet ~= nil and next(SkillSetConfig.Sets[heldSet].skills) ~= nil
-	grid.Visible = not adminOpen
-	if hasMoves ~= compact then
-		compact = hasMoves
-		layoutGrid()
-	end
-end
+-- the Admin panel takes the right side of the screen, so the grid steps aside while it's open
 Menus.OnChange(function(openName)
-	adminOpen = openName == "Admin"
-	updateGridVisible()
+	grid.Visible = openName ~= "Admin"
 end)
 
 local function setOf(tool)
@@ -244,6 +214,7 @@ for i, spec in ipairs(CARDS) do
 end
 
 -- the grid's slots
+local slots = {}
 local function slotAt(i)
 	if slots[i] then
 		return slots[i]
@@ -259,7 +230,7 @@ local function slotAt(i)
 	button.Position = UDim2.fromOffset(column * (SLOT_WIDTH + SLOT_GAP), rowIndex * (SLOT_HEIGHT + SLOT_GAP))
 	button.Parent = grid
 	local stroke = newStroke(button)
-	local number = newLabel(button, { Text = tostring(#CARDS + i), Font = HudConfig.Style.MonoFont, TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(12, 12) })
+	newLabel(button, { Text = tostring(#CARDS + i), Font = HudConfig.Style.MonoFont, TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(12, 12) })
 	local icon = Instance.new("ImageLabel")
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -270,8 +241,7 @@ local function slotAt(i)
 	button.Activated:Connect(function()
 		toggleTool(order[i])
 	end)
-	slots[i] = { button = button, stroke = stroke, icon = icon, name = name, number = number }
-	layoutGrid()
+	slots[i] = { button = button, stroke = stroke, icon = icon, name = name }
 	return slots[i]
 end
 
@@ -304,7 +274,6 @@ end
 RunService.RenderStepped:Connect(function()
 	local owned = ownedTools()
 	refreshOrder(owned)
-	updateGridVisible()
 	local character = player.Character
 	if character and character:GetAttribute("Swimming") == true then
 		local humanoid = character:FindFirstChildOfClass("Humanoid")

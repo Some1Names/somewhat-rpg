@@ -22,7 +22,7 @@ local NOT_BLOCKING = { Admin = true }
 local controls -- Roblox's PlayerModule controls, once loaded
 
 local FIT_TOP = 12 -- px from the top of the screen below the top bar (the icon row is up in the bar)
-local FIT_BOTTOM = HudConfig.BottomReserve + HudConfig.CardHeight -- the skill bar's top edge (as tall as the Hotbar's cards, above the key hints line)
+local FIT_BOTTOM = HudConfig.BottomReserve + 154 -- the skill bar's top edge (above the key hints line, 154 px tall with its header)
 local FIT_MIN_HEIGHT = 160 -- a panel never gets shorter than this, however short the screen
 
 local openName, openClose

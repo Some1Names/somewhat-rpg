@@ -1,8 +1,8 @@
 -- The HUD's icons, up in Roblox's top bar and dressed like its own buttons
 -- (dark see-through pills, white icons). Top right, one pill: Settings,
 -- and Admin (`) for admins. Bottom left, above the Hotbar's equipment cards: the
--- player's yen as gold text, and at the cards' right end the Menu button, a plain
--- icon with no pill (its own gui, above the hub, so it can close it too).
+-- player's yen as gold text and, at the right end of that line, the Menu button, a
+-- plain icon with no pill that hides while any menu is open (the hub's own keys close it).
 -- Menu opens the hub (Hub) on Profile; B, J and M open it on Backpack, Quests
 -- and Map. The icon whose menu is open is a little larger, and a label with
 -- its key shows under whichever is hovered (or held, on touch). Each
@@ -19,7 +19,6 @@ local Menus = require(script.Parent:WaitForChild("Menus"))
 
 local player = Players.LocalPlayer
 
-local ICON_GAP = 10
 local YEN_TEXT_SIZE = 16
 local TEXT = Color3.new(1, 1, 1)
 local GOLD = Color3.fromRGB(255, 205, 60)
@@ -91,32 +90,16 @@ local cluster = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, HudConfig.EdgeMargin, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap)),
-	Size = UDim2.fromOffset(0, 0),
-	AutomaticSize = Enum.AutomaticSize.XY,
+	Size = UDim2.fromOffset(HudConfig.SideWidth, HudConfig.YenHeight), -- as wide as the cards, the Menu button at its right end
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", {
-	Parent = cluster,
-	FillDirection = Enum.FillDirection.Horizontal,
-	VerticalAlignment = Enum.VerticalAlignment.Center,
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, ICON_GAP),
-})
 
--- the Menu button: above the cards' right end, level with the yen, in a gui of its own drawn
--- over the hub (DisplayOrder 9), so it shows and closes the hub while it's open
-local menuGui = make("ScreenGui", {
-	Name = "MenuButton",
-	ResetOnSpawn = false,
-	IgnoreGuiInset = true,
-	DisplayOrder = 9,
-	Parent = player:WaitForChild("PlayerGui"),
-})
+-- the Menu button sits at the right end of the yen line, over the cards' right edge
 local MENU_SIZE = HudConfig.IconSizeOpen
 local menuSlot = make("Frame", {
-	Parent = menuGui,
-	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(0, HudConfig.EdgeMargin + HudConfig.SideWidth, 1, -(HudConfig.BottomReserve + HudConfig.CardHeight + HudConfig.ClusterGap)),
+	Parent = cluster,
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.fromScale(1, 0.5),
 	Size = UDim2.fromOffset(MENU_SIZE, MENU_SIZE),
 	BackgroundTransparency = 1,
 })
@@ -139,7 +122,8 @@ end
 
 local yenLabel = make("TextLabel", {
 	Parent = cluster,
-	LayoutOrder = 1,
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.fromScale(0, 0.5),
 	Size = UDim2.fromOffset(0, HudConfig.YenHeight),
 	AutomaticSize = Enum.AutomaticSize.X,
 	BackgroundTransparency = 1,
@@ -247,6 +231,10 @@ local function showOpen(openName)
 end
 Menus.OnChange(showOpen)
 showOpen(nil)
+-- the Menu button hides while any menu is open
+Menus.OnChange(function(openName)
+	menuSlot.Visible = openName == nil
+end)
 
 -- unspent stat points, as a gold count on the Menu icon
 local badge = make("TextLabel", {

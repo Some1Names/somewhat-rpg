@@ -38,7 +38,6 @@ local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
 local LockOn = require(script.Parent:WaitForChild("LockOn"))
-local Menus = require(script.Parent:WaitForChild("Menus"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
@@ -69,21 +68,19 @@ local function lockOf(setName, key)
 	return nil
 end
 
-local SLOT_GAP = HudConfig.SideGap -- as the Hotbar's slots
+local SLOT_SIZE = 58
+local SLOT_GAP = 8
 local HEADER_HEIGHT = 38
--- the bar and the tool row under it stand as tall as the Hotbar's cards; up to five skill slots fit the cards' width
-local SLOT_WIDTH = (HudConfig.SideWidth - 4 * HudConfig.SideGap) / 5
-local SLOT_HEIGHT = HudConfig.CardHeight - HEADER_HEIGHT - HudConfig.SideGap - HudConfig.CompactToolHeight
 local STACK_ROW_Y = 23
 local STACK_HEIGHT = 8
 local STACK_LABEL_WIDTH = 96
 local STACK_GAP = 2
-local BOTTOM_MARGIN = HudConfig.BottomReserve + HudConfig.CompactToolHeight + HudConfig.SideGap -- above the key hints line and the Hotbar's shrunken tool row
+local BOTTOM_MARGIN = 52 -- pixels (HudConfig.BottomReserve): above the key hints line; the Hotbar's cards and grid sit at the sides
 local AIM_DISTANCE = 1000
 local Style = HudConfig.Style
 local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass
--- the key sits as a plain mono number in the slot's corner, like the Hotbar's
-local KEY_READY, KEY_WAITING = 1, 1 -- (no box: the Hotbar's slots show a plain number)
+-- a key box: see-through with a thin white edge, dimmer while the move isn't ready
+local KEY_READY, KEY_WAITING = Style.ChipBackTransparency, 0.9
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local ACCENT = Color3.fromRGB(170, 255, 200) -- Mandela green
@@ -122,19 +119,13 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- the Admin panel takes the right side of the screen, so the bar steps aside while it's open
-local menuOpen
-Menus.OnChange(function(openName)
-	menuOpen = openName
-end)
-
 local keys = SkillSetConfig.Keys
 local barWidth = 0 -- set by layout() for the keys the equipped set uses
 local bar = make("Frame", {
 	Parent = gui,
-	AnchorPoint = Vector2.new(1, 1),
-	Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -BOTTOM_MARGIN),
-	Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_HEIGHT),
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -BOTTOM_MARGIN),
+	Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_SIZE),
 	BackgroundTransparency = 1,
 })
 
@@ -243,13 +234,13 @@ local slots = {}
 for i, key in ipairs(keys) do
 	local frame = make("Frame", {
 		Parent = bar,
-		Position = UDim2.fromOffset((i - 1) * (SLOT_WIDTH + SLOT_GAP), HEADER_HEIGHT),
-		Size = UDim2.fromOffset(SLOT_WIDTH, SLOT_HEIGHT),
+		Position = UDim2.fromOffset((i - 1) * (SLOT_SIZE + SLOT_GAP), HEADER_HEIGHT),
+		Size = UDim2.fromOffset(SLOT_SIZE, SLOT_SIZE),
 		BackgroundColor3 = BACKGROUND,
 		BackgroundTransparency = Style.GlassTransparency,
 		Visible = false,
 	})
-	local stroke = make("UIStroke", { Parent = frame, Color = TEXT, Transparency = 0.15, Thickness = 1, LineJoinMode = Enum.LineJoinMode.Miter })
+	local stroke = make("UIStroke", { Parent = frame, Color = TEXT, Transparency = 0.5, Thickness = 1 })
 	local scale = make("UIScale", { Parent = frame })
 	-- dark cover whose top edge moves down as the cooldown runs out
 	local cover = make("Frame", {
@@ -264,14 +255,14 @@ for i, key in ipairs(keys) do
 	local keycap = label(frame, {
 		Text = key,
 		Font = Style.MonoFont,
-		TextSize = 10,
-		TextColor3 = MUTED,
-		TextXAlignment = Enum.TextXAlignment.Left,
+		TextSize = 11,
 		BackgroundTransparency = KEY_READY,
-		Position = UDim2.fromOffset(4, 2),
-		Size = UDim2.fromOffset(18, 12),
+		BackgroundColor3 = Style.ChipBack,
+		Position = UDim2.fromOffset(4, 4),
+		Size = UDim2.fromOffset(18, 18),
 		AutomaticSize = Enum.AutomaticSize.X, -- wider for keys like F5 or LAlt
 	})
+	make("UIStroke", { Parent = keycap, Color = TEXT, Transparency = Style.ChipEdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local status = label(frame, { TextSize = 14, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.new(1, 0, 0, 18) })
 	-- strip along the top while this skill is in its overcharged form
 	local empowered = make("Frame", {
@@ -322,13 +313,13 @@ local function miniSlot(keyText)
 		Text = keyText,
 		Font = Style.MonoFont,
 		TextSize = 9,
-		TextColor3 = MUTED,
-		TextXAlignment = Enum.TextXAlignment.Left,
 		BackgroundTransparency = KEY_READY,
-		Position = UDim2.fromOffset(3, 2),
-		Size = UDim2.fromOffset(14, 12),
+		BackgroundColor3 = Style.ChipBack,
+		Position = UDim2.fromOffset(3, 3),
+		Size = UDim2.fromOffset(14, 14),
 		AutomaticSize = Enum.AutomaticSize.X,
 	})
+	make("UIStroke", { Parent = slot.keycap, Color = TEXT, Transparency = Style.ChipEdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	slot.status = label(slot.frame, { TextSize = 11, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.new(1, 0, 0, 14) })
 	slot.name = label(slot.frame, {
 		TextSize = 8,
@@ -364,24 +355,17 @@ local function layout(setName)
 	end
 	laidOutFor = setName
 	local skills = SkillSetConfig.Sets[setName].skills
-	-- slots are outlined in the set's tier colour, as on the Hotbar
-	local tier = SkillSetConfig.Tiers[SkillSetConfig.Sets[setName].tier]
-	local outline = tier and tier.color or SkillSetConfig.NoTierColor
-	for _, slot in pairs(slots) do
-		slot.base = outline
-		slot.stroke.Color = outline
-	end
 	local shown = 0
 	for _, key in ipairs(keys) do
 		local slot = slots[key]
 		slot.frame.Visible = skills[key] ~= nil
 		if skills[key] then
-			slot.frame.Position = UDim2.fromOffset(shown * (SLOT_WIDTH + SLOT_GAP), HEADER_HEIGHT)
+			slot.frame.Position = UDim2.fromOffset(shown * (SLOT_SIZE + SLOT_GAP), HEADER_HEIGHT)
 			shown += 1
 		end
 	end
-	barWidth = shown * SLOT_WIDTH + math.max(shown - 1, 0) * SLOT_GAP
-	bar.Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_HEIGHT)
+	barWidth = shown * SLOT_SIZE + math.max(shown - 1, 0) * SLOT_GAP
+	bar.Size = UDim2.fromOffset(barWidth, HEADER_HEIGHT + SLOT_SIZE)
 end
 
 local predictedReadyAt = {} -- ["Mandela.X"] = os.clock() the skill is ready again
@@ -445,7 +429,7 @@ local function pulse(slot, color)
 	TweenService:Create(slot.scale, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 	if color then
 		slot.stroke.Color = color
-		TweenService:Create(slot.stroke, TweenInfo.new(0.4), { Color = slot.base or TEXT }):Play()
+		TweenService:Create(slot.stroke, TweenInfo.new(0.4), { Color = TEXT }):Play()
 	end
 end
 
@@ -702,7 +686,7 @@ end)
 RunService.RenderStepped:Connect(function()
 	local setName = equippedSet()
 	-- (off while a shop or the smith has the screen: this switches itself back on every frame)
-	gui.Enabled = setName ~= nil and not ShopFocus.Active() and menuOpen ~= "Admin"
+	gui.Enabled = setName ~= nil and not ShopFocus.Active()
 	if not setName then
 		if aiming then
 			stopAiming()
@@ -900,7 +884,7 @@ RunService.RenderStepped:Connect(function()
 		-- longer words like DETONATE shrink to fit
 		slot.status.TextSize = #slot.status.Text > 5 and 10 or 14
 		-- the slot being aimed lights up
-		slot.stroke.Transparency = aiming == key and 0 or 0.15
+		slot.stroke.Transparency = aiming == key and 0 or 0.5
 	end
 
 	-- the set's own dash: the dodge charges it spends (how many are ready, or
@@ -963,7 +947,7 @@ RunService.RenderStepped:Connect(function()
 		end
 		rangedSlot.name.Text = ranged.name
 		rangedSlot.keycap.Text = ranged.primary and "M1" or "M2"
-		rangedSlot.keycap.Size = UDim2.fromOffset(18, 12)
+		rangedSlot.keycap.Size = UDim2.fromOffset(18, 14)
 		rangedSlot.status.Text = status
 		rangedSlot.cover.Size = UDim2.fromScale(1, math.clamp(cover, 0, 1))
 		rangedSlot.keycap.BackgroundTransparency = cover > 0 and KEY_WAITING or KEY_READY
@@ -972,12 +956,12 @@ RunService.RenderStepped:Connect(function()
 	local miniOffset = SLOT_GAP
 	for _, mini in ipairs({ dashSlot, rangedSlot }) do
 		if mini.frame.Visible then
-			mini.frame.Position = UDim2.fromOffset(-miniOffset, HEADER_HEIGHT + SLOT_HEIGHT - MINI_SLOT_SIZE)
+			mini.frame.Position = UDim2.fromOffset(-miniOffset, HEADER_HEIGHT + SLOT_SIZE - MINI_SLOT_SIZE)
 			miniOffset += MINI_SLOT_SIZE + SLOT_GAP
 		end
 	end
-	-- the bar sits bottom right, where the Hotbar's tool grid is while nothing is held; the minis hang off its left
-	bar.Position = UDim2.new(1, -HudConfig.EdgeMargin, 1, -BOTTOM_MARGIN)
+	-- the minis hang off the bar's left, so shift the bar right by half their width: the whole group stays centred
+	bar.Position = UDim2.new(0.5, (miniOffset - SLOT_GAP) / 2, 1, -BOTTOM_MARGIN)
 
 	-- the held skill's aim preview
 	local aimedSkill = aiming and set.skills[aiming]

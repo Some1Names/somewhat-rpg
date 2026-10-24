@@ -18,8 +18,6 @@ HudConfig.SideGap = 6
 HudConfig.SlotWidth = (HudConfig.SideWidth - 2 * HudConfig.SideGap) / 3
 HudConfig.SlotHeight = HudConfig.SlotWidth
 HudConfig.SideHeight = 2 * HudConfig.SlotHeight + HudConfig.SideGap
--- while a set with skills is held the tool grid shrinks to one row of six (the skill bar sits above it)
-HudConfig.CompactToolHeight = 32
 HudConfig.CardWidth = HudConfig.SlotWidth
 HudConfig.CardHeight = HudConfig.SideHeight
 -- px from the screen's bottom to the bottom of the cards and grid: the key hints line plus a gap
