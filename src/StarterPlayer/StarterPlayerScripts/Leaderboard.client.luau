@@ -1,7 +1,8 @@
--- The player list, in place of Roblox's own: Tab shows and hides it, top right under the
--- icon row (over the kill feed while it's open). A dark panel, square, no header: one row
--- per player sorted by level, "Name [level]" on the left (the name in its faction's rank
--- colour, ★ for your party) and the yen on the right. Hidden while a menu is open.
+-- The player list, in place of Roblox's own: Tab shows and hides it, top right just under
+-- Roblox's top bar, as wide as the tool grid (over the kill feed while it's open). A dark
+-- panel, square, no header: one row per player sorted by level, "Name [level]" on the left
+-- (the name in its faction's rank colour, ★ for your party) and the yen on the right.
+-- Hidden while a menu is open.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
@@ -14,7 +15,8 @@ local Menus = require(script.Parent:WaitForChild("Menus"))
 local player = Players.LocalPlayer
 
 local TOGGLE_KEY = Enum.KeyCode.Tab
-local WIDTH = 220
+local WIDTH = HudConfig.SideWidth -- as wide as the tool grid below it
+local TOP = 6 -- px under Roblox's top bar
 local ROW_HEIGHT = 22
 local PAD = 4 -- px above the first row and below the last
 local BACKGROUND_TRANSPARENCY = 0.2
@@ -55,7 +57,7 @@ end
 
 local panel = Instance.new("Frame")
 panel.AnchorPoint = Vector2.new(1, 0)
-panel.Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, HudConfig.KillFeedTop)
+panel.Position = UDim2.new(1, -HudConfig.EdgeMargin, 0, TOP)
 panel.Size = UDim2.fromOffset(WIDTH, 2 * PAD)
 panel.BackgroundColor3 = HudConfig.Style.Glass
 panel.BackgroundTransparency = BACKGROUND_TRANSPARENCY
