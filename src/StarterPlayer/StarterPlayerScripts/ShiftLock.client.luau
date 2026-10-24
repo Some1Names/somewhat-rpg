@@ -1,8 +1,8 @@
 -- Shift lock everyone can use without turning on Roblox's Shift Lock Switch
 -- setting: Left Ctrl locks the mouse to the center, turns the character
 -- with the camera and moves the camera over the shoulder. While it's on, the mouse
--- is hidden and a crosshair is drawn in the middle instead: Modern Warfare's, four
--- short white ticks round a dot with a dark edge, square. It steps aside while a
+-- is hidden and a crosshair is drawn in the middle instead: a small white x with a
+-- dark edge, square ends. It steps aside while a
 -- ranged move shows its own crosshair (Ranged's RangedCrosshair gui), and for the
 -- mouse while a menu is open (Menus).
 local Players = game:GetService("Players")
@@ -15,10 +15,8 @@ local player = Players.LocalPlayer
 
 local TOGGLE_KEY = Enum.KeyCode.LeftControl
 local SHOULDER_OFFSET = Vector3.new(1.75, 0, 0)
-local TICK_LENGTH = 7 -- px
-local TICK_WIDTH = 2
-local TICK_GAP = 5 -- px from the middle to each tick
-local DOT_SIZE = 2
+local X_SIZE = 10 -- px, each stroke of the x
+local X_WIDTH = 2
 local RENDER_STEP_NAME = "ShiftLock"
 
 local locked = false
@@ -35,27 +33,25 @@ gui.IgnoreGuiInset = true
 gui.Enabled = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
-local function mark(size, offset)
+-- one bar of the x through the middle at `rotation` degrees; the dark edges are a
+-- slightly bigger bar behind (ZIndex 1), so both white bars sit over both edges and
+-- the crossing stays clean
+local function bar(rotation, grow, color, transparency, zIndex)
 	local frame = Instance.new("Frame")
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
-	frame.Position = UDim2.new(0.5, offset.X, 0.5, offset.Y)
-	frame.Size = UDim2.fromOffset(size.X, size.Y)
-	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.Position = UDim2.fromScale(0.5, 0.5)
+	frame.Size = UDim2.fromOffset(X_WIDTH + grow, X_SIZE + grow)
+	frame.Rotation = rotation
+	frame.BackgroundColor3 = color
+	frame.BackgroundTransparency = transparency
 	frame.BorderSizePixel = 0
+	frame.ZIndex = zIndex
 	frame.Parent = gui
-	local edge = Instance.new("UIStroke")
-	edge.Color = Color3.new(0, 0, 0)
-	edge.Transparency = 0.4
-	edge.LineJoinMode = Enum.LineJoinMode.Miter -- square corners
-	edge.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	edge.Parent = frame
 end
-local reach = TICK_GAP + TICK_LENGTH / 2
-mark(Vector2.new(DOT_SIZE, DOT_SIZE), Vector2.zero)
-mark(Vector2.new(TICK_WIDTH, TICK_LENGTH), Vector2.new(0, -reach))
-mark(Vector2.new(TICK_WIDTH, TICK_LENGTH), Vector2.new(0, reach))
-mark(Vector2.new(TICK_LENGTH, TICK_WIDTH), Vector2.new(-reach, 0))
-mark(Vector2.new(TICK_LENGTH, TICK_WIDTH), Vector2.new(reach, 0))
+for _, rotation in ipairs({ 45, -45 }) do
+	bar(rotation, 2, Color3.new(0, 0, 0), 0.4, 1)
+	bar(rotation, 0, Color3.new(1, 1, 1), 0, 2)
+end
 
 -- a ranged move's crosshair, when it's showing, stands in for this one
 local function rangedCrosshairShown()
