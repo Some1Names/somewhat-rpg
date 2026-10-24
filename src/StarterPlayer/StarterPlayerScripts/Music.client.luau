@@ -1,22 +1,40 @@
 -- Background music: the tracks in SoundConfig.Music, shuffled, one after another (never the
 -- same one twice in a row), through the Music volume setting (AudioMix's Music group). Each
 -- fades in and out, with a short quiet between them. A track that won't load is skipped.
--- One Sound in SoundService, so it plays everywhere, the title menu too.
+-- One Sound in SoundService, so it plays everywhere, the title menu too. While any other
+-- menu is open (Menus: the hub, settings, a shop...) it's muffled: the highs cut and a
+-- little quieter, as if from the next room.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local AudioMix = require(script.Parent:WaitForChild("AudioMix"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 
 local MUSIC = SoundConfig.Music
 local LOAD_TIMEOUT = 10 -- seconds to wait for a track before skipping it
+local UNMUFFLED_MENUS = { Title = true } -- the menus the music stays clear in
+local MUFFLE = { HighGain = -30, MidGain = -12, LowGain = -2 } -- dB while muffled
+local MUFFLE_TIME = 0.35
 
 local sound = Instance.new("Sound")
 sound.Name = "Music"
 sound.Volume = 0
 sound.SoundGroup = AudioMix.Group("Music")
 sound.Parent = SoundService
+local muffler = Instance.new("EqualizerSoundEffect")
+muffler.HighGain, muffler.MidGain, muffler.LowGain = 0, 0, 0
+muffler.Parent = sound
+
+Menus.OnChange(function(openName)
+	local muffled = openName ~= nil and not UNMUFFLED_MENUS[openName]
+	TweenService:Create(muffler, TweenInfo.new(MUFFLE_TIME), {
+		HighGain = muffled and MUFFLE.HighGain or 0,
+		MidGain = muffled and MUFFLE.MidGain or 0,
+		LowGain = muffled and MUFFLE.LowGain or 0,
+	}):Play()
+end)
 
 local function fade(to)
 	local tween = TweenService:Create(sound, TweenInfo.new(MUSIC.fade), { Volume = to })
