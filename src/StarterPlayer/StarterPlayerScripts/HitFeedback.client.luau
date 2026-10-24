@@ -1,12 +1,14 @@
 -- Hit feedback for any character that loses health: a floating damage
 -- number, a short red flash and a small burst of sparks. Critical hits get a
 -- bigger gold number and more sparks. The numbers can be turned off in
--- Settings (Preferences "DamageNumbers").
+-- Settings (Preferences "DamageNumbers"), sized (DmgSize) and coloured (DmgColor:
+-- HudConfig.DamageNumberColors).
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
 
@@ -16,8 +18,6 @@ local LIFETIME = 0.8 -- seconds a number stays on screen
 local RISE_STUDS = 3
 local START_HEIGHT = 3 -- studs above the head, clear of the OverheadHealth boxes
 local SPREAD_STUDS = 2 -- random sideways offset so quick hits don't overlap
-local TEXT_COLOR = Color3.fromRGB(255, 90, 60)
-local OUTLINE_COLOR = Color3.fromRGB(40, 0, 0)
 local CRIT_TEXT_COLOR = Color3.fromRGB(255, 205, 60)
 local CRIT_OUTLINE_COLOR = Color3.fromRGB(60, 30, 0)
 local CRIT_SIZE = 1.5 -- times the normal number size
@@ -44,7 +44,8 @@ local function showNumber(anchor, amount, critical)
 	if not Preferences.Get("DamageNumbers") then
 		return -- turned off in Settings (the flash and sparks still play)
 	end
-	local scale = critical and CRIT_SIZE or 1
+	local scale = (critical and CRIT_SIZE or 1) * Preferences.Get("DmgSize") / 100
+	local colors = HudConfig.DamageNumberColors[Preferences.Get("DmgColor")]
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "DamageNumber"
 	billboard.Adornee = anchor
@@ -61,12 +62,12 @@ local function showNumber(anchor, amount, critical)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.Highway
 	label.Text = formatAmount(amount) .. (critical and "!" or "")
-	label.TextColor3 = critical and CRIT_TEXT_COLOR or TEXT_COLOR
+	label.TextColor3 = critical and CRIT_TEXT_COLOR or colors.text
 	label.TextScaled = true
 	label.Parent = billboard
 
 	local outline = Instance.new("UIStroke")
-	outline.Color = critical and CRIT_OUTLINE_COLOR or OUTLINE_COLOR
+	outline.Color = critical and CRIT_OUTLINE_COLOR or colors.outline
 	outline.Thickness = 2
 	outline.Parent = label
 

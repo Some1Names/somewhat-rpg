@@ -90,6 +90,25 @@ HudConfig.Style = {
 	EdgeTransparency = 0.8, -- a panel's thin white edge
 }
 
+-- a normal hit's damage number by the Damage number colour setting (Preferences' DmgColor,
+-- same order: RED, WHITE, ORANGE, CYAN); critical hits stay gold (HitFeedback)
+HudConfig.DamageNumberColors = {
+	{ text = Color3.fromRGB(255, 90, 60), outline = Color3.fromRGB(40, 0, 0) },
+	{ text = Color3.fromRGB(255, 255, 255), outline = Color3.fromRGB(30, 30, 34) },
+	{ text = Color3.fromRGB(255, 150, 40), outline = Color3.fromRGB(50, 20, 0) },
+	{ text = Color3.fromRGB(90, 220, 255), outline = Color3.fromRGB(0, 30, 45) },
+}
+
+-- the Colour filter setting (Preferences' Filter, same order after OFF): a ColorCorrection
+-- over the world (ScreenSettings). Roblox can't remap one colour onto another, so these
+-- only lean the balance away from the colours each kind of colourblindness mixes up and
+-- push saturation and contrast: an approximation, not a correction
+HudConfig.ColourFilters = {
+	PROTANOPIA = { tint = Color3.fromRGB(255, 236, 214), saturation = 0.35, contrast = 0.12 },
+	DEUTERANOPIA = { tint = Color3.fromRGB(255, 226, 236), saturation = 0.35, contrast = 0.12 },
+	TRITANOPIA = { tint = Color3.fromRGB(236, 246, 255), saturation = 0.3, contrast = 0.12 },
+}
+
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
 	Hub = { image = "", glyph = "▦" }, -- not ≡: that is Roblox's own menu

@@ -29,6 +29,7 @@ Keybinds.Actions = {
 	{ id = "Block", label = "Block", default = "LeftAlt", yields = true },
 	{ id = "Reload", label = "Reload", default = "R" },
 	{ id = "Gallery", label = "Photo Gallery", default = "T" },
+	{ id = "HideHud", label = "Hide HUD", default = "H" }, -- HideHud
 }
 
 local byId = {}

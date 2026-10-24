@@ -430,7 +430,7 @@ local navApart = make("Frame", {
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = navApart, SortOrder = Enum.SortOrder.LayoutOrder })
-make("Frame", {
+local navApartLine = make("Frame", {
 	Parent = listPanel,
 	Position = UDim2.new(0, NAV_PAD, 1, -(20 + NAV_ROW + APART_GAP / 2)),
 	Size = UDim2.new(1, -2 * NAV_PAD, 0, 1),
@@ -648,6 +648,7 @@ local function close()
 	only = false
 	navList.Visible = true
 	navApart.Visible = true
+	navApartLine.Visible = true
 	for _, fn in ipairs(closedListeners) do
 		task.spawn(fn, last)
 	end
@@ -676,6 +677,7 @@ function Hub.OpenOnly(name)
 	only = true
 	navList.Visible = false
 	navApart.Visible = false
+	navApartLine.Visible = false
 	Hub.Open(name)
 end
 

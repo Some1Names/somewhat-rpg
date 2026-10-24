@@ -8,7 +8,9 @@
 -- shimmers between the set's orange and cyan here (SkillSetConfig
 -- .IridescentColor), and spins if it has a Spin attribute. The local
 -- player's own moves can play here at once through the LocalSkillEffect
--- bindable (Dash's Lightstep) instead of waiting on the server.
+-- bindable (Dash's Lightstep) instead of waiting on the server. With the Other players'
+-- effects setting off, an event whose first character (or player) argument is another
+-- player's isn't drawn (its sound still plays); enemies' always are.
 -- Most looks come from ReplicatedStorage.VFXPrefabs through the VFX toolkit
 -- (ReplicatedStorage.VFX): prefabs, camera shake, impact frames, craters.
 -- The tornado and black hole models are drawn by the TornadoEffect and
@@ -2981,12 +2983,35 @@ for kind, draw in pairs(aidoEffects) do
 	effects[kind] = draw
 end
 
+-- the player an event belongs to: its first argument that's a player, or a model (a
+-- player's character, or not a player's at all)
+local function playerOf(...)
+	for i = 1, select("#", ...) do
+		local value = select(i, ...)
+		if typeof(value) == "Instance" then
+			if value:IsA("Player") then
+				return value
+			elseif value:IsA("Model") then
+				return Players:GetPlayerFromCharacter(value)
+			end
+		end
+	end
+	return nil
+end
+
 local function play(kind, ...)
 	Sfx.ForEffect(kind, ...)
 	local effect = effects[kind]
-	if effect then
-		effect(...)
+	if not effect then
+		return
 	end
+	if not Preferences.Get("Others") then
+		local owner = playerOf(...)
+		if owner and owner ~= Players.LocalPlayer then
+			return
+		end
+	end
+	effect(...)
 end
 skillEffects.OnClientEvent:Connect(play)
 

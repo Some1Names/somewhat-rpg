@@ -18,6 +18,7 @@ local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfi
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local MapRules = require(ReplicatedStorage:WaitForChild("MapRules"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
@@ -85,6 +86,7 @@ local TEXT_LENGTHS = {
 	Talents = TalentConfig.MaxSaveLength,
 	ConsumableStorage = ConsumableConfig.MaxSaveLength,
 	Explored = MapRules.MaxSaveLength,
+	Preferences = Preferences.MaxLength,
 }
 
 local PlayerStats = {}

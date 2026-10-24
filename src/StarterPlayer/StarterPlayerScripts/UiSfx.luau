@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local AudioMix = require(script.Parent:WaitForChild("AudioMix"))
 
 local UiSfx = {}
 
@@ -19,6 +20,7 @@ for key, entry in pairs(SoundConfig.UI) do
 	sound.Name = "UiSfx_" .. key
 	sound.SoundId = "rbxassetid://" .. entry.id
 	sound.Volume = entry.volume * SoundConfig.MasterVolume
+	sound.SoundGroup = AudioMix.Group("Interface") -- the Interface volume setting
 	sound.Parent = SoundService
 	templates[key] = sound
 end

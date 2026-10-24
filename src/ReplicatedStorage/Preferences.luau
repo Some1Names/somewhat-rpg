@@ -1,23 +1,27 @@
--- Each player's settings from the Settings menu: ON/OFF ones and sliders. Quick respawn
--- (SettingsServer respawns them the moment they die, skipping the death screen), Camera
--- shake and Flashes & impact frames (VFX and SkillEffects skip them when off), Damage
--- numbers (HitFeedback), the Vignette's strength (Vignette), the Low health warning
--- (LowHealth), Key hints (KeyHints), HUD sway and HP bar sway, how far each drifts
--- (HudSway), the Combo counter (ComboCounter) and Area names (ZoneName). They're the
--- saved Preferences attribute, "QuickRespawn=1,HudSway=50", holding only the ones off
--- their default (an ON/OFF one as 1 or 0, a slider as its number); Settings changes it
--- and SettingsServer checks and stores it, as with Keybinds. A slider that was an ON/OFF
--- setting before reads an old "=0" as 0, off.
+-- Each player's settings from the Settings menu: ON/OFF ones, sliders and choices. Quick
+-- respawn (SettingsServer respawns them the moment they die, skipping the death screen),
+-- Field of view and the Colour filter (ScreenSettings), Camera shake and Flashes & impact
+-- frames (VFX and SkillEffects skip them when off), Other players' effects (SkillEffects),
+-- the Vignette's strength (Vignette), the Low health warning (LowHealth), Damage numbers
+-- and their size and colour (HitFeedback), the Crosshair (ShiftLock, Crosshair), Key hints
+-- (KeyHints), HUD sway and HP bar sway, how far each drifts (HudSway), the Combo counter
+-- (ComboCounter), Area names (ZoneName) and the volumes (AudioMix). They're the saved
+-- Preferences attribute, "QuickRespawn=1,HudSway=50", holding only the ones off their
+-- default (an ON/OFF one as 1 or 0, a slider as its number, a choice as its place in the
+-- list); Settings changes it and SettingsServer checks and stores it, as with Keybinds. A
+-- slider that was an ON/OFF setting before reads an old "=0" as 0, off. Later settings
+-- have short ids, so the saved text stays short.
 -- The first half is plain logic (tests/Preferences.spec.luau runs it outside
 -- Roblox); the functions below it reach the game only when called.
 local Preferences = {}
 
 Preferences.Attribute = "Preferences" -- on the player, saved by PlayerStats
-Preferences.MaxLength = 200 -- PlayerStats' longest saved text
+Preferences.MaxLength = 400 -- PlayerStats keeps this much of it
 
 -- in menu order, under their section headings. An option is ON/OFF unless it's a
--- `slider`: whole numbers from `min` to `max` in `step`s, shown with `suffix`.
--- `description` is what the menu says about it.
+-- `slider` (whole numbers from `min` to `max` in `step`s, shown with `suffix`) or a
+-- `choice` (one of `choices`, kept as its place in the list). `description` is what the
+-- menu says about it.
 Preferences.Options = {
 	{
 		id = "QuickRespawn",
@@ -25,6 +29,18 @@ Preferences.Options = {
 		section = "GAMEPLAY",
 		default = false,
 		description = "Come back the moment you die, skipping the death screen.",
+	},
+	{
+		id = "Fov",
+		label = "Field of view",
+		section = "GAMEPLAY",
+		kind = "slider",
+		min = 70,
+		max = 100,
+		step = 5,
+		suffix = "°",
+		default = 70,
+		description = "How wide the camera sees. Wider shows more round you; narrower makes things bigger.",
 	},
 	{
 		id = "CameraShake",
@@ -39,13 +55,6 @@ Preferences.Options = {
 		section = "EFFECTS",
 		default = true,
 		description = "Full-screen flashes and frozen impact frames on heavy hits. Turn it off if bright flashes bother you.",
-	},
-	{
-		id = "DamageNumbers",
-		label = "Damage numbers",
-		section = "EFFECTS",
-		default = true,
-		description = "Numbers pop up over whatever you hit.",
 	},
 	{
 		id = "Vignette",
@@ -65,6 +74,59 @@ Preferences.Options = {
 		section = "EFFECTS",
 		default = true,
 		description = "The screen's edges turn red, then pulse, as your health runs low.",
+	},
+	{
+		id = "Filter",
+		label = "Colour filter",
+		section = "EFFECTS",
+		kind = "choice",
+		choices = { "OFF", "PROTANOPIA", "DEUTERANOPIA", "TRITANOPIA" },
+		default = 1,
+		description = "Shifts the world's colours to help tell reds, greens and blues apart. A filter over the whole screen, not a full correction.",
+	},
+	{
+		id = "Others",
+		label = "Other players' effects",
+		section = "EFFECTS",
+		default = true,
+		description = "Other players' skill effects. Off keeps busy fights clear and easier on slower devices; enemies' effects still show.",
+	},
+	{
+		id = "DamageNumbers",
+		label = "Damage numbers",
+		section = "INTERFACE",
+		default = true,
+		description = "Numbers pop up over whatever you hit.",
+	},
+	{
+		id = "DmgSize",
+		label = "Damage number size",
+		section = "INTERFACE",
+		kind = "slider",
+		min = 50,
+		max = 200,
+		step = 10,
+		suffix = "%",
+		default = 100,
+		description = "How big the damage numbers are. Critical hits stay half again as big.",
+	},
+	{
+		id = "DmgColor",
+		label = "Damage number colour",
+		section = "INTERFACE",
+		kind = "choice",
+		choices = { "RED", "WHITE", "ORANGE", "CYAN" },
+		default = 1,
+		description = "The colour of a normal hit's number. Critical hits stay gold.",
+	},
+	{
+		id = "Xhair",
+		label = "Crosshair",
+		section = "INTERFACE",
+		kind = "choice",
+		choices = { "X", "DOT", "CROSS", "NONE" },
+		default = 1,
+		description = "The mark in the middle of the screen in shift lock, and on whatever you lock onto.",
 	},
 	{
 		id = "KeyHints",
@@ -111,6 +173,42 @@ Preferences.Options = {
 		default = true,
 		description = "An area's name fades in at the top of the screen as you walk into it.",
 	},
+	{
+		id = "VolMaster",
+		label = "Master volume",
+		section = "SOUND",
+		kind = "slider",
+		min = 0,
+		max = 100,
+		step = 5,
+		suffix = "%",
+		default = 100,
+		description = "Every sound the game plays, before the volumes below.",
+	},
+	{
+		id = "VolFx",
+		label = "Combat & skills",
+		section = "SOUND",
+		kind = "slider",
+		min = 0,
+		max = 100,
+		step = 5,
+		suffix = "%",
+		default = 100,
+		description = "Hits, swings, shots and powers, heard from where they happen.",
+	},
+	{
+		id = "VolUi",
+		label = "Interface",
+		section = "SOUND",
+		kind = "slider",
+		min = 0,
+		max = 100,
+		step = 5,
+		suffix = "%",
+		default = 100,
+		description = "Menu clicks, equipping, picking things up, critical hits and purchases.",
+	},
 }
 
 local byId = {}
@@ -129,6 +227,8 @@ local function fits(option, value)
 			and value >= option.min
 			and value <= option.max
 			and (value - option.min) % option.step == 0
+	elseif option.kind == "choice" then
+		return typeof(value) == "number" and value >= 1 and value <= #option.choices and value % 1 == 0
 	end
 	return typeof(value) == "boolean"
 end
@@ -150,7 +250,7 @@ function Preferences.Parse(text)
 	end
 	for id, value in string.gmatch(text, "(%w+)=(%w+)") do
 		local option = byId[id]
-		if option and option.kind == "slider" then
+		if option and (option.kind == "slider" or option.kind == "choice") then
 			local number = string.match(value, "^%d+$") and tonumber(value)
 			if number and fits(option, number) then
 				map[id] = number
@@ -168,7 +268,7 @@ function Preferences.Serialize(map)
 	for _, option in ipairs(Preferences.Options) do
 		local value = map[option.id]
 		if value ~= nil and value ~= option.default then
-			local text = option.kind == "slider" and tostring(value) or (value and "1" or "0")
+			local text = typeof(value) == "number" and tostring(value) or (value and "1" or "0")
 			table.insert(parts, option.id .. "=" .. text)
 		end
 	end
@@ -194,10 +294,12 @@ function Preferences.Valid(map)
 end
 
 -- `value` moved `steps` along `option`: an ON/OFF one flips, a slider moves by its step,
--- held within its ends
+-- held within its ends, a choice goes round its list
 function Preferences.Nudge(option, value, steps)
 	if option.kind == "slider" then
 		return math.clamp(value + steps * option.step, option.min, option.max)
+	elseif option.kind == "choice" then
+		return (value - 1 + steps) % #option.choices + 1
 	end
 	return not value
 end
@@ -206,6 +308,16 @@ end
 function Preferences.SliderAt(option, fraction)
 	local steps = math.floor((option.max - option.min) / option.step * math.clamp(fraction, 0, 1) + 0.5)
 	return option.min + steps * option.step
+end
+
+-- how a value reads in the menu: ON/OFF, 100%, or the choice's name
+function Preferences.Text(option, value)
+	if option.kind == "slider" then
+		return tostring(value) .. (option.suffix or "")
+	elseif option.kind == "choice" then
+		return option.choices[value] or "?"
+	end
+	return value and "ON" or "OFF"
 end
 
 -- a player's setting (the server asks this for Quick respawn)
@@ -236,7 +348,7 @@ local function localPlayer()
 	return game:GetService("Players").LocalPlayer
 end
 
--- an ON/OFF setting as true or false; a slider's number
+-- an ON/OFF setting as true or false; a slider's number; a choice's place in its list
 function Preferences.Get(id)
 	local text = localPlayer():GetAttribute(Preferences.Attribute) or ""
 	if text ~= cachedText then
@@ -245,10 +357,15 @@ function Preferences.Get(id)
 	end
 	local map = previewMap or cachedMap
 	local option = byId[id]
-	if option and option.kind == "slider" then
+	if option and option.kind then
 		return map[id]
 	end
 	return map[id] == true
+end
+
+-- a choice's name ("DOT")
+function Preferences.Choice(id)
+	return byId[id].choices[Preferences.Get(id)]
 end
 
 -- a slider as a share of its default (HUD sway at 150% is 1.5)

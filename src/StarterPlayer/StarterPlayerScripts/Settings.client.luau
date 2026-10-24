@@ -6,7 +6,9 @@
 -- accent fades out behind it. Up and down move the selection, left and right change it.
 -- A keybind row: click it, press a key, and it's bound there (a key another action had
 -- swaps the two; reserved keys are refused; Esc calls the wait off). An ON/OFF row flips
--- on a click; a slider drags, or steps with its arrows. Each section ends with RESET TO
+-- on a click, a choice goes round its list; a slider drags, or steps with its arrows. Under
+-- the card's text, a setting you can see or hear shows a live PREVIEW at its value
+-- (SettingsPreviews). Each section ends with RESET TO
 -- DEFAULTS. Keys go to SettingsServer on the SetKeybinds remote and settings on
 -- SetPreferences, at most once per SEND_SPACING with the newest change winning; until
 -- one is echoed back the rows show it, and Preferences previews it so the game changes
@@ -14,6 +16,7 @@
 -- reload, gallery and the hub's own keys ignore key presses.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
@@ -21,6 +24,7 @@ local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local SettingsPreviews = require(script.Parent:WaitForChild("SettingsPreviews"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local setKeybinds = ReplicatedStorage:WaitForChild("SetKeybinds") -- made by SettingsServer
 local setPreferences = ReplicatedStorage:WaitForChild("SetPreferences") -- made by SettingsServer
@@ -43,6 +47,8 @@ local CAPTURE_RELEASE = 0.15 -- seconds the bound key stays swallowed, so it doe
 local SEND_SPACING = 0.6 -- seconds between saves (SettingsServer takes one per 0.5 s)
 local PENDING_TIMEOUT = 3 -- seconds a save may go unanswered before the saved values show again
 local DANGER = Color3.fromRGB(226, 75, 74)
+local PREVIEW_TOP = 204 -- px down the card
+local PREVIEW_HEIGHT = 170
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -204,6 +210,28 @@ local cardBody = label(card, {
 	Size = UDim2.new(1, 0, 0, 90),
 })
 local cardDefault = label(card, { Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 176), Size = UDim2.new(1, 0, 0, 14) })
+-- the preview: a dark box under the text, PREVIEW in its corner
+local previewBox = make("Frame", {
+	Parent = card,
+	Position = UDim2.fromOffset(0, PREVIEW_TOP),
+	Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT),
+	BackgroundColor3 = Color3.new(0, 0, 0),
+	BackgroundTransparency = 0.5,
+	BorderSizePixel = 0,
+	ClipsDescendants = true,
+	Visible = false,
+})
+make("UIStroke", { Parent = previewBox, Color = Theme.Edge, Transparency = Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+local previewContent = make("Frame", { Parent = previewBox, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
+label(previewBox, {
+	Text = "PREVIEW",
+	Font = Theme.MonoFont,
+	TextSize = 10,
+	TextColor3 = Theme.Muted,
+	Position = UDim2.fromOffset(8, 6),
+	Size = UDim2.fromOffset(80, 12),
+	ZIndex = 5,
+})
 -- at the card's foot: how to use the rows, and what just happened to a key
 local status = label(card, {
 	TextSize = 13,
@@ -347,14 +375,8 @@ local function nudge(row, steps)
 	setPreference(option.id, Preferences.Nudge(option, prefs.shown()[option.id], steps))
 end
 
-local function valueText(option, value)
-	if option.kind == "slider" then
-		return tostring(value) .. (option.suffix or "")
-	end
-	return value and "ON" or "OFF"
-end
-
--- an ON/OFF row: ‹ ON › at the right; a click anywhere on the row flips it
+-- an ON/OFF or choice row: ‹ ON › at the right; a click anywhere on the row flips it, or
+-- moves a choice on
 local function toggleRow(section, option)
 	local row = newRow(section, option.label, option)
 	row.option = option
@@ -380,9 +402,11 @@ local function toggleRow(section, option)
 		end
 	end)
 	function row.paint(map)
-		local on = map[option.id]
-		row.value.Text = valueText(option, on)
-		row.value.TextColor3 = on and ink or Theme.Muted
+		local value = map[option.id]
+		local shown = Preferences.Text(option, value)
+		local off = value == false or shown == "OFF" or shown == "NONE"
+		row.value.Text = shown
+		row.value.TextColor3 = off and Theme.Muted or ink
 	end
 	return row
 end
@@ -447,7 +471,7 @@ local function sliderRow(section, option)
 		row.fill.Size = UDim2.fromScale(fraction, 1)
 		row.fill.BackgroundColor3 = ink
 		row.handle.Position = UDim2.fromScale(fraction, 0.5)
-		row.value.Text = valueText(option, value)
+		row.value.Text = Preferences.Text(option, value)
 	end
 	return row
 end
@@ -583,6 +607,29 @@ end
 
 -- showing ----------------------------------------------------------------------------
 
+-- the selected setting's preview: built when the selection moves to it, painted on every
+-- change, and stepped each frame (below) if it moves
+local previewId, preview, previewState
+local function paintPreview()
+	local option = selected and selected.option
+	local id = option and SettingsPreviews.For(option.id) and option.id
+	if id ~= previewId then
+		previewId = id
+		preview = id and SettingsPreviews.For(id)
+		previewContent:ClearAllChildren()
+		previewState = preview and preview.build(previewContent)
+		previewBox.Visible = preview ~= nil
+	end
+	if preview then
+		preview.paint(previewState, prefs.shown()[previewId], ink)
+	end
+end
+RunService.RenderStepped:Connect(function()
+	if preview and preview.step and Hub.Current() == "Settings" then
+		preview.step(previewState, os.clock(), prefs.shown()[previewId])
+	end
+end)
+
 local function paintCard()
 	local info = selected and selected.info
 	if not info then
@@ -591,8 +638,9 @@ local function paintCard()
 	cardKicker.Text = currentSection.number .. "  ·  " .. currentSection.name
 	cardTitle.Text = string.upper(info.label)
 	cardBody.Text = info.description or ""
-	cardDefault.Text = info.default ~= nil and ("DEFAULT  " .. valueText(info, info.default)) or ""
+	cardDefault.Text = info.default ~= nil and ("DEFAULT  " .. Preferences.Text(info, info.default)) or ""
 	cardRule.BackgroundColor3 = ink
+	paintPreview()
 end
 
 function refresh()

@@ -4,12 +4,14 @@
 -- arguments (the first position, character, model or part). Sfx.Attach loops
 -- a clip on a model for as long as it lasts (the tornado's wind, the black
 -- hole's hum). A clip that fails to load plays nothing and costs nothing; all
--- of them are preloaded when the game starts.
+-- of them are preloaded when the game starts. Each plays through AudioMix's Effects group
+-- (the Combat & skills volume setting).
 local ContentProvider = game:GetService("ContentProvider")
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
+local AudioMix = require(script.Parent.Parent:WaitForChild("AudioMix"))
 
 local DEFAULT_VOLUME = 0.6
 local DEFAULT_PITCH = { 0.95, 1.05 }
@@ -57,6 +59,7 @@ local function build(key)
 	sound.RollOffMinDistance = MIN_DISTANCE
 	sound.RollOffMaxDistance = entry.range or DEFAULT_RANGE
 	sound.Looped = entry.loop == true
+	sound.SoundGroup = AudioMix.Group("Effects")
 	return sound
 end
 

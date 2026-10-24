@@ -1,16 +1,19 @@
 -- Shift lock everyone can use without turning on Roblox's Shift Lock Switch
 -- setting: Left Ctrl locks the mouse to the center, turns the character
 -- with the camera and moves the camera over the shoulder. While it's on, the mouse
--- is hidden and a crosshair is drawn in the middle instead: a small white x with a
--- dark edge, square ends. While something is locked onto (LockOn), shift lock or not,
--- the x sits on them instead and the mouse stays hidden: the cursor is where every
+-- is hidden and a crosshair is drawn in the middle instead, in the Crosshair setting's
+-- style (Crosshair; NONE draws nothing). While something is locked onto (LockOn), shift
+-- lock or not, it sits on them instead and the mouse stays hidden: the cursor is where every
 -- move aims. It steps aside while a ranged move shows its own crosshair (Ranged's
 -- RangedCrosshair gui, which goes onto the target too), and for the mouse while a
 -- menu is open (Menus).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
+local Crosshair = require(script.Parent:WaitForChild("Crosshair"))
 local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 
@@ -18,8 +21,7 @@ local player = Players.LocalPlayer
 
 local TOGGLE_KEY = Enum.KeyCode.LeftControl
 local SHOULDER_OFFSET = Vector3.new(1.75, 0, 0)
-local X_SIZE = 10 -- px, each stroke of the x
-local X_WIDTH = 2
+local CROSSHAIR_SIZE = 24 -- px, the room the crosshair is drawn in
 local RENDER_STEP_NAME = "ShiftLock"
 local CROSSHAIR_STEP_NAME = "ShiftLockCrosshair"
 
@@ -38,29 +40,21 @@ gui.Enabled = false
 gui.Parent = player:WaitForChild("PlayerGui")
 local holder = Instance.new("Frame")
 holder.AnchorPoint = Vector2.new(0.5, 0.5)
-holder.Size = UDim2.fromOffset(X_SIZE, X_SIZE)
+holder.Size = UDim2.fromOffset(CROSSHAIR_SIZE, CROSSHAIR_SIZE)
 holder.BackgroundTransparency = 1
 holder.Parent = gui
 
--- one bar of the x through the middle at `rotation` degrees; the dark edges are a
--- slightly bigger bar behind (ZIndex 1), so both white bars sit over both edges and
--- the crossing stays clean
-local function bar(rotation, grow, color, transparency, zIndex)
-	local frame = Instance.new("Frame")
-	frame.AnchorPoint = Vector2.new(0.5, 0.5)
-	frame.Position = UDim2.fromScale(0.5, 0.5)
-	frame.Size = UDim2.fromOffset(X_WIDTH + grow, X_SIZE + grow)
-	frame.Rotation = rotation
-	frame.BackgroundColor3 = color
-	frame.BackgroundTransparency = transparency
-	frame.BorderSizePixel = 0
-	frame.ZIndex = zIndex
-	frame.Parent = holder
+-- drawn again whenever the setting changes
+local drawnStyle
+local function drawCrosshair()
+	local style = Preferences.Choice("Xhair")
+	if style ~= drawnStyle then
+		drawnStyle = style
+		Crosshair.Build(holder, style)
+	end
 end
-for _, rotation in ipairs({ 45, -45 }) do
-	bar(rotation, 2, Color3.new(0, 0, 0), 0.4, 1)
-	bar(rotation, 0, Color3.new(1, 1, 1), 0, 2)
-end
+Preferences.Changed(drawCrosshair)
+drawCrosshair()
 
 -- a ranged move's crosshair, when it's showing, stands in for this one
 local function rangedCrosshairShown()
