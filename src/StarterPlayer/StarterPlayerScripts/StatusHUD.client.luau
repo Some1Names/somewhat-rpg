@@ -14,6 +14,7 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
@@ -138,8 +139,8 @@ local nameGroup = row(1)
 local nameLabel = Instance.new("TextLabel")
 nameLabel.BackgroundTransparency = 1
 nameLabel.Size = UDim2.fromScale(1, 1)
-nameLabel.Font = Enum.Font.Highway
-nameLabel.TextSize = 12
+nameLabel.Font = HudConfig.Style.TitleFont -- Modern Warfare's condensed capitals
+nameLabel.TextSize = 14
 nameLabel.TextColor3 = Color3.new(1, 1, 1)
 nameLabel.TextStrokeTransparency = 0.6
 nameLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -147,7 +148,7 @@ nameLabel.Parent = nameGroup
 
 local function showName()
 	local level = player:GetAttribute("Level")
-	nameLabel.Text = level and string.format("%s  ·  Lv %d", player.DisplayName, level) or player.DisplayName
+	nameLabel.Text = string.upper(level and string.format("%s  ·  Lv %d", player.DisplayName, level) or player.DisplayName)
 end
 showName()
 player:GetAttributeChangedSignal("Level"):Connect(showName)

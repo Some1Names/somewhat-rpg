@@ -45,7 +45,7 @@ end
 local function text(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = Enum.Font.Highway
+	props.Font = props.Font or HudConfig.Style.LabelFont
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextStrokeColor3 = STROKE
 	props.TextStrokeTransparency = 0.3
@@ -96,7 +96,8 @@ for angle = 0, 360 - TICK_STEP, TICK_STEP do
 			AnchorPoint = Vector2.new(0.5, 1),
 			Size = UDim2.fromOffset(28, 14),
 			Text = point,
-			TextSize = #point == 1 and 15 or 12,
+			Font = HudConfig.Style.TitleFont,
+			TextSize = #point == 1 and 16 or 13,
 		})
 	table.insert(ticks, { angle = angle, line = line, stroke = stroke, label = label })
 end

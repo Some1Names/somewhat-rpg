@@ -2,11 +2,12 @@
 -- in near the top of the screen for a few seconds, with a thin line drawing out under it.
 -- Shown once per change of area, and only while the HUD shows (not under the title menu
 -- or the hub), so a name isn't spent while nobody can see it. Plain white text with a
--- dark stroke, square.
+-- dark stroke, square, in Modern Warfare's condensed capitals.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local HudRules = require(ReplicatedStorage:WaitForChild("HudRules"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local ZoneConfig = require(ReplicatedStorage:WaitForChild("ZoneConfig"))
@@ -34,8 +35,8 @@ holder.Parent = gui
 local nameLabel = Instance.new("TextLabel")
 nameLabel.Size = UDim2.new(1, 0, 0, 30)
 nameLabel.BackgroundTransparency = 1
-nameLabel.Font = Enum.Font.Highway
-nameLabel.TextSize = 28
+nameLabel.Font = HudConfig.Style.TitleFont
+nameLabel.TextSize = 32
 nameLabel.TextColor3 = Color3.new(1, 1, 1)
 nameLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
 nameLabel.TextTransparency = 1

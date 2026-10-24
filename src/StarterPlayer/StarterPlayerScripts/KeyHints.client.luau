@@ -1,5 +1,5 @@
--- Key hints, one line along the bottom right: plain text, each basic move a small white
--- key cap then the move's name. Dash and Block show the player's own keys
+-- Key hints, one line along the bottom right: plain text, each basic move a small key box
+-- (Modern Warfare's: see-through with a thin white edge, HudConfig.Style) then the move's name. Dash and Block show the player's own keys
 -- (Keybinds, so a rebind updates it), and Dash the set's own dash name when
 -- the set in hand has one unlocked (Lightstep). RMB Aim shows only while
 -- holding a set with a ranged move. Space, Shift and Ctrl are fixed. The
@@ -22,7 +22,7 @@ local player = Players.LocalPlayer
 local LINE_HEIGHT = HudConfig.HintsHeight
 local CHECK_SPACING = 0.25 -- seconds between looks at what's in hand
 local TEXT = Color3.new(1, 1, 1)
-local KEYCAP_TEXT = Color3.fromRGB(20, 20, 28)
+local Style = HudConfig.Style
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -76,24 +76,26 @@ local function line(order, key, name)
 	local cap = make("TextLabel", {
 		Parent = row,
 		LayoutOrder = 1,
-		Size = UDim2.fromOffset(0, 15),
+		Size = UDim2.fromOffset(15, 15),
 		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundColor3 = TEXT,
+		BackgroundColor3 = Style.ChipBack,
+		BackgroundTransparency = Style.ChipBackTransparency,
 		BorderSizePixel = 0,
-		Font = Enum.Font.Highway,
+		Font = Style.MonoFont,
 		Text = key,
 		TextSize = 9,
-		TextColor3 = KEYCAP_TEXT,
+		TextColor3 = TEXT,
 	})
-	make("UIPadding", { Parent = cap, PaddingLeft = UDim.new(0, 5), PaddingRight = UDim.new(0, 5) })
+	make("UIPadding", { Parent = cap, PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4) })
+	make("UIStroke", { Parent = cap, Color = TEXT, Transparency = Style.ChipEdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	make("TextLabel", {
 		Parent = row,
 		LayoutOrder = 2,
 		Size = UDim2.fromOffset(0, 15),
 		AutomaticSize = Enum.AutomaticSize.X,
 		BackgroundTransparency = 1,
-		Font = Enum.Font.Highway,
-		Text = name,
+		Font = Style.LabelFont,
+		Text = string.upper(name),
 		TextSize = 11,
 		TextColor3 = TEXT,
 		TextStrokeTransparency = 0.4,

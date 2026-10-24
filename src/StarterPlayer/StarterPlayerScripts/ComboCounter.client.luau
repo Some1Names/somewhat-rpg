@@ -29,7 +29,7 @@ end
 local function text(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = Enum.Font.Highway
+	props.Font = props.Font or HudConfig.Style.TitleFont
 	props.TextColor3 = Color3.new(1, 1, 1)
 	props.TextStrokeColor3 = Color3.new(0, 0, 0)
 	props.TextXAlignment = Enum.TextXAlignment.Right
@@ -52,8 +52,8 @@ local holder = make("Frame", {
 	BackgroundTransparency = 1,
 })
 local pop = make("UIScale", { Parent = holder })
-local countLabel = text(holder, { Size = UDim2.new(1, 0, 0, 44), TextSize = 44 })
-local hitsLabel = text(holder, { Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 16), TextSize = 14, Text = "HITS" })
+local countLabel = text(holder, { Size = UDim2.new(1, 0, 0, 44), TextSize = 48 })
+local hitsLabel = text(holder, { Position = UDim2.fromOffset(0, 44), Size = UDim2.new(1, 0, 0, 16), Font = HudConfig.Style.MonoFont, TextSize = 12, Text = "HITS" })
 
 local combo = 0
 local lastHitAt = -math.huge

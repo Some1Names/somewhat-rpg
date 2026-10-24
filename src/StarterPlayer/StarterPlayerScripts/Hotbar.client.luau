@@ -28,7 +28,7 @@ local GRID_COLUMNS = 3
 local GRID_SLOTS = 6
 local CARD_WIDTH = HudConfig.CardWidth
 local CARD_HEIGHT = HudConfig.CardHeight
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
+local BACKGROUND = HudConfig.Style.Glass -- Modern Warfare's smoked glass
 local HELD_BACKGROUND = Color3.fromRGB(44, 44, 58)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
@@ -187,13 +187,13 @@ for i, spec in ipairs(CARDS) do
 	button.Text = ""
 	button.BorderSizePixel = 0
 	button.BackgroundColor3 = BACKGROUND
-	button.BackgroundTransparency = 0.25
+	button.BackgroundTransparency = HudConfig.Style.GlassTransparency
 	button.Size = UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT)
 	button.Position = UDim2.fromOffset((i - 1) * (CARD_WIDTH + SLOT_GAP), 0)
 	button.Parent = cardRow
 	local stroke = newStroke(button)
-	newLabel(button, { Text = tostring(i), TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(5, 3), Size = UDim2.fromOffset(14, 12) })
-	newLabel(button, { Text = spec.label, TextSize = 9, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 12) })
+	newLabel(button, { Text = tostring(i), Font = HudConfig.Style.MonoFont, TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(5, 3), Size = UDim2.fromOffset(14, 12) })
+	newLabel(button, { Text = spec.label, Font = HudConfig.Style.MonoFont, TextSize = 9, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 12) })
 	local icon = Instance.new("ImageLabel")
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0.5, 0)
@@ -224,13 +224,13 @@ local function slotAt(i)
 	button.Text = ""
 	button.BorderSizePixel = 0
 	button.BackgroundColor3 = BACKGROUND
-	button.BackgroundTransparency = 0.25
+	button.BackgroundTransparency = HudConfig.Style.GlassTransparency
 	button.Size = UDim2.fromOffset(SLOT_WIDTH, SLOT_HEIGHT)
 	local column, rowIndex = (i - 1) % GRID_COLUMNS, math.floor((i - 1) / GRID_COLUMNS)
 	button.Position = UDim2.fromOffset(column * (SLOT_WIDTH + SLOT_GAP), rowIndex * (SLOT_HEIGHT + SLOT_GAP))
 	button.Parent = grid
 	local stroke = newStroke(button)
-	newLabel(button, { Text = tostring(#CARDS + i), TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(12, 12) })
+	newLabel(button, { Text = tostring(#CARDS + i), Font = HudConfig.Style.MonoFont, TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Left, Position = UDim2.fromOffset(4, 2), Size = UDim2.fromOffset(12, 12) })
 	local icon = Instance.new("ImageLabel")
 	icon.BackgroundTransparency = 1
 	icon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -287,11 +287,11 @@ RunService.RenderStepped:Connect(function()
 		card.tool = tool
 		local held = tool ~= nil and tool.Parent == character
 		card.button.BackgroundColor3 = held and HELD_BACKGROUND or BACKGROUND
-		card.button.BackgroundTransparency = held and 0.05 or 0.25
+		card.button.BackgroundTransparency = held and 0.05 or HudConfig.Style.GlassTransparency
 		if tool then
 			local setName = setOf(tool)
 			card.stroke.Color = tierColor(tool)
-			card.stroke.Thickness = held and 3 or 2
+			card.stroke.Thickness = held and 2 or 1
 			card.stroke.Transparency = held and 0 or 0.15
 			card.icon.Image = tool.TextureId
 			card.icon.Visible = tool.TextureId ~= ""
@@ -328,10 +328,10 @@ RunService.RenderStepped:Connect(function()
 		end
 		local held = tool.Parent == character
 		slot.button.BackgroundColor3 = held and HELD_BACKGROUND or BACKGROUND
-		slot.button.BackgroundTransparency = held and 0.05 or 0.25
+		slot.button.BackgroundTransparency = held and 0.05 or HudConfig.Style.GlassTransparency
 		-- the tier colour, bolder on the tool in hand
 		slot.stroke.Color = tierColor(tool)
-		slot.stroke.Thickness = held and 3 or 2
+		slot.stroke.Thickness = held and 2 or 1
 		slot.stroke.Transparency = held and 0 or 0.15
 		slot.icon.Image = tool.TextureId
 		slot.icon.Visible = tool.TextureId ~= ""

@@ -21,6 +21,7 @@ local TweenService = game:GetService("TweenService")
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
@@ -47,7 +48,8 @@ local CONSUMABLE_HEIGHT = 104 -- name, uses, detail (two lines), owned
 local POWER_HEIGHT = 116 -- a power's row: picture, name, tier, detail (three lines), owned
 local IMAGE_SIZE = 84 -- a power's picture, a square
 local BADGE_SIZE = 30 -- a set's tier letter
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
+local Style = HudConfig.Style
+local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local GOLD = Color3.fromRGB(255, 205, 60)
@@ -152,7 +154,7 @@ local panel = make("ScrollingFrame", {
 	ScrollBarImageColor3 = MUTED,
 	ScrollingDirection = Enum.ScrollingDirection.Y,
 	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.1,
+	BackgroundTransparency = 0.2,
 	BorderSizePixel = 0,
 })
 local panelStroke = make("UIStroke", { Parent = panel, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
@@ -172,11 +174,11 @@ end
 
 -- header: what the shopkeeper's overhead tag used to say (the role big, the shop's line above), close
 local header = section(58)
-local subtitle = label(header, { Text = "", Font = Enum.Font.Highway, TextSize = 13, Size = UDim2.new(1, -30, 0, 16) })
+local subtitle = label(header, { Text = "", Font = Style.MonoFont, TextSize = 11, Size = UDim2.new(1, -30, 0, 16) })
 local title = label(header, {
 	Text = "SHOP",
-	Font = Enum.Font.Highway,
-	TextSize = 30,
+	Font = Style.TitleFont,
+	TextSize = 36,
 	Position = UDim2.fromOffset(0, 18),
 	Size = UDim2.new(1, -30, 0, 38),
 })
@@ -193,7 +195,7 @@ local balanceBox = make("Frame", {
 make("UIStroke", { Parent = balanceBox, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 label(balanceBox, { Text = "CASH", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0.4, 0, 1, 0) })
 local balance = label(balanceBox, {
-	Font = Enum.Font.Highway,
+	Font = Style.MonoFont,
 	TextSize = 18,
 	TextColor3 = GOLD,
 	TextXAlignment = Enum.TextXAlignment.Right,
@@ -502,6 +504,7 @@ local function buildRows(shopId)
 				BackgroundColor3 = Color3.new(0, 0, 0),
 				BackgroundTransparency = 0.6,
 			})
+			make("UIStroke", { Parent = row, Color = TEXT, Transparency = Style.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 			make("UIPadding", { Parent = row, PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) })
 			local textLeft = 0
 			local tier = tierOf(item)
@@ -521,7 +524,7 @@ local function buildRows(shopId)
 				if not item.image then
 					label(picture, {
 						Text = tier or "?",
-						Font = Enum.Font.Highway,
+						Font = Style.TitleFont,
 						TextSize = 34,
 						TextColor3 = tierColor,
 						TextTransparency = 0.4,
@@ -534,7 +537,7 @@ local function buildRows(shopId)
 				local tierColor = SkillSetConfig.Tiers[tier] and SkillSetConfig.Tiers[tier].color or SkillSetConfig.NoTierColor
 				local badge = label(row, {
 					Text = tier,
-					Font = Enum.Font.Highway,
+					Font = Style.TitleFont,
 					TextSize = 18,
 					TextColor3 = tierColor,
 					TextXAlignment = Enum.TextXAlignment.Center,
@@ -547,9 +550,9 @@ local function buildRows(shopId)
 			end
 			local dim = item.comingSoon
 			label(row, {
-				Text = item.name,
-				Font = Enum.Font.Highway,
-				TextSize = 14,
+				Text = string.upper(item.name),
+				Font = Style.TitleFont,
+				TextSize = 16,
 				TextColor3 = dim and MUTED or TEXT,
 				TextTruncate = Enum.TextTruncate.AtEnd,
 				Position = UDim2.fromOffset(textLeft, 0),
@@ -592,7 +595,7 @@ local function buildRows(shopId)
 			if item.price and not item.comingSoon then
 				label(row, {
 					Text = item.price == 0 and "FREE" or formatYen(priceOf(item)),
-					Font = Enum.Font.Highway,
+					Font = Style.MonoFont,
 					TextSize = 15,
 					TextColor3 = GOLD,
 					TextXAlignment = Enum.TextXAlignment.Right,

@@ -115,10 +115,21 @@ local column = make("Frame", {
 	Parent = gui,
 	Size = UDim2.new(0, COLUMN_WIDTH, 1, 0),
 	BackgroundColor3 = Theme.Nav,
-	BackgroundTransparency = 0.08,
+	BackgroundTransparency = 0.2,
 	BorderSizePixel = 0,
 	ZIndex = 3,
 	Active = true,
+})
+-- Modern Warfare's thin light edge down the column's right side
+make("Frame", {
+	Parent = column,
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0),
+	Size = UDim2.new(0, 1, 1, 0),
+	BackgroundColor3 = Theme.Edge,
+	BackgroundTransparency = Theme.EdgeTransparency,
+	BorderSizePixel = 0,
+	ZIndex = 3,
 })
 local blackout = make("Frame", {
 	Parent = gui,
@@ -210,8 +221,10 @@ label(footer, {
 	ZIndex = 3,
 })
 
--- a button: its number, its name, and an accent line that sweeps under it on hover
+-- a button: its number, its name, and on hover the accent fading out behind it (Modern
+-- Warfare's) with an accent line sweeping under it
 local underlines = {}
+local highlights = {}
 local function button(order, text, size, onClick)
 	local holder = make("TextButton", {
 		Parent = buttons,
@@ -222,9 +235,24 @@ local function button(order, text, size, onClick)
 		AutoButtonColor = false,
 		ZIndex = 3,
 	})
+	local highlight = make("Frame", {
+		Parent = holder,
+		Position = UDim2.fromOffset(-PAD, 0),
+		Size = UDim2.new(1, PAD, 1, 0),
+		BackgroundColor3 = Hub.InkAccent(),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ZIndex = 3,
+	})
+	make("UIGradient", {
+		Parent = highlight,
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
+	})
+	table.insert(highlights, highlight)
 	local content = make("Frame", { Parent = holder, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 3 })
 	label(content, {
 		Text = string.format("%02d", order),
+		Font = Theme.MonoFont,
 		TextSize = 12,
 		TextColor3 = Theme.Muted,
 		Size = UDim2.new(0, 28, 1, 0),
@@ -251,10 +279,12 @@ local function button(order, text, size, onClick)
 	holder.MouseEnter:Connect(function()
 		tween(content, HOVER_TIME, { Position = UDim2.fromOffset(HOVER_NUDGE, 0) })
 		tween(underline, HOVER_TIME, { Size = UDim2.new(1, -28, 0, 2) })
+		tween(highlight, HOVER_TIME, { BackgroundTransparency = 0.75 })
 	end)
 	holder.MouseLeave:Connect(function()
 		tween(content, HOVER_TIME, { Position = UDim2.new() })
 		tween(underline, HOVER_TIME, { Size = UDim2.fromOffset(0, 2) })
+		tween(highlight, HOVER_TIME, { BackgroundTransparency = 1 })
 	end)
 	holder.Activated:Connect(onClick)
 	return holder
@@ -266,6 +296,9 @@ Hub.OnAccent(function(_, ink)
 	chip.TextColor3 = Hub.OnInk()
 	for _, underline in ipairs(underlines) do
 		underline.BackgroundColor3 = ink
+	end
+	for _, highlight in ipairs(highlights) do
+		highlight.BackgroundColor3 = ink
 	end
 end)
 

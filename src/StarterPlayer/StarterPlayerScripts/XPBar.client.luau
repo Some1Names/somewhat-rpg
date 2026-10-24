@@ -31,7 +31,7 @@ end
 local function text(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = 1
-	props.Font = Enum.Font.Highway
+	props.Font = props.Font or HudConfig.Style.LabelFont
 	props.TextColor3 = props.TextColor3 or TEXT
 	props.TextStrokeColor3 = Color3.new(0, 0, 0)
 	props.TextStrokeTransparency = 0.3
@@ -65,14 +65,16 @@ local row = make("Frame", {
 })
 local levelLabel = text(row, {
 	Size = UDim2.new(0.5, 0, 0, 12),
-	TextSize = 12,
+	Font = HudConfig.Style.TitleFont,
+	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 })
 local amountLabel = text(row, {
 	AnchorPoint = Vector2.new(1, 0),
 	Position = UDim2.fromScale(1, 0),
 	Size = UDim2.new(0.5, 0, 0, 12),
-	TextSize = 11,
+	Font = HudConfig.Style.MonoFont,
+	TextSize = 10,
 	TextColor3 = MUTED,
 	TextXAlignment = Enum.TextXAlignment.Right,
 })

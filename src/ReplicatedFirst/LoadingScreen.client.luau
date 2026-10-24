@@ -1,6 +1,7 @@
 -- The loading screen: replaces Roblox's own the moment the player joins (only
--- ReplicatedFirst runs that early). Near-black paper, [ SOMEWHAT ], the big
--- title with RPG on a chip, a status line and a thin progress bar. It waits for
+-- ReplicatedFirst runs that early). Near-black paper with the hub's rail down the left,
+-- [ SOMEWHAT ], the big condensed title with RPG on a chip, a mono status line and a
+-- thin progress bar (Modern Warfare's look, as the hub). It waits for
 -- the game to load and the asset queue to drain (at least MIN_TIME, and no more
 -- than ASSET_TIMEOUT on the assets), then for the title menu (TitleMenu sets
 -- Ready on its gui) so the bare world never flashes between the two, and fades.
@@ -12,14 +13,17 @@ local ReplicatedFirst = game:GetService("ReplicatedFirst")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
-local PAPER = Color3.fromRGB(20, 20, 23)
+local PAPER = Color3.fromRGB(12, 13, 15)
 local NAV = Color3.fromRGB(9, 9, 11)
 local INK = Color3.fromRGB(236, 236, 238)
-local MUTED = Color3.fromRGB(190, 190, 198)
+local MUTED = Color3.fromRGB(170, 172, 178)
 local BAR_BACK = Color3.fromRGB(50, 50, 58)
 local FONT = Enum.Font.Highway
+local TITLE_FONT = Enum.Font.Oswald
+local MONO_FONT = Enum.Font.RobotoMono
+local RAIL_WIDTH = 52
 
-local PAD = 32
+local PAD = 32 + RAIL_WIDTH
 local MIN_TIME = 1.5 -- s the screen shows at least, so it doesn't blink
 local ASSET_TIMEOUT = 15 -- s after the game loads that the asset queue may take
 local TITLE_TIMEOUT = 10 -- s it waits for the title menu to be ready
@@ -50,7 +54,7 @@ local function label(parent, props)
 	props.Parent = parent
 	props.BackgroundTransparency = props.BackgroundTransparency or 1
 	props.BorderSizePixel = 0
-	props.Font = FONT
+	props.Font = props.Font or FONT
 	props.TextColor3 = props.TextColor3 or INK
 	props.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Left
 	return make("TextLabel", props)
@@ -86,8 +90,17 @@ if workspace.CurrentCamera then
 	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(rescale)
 end
 
--- the dark band down the left, as on the hub's nav column
-make("Frame", { Parent = root, Size = UDim2.new(0, 6, 1, 0), BackgroundColor3 = NAV, BorderSizePixel = 0 })
+-- the dark rail down the left with its thin light edge, as on the hub
+local rail = make("Frame", { Parent = root, Size = UDim2.new(0, RAIL_WIDTH, 1, 0), BackgroundColor3 = NAV, BorderSizePixel = 0 })
+make("Frame", {
+	Parent = rail,
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0),
+	Size = UDim2.new(0, 1, 1, 0),
+	BackgroundColor3 = INK,
+	BackgroundTransparency = 0.82,
+	BorderSizePixel = 0,
+})
 label(root, {
 	Text = "[ SOMEWHAT ]",
 	TextSize = 14,
@@ -105,11 +118,13 @@ local block = make("Frame", {
 })
 label(block, {
 	Text = "SOMEWHAT",
+	Font = TITLE_FONT,
 	TextSize = 64,
 	Size = UDim2.new(1, 0, 0, 64),
 })
 local chip = label(block, {
 	Text = " RPG ",
+	Font = TITLE_FONT,
 	TextSize = 22,
 	TextColor3 = NAV,
 	BackgroundColor3 = INK,
@@ -120,14 +135,16 @@ local chip = label(block, {
 })
 local status = label(block, {
 	Text = "LOADING WORLD",
-	TextSize = 13,
+	Font = MONO_FONT,
+	TextSize = 12,
 	TextColor3 = MUTED,
 	Position = UDim2.fromOffset(0, 116),
 	Size = UDim2.new(1, -60, 0, 16),
 })
 local percent = label(block, {
 	Text = "0%",
-	TextSize = 13,
+	Font = MONO_FONT,
+	TextSize = 12,
 	TextColor3 = MUTED,
 	TextXAlignment = Enum.TextXAlignment.Right,
 	AnchorPoint = Vector2.new(1, 0),

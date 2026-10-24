@@ -31,6 +31,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
@@ -76,7 +77,10 @@ local STACK_LABEL_WIDTH = 96
 local STACK_GAP = 2
 local BOTTOM_MARGIN = 52 -- pixels (HudConfig.BottomReserve): above the key hints line; the Hotbar's cards and grid sit at the sides
 local AIM_DISTANCE = 1000
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
+local Style = HudConfig.Style
+local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass
+-- a key box: see-through with a thin white edge, dimmer while the move isn't ready
+local KEY_READY, KEY_WAITING = Style.ChipBackTransparency, 0.9
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local ACCENT = Color3.fromRGB(170, 255, 200) -- Mandela green
@@ -159,7 +163,7 @@ local function refuse(text)
 end
 
 -- header: the set's name, its mastery and progress to the next level
-local setLabel = label(bar, { TextSize = 12, TextColor3 = ACCENT, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0.5, 0, 0, 14) })
+local setLabel = label(bar, { Font = Style.TitleFont, TextSize = 15, TextColor3 = ACCENT, TextXAlignment = Enum.TextXAlignment.Left, Size = UDim2.new(0.5, 0, 0, 14) })
 -- the set's passive in the middle: its name when ready, a countdown while it recharges
 local passiveLabel = label(bar, {
 	TextSize = 9,
@@ -233,10 +237,10 @@ for i, key in ipairs(keys) do
 		Position = UDim2.fromOffset((i - 1) * (SLOT_SIZE + SLOT_GAP), HEADER_HEIGHT),
 		Size = UDim2.fromOffset(SLOT_SIZE, SLOT_SIZE),
 		BackgroundColor3 = BACKGROUND,
-		BackgroundTransparency = 0.25,
+		BackgroundTransparency = Style.GlassTransparency,
 		Visible = false,
 	})
-	local stroke = make("UIStroke", { Parent = frame, Color = TEXT, Transparency = 0.5, Thickness = 1.5 })
+	local stroke = make("UIStroke", { Parent = frame, Color = TEXT, Transparency = 0.5, Thickness = 1 })
 	local scale = make("UIScale", { Parent = frame })
 	-- dark cover whose top edge moves down as the cooldown runs out
 	local cover = make("Frame", {
@@ -250,14 +254,15 @@ for i, key in ipairs(keys) do
 	})
 	local keycap = label(frame, {
 		Text = key,
-		TextSize = 12,
-		TextColor3 = BACKGROUND,
-		BackgroundTransparency = 0,
-		BackgroundColor3 = TEXT,
+		Font = Style.MonoFont,
+		TextSize = 11,
+		BackgroundTransparency = KEY_READY,
+		BackgroundColor3 = Style.ChipBack,
 		Position = UDim2.fromOffset(4, 4),
 		Size = UDim2.fromOffset(18, 18),
 		AutomaticSize = Enum.AutomaticSize.X, -- wider for keys like F5 or LAlt
 	})
+	make("UIStroke", { Parent = keycap, Color = TEXT, Transparency = Style.ChipEdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local status = label(frame, { TextSize = 14, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.4), Size = UDim2.new(1, 0, 0, 18) })
 	-- strip along the top while this skill is in its overcharged form
 	local empowered = make("Frame", {
@@ -290,10 +295,10 @@ local function miniSlot(keyText)
 		AnchorPoint = Vector2.new(1, 0),
 		Size = UDim2.fromOffset(MINI_SLOT_SIZE, MINI_SLOT_SIZE),
 		BackgroundColor3 = BACKGROUND,
-		BackgroundTransparency = 0.25,
+		BackgroundTransparency = Style.GlassTransparency,
 		Visible = false,
 	})
-	slot.stroke = make("UIStroke", { Parent = slot.frame, Color = TEXT, Transparency = 0.5, Thickness = 1.5 })
+	slot.stroke = make("UIStroke", { Parent = slot.frame, Color = TEXT, Transparency = 0.5, Thickness = 1 })
 	slot.scale = make("UIScale", { Parent = slot.frame })
 	slot.cover = make("Frame", {
 		Parent = slot.frame,
@@ -306,14 +311,15 @@ local function miniSlot(keyText)
 	})
 	slot.keycap = label(slot.frame, {
 		Text = keyText,
-		TextSize = 10,
-		TextColor3 = BACKGROUND,
-		BackgroundTransparency = 0,
-		BackgroundColor3 = TEXT,
+		Font = Style.MonoFont,
+		TextSize = 9,
+		BackgroundTransparency = KEY_READY,
+		BackgroundColor3 = Style.ChipBack,
 		Position = UDim2.fromOffset(3, 3),
 		Size = UDim2.fromOffset(14, 14),
 		AutomaticSize = Enum.AutomaticSize.X,
 	})
+	make("UIStroke", { Parent = slot.keycap, Color = TEXT, Transparency = Style.ChipEdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	slot.status = label(slot.frame, { TextSize = 11, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.56), Size = UDim2.new(1, 0, 0, 14) })
 	slot.name = label(slot.frame, {
 		TextSize = 8,
@@ -835,7 +841,7 @@ RunService.RenderStepped:Connect(function()
 		local skillName = shownName(skill, overcharged)
 		slot.name.Text = skill.handler and skillName or "Soon"
 		slot.name.TextTransparency = available and 0 or 0.4
-		slot.keycap.BackgroundTransparency = available and 0 or 0.5
+		slot.keycap.BackgroundTransparency = available and KEY_READY or KEY_WAITING
 		if not skill.handler then
 			slot.status.Text = "?"
 			slot.status.TextColor3 = MUTED
@@ -901,7 +907,7 @@ RunService.RenderStepped:Connect(function()
 			dashSlot.status.Text = DodgeCharges.Max > 1 and "x" .. ready or ""
 		end
 		dashSlot.cover.Size = UDim2.fromScale(1, remaining / DodgeCharges.RechargeTime)
-		dashSlot.keycap.BackgroundTransparency = remaining > 0 and 0.5 or 0
+		dashSlot.keycap.BackgroundTransparency = remaining > 0 and KEY_WAITING or KEY_READY
 		-- a flash of the set's colour the moment it's back
 		if dashWasCooling and remaining <= 0 then
 			dashSlot.stroke.Color = set.color
@@ -944,7 +950,7 @@ RunService.RenderStepped:Connect(function()
 		rangedSlot.keycap.Size = UDim2.fromOffset(18, 14)
 		rangedSlot.status.Text = status
 		rangedSlot.cover.Size = UDim2.fromScale(1, math.clamp(cover, 0, 1))
-		rangedSlot.keycap.BackgroundTransparency = cover > 0 and 0.5 or 0
+		rangedSlot.keycap.BackgroundTransparency = cover > 0 and KEY_WAITING or KEY_READY
 	end
 	-- the mini slots line up leftward from the bar, the dash nearest
 	local miniOffset = SLOT_GAP
@@ -979,8 +985,8 @@ local function popup(text, color, size, height, lifetime)
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, height),
 		Size = UDim2.fromOffset(400, size + 8),
-		Font = Enum.Font.Highway,
-		Text = text,
+		Font = Style.TitleFont,
+		Text = string.upper(text),
 		TextSize = size,
 		TextColor3 = color,
 		TextStrokeTransparency = 0.5,

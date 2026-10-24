@@ -75,6 +75,21 @@ HudConfig.HubTheme = {
 	PoseMinScreen = 1100, -- narrower screens hide the strip
 }
 
+-- the HUD's Modern Warfare look, shared by the HUD scripts: condensed uppercase headings
+-- and big numbers, mono figures, and key prompts as small see-through boxes with a thin
+-- white edge (KeyHints, SkillBar, Hotbar, QuestBoard ...)
+HudConfig.Style = {
+	TitleFont = Enum.Font.Oswald,
+	MonoFont = Enum.Font.RobotoMono,
+	LabelFont = Enum.Font.Highway,
+	ChipBack = Color3.new(0, 0, 0),
+	ChipBackTransparency = 0.55,
+	ChipEdgeTransparency = 0.35,
+	Glass = Color3.fromRGB(12, 13, 15), -- a HUD panel's smoked glass
+	GlassTransparency = 0.45,
+	EdgeTransparency = 0.8, -- a panel's thin white edge
+}
+
 HudConfig.Icons = {
 	Settings = { image = "", glyph = "⚙" },
 	Hub = { image = "", glyph = "▦" }, -- not ≡: that is Roblox's own menu

@@ -21,8 +21,9 @@ local FADE_TIME = 0.5
 local LINE_HEIGHT = 26
 local TOP = HudConfig.KillFeedTop -- under the top bar's icon row
 local MARGIN = HudConfig.EdgeMargin
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
-local BORDER = Color3.fromRGB(60, 60, 75)
+-- Modern Warfare's smoked glass with a thin white edge (HudConfig.Style)
+local BACKGROUND = HudConfig.Style.Glass
+local BORDER = Color3.new(1, 1, 1)
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local YOUR_KILL = Color3.fromRGB(255, 200, 90)
@@ -90,12 +91,13 @@ local function newLine(strokeColor, thickness)
 	line.AutomaticSize = Enum.AutomaticSize.X
 	line.Size = UDim2.fromOffset(0, LINE_HEIGHT)
 	line.BackgroundColor3 = BACKGROUND
-	line.BackgroundTransparency = 0.15
+	line.BackgroundTransparency = HudConfig.Style.GlassTransparency
 	line.LayoutOrder = -counter -- newest on top
 	local stroke = Instance.new("UIStroke")
 	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	stroke.Color = strokeColor
 	stroke.Thickness = thickness
+	stroke.Transparency = strokeColor == BORDER and HudConfig.Style.EdgeTransparency or 0
 	stroke.Parent = line
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 10)

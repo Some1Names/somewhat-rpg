@@ -26,7 +26,7 @@ local player = Players.LocalPlayer
 local PANEL_WIDTH = 320
 local PADDING = 14
 local TRACKER_WIDTH = HudConfig.SideWidth -- as wide as the tool grid it sits above
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
+local BACKGROUND = HudConfig.Style.Glass -- Modern Warfare's smoked glass
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local GOLD = Color3.fromRGB(255, 205, 60) -- same as the other popups
@@ -84,10 +84,10 @@ local tracker = make("Frame", {
 	Size = UDim2.fromOffset(TRACKER_WIDTH, 0),
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.25,
+	BackgroundTransparency = HudConfig.Style.GlassTransparency,
 	Visible = false,
 })
-outline(tracker, 0.5)
+outline(tracker, HudConfig.Style.EdgeTransparency)
 make("UIPadding", {
 	Parent = tracker,
 	PaddingTop = UDim.new(0, 8),
@@ -96,9 +96,9 @@ make("UIPadding", {
 	PaddingRight = UDim.new(0, 10),
 })
 make("UIListLayout", { Parent = tracker, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
-local trackerKind = label(tracker, { LayoutOrder = 1, Text = "BOUNTY", Font = Enum.Font.Highway, TextSize = 10, TextColor3 = GOLD, Size = UDim2.new(1, 0, 0, 12) })
-local trackerTitle = label(tracker, { LayoutOrder = 2, Font = Enum.Font.Highway, TextSize = 13, Size = UDim2.new(1, 0, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
-local trackerCount = label(tracker, { LayoutOrder = 3, TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+local trackerKind = label(tracker, { LayoutOrder = 1, Text = "BOUNTY", Font = HudConfig.Style.MonoFont, TextSize = 10, TextColor3 = GOLD, Size = UDim2.new(1, 0, 0, 12) })
+local trackerTitle = label(tracker, { LayoutOrder = 2, Font = HudConfig.Style.TitleFont, TextSize = 15, Size = UDim2.new(1, 0, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd })
+local trackerCount = label(tracker, { LayoutOrder = 3, Font = HudConfig.Style.MonoFont, TextSize = 11, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
 
 local adminOpen = false -- the Admin panel takes the right side, so the tracker steps aside
 
@@ -123,7 +123,7 @@ local panel = make("Frame", {
 	BackgroundTransparency = 0.15,
 	Visible = false,
 })
-outline(panel, 0.6)
+outline(panel, HudConfig.Style.EdgeTransparency)
 make("UIPadding", {
 	Parent = panel,
 	PaddingTop = UDim.new(0, PADDING),
@@ -134,7 +134,7 @@ make("UIPadding", {
 make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
 
 local header = make("Frame", { Parent = panel, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 22), BackgroundTransparency = 1 })
-local panelTitle = label(header, { Text = "BOUNTY HUNTER", Font = Enum.Font.Highway, TextSize = 16, Size = UDim2.new(1, -30, 1, 0) })
+local panelTitle = label(header, { Text = "BOUNTY HUNTER", Font = HudConfig.Style.TitleFont, TextSize = 20, Size = UDim2.new(1, -30, 1, 0) })
 local closeButton = make("TextButton", {
 	Parent = header,
 	AnchorPoint = Vector2.new(1, 0),
@@ -261,8 +261,8 @@ local function popup(text, color, size, height, lifetime)
 		Position = UDim2.fromScale(0.5, height),
 		Size = UDim2.fromOffset(500, size + 6),
 		BackgroundTransparency = 1,
-		Font = Enum.Font.Highway,
-		Text = text,
+		Font = HudConfig.Style.TitleFont,
+		Text = string.upper(text),
 		TextSize = size,
 		TextColor3 = color,
 		TextStrokeTransparency = 0.5,

@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -29,7 +30,8 @@ local PADDING = 14
 local LIST_WIDTH = 220
 local ROW_HEIGHT = 44
 local CAMERA_SHIFT = 3.6 -- studs the smith sits right of centre, clear of the wide panel
-local BACKGROUND = Color3.fromRGB(20, 20, 28)
+local Style = HudConfig.Style
+local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local GOLD = Color3.fromRGB(255, 205, 60)
@@ -168,7 +170,7 @@ local panel = make("Frame", {
 	Position = UDim2.new(0, 40, 0.5, 0),
 	Size = UDim2.new(0, PANEL_WIDTH, 1, -120),
 	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.1,
+	BackgroundTransparency = 0.2,
 	BorderSizePixel = 0,
 })
 make("UIStroke", { Parent = panel, Color = FORGE, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
@@ -181,11 +183,11 @@ make("UIPadding", {
 })
 
 -- header: the smith's role big with the line above it (like a shop's), close
-local subtitle = label(panel, { Text = "Reforge", Font = Enum.Font.Highway, TextSize = 13, TextColor3 = FORGE, Size = UDim2.new(1, -30, 0, 16) })
+local subtitle = label(panel, { Text = "REFORGE", Font = Style.MonoFont, TextSize = 11, TextColor3 = FORGE, Size = UDim2.new(1, -30, 0, 16) })
 local title = label(panel, {
 	Text = "SMITH",
-	Font = Enum.Font.Highway,
-	TextSize = 30,
+	Font = Style.TitleFont,
+	TextSize = 36,
 	Position = UDim2.fromOffset(0, 18),
 	Size = UDim2.new(1, -30, 0, 38),
 })
@@ -214,7 +216,7 @@ local balanceBox = make("Frame", {
 make("UIStroke", { Parent = balanceBox, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 label(balanceBox, { Text = "CASH", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0.4, 0, 1, 0) })
 local balance = label(balanceBox, {
-	Font = Enum.Font.Highway,
+	Font = Style.MonoFont,
 	TextSize = 18,
 	TextColor3 = GOLD,
 	TextXAlignment = Enum.TextXAlignment.Right,
@@ -278,7 +280,7 @@ local detail = make("Frame", {
 	Size = UDim2.new(1, -DETAIL_LEFT, 1, 0),
 	BackgroundTransparency = 1,
 })
-local detailTitle = label(detail, { Text = "", Font = Enum.Font.Highway, TextSize = 18, Size = UDim2.new(1, 0, 0, 22) })
+local detailTitle = label(detail, { Text = "", Font = Style.TitleFont, TextSize = 22, Size = UDim2.new(1, 0, 0, 22) })
 local detailSub = label(detail, { Text = "", Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 14) })
 local tabRow = make("Frame", { Parent = detail, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
 make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
@@ -398,7 +400,7 @@ local function strengthenTab(setName, state, yen)
 	label(content, {
 		LayoutOrder = nextOrder(),
 		Text = atMax and string.format("+%d   MAX", state.level) or string.format("+%d   →   +%d", state.level, state.level + 1),
-		Font = Enum.Font.Highway,
+		Font = Style.TitleFont,
 		TextSize = 28,
 		TextColor3 = FORGE,
 		Size = UDim2.new(1, 0, 0, 34),
@@ -585,8 +587,8 @@ render = function()
 		if isSelected then
 			make("UIStroke", { Parent = row, Color = FORGE, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 		end
-		label(row, { Text = set.tier or "", Font = Enum.Font.Highway, TextSize = 18, TextColor3 = tierColor(setName), TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 0), Size = UDim2.new(0, 26, 1, 0) })
-		label(row, { Text = displayName(setName), Font = Enum.Font.Highway, TextSize = 13, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -96, 1, 0) })
+		label(row, { Text = set.tier or "", Font = Style.TitleFont, TextSize = 20, TextColor3 = tierColor(setName), TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 0), Size = UDim2.new(0, 26, 1, 0) })
+		label(row, { Text = string.upper(displayName(setName)), Font = Style.TitleFont, TextSize = 15, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -96, 1, 0) })
 		label(row, {
 			Text = state.level > 0 and ("+" .. state.level) or "",
 			Font = Enum.Font.Highway,
@@ -596,7 +598,7 @@ render = function()
 			Size = UDim2.new(1, -10, 1, 0),
 		})
 		if state.awakening > 0 then
-			label(row, { Text = "AWK " .. state.awakening, Font = Enum.Font.Highway, TextSize = 9, TextColor3 = GOLD, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -4), Size = UDim2.fromOffset(50, 10) })
+			label(row, { Text = "AWK " .. state.awakening, Font = Style.MonoFont, TextSize = 9, TextColor3 = GOLD, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -4), Size = UDim2.fromOffset(50, 10) })
 		end
 		row.Activated:Connect(function()
 			selected = setName
