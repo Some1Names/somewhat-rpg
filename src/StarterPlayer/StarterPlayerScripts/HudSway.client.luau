@@ -5,7 +5,8 @@
 -- Strafing shifts it sideways, jumping and falling shift it up and down,
 -- running forward nudges it down, and a camera pan pushes it the opposite
 -- way. The screen HUD follows the HUD sway setting and the HP and stamina bar
--- the HP bar sway setting (Preferences), each switched off on its own.
+-- the HP bar sway setting (Preferences), each a slider: 100% is the drift below, 0 holds
+-- it still, 200% doubles it.
 -- Each HUD's top-level frames are moved into one full-size "Sway" frame in
 -- its ScreenGui (they keep their own positions) and that frame is the only
 -- thing moved. The billboard's StudsOffset moves by the same amount, from the
@@ -111,8 +112,8 @@ RunService.RenderStepped:Connect(function(dt)
 		push = Vector2.new(x, y) * MAX_OFFSET
 	end
 	-- the screen HUD and the HP and stamina bar each follow their own setting
-	local hudTarget = Preferences.Get("HudSway") and push or Vector2.zero
-	local statusTarget = Preferences.Get("StatusSway") and push or Vector2.zero
+	local hudTarget = push * Preferences.Scale("HudSway")
+	local statusTarget = push * Preferences.Scale("StatusSway")
 	local ease = 1 - math.exp(-SMOOTHING * dt)
 	offset += (hudTarget - offset) * ease
 	statusOffset += (statusTarget - statusOffset) * ease

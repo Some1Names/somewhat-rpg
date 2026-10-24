@@ -835,8 +835,11 @@ end
 
 -- keys: a tab's key opens, switches or closes; Esc closes
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	-- (Esc while Settings waits for a key calls the wait off instead)
 	if input.KeyCode == Enum.KeyCode.Escape then
-		Hub.Close()
+		if not Keybinds.Capturing() then
+			Hub.Close()
+		end
 		return
 	end
 	if gameProcessed or Keybinds.Capturing() then

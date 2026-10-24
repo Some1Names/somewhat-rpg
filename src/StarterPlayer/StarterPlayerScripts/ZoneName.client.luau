@@ -2,13 +2,15 @@
 -- in near the top of the screen for a few seconds, with a thin line drawing out under it.
 -- Shown once per change of area, and only while the HUD shows (not under the title menu
 -- or the hub), so a name isn't spent while nobody can see it. Plain white text with a
--- dark stroke, square, in Modern Warfare's condensed capitals.
+-- dark stroke, square, in Modern Warfare's condensed capitals. The Area names setting
+-- (Preferences) turns it off.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local HudRules = require(ReplicatedStorage:WaitForChild("HudRules"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local ZoneConfig = require(ReplicatedStorage:WaitForChild("ZoneConfig"))
 
@@ -81,7 +83,9 @@ while true do
 		local zone = HudRules.ZoneAt(ZoneConfig.Zones, root.Position.X, root.Position.Z)
 		if zone and zone ~= lastShown then
 			lastShown = zone
-			show(zone)
+			if Preferences.Get("ZoneNames") then
+				show(zone)
+			end
 		end
 	end
 end

@@ -1,13 +1,14 @@
 -- Low health: the screen's edges turn red below HudConfig.LowHealthStart of max health,
 -- stronger as it drops, and pulse below HudConfig.LowHealthPulse. Four edge strips with
 -- gradients, a placeholder until there's a vignette image. Gone once dead (the death
--- screen's turn).
+-- screen's turn), or while the Low health warning setting (Preferences) is off.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local HudRules = require(ReplicatedStorage:WaitForChild("HudRules"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 
 local player = Players.LocalPlayer
 
@@ -52,7 +53,7 @@ local shownStrength = 0
 RunService.Heartbeat:Connect(function(dt)
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	local strength = 0
-	if humanoid and humanoid.MaxHealth > 0 then
+	if humanoid and humanoid.MaxHealth > 0 and Preferences.Get("LowHealthEdges") then
 		local fraction = humanoid.Health / humanoid.MaxHealth
 		strength = HudRules.LowHealthIntensity(fraction, HudConfig.LowHealthStart)
 		if strength > 0 and fraction < HudConfig.LowHealthPulse then

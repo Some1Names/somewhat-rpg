@@ -1,5 +1,5 @@
 -- Unit tests for ReplicatedStorage.Preferences' pure logic (the saved
--- ON/OFF settings). Run with Lune, outside Roblox: tests/run.sh.
+-- ON/OFF settings and sliders). Run with Lune, outside Roblox: tests/run.sh.
 local Preferences = require("../src/ReplicatedStorage/Preferences")
 
 local failures = 0
@@ -60,7 +60,43 @@ check("valid", Preferences.Valid(Preferences.Defaults()) and not Preferences.Val
 
 check("options_order", Preferences.Options[1].id == "QuickRespawn" and Preferences.Options[1].section == "GAMEPLAY"
 	and Preferences.Options[4].id == "DamageNumbers" and Preferences.Options[4].section == "EFFECTS"
-	and Preferences.Options[5].id == "KeyHints" and Preferences.Options[5].section == "INTERFACE")
+	and Preferences.Options[5].id == "Vignette" and Preferences.Options[5].section == "EFFECTS"
+	and Preferences.Options[7].id == "KeyHints" and Preferences.Options[7].section == "INTERFACE")
+
+-- sliders
+check("slider_defaults", defaults.HudSway == 100 and defaults.StatusSway == 100 and defaults.Vignette == 100)
+
+local slid = Preferences.Parse("Vignette=30,HudSway=150")
+check("slider_parse", slid.Vignette == 30 and slid.HudSway == 150 and slid.StatusSway == 100)
+
+local offStep = Preferences.Parse("Vignette=35,HudSway=250,StatusSway=-10,Vignette=x")
+check("slider_bad_values_ignored", offStep.Vignette == 100 and offStep.HudSway == 100 and offStep.StatusSway == 100)
+
+check("slider_old_off_reads_zero", Preferences.Parse("HudSway=0").HudSway == 0
+	and Preferences.Serialize(Preferences.Parse("HudSway=0")) == "HudSway=0")
+
+check("slider_serialize", Preferences.Serialize(Preferences.Parse("HudSway=150,QuickRespawn=1")) == "QuickRespawn=1,HudSway=150"
+	and Preferences.Serialize(Preferences.Parse("HudSway=100")) == "")
+
+local badSlider = Preferences.Defaults()
+badSlider.HudSway = 155
+local boolSlider = Preferences.Defaults()
+boolSlider.Vignette = true
+check("slider_valid", not Preferences.Valid(badSlider) and not Preferences.Valid(boolSlider)
+	and Preferences.Valid(Preferences.Parse("Vignette=0,HudSway=200")))
+
+local sway = Preferences.Option("HudSway")
+check("nudge", Preferences.Nudge(sway, 100, 1) == 110 and Preferences.Nudge(sway, 200, 1) == 200
+	and Preferences.Nudge(sway, 0, -1) == 0 and Preferences.Nudge(Preferences.Option("KeyHints"), true, 1) == false)
+
+check("slider_at", Preferences.SliderAt(sway, 0) == 0 and Preferences.SliderAt(sway, 1) == 200
+	and Preferences.SliderAt(sway, 0.52) == 100 and Preferences.SliderAt(sway, 1.5) == 200)
+
+local everything = {}
+for _, option in ipairs(Preferences.Options) do
+	everything[option.id] = option.kind == "slider" and option.max or not option.default
+end
+check("longest_fits", #Preferences.Serialize(everything) <= Preferences.MaxLength)
 
 if failures > 0 then
 	error(string.format("%d check(s) failed", failures))

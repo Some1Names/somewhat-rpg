@@ -2,13 +2,14 @@
 -- you land (Damage.Deal adds to your HitsLanded attribute; a status tick isn't a hit).
 -- It shows from HudConfig.ComboMin hits, pops on each one, steps colour at
 -- HudConfig.ComboTiers and fades HudConfig.ComboWindow seconds after the last hit.
--- Plain white text with a dark stroke.
+-- Plain white text with a dark stroke. The Combo counter setting (Preferences) hides it.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local HudRules = require(ReplicatedStorage:WaitForChild("HudRules"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 
 local player = Players.LocalPlayer
 
@@ -99,7 +100,7 @@ player:GetAttributeChangedSignal("HitsLanded"):Connect(function()
 	end
 	combo += gained
 	lastHitAt = os.clock()
-	if combo >= HudConfig.ComboMin then
+	if combo >= HudConfig.ComboMin and Preferences.Get("ComboCounter") then
 		show()
 	end
 end)
