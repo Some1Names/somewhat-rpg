@@ -126,7 +126,7 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `SkillEffects` "Telegraph" for the wind-up. Melee swings cost stamina and slow your walk (`CombatFeel`, `Punch`,
   `Sprint`). Block is not basekit: only a set or weapon with its own `block` table can block (`Guard.CanBlock`);
   `GuardConfig.Enabled` is still off. Cues are placeholders until the owner's VFX.
-- **Factions and parties**: `FactionConfig` (three factions, their rank names, colours and shop discount; pure rules, Lune-tested), `Factions` + `FactionServer` (join at a model tagged `FactionRecruiter`, standing from kills; saved `FactionData`), the overhead title in `OverheadHealth` and a card in `HubProfile`. Parties: `PartyRules` (pure, Lune-tested), `Party` + `PartyServer` (the `PartyAction` remote), the hub tab `PartyMenu` and `PartyHUD`.
+- **Factions and parties**: `FactionConfig` (three factions, their rank names, colours and shop discount; pure rules, Lune-tested), `Factions` + `FactionServer` (a model tagged `FactionRecruiter` opens the `FactionMenu` close-up; JOIN goes through the `FactionAction` remote; standing from kills; saved `FactionData`), the overhead title in `OverheadHealth` and a card in `HubProfile`. Parties: `PartyRules` (pure, Lune-tested), `Party` + `PartyServer` (the `PartyAction` remote), the hub tab `PartyMenu` and `PartyHUD`.
 - **Melee weapons**: a set with `kind = "melee"` fills the hotbar's MELEE slot (saved as the `MeleeSet` attribute, kept by `Loadout`
   like `WeaponSet`) and swings a combo from `PunchConfig.Weapons`. Its Tool needs a `SkillSet` attribute. Katana (B, needs 5 Strength,
   shop ¥1,200) is the first; no moves yet.

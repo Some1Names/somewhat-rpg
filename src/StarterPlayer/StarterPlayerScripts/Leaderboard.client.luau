@@ -24,15 +24,13 @@ local REFRESH = 0.5 -- seconds between redraws while it's open
 local NO_FACTION = Color3.new(1, 1, 1)
 local DIM = Color3.fromRGB(200, 200, 206)
 
--- Roblox's own list goes; CoreGui may not be ready right away
-task.spawn(function()
-	for _ = 1, 20 do
-		if pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.PlayerList, false) then
-			return
-		end
-		task.wait(0.5)
+-- Roblox's own list goes, and stays gone: Roblox can switch it back on (a reset from its
+-- Esc menu), and then it takes Tab before this sees it. Checked every REFRESH
+local function hideRobloxList()
+	if StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.PlayerList) then
+		pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.PlayerList, false)
 	end
-end)
+end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "Leaderboard"
@@ -134,7 +132,8 @@ local function redraw()
 		local mate = not mine and partyId ~= nil and other:GetAttribute("PartyId") == partyId
 
 		local faction = other:GetAttribute("Faction") or ""
-		local color = faction ~= "" and FactionConfig.RankColor(faction, other:GetAttribute("FactionStanding") or 0) or NO_FACTION
+		local rgb = faction ~= "" and FactionConfig.RankColor(faction, other:GetAttribute("FactionStanding") or 0)
+		local color = rgb and Color3.fromRGB(rgb[1], rgb[2], rgb[3]) or NO_FACTION
 		slot.name.Text = string.format(
 			'%s<font color="#%s">%s</font> <font color="#%s">[%d]</font>',
 			mate and "★ " or "",
@@ -156,8 +155,9 @@ local function show()
 	panel.Visible = open and not Menus.AnyOpen()
 end
 
-UserInputService.InputBegan:Connect(function(input, processed)
-	if processed or input.KeyCode ~= TOGGLE_KEY then
+UserInputService.InputBegan:Connect(function(input)
+	-- Tab counts even when Roblox has handled it, except while typing
+	if input.KeyCode ~= TOGGLE_KEY or UserInputService:GetFocusedTextBox() then
 		return
 	end
 	open = not open
@@ -168,6 +168,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 end)
 
 while true do
+	hideRobloxList()
 	show()
 	if panel.Visible then
 		redraw()

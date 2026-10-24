@@ -60,6 +60,7 @@ check("every faction has a name per rank", namesOk)
 check("no faction falls back to the generic name", F.RankName(100) == "Veteran" and F.RankName(100, "Nope") == "Veteran")
 
 check("next rank standing", F.NextRankStanding(0) == 25 and F.NextRankStanding(99) == 100 and F.NextRankStanding(800) == nil)
+check("a recruiter offers all, one or none", #F.Offered(nil) == #F.Factions and #F.Offered("All") == #F.Factions and F.Offered("Lumen")[1].key == "Lumen" and #F.Offered("Nope") == 0)
 
 if failures > 0 then
 	error(failures .. " check(s) failed")

@@ -31,7 +31,7 @@ local CLOSEUP_SHIFT = 2.2 -- studs the NPC sits right of centre, clear of the me
 local CLOSEUP_FOV = 35
 local CLOSEUP_TIME = 0.5
 local LEAVE_DELAY = 0.4 -- seconds before E leaves, so the E that opened the menu doesn't also close it
-local PROMPT_TAGS = { ShopConfig.Tag, ReforgeConfig.Tag } -- the NPCs whose prompts are hidden meanwhile
+local PROMPT_TAGS = { ShopConfig.Tag, ReforgeConfig.Tag, "FactionRecruiter" } -- the NPCs whose prompts are hidden meanwhile
 
 local ShopFocus = {}
 

@@ -13,6 +13,8 @@ FactionConfig.SwitchCooldown = 3600 -- seconds after joining before you can leav
 FactionConfig.EnemyKillStanding = 1 -- standing for killing an NPC enemy
 FactionConfig.RivalKillStanding = 5 -- standing for killing a player of another faction
 FactionConfig.RecruiterRange = 14 -- studs from the recruiter the player must be within
+FactionConfig.RecruiterTag = "FactionRecruiter"
+FactionConfig.Remote = "FactionAction" -- RemoteFunction, made by FactionServer
 
 -- rankNames: the faction's own name for each rank (same order as Ranks; the generic
 -- Ranks names are the fallback).
@@ -152,6 +154,16 @@ function FactionConfig.DiscountedPrice(price, discount)
 		return price
 	end
 	return math.max(1, math.floor(price * (1 - discount) + 0.5))
+end
+
+-- the factions a recruiter offers, from its FactionId attribute: that one, or all of
+-- them when it's nil, "" or "All" (an unknown id offers none)
+function FactionConfig.Offered(id)
+	if id == nil or id == "" or id == "All" then
+		return FactionConfig.Factions
+	end
+	local faction = byKey[id]
+	return faction and { faction } or {}
 end
 
 -- standing earned for a kill; nil if the kill earns none
