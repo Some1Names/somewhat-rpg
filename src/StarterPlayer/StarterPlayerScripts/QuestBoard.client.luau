@@ -277,20 +277,9 @@ local function popup(text, color, size, height, lifetime)
 	Debris:AddItem(popupLabel, lifetime)
 end
 
-doneRemote.OnClientEvent:Connect(function(kind, title, reward)
-	if kind == "bounty" then
-		popup("Bounty complete", GOLD, 30, 0.38, 3)
-		popup(title, TEXT, 16, 0.43, 3)
-		if typeof(reward) == "table" then
-			popup(string.format("+%d XP   +¥%d", reward.xp or 0, reward.yen or 0), GOLD, 16, 0.47, 3)
-		end
-	else
-		popup("Challenge complete", GOLD, 30, 0.38, 3)
-		popup(title, TEXT, 16, 0.43, 3)
-		if typeof(reward) == "table" then
-			popup(string.format("+%d mastery XP", reward.mastery or 0), GOLD, 16, 0.47, 3)
-		end
-	end
+-- the banner; the quest and its reward go in the pickup feed
+doneRemote.OnClientEvent:Connect(function(kind)
+	popup(kind == "bounty" and "Bounty complete" or "Challenge complete", GOLD, 30, 0.38, 3)
 end)
 
 player:GetAttributeChangedSignal("QuestId"):Connect(function()

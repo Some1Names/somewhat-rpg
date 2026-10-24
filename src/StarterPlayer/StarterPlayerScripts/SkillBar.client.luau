@@ -1004,22 +1004,6 @@ masteryEvent.OnClientEvent:Connect(function(setName, fromLevel, toLevel)
 	if not set then
 		return
 	end
+	-- the banner; what it unlocks goes in the pickup feed
 	popup(string.format("%s MASTERY %d", string.upper(setName), toLevel), ACCENT, 26, 0.16, 2.5)
-	local line = 0
-	for _, key in ipairs(keys) do
-		local skill = set.skills[key]
-		if skill and skill.handler and skill.mastery > fromLevel and skill.mastery <= toLevel then
-			line += 1
-			popup(string.format("%s (%s) unlocked", skill.name, Keybinds.Text("Skill" .. key)), GOLD, 16, 0.16 + 0.045 * line, 2.5)
-		end
-	end
-	-- the set's features (passive, overcharge, flight, dash, undo, gallery) unlock too
-	for _, feature in ipairs({ "passive", "overcharge", "flight", "dash", "undo", "gallery" }) do
-		local info = set[feature]
-		local at = info and info.mastery
-		if at and at > fromLevel and at <= toLevel then
-			line += 1
-			popup(string.format("%s unlocked", info.name or "Flight"), GOLD, 16, 0.16 + 0.045 * line, 2.5)
-		end
-	end
 end)

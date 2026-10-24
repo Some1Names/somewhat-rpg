@@ -712,17 +712,8 @@ progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained, 
 	if yenGained and yenGained > 0 and not source then
 		popup("+" .. formatYen(yenGained), GOLD, 18, 0.66, 1.2, POPUP_OFFSET)
 	end
+	-- the banner; the level, stat points, stamina boxes and dodge charges go in the pickup feed
 	if levelsGained > 0 then
 		popup("LEVEL UP", GOLD, 34, 0.22, 2.5)
-		local level = player:GetAttribute("Level") or 0
-		popup(string.format("Lv %d  ·  +%d stat points", level, levelsGained * StatConfig.PointsPerLevel), TEXT, 16, 0.27, 2.5)
-		local newBoxes = StatConfig.StaminaBoxes(level) - StatConfig.StaminaBoxes(level - levelsGained)
-		if newBoxes > 0 then
-			popup(newBoxes == 1 and "+1 stamina box" or string.format("+%d stamina boxes", newBoxes), GOLD, 16, 0.31, 2.5)
-		end
-		local newCharges = StatConfig.DodgeCharges(level) - StatConfig.DodgeCharges(level - levelsGained)
-		if newCharges > 0 then
-			popup(newCharges == 1 and "+1 dodge charge" or string.format("+%d dodge charges", newCharges), GOLD, 16, newBoxes > 0 and 0.35 or 0.31, 2.5)
-		end
 	end
 end)
