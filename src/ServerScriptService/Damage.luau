@@ -76,9 +76,11 @@ local function payOutOnDeath(humanoid)
 			-- its own reward if it has one, else what its level pays
 			local level = character:GetAttribute("Level")
 			local rewardXP = character:GetAttribute("XPReward") or (level and StatConfig.EnemyXP(level)) or StatConfig.KillXP
-			PlayerStats.AddXP(killer, rewardXP)
+			-- one entry in the pickup feed, in the colour of the model's Rarity attribute (a DropConfig tier)
+			local source = PlayerStats.Source(character.Name, character:GetAttribute("Rarity"))
+			PlayerStats.AddXP(killer, rewardXP, source)
 			local rewardYen = character:GetAttribute("YenReward") or (level and StatConfig.EnemyYen(level)) or StatConfig.KillYen
-			PlayerStats.AddYen(killer, math.floor(rewardYen * TalismanConfig.YenMultiplier(killer:GetAttribute(TalismanConfig.EquippedAttribute))))
+			PlayerStats.AddYen(killer, math.floor(rewardYen * TalismanConfig.YenMultiplier(killer:GetAttribute(TalismanConfig.EquippedAttribute))), source)
 			-- finishing it is worth mastery to the set of the killing hit (a training
 			-- dummy only up to mastery DummyCap); none for a bare-handed kill
 			if hit and hit.skillSet then

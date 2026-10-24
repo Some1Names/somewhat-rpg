@@ -107,11 +107,12 @@ local function onDeath(victim, humanoid)
 	local wasHeadhunter = isHeadhunter(victim)
 
 	local yen = 0
+	local source = PlayerStats.Source(wasHeadhunter and "Headhunter's head" or (victim and victim.DisplayName or "Bounty"), "Dark")
 	if victim then
 		local lost = PlayerStats.TakeYen(victim, wasHeadhunter and HeadhunterConfig.HeadhunterDropShare or HeadhunterConfig.DropShare)
 		victim:SetAttribute(YEN_LOST, lost)
 		if paid and lost > 0 then
-			PlayerStats.AddYen(killer, lost)
+			PlayerStats.AddYen(killer, lost, source)
 			yen = lost
 		end
 	end
@@ -123,7 +124,7 @@ local function onDeath(victim, humanoid)
 	if wasHeadhunter then
 		if paid then
 			local xp = HeadhunterConfig.bonusXP(StatConfig.XPToLevelUp(killer:GetAttribute("Level") or 0), victim:GetAttribute(KILLS) or 0)
-			PlayerStats.AddXP(killer, xp)
+			PlayerStats.AddXP(killer, xp, source)
 			feed:FireAllClients("Headhunter", "taken", victim.DisplayName, killer.DisplayName, xp, yen)
 		else
 			-- an NPC, a fall, a reset or a repeat kill: nobody takes the head

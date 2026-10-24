@@ -100,8 +100,9 @@ end
 local function completeBounty(player, quest)
 	clear(player)
 	local xp, yen = QuestConfig.reward(quest.count, quest.level)
-	PlayerStats.AddXP(player, xp)
-	PlayerStats.AddYen(player, yen)
+	local source = PlayerStats.Source(quest.title, "Gold")
+	PlayerStats.AddXP(player, xp, source)
+	PlayerStats.AddYen(player, yen, source)
 	doneRemote:FireClient(player, "bounty", quest.title, { xp = xp, yen = yen })
 end
 

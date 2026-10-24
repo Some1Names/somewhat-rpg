@@ -58,7 +58,7 @@ local function collect(chest, index, hit)
 	end
 	chest:SetAttribute("Claimed", true)
 	local yen = ChestConfig.yen(roll) * TalismanConfig.YenMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute))
-	PlayerStats.AddYen(player, math.floor(yen))
+	PlayerStats.AddYen(player, math.floor(yen), PlayerStats.Source("Chest", "Rare"))
 	-- sometimes a talisman too, one they don't own yet
 	if rng:NextNumber() < TalismanConfig.ChestChance then
 		Talismans.GrantRandom(player)

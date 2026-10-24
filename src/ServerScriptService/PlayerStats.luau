@@ -274,22 +274,31 @@ function PlayerStats.IsLoaded(player)
 	return canSave[player] == true
 end
 
-function PlayerStats.AddXP(player, amount)
+-- what a reward came from, for the client's pickup feed (PickupFeed): XP and yen given
+-- with the same source show as one entry, edged in the colour of `tier` (a DropConfig
+-- tier). Rewards given without one (refunds, sales, admin) don't show there.
+local sourceCount = 0
+function PlayerStats.Source(label, tier)
+	sourceCount += 1
+	return { id = sourceCount, label = label, tier = tier or "Common" }
+end
+
+function PlayerStats.AddXP(player, amount, source)
 	if player:GetAttribute("Level") == nil or amount <= 0 then
 		return -- still loading
 	end
 	player:SetAttribute("XP", player:GetAttribute("XP") + amount)
-	progressEvent:FireClient(player, amount, levelUp(player), 0)
+	progressEvent:FireClient(player, amount, levelUp(player), 0, source)
 end
 
-function PlayerStats.AddYen(player, amount)
+function PlayerStats.AddYen(player, amount, source)
 	local yen = player:GetAttribute("Yen")
 	amount = math.floor(amount)
 	if not yen or amount <= 0 then
 		return
 	end
 	player:SetAttribute("Yen", yen + amount)
-	progressEvent:FireClient(player, 0, 0, amount)
+	progressEvent:FireClient(player, 0, 0, amount, source)
 end
 
 -- os.clock() of each player's last shop purchase; Loadout reads it so a bought

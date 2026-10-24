@@ -704,11 +704,12 @@ local function popup(text, color, size, height, lifetime, xOffset)
 	Debris:AddItem(popupLabel, lifetime)
 end
 
-progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained)
-	if xpGained > 0 then
+progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained, source)
+	-- a reward with a source shows in the pickup feed (PickupFeed) instead
+	if xpGained > 0 and not source then
 		popup(string.format("+%d XP", xpGained), WHITE, 18, 0.62, 1.2, POPUP_OFFSET)
 	end
-	if yenGained and yenGained > 0 then
+	if yenGained and yenGained > 0 and not source then
 		popup("+" .. formatYen(yenGained), GOLD, 18, 0.66, 1.2, POPUP_OFFSET)
 	end
 	if levelsGained > 0 then
