@@ -132,7 +132,7 @@ end
 -- in any experience; swap or add ids from the Creator Store's music (APMOfficial).
 --   volume  0..1 before the setting;  fade  seconds in and out;  gap  seconds of quiet between
 SoundConfig.Music = {
-	volume = 0.4,
+	volume = 0.08, -- quiet: 100% on the Music setting is a soft background
 	fade = 2,
 	gap = 4,
 	tracks = {
