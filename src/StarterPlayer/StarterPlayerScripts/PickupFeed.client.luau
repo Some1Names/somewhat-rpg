@@ -17,7 +17,7 @@ local player = Players.LocalPlayer
 
 local ROW_HEIGHT = 24
 local ROW_GAP = 4
-local MAX_LINES = 5
+local MAX_LINES = 6
 local LIFETIME = 4 -- seconds a line stays after its last change
 local FADE_TIME = 0.4
 local SLIDE = 16 -- px a line slides in from
