@@ -7,6 +7,8 @@
 -- While you hold a block, a white posture bar (Guard) takes the stamina boxes'
 -- place, filling as hits wear the guard down; a guard break flashes it red and
 -- shakes it for the length of the stun, then the stamina boxes come back.
+-- The Shoulder side setting (LEFT) moves it to the left of the body, its right edge
+-- against the body, so it's on the side the shift-lock camera looks over.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -15,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
@@ -22,8 +25,8 @@ local StatusIcons = require(ReplicatedStorage:WaitForChild("StatusIcons"))
 
 local player = Players.LocalPlayer
 
--- camera-relative studs from the root: right of the body, at waist height,
--- so the shift-lock crosshair (around head height) stays clear
+-- camera-relative studs from the root: right of the body (left with the Shoulder side
+-- setting on LEFT), at waist height, so the shift-lock crosshair (around head height) stays clear
 local OFFSET = Vector3.new(1.6, -0.2, 0)
 local ICON_WIDTH = 22
 local ROW_HEIGHT = 18
@@ -74,7 +77,8 @@ task.spawn(function()
 end)
 
 -- The billboard is twice the content width with everything in its right half,
--- so the left edge sits exactly at OFFSET however far you zoom.
+-- so the left edge sits exactly at OFFSET however far you zoom. On the left side the
+-- content slides left by the width in use each frame, so its right edge sits there instead.
 local billboard = Instance.new("BillboardGui")
 billboard.Name = "StatusHUD"
 billboard.AlwaysOnTop = true
@@ -322,4 +326,24 @@ RunService.RenderStepped:Connect(function(dt)
 
 	-- the name shows whenever either meter does
 	nameGroup.GroupTransparency = math.min(hp.shown, stamina.shown)
+
+	-- which side of the body, and on the left, how far to slide so the rows end at the body
+	local left = Preferences.Choice("Side") == "LEFT"
+	local base = left and OFFSET * Vector3.new(-1, 1, 1) or OFFSET
+	if billboard:GetAttribute("BaseOffset") ~= base then
+		-- HudSway sways it around BaseOffset
+		billboard:SetAttribute("BaseOffset", base)
+		billboard.StudsOffset = base
+	end
+	if left then
+		local dodgesRight = DodgeCharges.Max > 0 and firstX + (DodgeCharges.Max - 1) * DODGE_STEP + DODGE_HALF_DIAGONAL or 0
+		local used = math.ceil(math.max(ICON_WIDTH + BAR_WIDTH, ICON_WIDTH + boxesWidth(boxCount), dodgesRight))
+		content.Position = UDim2.new(0.5, -used, 0, 0)
+		nameLabel.Size = UDim2.new(0, used, 1, 0)
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Right
+	else
+		content.Position = UDim2.fromScale(0.5, 0)
+		nameLabel.Size = UDim2.fromScale(1, 1)
+		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	end
 end)

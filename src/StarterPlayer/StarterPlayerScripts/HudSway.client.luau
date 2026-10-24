@@ -136,6 +136,8 @@ RunService.RenderStepped:Connect(function(dt)
 		statusBase = status and status.StudsOffset
 	end
 	if status then
-		status.StudsOffset = statusBase + Vector3.new(statusOffset.X, -statusOffset.Y, 0) * STUDS_PER_PIXEL
+		-- its BaseOffset, when StatusHUD gives one (it moves with the Shoulder side setting)
+		local base = status:GetAttribute("BaseOffset") or statusBase
+		status.StudsOffset = base + Vector3.new(statusOffset.X, -statusOffset.Y, 0) * STUDS_PER_PIXEL
 	end
 end)

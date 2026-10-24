@@ -7,7 +7,8 @@
 -- move aims. It steps aside while a ranged move shows its own crosshair (Ranged's
 -- RangedCrosshair gui, which goes onto the target too), and for the mouse while a
 -- menu is open (Menus). Switching slides the camera to and from the shoulder and eases the
--- character round to face the camera, rather than snapping (TRANSITION_TIME).
+-- character round to face the camera, rather than snapping (TRANSITION_TIME). The Shoulder
+-- side setting puts the camera over the left shoulder instead.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -79,7 +80,8 @@ local function applyToHumanoid(humanoid, instant)
 		return
 	end
 	humanoid.AutoRotate = not locked
-	local offset = locked and SHOULDER_OFFSET or Vector3.zero
+	local side = Preferences.Choice("Side") == "LEFT" and -1 or 1
+	local offset = locked and SHOULDER_OFFSET * Vector3.new(side, 1, 1) or Vector3.zero
 	if offsetTween then
 		offsetTween:Cancel()
 		offsetTween = nil
@@ -172,6 +174,16 @@ RunService:BindToRenderStep(CROSSHAIR_STEP_NAME, Enum.RenderPriority.Camera.Valu
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
 		setLocked(not locked)
+	end
+end)
+
+-- a new Shoulder side slides the camera across
+local drawnSide = Preferences.Choice("Side")
+Preferences.Changed(function()
+	local side = Preferences.Choice("Side")
+	if side ~= drawnSide then
+		drawnSide = side
+		applyToHumanoid(currentHumanoid())
 	end
 end)
 
