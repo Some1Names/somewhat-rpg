@@ -7,8 +7,8 @@
 -- While you hold a block, a white posture bar (Guard) takes the stamina boxes'
 -- place, filling as hits wear the guard down; a guard break flashes it red and
 -- shakes it for the length of the stun, then the stamina boxes come back.
--- The Shoulder side setting (LEFT) moves it to the left of the body, its right edge
--- against the body, so it's on the side the shift-lock camera looks over.
+-- The Shoulder side setting (LEFT) moves it to the left of the body and mirrors it, so it
+-- still starts at the body: icons on the right, bars and boxes running out to the left.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -77,8 +77,8 @@ task.spawn(function()
 end)
 
 -- The billboard is twice the content width with everything in its right half,
--- so the left edge sits exactly at OFFSET however far you zoom. On the left side the
--- content slides left by the width in use each frame, so its right edge sits there instead.
+-- so the left edge sits exactly at OFFSET however far you zoom. On the left side
+-- everything is in its left half instead, mirrored, so the right edge sits there.
 local billboard = Instance.new("BillboardGui")
 billboard.Name = "StatusHUD"
 billboard.AlwaysOnTop = true
@@ -93,6 +93,14 @@ content.BackgroundTransparency = 1
 content.Position = UDim2.fromScale(0.5, 0)
 content.Size = UDim2.fromScale(0.5, 1)
 content.Parent = billboard
+
+-- the Shoulder side: true lays everything out mirrored (applySide)
+local left = false
+
+-- the x for something `width` wide that sits `x` from the body's side
+local function mx(x, width)
+	return left and CONTENT_WIDTH - x - width or x
+end
 
 local function frame(parent, color, size, position)
 	local f = Instance.new("Frame")
@@ -159,7 +167,7 @@ player:GetAttributeChangedSignal("Level"):Connect(showName)
 
 -- HP bar
 local hp = meter(row(2))
-icon(hp.group, "\u{2665}")
+hp.icon = icon(hp.group, "\u{2665}")
 local hpTrack = frame(hp.group, Color3.new(0, 0, 0), UDim2.fromOffset(BAR_WIDTH, BAR_HEIGHT),
 	UDim2.fromOffset(ICON_WIDTH, (ROW_HEIGHT - BAR_HEIGHT) / 2))
 hpTrack.BackgroundTransparency = 0.65
@@ -250,6 +258,33 @@ local function boxShare(fraction, i, count)
 	return math.clamp(fraction * count - (i - 1), 0, 1)
 end
 
+-- puts the HUD on the right of the body, or mirrored on the left (the Shoulder side setting)
+local statusLayout = statusIcons.row:FindFirstChildOfClass("UIListLayout")
+local function applySide(value)
+	left = value
+	local base = left and OFFSET * Vector3.new(-1, 1, 1) or OFFSET
+	billboard:SetAttribute("BaseOffset", base) -- HudSway sways it around this
+	billboard.StudsOffset = base
+	content.Position = left and UDim2.new() or UDim2.fromScale(0.5, 0)
+	nameLabel.TextXAlignment = left and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left
+	local fillAnchor = Vector2.new(left and 1 or 0, 0)
+	local fillPosition = UDim2.fromScale(left and 1 or 0, 0)
+	for _, label in ipairs({ hp.icon, stamina.icon }) do
+		label.Position = UDim2.fromOffset(mx(0, label.Size.X.Offset), 0)
+	end
+	hpTrack.Position = UDim2.fromOffset(mx(ICON_WIDTH, BAR_WIDTH), (ROW_HEIGHT - BAR_HEIGHT) / 2)
+	for _, bar in ipairs({ hp.fill, hp.trail, postureFill }) do
+		bar.AnchorPoint = fillAnchor
+		bar.Position = fillPosition
+	end
+	for i, box in ipairs(stamina.boxes) do
+		box.box.Position = UDim2.fromOffset(mx(ICON_WIDTH + (i - 1) * (BOX_SIZE + BOX_GAP), BOX_SIZE), (ROW_HEIGHT - BOX_SIZE) / 2)
+	end
+	statusIcons.row.Position = UDim2.fromOffset(left and 0 or ICON_WIDTH - 1, 3 * (ROW_HEIGHT + ROW_GAP))
+	statusLayout.HorizontalAlignment = left and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+end
+applySide(Preferences.Choice("Side") == "LEFT")
+
 local function onCharacter(character)
 	billboard.Adornee = character:WaitForChild("HumanoidRootPart")
 	showName()
@@ -299,7 +334,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if showPosture then
 		postureTrack.Size = UDim2.fromOffset(boxesWidth(boxCount), BOX_SIZE)
 		local shake = os.clock() < shakeUntil and math.random(-SHAKE_PIXELS, SHAKE_PIXELS) or 0
-		postureTrack.Position = UDim2.fromOffset(ICON_WIDTH + shake, (ROW_HEIGHT - BOX_SIZE) / 2)
+		postureTrack.Position = UDim2.fromOffset(mx(ICON_WIDTH + shake, boxesWidth(boxCount)), (ROW_HEIGHT - BOX_SIZE) / 2)
 		postureFill.Size = UDim2.fromScale(math.clamp((character:GetAttribute("Posture") or 0) / GuardConfig.MaxPosture, 0, 1), 1)
 		local red = broken and math.floor(os.clock() / BROKEN_FLASH) % 2 == 0
 		postureFill.BackgroundColor3 = red and BROKEN_COLOR or POSTURE_COLOR
@@ -308,11 +343,11 @@ RunService.RenderStepped:Connect(function(dt)
 	local firstX = ICON_WIDTH + boxesWidth(boxCount) + DODGE_GAP + BOX_SIZE / 2
 	for i, link in ipairs(dodgeLinks) do
 		link.Visible = i + 1 <= DodgeCharges.Max
-		link.Position = UDim2.fromOffset(firstX + (i - 1) * DODGE_STEP + LINK_START, ROW_HEIGHT / 2)
+		link.Position = UDim2.fromOffset(mx(firstX + (i - 1) * DODGE_STEP + LINK_START, LINK_WIDTH), ROW_HEIGHT / 2)
 	end
 	for i, dodge in ipairs(dodges) do
 		dodge.diamond.Visible = i <= DodgeCharges.Max
-		dodge.diamond.Position = UDim2.fromOffset(firstX + (i - 1) * DODGE_STEP, ROW_HEIGHT / 2)
+		dodge.diamond.Position = UDim2.fromOffset(mx(firstX + (i - 1) * DODGE_STEP, 0), ROW_HEIGHT / 2)
 		local charged = math.clamp(charges - (i - 1), 0, 1)
 		local ready = charged >= 1
 		dodge.fill.Size = UDim2.fromScale(charged, charged)
@@ -327,23 +362,8 @@ RunService.RenderStepped:Connect(function(dt)
 	-- the name shows whenever either meter does
 	nameGroup.GroupTransparency = math.min(hp.shown, stamina.shown)
 
-	-- which side of the body, and on the left, how far to slide so the rows end at the body
-	local left = Preferences.Choice("Side") == "LEFT"
-	local base = left and OFFSET * Vector3.new(-1, 1, 1) or OFFSET
-	if billboard:GetAttribute("BaseOffset") ~= base then
-		-- HudSway sways it around BaseOffset
-		billboard:SetAttribute("BaseOffset", base)
-		billboard.StudsOffset = base
-	end
-	if left then
-		local dodgesRight = DodgeCharges.Max > 0 and firstX + (DodgeCharges.Max - 1) * DODGE_STEP + DODGE_HALF_DIAGONAL or 0
-		local used = math.ceil(math.max(ICON_WIDTH + BAR_WIDTH, ICON_WIDTH + boxesWidth(boxCount), dodgesRight))
-		content.Position = UDim2.new(0.5, -used, 0, 0)
-		nameLabel.Size = UDim2.new(0, used, 1, 0)
-		nameLabel.TextXAlignment = Enum.TextXAlignment.Right
-	else
-		content.Position = UDim2.fromScale(0.5, 0)
-		nameLabel.Size = UDim2.fromScale(1, 1)
-		nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+	-- the Shoulder side setting
+	if (Preferences.Choice("Side") == "LEFT") ~= left then
+		applySide(not left)
 	end
 end)
