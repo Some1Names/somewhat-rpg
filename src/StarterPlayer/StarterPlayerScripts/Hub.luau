@@ -1,8 +1,11 @@
 -- The hub: one full-screen menu holding Profile, Backpack (Inventory), Map, Quests,
 -- Stats and Updates, with locked slots for later features. The first script to
--- require it builds the screen: grey paper, the dark nav column on the left,
--- the header (#TITLE, the accent bar and the tab's number), the
--- footer, and on the right the strip HubPose draws the posed character in.
+-- require it builds the screen in Modern Warfare's style with Arknights' editorial bits:
+-- dark see-through paper (darkest on the left), the nav on the left (a narrow rail with
+-- the level, the swatches and ESC, then the numbered list of tabs on smoked glass), the
+-- header (#TITLE, the accent bar and the tab's number), the footer (an ESC key chip and
+-- #SOMEWHAT), and on the right the strip HubPose draws the posed character in. Tab cards
+-- (frames in Theme.Panel) are drawn as smoked glass with a thin light edge.
 -- Each tab is a script that asks Hub.Tab(name, opts) for a frame and builds in
 -- it; a tab's key (B, J, M) opens the hub on it, closes it if it's the one
 -- showing, or switches to it; not while the title menu is up, nor when
@@ -34,8 +37,10 @@ local Theme = HudConfig.HubTheme
 
 local PAD = 16
 local NAV_PAD = 14
-local NAV_ROW = 30
-local NAV_TOP = 58 -- the first tab button, this far under the brand
+local NAV_ROW = 34
+local NAV_TOP = 64 -- the first tab button, this far under the brand
+local LIST_TRANSPARENCY = 0.35 -- the nav's list, smoked glass beside the solid rail
+local BAR_HEIGHT = 4 -- the accent bar after the #TITLE
 -- Roblox's own buttons sit in a band across the top: the hub leaves it empty paper.
 -- Its height is read on each open (it's often still 0 while the game loads).
 local ROBLOX_BAR_FALLBACK = 58
@@ -47,7 +52,8 @@ local WHITE = Color3.new(1, 1, 1)
 local OPEN_TIME = 0.35 -- the nav sliding in
 local CLOSE_BLUR_TIME = 0.2
 local BLUR_SIZE = 40 -- the gaussian blur of the world behind the hub
-local PAPER_TRANSPARENCY = 0.10 -- how much of that world shows through the paper
+-- how much of that world shows through the paper: little on the left, more on the right
+local PAPER_LEFT, PAPER_RIGHT = 0.05, 0.4
 local PAGE_TIME = 0.3 -- a tab easing up into place, its title fading in
 local BAR_TIME = 0.45 -- the title's bar sweeping across
 local HOVER_TIME = 0.15
@@ -96,7 +102,15 @@ local gui = make("ScreenGui", {
 -- footer (both always the full width, so they don't move between tabs), the nav, the ×
 -- (Active: it catches clicks, so nothing behind the hub, the top bar's icons say, can be pressed)
 -- see-through paper: the world behind it is gaussian-blurred while the hub is open
-make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BackgroundTransparency = PAPER_TRANSPARENCY, BorderSizePixel = 0, ZIndex = 1, Active = true })
+local paper = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Paper, BorderSizePixel = 0, ZIndex = 1, Active = true })
+make("UIGradient", {
+	Parent = paper,
+	Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, PAPER_LEFT),
+		NumberSequenceKeypoint.new(0.45, (PAPER_LEFT + PAPER_RIGHT) / 2),
+		NumberSequenceKeypoint.new(1, PAPER_RIGHT),
+	}),
+})
 local blur = make("BlurEffect", { Name = "HubBlur", Size = 0, Parent = game:GetService("Lighting") })
 -- everything else, below Roblox's band
 local body = make("Frame", {
@@ -105,8 +119,17 @@ local body = make("Frame", {
 	BackgroundTransparency = 1,
 	ZIndex = 2,
 })
--- the nav column's colour runs up through the band, behind Roblox's buttons
-local navCap = make("Frame", { Parent = gui, BackgroundColor3 = Theme.Nav, BorderSizePixel = 0, ZIndex = 2 })
+-- the nav column's colours (the solid rail, the smoked list) run up through the band, behind Roblox's buttons
+local navCap = make("Frame", { Parent = gui, BackgroundTransparency = 1, ZIndex = 2 })
+make("Frame", { Parent = navCap, Size = UDim2.new(0, Theme.RailWidth, 1, 0), BackgroundColor3 = Theme.Nav, BorderSizePixel = 0 })
+make("Frame", {
+	Parent = navCap,
+	Position = UDim2.fromOffset(Theme.RailWidth, 0),
+	Size = UDim2.new(1, -Theme.RailWidth, 1, 0),
+	BackgroundColor3 = Theme.Nav,
+	BackgroundTransparency = LIST_TRANSPARENCY,
+	BorderSizePixel = 0,
+})
 local function placeBody()
 	local band = GuiService:GetGuiInset().Y / UIScale.Get() -- Roblox's band is in real pixels
 	band = band > 0 and band or ROBLOX_BAR_FALLBACK / UIScale.Get()
@@ -189,14 +212,14 @@ make("UIFlexItem", { Parent = barHolder, FlexMode = Enum.UIFlexMode.Fill })
 local titleBar = make("Frame", {
 	Parent = barHolder,
 	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 0, 1, -10),
-	Size = UDim2.new(1, 0, 0, 8),
+	Position = UDim2.new(0, 0, 1, -12),
+	Size = UDim2.new(1, 0, 0, BAR_HEIGHT),
 	BorderSizePixel = 0,
 })
 local numberLabel = label(titleRow, {
 	LayoutOrder = 3,
-	Font = Theme.LabelFont,
-	TextSize = 24,
+	Font = Theme.MonoFont,
+	TextSize = 20,
 	Size = UDim2.fromOffset(0, 44),
 	AutomaticSize = Enum.AutomaticSize.X,
 })
@@ -210,7 +233,7 @@ local content = make("Frame", {
 	BackgroundTransparency = 1,
 })
 
--- footer: a rule, the record line, and #SOMEWHAT on an accent chip
+-- footer: a thin rule, the [ESC] CLOSE MENU key chip, the record line, and #SOMEWHAT on an accent chip
 local footer = make("Frame", {
 	Parent = body,
 	AnchorPoint = Vector2.new(0, 1),
@@ -219,13 +242,55 @@ local footer = make("Frame", {
 	BackgroundTransparency = 1,
 	ZIndex = 3,
 })
-make("Frame", { Parent = footer, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Theme.Ink, BorderSizePixel = 0 })
-label(footer, {
+make("Frame", { Parent = footer, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Theme.Edge, BackgroundTransparency = Theme.EdgeTransparency, BorderSizePixel = 0 })
+local footerLeft = make("Frame", { Parent = footer, Size = UDim2.new(1, -120, 1, 0), BackgroundTransparency = 1 })
+make("UIListLayout", {
+	Parent = footerLeft,
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 18),
+})
+local escButton = make("TextButton", {
+	Parent = footerLeft,
+	LayoutOrder = 1,
+	Size = UDim2.fromOffset(0, 18),
+	AutomaticSize = Enum.AutomaticSize.X,
+	BackgroundTransparency = 1,
+	Text = "",
+})
+make("UIListLayout", {
+	Parent = escButton,
+	FillDirection = Enum.FillDirection.Horizontal,
+	VerticalAlignment = Enum.VerticalAlignment.Center,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 6),
+})
+-- the key in a small square box, the way Modern Warfare prints its prompts
+local escChip = label(escButton, {
+	LayoutOrder = 1,
+	Text = "ESC",
+	Font = Theme.MonoFont,
+	TextSize = 10,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Size = UDim2.fromOffset(30, 16),
+})
+make("UIStroke", { Parent = escChip, Color = Theme.Ink, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+local escText = label(escButton, {
+	LayoutOrder = 2,
+	Text = "CLOSE MENU",
+	TextSize = 12,
+	TextColor3 = Theme.Muted,
+	Size = UDim2.fromOffset(0, 16),
+	AutomaticSize = Enum.AutomaticSize.X,
+})
+label(footerLeft, {
+	LayoutOrder = 2,
 	Text = "SOMEWHAT RPG. INTERNAL RECORD. DATA SAVED ON LEAVE.",
 	TextSize = 11,
 	TextColor3 = Theme.Muted,
-	Size = UDim2.new(1, -120, 1, 0),
-	TextTruncate = Enum.TextTruncate.AtEnd,
+	Size = UDim2.fromOffset(0, 16),
+	AutomaticSize = Enum.AutomaticSize.X,
 })
 local footerTag = make("Frame", {
 	Parent = footer,
@@ -254,47 +319,75 @@ local footerChip = label(footerTag, {
 })
 footerChip.BackgroundTransparency = 0
 
--- the nav column
+-- the nav column: the solid rail on the far left, the smoked list of tabs beside it
 local nav = make("Frame", {
 	Name = "Nav",
 	Parent = body,
 	Size = UDim2.new(0, Theme.NavWidth, 1, 0),
-	BackgroundColor3 = Theme.Nav,
-	BorderSizePixel = 0,
+	BackgroundTransparency = 1,
 	ZIndex = 4,
 })
-local brand = label(nav, {
-	Font = Theme.LabelFont,
-	TextSize = 16,
-	TextColor3 = Theme.NavText,
-	RichText = true,
-	Position = UDim2.fromOffset(NAV_PAD, 12),
-	Size = UDim2.new(1, -2 * NAV_PAD, 0, 20),
+local rail = make("Frame", {
+	Name = "Rail",
+	Parent = nav,
+	Size = UDim2.new(0, Theme.RailWidth, 1, 0),
+	BackgroundColor3 = Theme.Nav,
+	BorderSizePixel = 0,
 })
-label(nav, {
-	Text = "FILE NO. 049 / PLAYER",
+local listPanel = make("Frame", {
+	Parent = nav,
+	Position = UDim2.fromOffset(Theme.RailWidth, 0),
+	Size = UDim2.new(1, -Theme.RailWidth, 1, 0),
+	BackgroundColor3 = Theme.Nav,
+	BackgroundTransparency = LIST_TRANSPARENCY,
+	BorderSizePixel = 0,
+})
+-- thin light edges after the rail and after the list
+for _, holder in ipairs({ rail, listPanel }) do
+	make("Frame", {
+		Parent = holder,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0, 1, 1, 0),
+		BackgroundColor3 = Theme.Edge,
+		BackgroundTransparency = Theme.EdgeTransparency,
+		BorderSizePixel = 0,
+	})
+end
+
+-- the rail: the level up top, under it a short accent tick; the four swatches (accent, grey,
+-- black, light) stacked at the bottom
+label(rail, {
+	Text = "LVL",
 	TextSize = 10,
 	TextColor3 = Theme.Muted,
-	Position = UDim2.fromOffset(NAV_PAD, 34),
-	Size = UDim2.new(1, -2 * NAV_PAD, 0, 12),
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Position = UDim2.fromOffset(0, 12),
+	Size = UDim2.new(1, 0, 0, 12),
 })
-local navList = make("Frame", {
-	Parent = nav,
-	Position = UDim2.fromOffset(NAV_PAD, NAV_TOP),
-	Size = UDim2.new(1, -2 * NAV_PAD, 1, -(NAV_TOP + 60)),
-	BackgroundTransparency = 1,
+local levelLabel = label(rail, {
+	Font = Theme.MonoFont,
+	TextSize = 18,
+	TextColor3 = Theme.NavText,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	Position = UDim2.fromOffset(0, 24),
+	Size = UDim2.new(1, 0, 0, 20),
 })
-make("UIListLayout", { Parent = navList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
-
--- the four swatches (accent, grey, black, light) and ESC / CLOSE at the bottom
+local railTick = make("Frame", {
+	Parent = rail,
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, 50),
+	Size = UDim2.fromOffset(20, 2),
+	BorderSizePixel = 0,
+})
 local swatches = make("Frame", {
-	Parent = nav,
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, NAV_PAD, 1, -36),
-	Size = UDim2.fromOffset(4 * (SWATCH + 4), SWATCH),
+	Parent = rail,
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(0.5, 0, 1, -16),
+	Size = UDim2.fromOffset(SWATCH, 4 * (SWATCH + 4)),
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = swatches, FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, 4) })
+make("UIListLayout", { Parent = swatches, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
 local accentSwatch
 for i, color in ipairs({ WHITE, Color3.fromRGB(136, 136, 136), Color3.fromRGB(10, 10, 10), Color3.fromRGB(204, 204, 204) }) do
 	local swatch = make("Frame", { Parent = swatches, LayoutOrder = i, Size = UDim2.fromOffset(SWATCH, SWATCH), BackgroundColor3 = color, BorderSizePixel = 0 })
@@ -302,18 +395,30 @@ for i, color in ipairs({ WHITE, Color3.fromRGB(136, 136, 136), Color3.fromRGB(10
 		accentSwatch = swatch
 	end
 end
-local escButton = make("TextButton", {
-	Parent = nav,
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, NAV_PAD, 1, -14),
-	Size = UDim2.fromOffset(100, 14),
-	BackgroundTransparency = 1,
-	Font = Theme.LabelFont,
-	Text = "ESC / CLOSE",
-	TextSize = 11,
-	TextColor3 = Theme.Muted,
-	TextXAlignment = Enum.TextXAlignment.Left,
+
+-- the list: the brand, the file line, then the numbered tabs
+local brand = label(listPanel, {
+	Font = Theme.TitleFont,
+	TextSize = 18,
+	TextColor3 = Theme.NavText,
+	RichText = true,
+	Position = UDim2.fromOffset(NAV_PAD, 12),
+	Size = UDim2.new(1, -2 * NAV_PAD, 0, 22),
 })
+label(listPanel, {
+	Text = "FILE NO. 049 / PLAYER",
+	TextSize = 10,
+	TextColor3 = Theme.Muted,
+	Position = UDim2.fromOffset(NAV_PAD, 36),
+	Size = UDim2.new(1, -2 * NAV_PAD, 0, 12),
+})
+local navList = make("Frame", {
+	Parent = listPanel,
+	Position = UDim2.fromOffset(0, NAV_TOP),
+	Size = UDim2.new(1, -1, 1, -(NAV_TOP + 20)),
+	BackgroundTransparency = 1,
+})
+make("UIListLayout", { Parent = navList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
 
 local closeButton = make("TextButton", {
 	Parent = body,
@@ -347,13 +452,21 @@ local function tabList()
 	return list
 end
 
+-- each entry: its number (01, 02 ...), and the selected one in the accent, larger, with the
+-- accent bar on its left and the accent fading out behind it
 local function paintNav()
+	for i, name in ipairs(HubRules.Order(tabList())) do
+		tabs[name].numberLabel.Text = string.format("%02d", i)
+	end
 	for _, tab in pairs(tabs) do
 		local selected = tab.name == current
 		tab.marker.Visible = selected
 		tab.marker.BackgroundColor3 = accent
+		tab.highlight.Visible = selected
+		tab.highlight.BackgroundColor3 = accent
 		tab.nameLabel.TextColor3 = tab.locked and Theme.Muted or selected and accent or Theme.NavText
-		tab.nameLabel.TextSize = selected and 16 or 13
+		tab.nameLabel.TextSize = selected and 20 or 15
+		tab.numberLabel.TextColor3 = selected and accent or Theme.Muted
 	end
 end
 
@@ -362,6 +475,7 @@ local function paintAccent()
 	ink = Color3.new(r, g, b)
 	brand.Text = string.format('[ <font color="#%s">SOMEWHAT</font> ]', accent:ToHex())
 	accentSwatch.BackgroundColor3 = accent
+	railTick.BackgroundColor3 = accent
 	titleBar.BackgroundColor3 = ink
 	footerChip.BackgroundColor3 = ink
 	footerChip.TextColor3 = Hub.OnInk()
@@ -413,8 +527,8 @@ local function show(name)
 	titleLabel.TextTransparency, numberLabel.TextTransparency = 1, 1
 	tween(titleLabel, PAGE_TIME, { TextTransparency = 0 })
 	tween(numberLabel, PAGE_TIME, { TextTransparency = 0 })
-	titleBar.Size = UDim2.new(0, 0, 0, 8)
-	tween(titleBar, BAR_TIME, { Size = UDim2.new(1, 0, 0, 8) })
+	titleBar.Size = UDim2.new(0, 0, 0, BAR_HEIGHT)
+	tween(titleBar, BAR_TIME, { Size = UDim2.new(1, 0, 0, BAR_HEIGHT) })
 	for _, fn in ipairs(shownListeners[name] or {}) do
 		task.spawn(fn)
 	end
@@ -629,46 +743,51 @@ function Hub.Tab(name, opts)
 		Text = "",
 		AutoButtonColor = false,
 	})
-	local hoverPad = make("UIPadding", { Parent = tab.button })
+	-- behind the selected entry: the accent fading out to the right, and a bar on its left edge
+	tab.highlight = make("Frame", { Parent = tab.button, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 0.7, BorderSizePixel = 0, Visible = false })
+	make("UIGradient", {
+		Parent = tab.highlight,
+		Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }),
+	})
+	tab.marker = make("Frame", { Parent = tab.button, Size = UDim2.new(0, 3, 1, 0), BorderSizePixel = 0, Visible = false })
+	local row = make("Frame", { Parent = tab.button, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
+	local hoverPad = make("UIPadding", { Parent = row, PaddingLeft = UDim.new(0, NAV_PAD) })
 	make("UIListLayout", {
-		Parent = tab.button,
+		Parent = row,
 		FillDirection = Enum.FillDirection.Horizontal,
 		VerticalAlignment = Enum.VerticalAlignment.Center,
 		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, 6),
+		Padding = UDim.new(0, 8),
 	})
-	-- the ↖ chip on the selected tab; the others keep its room so names line up
-	local markerSlot = make("Frame", { Parent = tab.button, LayoutOrder = 1, Size = UDim2.fromOffset(18, 18), BackgroundTransparency = 1 })
-	tab.marker = label(markerSlot, {
-		Text = "↖",
+	tab.numberLabel = label(row, {
+		LayoutOrder = 1,
+		Font = Theme.MonoFont,
 		TextSize = 13,
-		TextColor3 = Theme.Nav,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		BackgroundTransparency = 0,
-		BorderSizePixel = 0,
-		Size = UDim2.fromScale(1, 1),
-		Visible = false,
+		TextColor3 = Theme.Muted,
+		Size = UDim2.fromOffset(20, NAV_ROW),
 	})
-	tab.marker.BackgroundTransparency = 0
-	tab.nameLabel = label(tab.button, {
+	tab.nameLabel = label(row, {
 		LayoutOrder = 2,
 		Text = tab.locked and "[LOCKED]" or tab.title,
-		TextSize = 13,
+		Font = Theme.TitleFont,
+		TextSize = 15,
 		TextColor3 = Theme.NavText,
 		Size = UDim2.fromOffset(0, NAV_ROW),
 		AutomaticSize = Enum.AutomaticSize.X,
 	})
 	if tab.key then
-		label(tab.button, {
+		local keyChip = label(row, {
 			LayoutOrder = 3,
 			Text = Keybinds.ShortName(tab.key.Name),
-			TextSize = 11,
+			Font = Theme.MonoFont,
+			TextSize = 10,
 			TextColor3 = Theme.Muted,
-			Size = UDim2.fromOffset(0, NAV_ROW),
-			AutomaticSize = Enum.AutomaticSize.X,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Size = UDim2.fromOffset(16, 16),
 		})
+		make("UIStroke", { Parent = keyChip, Color = Theme.Muted, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	end
-	tab.badge = label(tab.button, {
+	tab.badge = label(row, {
 		LayoutOrder = 4,
 		TextSize = 10,
 		TextColor3 = Theme.Nav,
@@ -695,11 +814,11 @@ function Hub.Tab(name, opts)
 		end)
 		-- hover: the entry nudges right and takes the accent
 		tab.button.MouseEnter:Connect(function()
-			tween(hoverPad, HOVER_TIME, { PaddingLeft = UDim.new(0, 6) })
+			tween(hoverPad, HOVER_TIME, { PaddingLeft = UDim.new(0, NAV_PAD + 6) })
 			tab.nameLabel.TextColor3 = accent
 		end)
 		tab.button.MouseLeave:Connect(function()
-			tween(hoverPad, HOVER_TIME, { PaddingLeft = UDim.new(0, 0) })
+			tween(hoverPad, HOVER_TIME, { PaddingLeft = UDim.new(0, NAV_PAD) })
 			paintNav()
 		end)
 	end
@@ -750,10 +869,10 @@ closeButton.MouseLeave:Connect(function()
 	tween(closeButton, HOVER_TIME, { Rotation = 0 })
 end)
 escButton.MouseEnter:Connect(function()
-	escButton.TextColor3 = Theme.NavText
+	escText.TextColor3 = Theme.NavText
 end)
 escButton.MouseLeave:Connect(function()
-	escButton.TextColor3 = Theme.Muted
+	escText.TextColor3 = Theme.Muted
 end)
 
 -- every button in a tab (sub-tabs, chips, cards, links) gets an accent line
@@ -778,7 +897,31 @@ local function hoverLine(button)
 		tween(line, HOVER_TIME, { Size = UDim2.new(0, 0, 0, 2) })
 	end)
 end
+-- a tab's card (a frame or button filled with Theme.Panel) becomes smoked glass with a thin light edge
+local function smoke(item)
+	if
+		(item:IsA("Frame") or item:IsA("GuiButton"))
+		and item.BackgroundColor3 == Theme.Panel
+		and item.BackgroundTransparency == 0
+		and not item:FindFirstChildWhichIsA("UIStroke")
+	then
+		item.BackgroundTransparency = Theme.PanelTransparency
+		make("UIStroke", {
+			Parent = item,
+			Color = Theme.Edge,
+			Transparency = Theme.EdgeTransparency,
+			ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		})
+	end
+end
 content.DescendantAdded:Connect(function(item)
+	if item:IsA("GuiObject") then
+		task.defer(function()
+			if item.Parent then
+				smoke(item)
+			end
+		end)
+	end
 	if item:IsA("GuiButton") then
 		-- choosing a section (a sub-tab, a category) sounds like the side bar:
 		-- those buttons set SectionSelect, and it plays as they go down
@@ -804,11 +947,18 @@ Menus.Register("Hub", function()
 	end
 end)
 
+local function readLevel()
+	levelLabel.Text = tostring(player:GetAttribute("Level") or 1)
+end
+
 player.AttributeChanged:Connect(function(name)
 	if name == "CurrentPower" then
 		readAccent()
+	elseif name == "Level" then
+		readLevel()
 	end
 end)
 readAccent()
+readLevel()
 
 return Hub

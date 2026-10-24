@@ -46,21 +46,29 @@ HudConfig.ComboTiers = {
 HudConfig.LowHealthStart = 0.3
 HudConfig.LowHealthPulse = 0.15
 
--- the hub menu (Hub and its tabs): near-black paper, light ink, one accent (the held
--- power's colour; NoPower when there's none), square everything
+-- the hub menu (Hub and its tabs): Modern Warfare's smoked glass over the blurred world
+-- (see-through dark cards with a thin light edge, a narrow rail on the far left, numbered
+-- entries, key chips) with the Arknights editorial bits kept (#TITLE and its bar, the
+-- swatches, the #SOMEWHAT chip). Light ink, one accent (the held power's colour; NoPower
+-- when there's none), square everything
 HudConfig.HubTheme = {
-	Paper = Color3.fromRGB(20, 20, 23),
-	Panel = Color3.fromRGB(50, 50, 58), -- cards
+	Paper = Color3.fromRGB(12, 13, 15),
+	Panel = Color3.fromRGB(30, 32, 36), -- cards: Hub draws every one of these as smoked glass
+	PanelTransparency = 0.3,
+	Edge = Color3.new(1, 1, 1), -- the thin edge round a card
+	EdgeTransparency = 0.82,
 	BarBack = Color3.fromRGB(80, 80, 90), -- empty part of a progress bar
 	Ink = Color3.fromRGB(236, 236, 238), -- text, and the fill of an ink button
-	Muted = Color3.fromRGB(190, 190, 198),
+	Muted = Color3.fromRGB(170, 172, 178),
 	Nav = Color3.fromRGB(9, 9, 11),
 	NavText = Color3.fromRGB(238, 238, 238),
 	NoPower = Color3.new(1, 1, 1),
-	TitleFont = Enum.Font.Highway,
+	TitleFont = Enum.Font.Oswald, -- condensed uppercase headings
 	LabelFont = Enum.Font.Highway,
 	BodyFont = Enum.Font.Highway,
-	NavWidth = 200,
+	MonoFont = Enum.Font.RobotoMono, -- numbers: 01, LVL 55, 2/3
+	RailWidth = 52, -- the far-left rail (level, swatches, ×); the nav's list is the rest of NavWidth
+	NavWidth = 240,
 	HeaderHeight = 74,
 	FooterHeight = 30,
 	PoseShare = 0.3, -- the posed character's strip, as a share of the screen's width
