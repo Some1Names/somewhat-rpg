@@ -6,10 +6,12 @@
 -- lock or not, it sits on them instead and the mouse stays hidden: the cursor is where every
 -- move aims. It steps aside while a ranged move shows its own crosshair (Ranged's
 -- RangedCrosshair gui, which goes onto the target too), and for the mouse while a
--- menu is open (Menus).
+-- menu is open (Menus). Switching slides the camera to and from the shoulder and eases the
+-- character round to face the camera, rather than snapping (TRANSITION_TIME).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
@@ -24,8 +26,12 @@ local SHOULDER_OFFSET = Vector3.new(1.75, 0, 0)
 local CROSSHAIR_SIZE = 24 -- px, the room the crosshair is drawn in
 local RENDER_STEP_NAME = "ShiftLock"
 local CROSSHAIR_STEP_NAME = "ShiftLockCrosshair"
+local TRANSITION_TIME = 0.25 -- seconds the camera takes to slide to or from the shoulder
+local TURN_RATE = 18 -- how fast the character eases round to the camera while it slides in
 
 local locked = false
+local lockedAt = 0 -- os.clock() when shift lock last turned on
+local offsetTween
 local menuOpen = false
 Menus.OnChange(function(name)
 	menuOpen = name ~= nil
@@ -67,15 +73,27 @@ local function currentHumanoid()
 	return character and character:FindFirstChildOfClass("Humanoid")
 end
 
-local function applyToHumanoid(humanoid)
-	if humanoid then
-		humanoid.AutoRotate = not locked
-		humanoid.CameraOffset = locked and SHOULDER_OFFSET or Vector3.zero
+-- `instant` (a new character) skips the slide
+local function applyToHumanoid(humanoid, instant)
+	if not humanoid then
+		return
+	end
+	humanoid.AutoRotate = not locked
+	local offset = locked and SHOULDER_OFFSET or Vector3.zero
+	if offsetTween then
+		offsetTween:Cancel()
+		offsetTween = nil
+	end
+	if instant then
+		humanoid.CameraOffset = offset
+	else
+		offsetTween = TweenService:Create(humanoid, TweenInfo.new(TRANSITION_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { CameraOffset = offset })
+		offsetTween:Play()
 	end
 end
 
 -- runs right after the camera updates each frame
-local function faceCamera()
+local function faceCamera(dt)
 	-- the camera scripts can reset this, so it is reapplied every frame
 	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 	local humanoid = currentHumanoid()
@@ -94,7 +112,11 @@ local function faceCamera()
 	local look = workspace.CurrentCamera.CFrame.LookVector
 	local flatLook = Vector3.new(look.X, 0, look.Z)
 	if flatLook.Magnitude > 0.01 then
-		root.CFrame = CFrame.lookAt(root.Position, root.Position + flatLook)
+		local facing = CFrame.lookAt(root.Position, root.Position + flatLook)
+		if os.clock() - lockedAt < TRANSITION_TIME then
+			facing = root.CFrame:Lerp(facing, 1 - math.exp(-TURN_RATE * dt))
+		end
+		root.CFrame = facing
 	end
 end
 
@@ -108,6 +130,7 @@ end)
 
 local function setLocked(value)
 	locked = value
+	lockedAt = os.clock()
 	applyToHumanoid(currentHumanoid())
 	if locked then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
@@ -154,5 +177,5 @@ end)
 
 -- a respawned character picks up the current state
 player.CharacterAdded:Connect(function(character)
-	applyToHumanoid(character:WaitForChild("Humanoid"))
+	applyToHumanoid(character:WaitForChild("Humanoid"), true)
 end)
