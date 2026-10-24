@@ -2,11 +2,13 @@
 -- or the title menu's SETTINGS, which shows it alone), full screen in the hub's Modern Warfare look. Along the top, its
 -- sections as numbered sub-tabs: KEYBINDS, then the Preferences sections (GAMEPLAY,
 -- EFFECTS, INTERFACE). On the left the section's rows, on the right a card saying what
--- the row under the cursor does. The row under the cursor is the selected one: the
--- accent fades out behind it. Up and down move the selection, left and right change it.
--- A keybind row: click it, press a key, and it's bound there (a key another action had
+-- the selected row does. A click selects a row (the accent fades out behind it; one under
+-- the cursor only gets a faint wash); up and down move the selection, left and right
+-- change it. A second click on the selected row acts on it. A keybind row: click it
+-- again, press a key, and it's bound there (a key another action had
 -- swaps the two; reserved keys are refused; Esc calls the wait off). An ON/OFF row flips
--- on a click, a choice goes round its list; a slider drags, or steps with its arrows. Under
+-- on that click, a choice goes round its list; its arrows, and a slider's track, work
+-- at once (and select the row). A slider drags, or steps with its arrows. Under
 -- the card's text, a setting you can see or hear shows a live PREVIEW at its value
 -- (SettingsPreviews). Each section ends with RESET TO
 -- DEFAULTS. Keys go to SettingsServer on the SetKeybinds remote and settings on
@@ -47,6 +49,8 @@ local CAPTURE_RELEASE = 0.15 -- seconds the bound key stays swallowed, so it doe
 local SEND_SPACING = 0.6 -- seconds between saves (SettingsServer takes one per 0.5 s)
 local PENDING_TIMEOUT = 3 -- seconds a save may go unanswered before the saved values show again
 local DANGER = Color3.fromRGB(226, 75, 74)
+local SELECTED_WASH = 0.75 -- the accent behind the selected row, at its left
+local HOVER_WASH = 0.92 -- and behind a row the cursor is over
 local PREVIEW_TOP = 204 -- px down the card
 local PREVIEW_HEIGHT = 170
 
@@ -333,13 +337,26 @@ local function newRow(section, name, info)
 		Size = UDim2.new(0, CONTROL_WIDTH, 1, 0),
 		BackgroundTransparency = 1,
 	})
+	-- the cursor over it only washes it faintly; a click selects it (see `pressed`)
 	row.frame.MouseEnter:Connect(function()
-		if not dragging then
-			selectRow(row)
-		end
+		row.hovered = true
+		refresh()
+	end)
+	row.frame.MouseLeave:Connect(function()
+		row.hovered = false
+		refresh()
 	end)
 	table.insert(section.rows, row)
 	return row
+end
+
+-- a click on `row`: the first selects it, one on it while it's selected calls `act`
+local function pressed(row, act)
+	if selected == row then
+		act()
+	else
+		selectRow(row)
+	end
 end
 
 -- an arrow at either end of a control, stepping the value
@@ -370,7 +387,9 @@ local function setPreference(id, value)
 	refresh()
 end
 
+-- (an arrow's click selects its row too)
 local function nudge(row, steps)
+	selectRow(row)
 	local option = row.option
 	setPreference(option.id, Preferences.Nudge(option, prefs.shown()[option.id], steps))
 end
@@ -398,7 +417,9 @@ local function toggleRow(section, option)
 	onClick(row.frame, function(input)
 		-- not when the click was on an arrow (that steps it already)
 		if not inside(left, input.Position) and not inside(right, input.Position) then
-			nudge(row, 1)
+			pressed(row, function()
+				nudge(row, 1)
+			end)
 		end
 	end)
 	function row.paint(map)
@@ -457,7 +478,12 @@ local function sliderRow(section, option)
 	arrow(row.control, "›", 1, 1, function()
 		nudge(row, 1)
 	end)
+	-- a click on the row selects it (a slider has nothing to flip)
+	onClick(row.frame, function()
+		selectRow(row)
+	end)
 	onClick(row.track, function(input)
+		selectRow(row)
 		dragging = row
 		row.dragTo(input.Position.X)
 	end)
@@ -496,12 +522,14 @@ local function keyRow(section, action)
 	make("UIPadding", { Parent = row.value, PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 12) })
 	row.valueEdge = make("UIStroke", { Parent = row.value, Color = Theme.Ink, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	onClick(row.frame, function()
-		if capturing == action.id then
-			stopCapture()
-			setStatus("")
-		else
-			startCapture(action.id)
-		end
+		pressed(row, function()
+			if capturing == action.id then
+				stopCapture()
+				setStatus("")
+			else
+				startCapture(action.id)
+			end
+		end)
 	end)
 	function row.paint()
 		if capturing == action.id then
@@ -526,7 +554,9 @@ local function resetRow(section, reset)
 	row.name.Text = "RESET TO DEFAULTS"
 	row.name.Font = Theme.TitleFont
 	row.name.TextColor3 = Theme.Muted
-	onClick(row.frame, reset)
+	onClick(row.frame, function()
+		pressed(row, reset)
+	end)
 	function row.paint() end
 	return row
 end
@@ -653,7 +683,8 @@ function refresh()
 		for _, row in ipairs(section.rows) do
 			row.paint(map)
 			local isSelected = row == selected
-			row.highlight.Visible = isSelected
+			row.highlight.Visible = isSelected or row.hovered == true
+			row.highlight.BackgroundTransparency = isSelected and SELECTED_WASH or HOVER_WASH
 			row.highlight.BackgroundColor3 = ink
 			row.marker.Visible = isSelected
 			row.marker.BackgroundColor3 = ink
