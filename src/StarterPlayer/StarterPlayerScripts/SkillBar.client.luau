@@ -16,13 +16,12 @@
 -- and, per skill, its key, name and cooldown, or the mastery it needs while
 -- it's locked, plus the set's overcharge stacks (Mandela's Backbone Power):
 -- once full they pulse green until G overcharges the set, burn red and drain while
--- it's overcharged, then show the overcharge cooldown. Also pops up mastery
--- level ups. The keys are the player's own (Keybinds, set in Settings); a
+-- it's overcharged, then show the overcharge cooldown (mastery level ups show in the
+-- pickup feed, PickupFeed). The keys are the player's own (Keybinds, set in Settings); a
 -- skill still reaches the server by its slot (Z..F) whatever key cast it.
 -- A refused press says why just above the bar ("Snapshot: 3s cooldown").
 -- SkillSetServer checks every cast and overcharge; the cooldowns
 -- here are just the client's prediction for the display.
-local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -44,7 +43,6 @@ local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
 local activateOvercharge = ReplicatedStorage:WaitForChild("ActivateOvercharge")
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
 local undoRemote = ReplicatedStorage:WaitForChild("Undo") -- made by PhotoshopServer
-local masteryEvent = ReplicatedStorage:WaitForChild("MasteryUp")
 local player = Players.LocalPlayer
 
 -- a skill's cooldown with the set's Swift reforge modifier, as the server uses it
@@ -969,41 +967,4 @@ RunService.RenderStepped:Connect(function()
 		local color = overcharged and settings.color or set.color
 		AimIndicator.Draw(aimSpecFor(aimedSkill, overcharged, inForm), player.Character, aimPoint(), color)
 	end
-end)
-
--- mastery popups get their own screen, which stays on even when the bar hides
-local popupGui = make("ScreenGui", {
-	Name = "SkillPopups",
-	ResetOnSpawn = false,
-	IgnoreGuiInset = true, -- popup heights are fractions of the real screen
-	Parent = player:WaitForChild("PlayerGui"),
-})
-
--- a line of text that drifts up and fades
-local function popup(text, color, size, height, lifetime)
-	local popupLabel = label(popupGui, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, height),
-		Size = UDim2.fromOffset(400, size + 8),
-		Font = Style.TitleFont,
-		Text = string.upper(text),
-		TextSize = size,
-		TextColor3 = color,
-		TextStrokeTransparency = 0.5,
-	})
-	TweenService:Create(popupLabel, TweenInfo.new(lifetime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Position = UDim2.fromScale(0.5, height - 0.03),
-	}):Play()
-	local fade = TweenInfo.new(lifetime / 2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, 0, false, lifetime / 2)
-	TweenService:Create(popupLabel, fade, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
-	Debris:AddItem(popupLabel, lifetime)
-end
-
-masteryEvent.OnClientEvent:Connect(function(setName, fromLevel, toLevel)
-	local set = SkillSetConfig.Sets[setName]
-	if not set then
-		return
-	end
-	-- the banner; what it unlocks goes in the pickup feed
-	popup(string.format("%s MASTERY %d", string.upper(setName), toLevel), ACCENT, 26, 0.16, 2.5)
 end)

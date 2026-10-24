@@ -1,25 +1,22 @@
--- Bounties on screen: the Bounty Hunter's panel, the tracker and the popups.
+-- Bounties on screen: the Bounty Hunter's panel and the tracker.
 -- Triggering the ProximityPrompt of an NPC tagged QuestGiver (a GiverId
 -- attribute names its list in QuestConfig.Givers) opens a small square panel
 -- titled BOUNTY HUNTER with that giver's bounties: title, what to defeat,
 -- level and reward, and Accept (greyed with "Lv. N" above your level). The
 -- server re-checks everything (Quests.Accept). A bounty you've taken shows
 -- in a small tracker on the right edge ("Dummies 1/3"), hidden without one.
--- The QuestDone remote pops up "Bounty complete" or "Challenge complete" in
--- gold with its reward. The Quests menu (J) is Quests.client.
+-- A bounty or challenge done shows in the pickup feed (PickupFeed). The Quests
+-- menu (J) is Quests.client.
 local CollectionService = game:GetService("CollectionService")
-local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
 
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local questRemote = ReplicatedStorage:WaitForChild("Quest")
-local doneRemote = ReplicatedStorage:WaitForChild("QuestDone")
 
 local player = Players.LocalPlayer
 
@@ -251,35 +248,6 @@ RunService.Heartbeat:Connect(function()
 	if not root or not openGiver.model.Parent or (openGiver.model:GetPivot().Position - root.Position).Magnitude > QuestConfig.GiverRange + STEP_AWAY then
 		close()
 	end
-end)
-
--- popups
-local function popup(text, color, size, height, lifetime)
-	local popupLabel = make("TextLabel", {
-		Parent = gui,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, height),
-		Size = UDim2.fromOffset(500, size + 6),
-		BackgroundTransparency = 1,
-		Font = HudConfig.Style.TitleFont,
-		Text = string.upper(text),
-		TextSize = size,
-		TextColor3 = color,
-		TextStrokeTransparency = 0.5,
-	})
-	TweenService:Create(popupLabel, TweenInfo.new(lifetime, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		Position = UDim2.fromScale(0.5, height - 0.03),
-	}):Play()
-	TweenService:Create(popupLabel, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, lifetime - 0.4), {
-		TextTransparency = 1,
-		TextStrokeTransparency = 1,
-	}):Play()
-	Debris:AddItem(popupLabel, lifetime)
-end
-
--- the banner; the quest and its reward go in the pickup feed
-doneRemote.OnClientEvent:Connect(function(kind)
-	popup(kind == "bounty" and "Bounty complete" or "Challenge complete", GOLD, 30, 0.38, 3)
 end)
 
 player:GetAttributeChangedSignal("QuestId"):Connect(function()

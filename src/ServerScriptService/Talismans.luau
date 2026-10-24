@@ -5,7 +5,7 @@
 -- returns ok, why. Effects are read where they apply: max HP (PlayerStats), regen
 -- (Health), damage dealt and taken and kill yen (Damage), chest yen (Chests);
 -- the heal on each kill is here. Talismans.Grant gives one (a chest drop) and
--- tells the player's toast through the TalismanFound attribute.
+-- tells the player's pickup feed through the TalismanFound attribute.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 

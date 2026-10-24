@@ -13,7 +13,7 @@ local TalismanConfig = {}
 
 TalismanConfig.OwnedAttribute = "TalismanOwned" -- on the player, saved (PlayerStats)
 TalismanConfig.EquippedAttribute = "TalismanEquipped" -- on the player, saved (PlayerStats)
-TalismanConfig.FoundAttribute = "TalismanFound" -- on the player: "<key>:<server time>" of the last one found, for the toast
+TalismanConfig.FoundAttribute = "TalismanFound" -- on the player: "<key>:<server time>" of the last one found, for the pickup feed
 TalismanConfig.MaxSaveLength = 120
 TalismanConfig.SlotLevels = { 0, 15, 40 } -- the level that opens slot 1, 2, 3
 TalismanConfig.ChestChance = 0.2 -- chance a yen chest also holds a talisman you don't own yet

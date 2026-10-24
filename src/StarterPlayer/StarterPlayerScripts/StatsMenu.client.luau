@@ -712,8 +712,4 @@ progressEvent.OnClientEvent:Connect(function(xpGained, levelsGained, yenGained, 
 	if yenGained and yenGained > 0 and not source then
 		popup("+" .. formatYen(yenGained), GOLD, 18, 0.66, 1.2, POPUP_OFFSET)
 	end
-	-- the banner; the level, stat points, stamina boxes and dodge charges go in the pickup feed
-	if levelsGained > 0 then
-		popup("LEVEL UP", GOLD, 34, 0.22, 2.5)
-	end
 end)
