@@ -127,18 +127,20 @@ function SoundConfig.KeyFor(kind, ...)
 	return entry
 end
 
--- Background music (the Music client script): these tracks, shuffled, one after another,
--- through the Music volume setting. All are Roblox's licensed APM Music library, free to use
--- in any experience; swap or add ids from the Creator Store's music (APMOfficial).
---   volume  0..1 before the setting;  fade  seconds in and out;  gap  seconds of quiet between
+-- Background music (the Music client script): `menuTheme` loops on the title menu; in the
+-- game these tracks, shuffled, one after another, with a quiet stretch between them. All
+-- through the Music volume setting. The ids are Creator Store audio the owner picked.
+--   volume  0..1 before the setting;  fade  seconds in and out;  gap  { min, max } seconds of
+--   quiet between tracks (and after the menu theme)
 SoundConfig.Music = {
 	volume = 0.08, -- quiet: 100% on the Music setting is a soft background
 	fade = 2,
-	gap = 4,
+	gap = { 25, 50 },
+	menuTheme = { id = 119540755571209, name = "Menu theme" },
 	tracks = {
-		{ id = 1837120254, name = "No Tearz" }, -- warm 90s hip hop, city at night
-		{ id = 1836402423, name = "Cold Front 1" },
-		{ id = 1844412739, name = "Heroic Sentiment" },
+		{ id = 80310690201416, name = "Track 1" },
+		{ id = 72501922894463, name = "Track 2" },
+		{ id = 78866602003326, name = "Track 3" },
 	},
 }
 
