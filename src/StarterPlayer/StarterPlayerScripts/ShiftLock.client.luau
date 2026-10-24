@@ -2,13 +2,16 @@
 -- setting: Left Ctrl locks the mouse to the center, turns the character
 -- with the camera and moves the camera over the shoulder. While it's on, the mouse
 -- is hidden and a crosshair is drawn in the middle instead: a small white x with a
--- dark edge, square ends. It steps aside while a
--- ranged move shows its own crosshair (Ranged's RangedCrosshair gui), and for the
--- mouse while a menu is open (Menus).
+-- dark edge, square ends. While something is locked onto (LockOn), shift lock or not,
+-- the x sits on them instead and the mouse stays hidden: the cursor is where every
+-- move aims. It steps aside while a ranged move shows its own crosshair (Ranged's
+-- RangedCrosshair gui, which goes onto the target too), and for the mouse while a
+-- menu is open (Menus).
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 
 local player = Players.LocalPlayer
@@ -18,6 +21,7 @@ local SHOULDER_OFFSET = Vector3.new(1.75, 0, 0)
 local X_SIZE = 10 -- px, each stroke of the x
 local X_WIDTH = 2
 local RENDER_STEP_NAME = "ShiftLock"
+local CROSSHAIR_STEP_NAME = "ShiftLockCrosshair"
 
 local locked = false
 local menuOpen = false
@@ -25,13 +29,18 @@ Menus.OnChange(function(name)
 	menuOpen = name ~= nil
 end)
 
--- the crosshair, in the middle of the real screen
+-- the crosshair, in real pixels (UIScale skips it) so it can sit on a point of the screen
 local gui = Instance.new("ScreenGui")
 gui.Name = "ShiftLockCrosshair"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.Enabled = false
 gui.Parent = player:WaitForChild("PlayerGui")
+local holder = Instance.new("Frame")
+holder.AnchorPoint = Vector2.new(0.5, 0.5)
+holder.Size = UDim2.fromOffset(X_SIZE, X_SIZE)
+holder.BackgroundTransparency = 1
+holder.Parent = gui
 
 -- one bar of the x through the middle at `rotation` degrees; the dark edges are a
 -- slightly bigger bar behind (ZIndex 1), so both white bars sit over both edges and
@@ -46,7 +55,7 @@ local function bar(rotation, grow, color, transparency, zIndex)
 	frame.BackgroundTransparency = transparency
 	frame.BorderSizePixel = 0
 	frame.ZIndex = zIndex
-	frame.Parent = gui
+	frame.Parent = holder
 end
 for _, rotation in ipairs({ 45, -45 }) do
 	bar(rotation, 2, Color3.new(0, 0, 0), 0.4, 1)
@@ -75,9 +84,6 @@ end
 local function faceCamera()
 	-- the camera scripts can reset this, so it is reapplied every frame
 	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-	-- Ranged turns the mouse back on as its crosshair goes, so this is reapplied too
-	UserInputService.MouseIconEnabled = menuOpen
-	gui.Enabled = not menuOpen and not rangedCrosshairShown()
 	local humanoid = currentHumanoid()
 	local root = humanoid and humanoid.RootPart
 	if not root or humanoid.Health <= 0 or humanoid.Sit then
@@ -115,10 +121,36 @@ local function setLocked(value)
 	else
 		RunService:UnbindFromRenderStep(RENDER_STEP_NAME)
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-		gui.Enabled = false
+	end
+end
+
+-- each frame, after the camera and LockOn have turned it: the x on the target, or in
+-- the middle in shift lock, and the mouse hidden while either is on
+local hidingMouse = false
+local function placeCrosshair()
+	local camera = workspace.CurrentCamera
+	local _, targetRoot = LockOn.Target()
+	local point
+	if targetRoot then
+		local screen, onScreen = camera:WorldToViewportPoint(targetRoot.Position)
+		point = onScreen and Vector2.new(screen.X, screen.Y) or nil
+	elseif locked then
+		point = camera.ViewportSize / 2
+	end
+	gui.Enabled = point ~= nil and not menuOpen and not rangedCrosshairShown()
+	if point then
+		holder.Position = UDim2.fromOffset(point.X, point.Y)
+	end
+	-- reapplied every frame: Ranged turns the mouse back on as its crosshair goes
+	if (locked or targetRoot ~= nil) and not menuOpen then
+		UserInputService.MouseIconEnabled = false
+		hidingMouse = true
+	elseif hidingMouse then
+		hidingMouse = false
 		UserInputService.MouseIconEnabled = not rangedCrosshairShown()
 	end
 end
+RunService:BindToRenderStep(CROSSHAIR_STEP_NAME, Enum.RenderPriority.Camera.Value + 3, placeCrosshair)
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and input.KeyCode == TOGGLE_KEY then

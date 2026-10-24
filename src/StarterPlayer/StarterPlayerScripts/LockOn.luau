@@ -6,7 +6,8 @@
 -- flick of the camera (right-drag, or any mouse move in shift lock) switches
 -- to the next one that side. It lets go when they die (moving on to the next
 -- in view, if any), leave, turn invulnerable or get past BREAK_RANGE.
--- SkillBar, Ranged and Punch aim at Target() while it's set. Runs once, on
+-- SkillBar, Ranged and Punch aim at Target() while it's set, and the cursor (ShiftLock's
+-- x, or Ranged's crosshair) sits on them. Runs once, on
 -- whichever of them requires it first.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")

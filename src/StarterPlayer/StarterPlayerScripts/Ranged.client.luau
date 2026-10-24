@@ -441,7 +441,15 @@ RunService.RenderStepped:Connect(function()
 		UserInputService.MouseIconEnabled = not showCrosshair
 	end
 	if showCrosshair then
+		-- on the locked-on target, where the shots go, when there is one on screen
 		local mouse = UserInputService:GetMouseLocation()
+		local _, targetRoot = LockOn.Target()
+		if targetRoot then
+			local screen, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetRoot.Position)
+			if onScreen then
+				mouse = Vector2.new(screen.X, screen.Y)
+			end
+		end
 		local color = SkillSetConfig.Sets[setName].color
 		local size = (ranged.hipSpread and not readying) and HIP_CROSSHAIR_SIZE or CROSSHAIR_SIZE
 		crosshair.Position = UDim2.fromOffset(mouse.X, mouse.Y)
