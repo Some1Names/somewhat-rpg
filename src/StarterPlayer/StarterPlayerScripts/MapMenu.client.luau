@@ -46,6 +46,9 @@ local LABEL_SIZE = 12
 local LABEL_GAP = 4
 local ZONE_SIZE = 16 -- px, an area's name
 local ZONE_TRANSPARENCY = 0.3
+local ZONE_STEP = ZONE_SIZE + 4 -- px a name moves up or down to get clear of a marker
+local ZONE_TRIES = { 0, -1, 1, -2, 2 } -- in steps: the middle first, then a line above, below...
+local ZONE_MARGIN = 2 -- px kept between a name and a marker
 local GRID = 32 -- px between the background grid's lines
 local GRID_TRANSPARENCY = 0.93
 local FADE = 56 -- px over which the map fades into the paper at the box's edges
@@ -356,7 +359,8 @@ local function dropPin(pin)
 end
 
 -- the areas' names: one per name (two boxes with the same name are one area), over the
--- middle of all its boxes, at the top of the highest block there
+-- middle of all its boxes, at the top of the highest block there; a marker in the way
+-- moves it a line or two up or down (render)
 local zoneLabels = {} -- { label, world }
 local function groundAt(x, z)
 	local top = 0
@@ -487,18 +491,15 @@ local function render()
 	if camera.CFrame ~= frame then
 		camera.CFrame = frame
 	end
-	for _, zone in ipairs(zoneLabels) do
-		local x, y = MapRules.Project(view, fit, width, height, zone.world.X, zone.world.Y, zone.world.Z)
-		zone.label.Visible = shown.Zone and x ~= nil
-		if x then
-			zone.label.Position = UDim2.fromOffset(x, y)
-		end
-	end
+	local taken = {} -- where the markers and your arrow are: { x, y, half its size }
 	for _, pin in ipairs(pins) do
 		local x, y = MapRules.Project(view, fit, width, height, pin.world.X, pin.world.Y, pin.world.Z)
 		pin.frame.Visible = shown[pin.filter] and x ~= nil
 		if x then
 			pin.frame.Position = UDim2.fromOffset(x, y)
+			if pin.frame.Visible then
+				table.insert(taken, { x, y, PIN / 2 })
+			end
 		end
 	end
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -513,6 +514,33 @@ local function render()
 	if you.Visible then
 		you.Position = UDim2.fromOffset(x, y)
 		you.Rotation = MapRules.Heading(aheadX - x, aheadY - y)
+		table.insert(taken, { x, y, ARROW / 2 })
+	end
+	-- each area's name at the first of its tries that no marker covers (the middle if none is clear)
+	local scale = UIScale.Get()
+	for _, zone in ipairs(zoneLabels) do
+		local zx, zy = MapRules.Project(view, fit, width, height, zone.world.X, zone.world.Y, zone.world.Z)
+		zone.label.Visible = shown.Zone and zx ~= nil
+		if zx then
+			local halfWidth = zone.label.AbsoluteSize.X / scale / 2
+			local placed = zy
+			for _, try in ipairs(ZONE_TRIES) do
+				local ty = zy + try * ZONE_STEP
+				local clear = true
+				for _, mark in ipairs(taken) do
+					local reach = mark[3] + ZONE_MARGIN
+					if math.abs(mark[1] - zx) < halfWidth + reach and math.abs(mark[2] - ty) < ZONE_SIZE / 2 + reach then
+						clear = false
+						break
+					end
+				end
+				if clear then
+					placed = ty
+					break
+				end
+			end
+			zone.label.Position = UDim2.fromOffset(zx, placed)
+		end
 	end
 end
 
