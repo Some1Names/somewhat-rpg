@@ -10,8 +10,9 @@
 -- each kind on and off, and a marker's name shows only while the cursor is over it (or
 -- a finger holds it). With streaming on far-off parts aren't here, so the NPCs come from
 -- ReplicatedStorage.MapMarkers and far party mates from their MapPosition attribute
--- (both MapServer's). The model floats over a faint grid and fades out at the box's
--- edges. Each time it opens it starts afresh, looking
+-- (both MapServer's). Under the markers, each area's name (ZoneConfig, as ZoneName fades it
+-- in) sits over the middle of its area, its own filter in the legend. The model floats
+-- over a faint grid and fades out at the box's edges. Each time it opens it starts afresh, looking
 -- straight down at you, north up; the wheel zooms about the cursor (all the way out, the
 -- whole place fits), dragging moves it, and holding the right button while dragging up
 -- and down tilts it; let go and it eases back to straight down. It never turns. The
@@ -25,6 +26,7 @@ local Hub = require(script.Parent:WaitForChild("Hub"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local MapLayout = require(ReplicatedStorage:WaitForChild("MapLayout"))
 local MapRules = require(ReplicatedStorage:WaitForChild("MapRules"))
+local ZoneConfig = require(ReplicatedStorage:WaitForChild("ZoneConfig"))
 local markerFolder = ReplicatedStorage:WaitForChild("MapMarkers") -- made by MapServer
 local player = Players.LocalPlayer
 
@@ -42,6 +44,8 @@ local ARROW = 18 -- px, your arrow
 local ARROW_REACH = 20 -- studs ahead of you that set which way the arrow points
 local LABEL_SIZE = 12
 local LABEL_GAP = 4
+local ZONE_SIZE = 16 -- px, an area's name
+local ZONE_TRANSPARENCY = 0.3
 local GRID = 32 -- px between the background grid's lines
 local GRID_TRANSPARENCY = 0.93
 local FADE = 56 -- px over which the map fades into the paper at the box's edges
@@ -288,7 +292,7 @@ end)
 -- markers: a square at a point in the world, its name shown while hovered; `filter` is
 -- the legend entry that shows or hides it
 local pins = {} -- every marker: { frame (the hover area), square, filter, world }
-local shown = { Self = true, Quest = true, Service = true, Spawn = true }
+local shown = { Self = true, Quest = true, Service = true, Spawn = true, Zone = true }
 local ink = Theme.Ink
 
 local function makePin(colour, text, filter)
@@ -349,6 +353,51 @@ end
 local function dropPin(pin)
 	table.remove(pins, table.find(pins, pin))
 	pin.frame:Destroy()
+end
+
+-- the areas' names: one per name (two boxes with the same name are one area), over the
+-- middle of all its boxes, at the top of the highest block there
+local zoneLabels = {} -- { label, world }
+local function groundAt(x, z)
+	local top = 0
+	for _, shape in ipairs(MapLayout.Shapes) do
+		if math.abs(x - shape[1]) <= shape[3] / 2 and math.abs(z - shape[2]) <= shape[4] / 2 then
+			top = math.max(top, shape[6])
+		end
+	end
+	return top
+end
+local areas, areaOrder = {}, {}
+for _, zone in ipairs(ZoneConfig.Zones) do
+	local area = areas[zone.name]
+	if not area then
+		area = { minX = math.huge, minZ = math.huge, maxX = -math.huge, maxZ = -math.huge }
+		areas[zone.name] = area
+		table.insert(areaOrder, zone.name)
+	end
+	area.minX, area.minZ = math.min(area.minX, zone.min[1]), math.min(area.minZ, zone.min[2])
+	area.maxX, area.maxZ = math.max(area.maxX, zone.max[1]), math.max(area.maxZ, zone.max[2])
+end
+for _, name in ipairs(areaOrder) do
+	local area = areas[name]
+	local x, z = (area.minX + area.maxX) / 2, (area.minZ + area.maxZ) / 2
+	table.insert(zoneLabels, {
+		label = label(pinLayer, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.fromOffset(0, ZONE_SIZE),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Text = string.upper(name),
+			Font = Theme.TitleFont,
+			TextSize = ZONE_SIZE,
+			TextTransparency = ZONE_TRANSPARENCY,
+			TextStrokeColor3 = Theme.Nav,
+			TextStrokeTransparency = 0.3,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			ZIndex = 1,
+			Visible = false,
+		}),
+		world = Vector3.new(x, groundAt(x, z), z),
+	})
 end
 
 local you = label(pinLayer, {
@@ -437,6 +486,13 @@ local function render()
 	)
 	if camera.CFrame ~= frame then
 		camera.CFrame = frame
+	end
+	for _, zone in ipairs(zoneLabels) do
+		local x, y = MapRules.Project(view, fit, width, height, zone.world.X, zone.world.Y, zone.world.Z)
+		zone.label.Visible = shown.Zone and x ~= nil
+		if x then
+			zone.label.Position = UDim2.fromOffset(x, y)
+		end
 	end
 	for _, pin in ipairs(pins) do
 		local x, y = MapRules.Project(view, fit, width, height, pin.world.X, pin.world.Y, pin.world.Z)
@@ -581,6 +637,7 @@ for i, filter in ipairs({
 	{ "Quest", "BOUNTY", QUEST },
 	{ "Service", "SHOPS & SERVICES", Theme.Ink },
 	{ "Spawn", "SPAWN", Theme.Muted },
+	{ "Zone", "AREAS", Theme.Ink },
 }) do
 	local key = filter[1]
 	local button, swatches, word = legendEntry(i, filter[2], { filter[3] }, true)
