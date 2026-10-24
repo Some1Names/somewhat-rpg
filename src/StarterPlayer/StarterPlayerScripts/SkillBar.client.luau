@@ -36,6 +36,7 @@ local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
+local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
@@ -374,6 +375,11 @@ end
 
 -- the point the mouse is on (or far off along it), and what it hit if anything
 local function mouseHit()
+	-- locked on: at them
+	local _, lockedRoot = LockOn.Target()
+	if lockedRoot then
+		return lockedRoot.Position, nil
+	end
 	local camera = workspace.CurrentCamera
 	local mouse = UserInputService:GetMouseLocation()
 	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)

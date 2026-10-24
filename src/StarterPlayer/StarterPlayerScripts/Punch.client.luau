@@ -14,6 +14,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
+local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
@@ -95,6 +96,13 @@ end
 -- player is aiming at even when the body faces another way; the way the body
 -- faces if the camera looks straight up or down.
 local function aimDirection(root)
+	local _, lockedRoot = LockOn.Target()
+	if lockedRoot then
+		local toward = Vector3.new(lockedRoot.Position.X - root.Position.X, 0, lockedRoot.Position.Z - root.Position.Z)
+		if toward.Magnitude > 0.1 then
+			return toward.Unit
+		end
+	end
 	local look = workspace.CurrentCamera.CFrame.LookVector
 	local flat = Vector3.new(look.X, 0, look.Z)
 	if flat.Magnitude < 0.05 then

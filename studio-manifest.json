@@ -1378,6 +1378,20 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/StarterPlayer/StarterPlayerScripts/LockOn.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LockOn"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
   "file": "src/StarterPlayer/StarterPlayerScripts/DoubleJump.client.luau",
   "names": [
    "StarterPlayer",

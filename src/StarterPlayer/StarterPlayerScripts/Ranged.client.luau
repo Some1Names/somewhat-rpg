@@ -20,6 +20,7 @@ local UserInputService = game:GetService("UserInputService")
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
+local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local fireRanged = ReplicatedStorage:WaitForChild("FireRanged")
 local localSkillEffect = ReplicatedStorage:WaitForChild("LocalSkillEffect")
@@ -253,6 +254,10 @@ local function heldSet()
 end
 
 local function mousePoint(character)
+	local _, lockedRoot = LockOn.Target()
+	if lockedRoot then
+		return lockedRoot.Position
+	end
 	local camera = workspace.CurrentCamera
 	local mouse = UserInputService:GetMouseLocation()
 	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
@@ -333,8 +338,9 @@ local function fire()
 	end
 	local root = humanoid.RootPart
 	local direction
-	-- locked on by aim assist: straight at them, and it steers in from there
-	local target = ranged.aims and readying and locked and locked.RootPart and locked or nil
+	-- locked on (middle click, or aim assist): straight at them, and it steers in from there
+	local hardLocked = LockOn.Target()
+	local target = ranged.aims and readying and (hardLocked or locked and locked.RootPart and locked) or nil
 	if ranged.aims then
 		-- turn to face where it's going, so it leaves from the front
 		local point = target and target.RootPart.Position or mousePoint(character)

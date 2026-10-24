@@ -119,6 +119,7 @@ local function hints()
 	table.insert(result, { "Space", "Double jump" })
 	table.insert(result, { "Shift", "Sprint" })
 	table.insert(result, { "Ctrl", "Shift lock" })
+	table.insert(result, { "MMB", "Lock on" })
 	return result
 end
 
