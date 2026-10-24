@@ -6,7 +6,7 @@
 -- the Vignette's strength (Vignette), the Low health warning (LowHealth), Damage numbers
 -- and their size and colour (HitFeedback), the Crosshair (ShiftLock, Crosshair), Key hints
 -- (KeyHints), HUD sway and HP bar sway, how far each drifts (HudSway), the Combo counter
--- (ComboCounter), Area names (ZoneName) and the volumes (AudioMix). They're the saved
+-- (ComboCounter), Area names (ZoneName) and the volumes, music too (AudioMix). They're the saved
 -- Preferences attribute, "QuickRespawn=1,HudSway=50", holding only the ones off their
 -- default (an ON/OFF one as 1 or 0, a slider as its number, a choice as its place in the
 -- list); Settings changes it and SettingsServer checks and stores it, as with Keybinds. A
@@ -218,6 +218,18 @@ Preferences.Options = {
 		suffix = "%",
 		default = 100,
 		description = "Menu clicks, equipping, picking things up, critical hits and purchases.",
+	},
+	{
+		id = "VolMusic",
+		label = "Music",
+		section = "SOUND",
+		kind = "slider",
+		min = 0,
+		max = 100,
+		step = 5,
+		suffix = "%",
+		default = 60,
+		description = "The background music. 0 turns it off.",
 	},
 }
 

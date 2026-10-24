@@ -1,6 +1,6 @@
 -- The game's volume settings (Preferences' SOUND section) as SoundGroups in SoundService:
 -- Master, and inside it Effects (SkillEffects' Sfx: hits, swings, shots, powers, heard in
--- the world) and Interface (UiSfx: menus, equipping, pickups, crits). A sound plays through
+-- the world), Interface (UiSfx: menus, equipping, pickups, crits) and Music (Music). A sound plays through
 -- one by setting its SoundGroup to AudioMix.Group(name). Sounds that aren't ours (a
 -- prefab's own sounds, Roblox's footsteps) don't go through them. Sample(name) plays a
 -- short clip through a group, for the Settings preview.
@@ -13,7 +13,7 @@ local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local AudioMix = {}
 
 -- group -> its volume setting
-local SETTINGS = { Master = "VolMaster", Effects = "VolFx", Interface = "VolUi" }
+local SETTINGS = { Master = "VolMaster", Effects = "VolFx", Interface = "VolUi", Music = "VolMusic" }
 -- the clip each group's sample plays (SoundConfig ids)
 local SAMPLES = {
 	Master = SoundConfig.UI.itemSelect.id,
@@ -32,6 +32,7 @@ end
 local master = group("Master", SoundService)
 group("Effects", master)
 group("Interface", master)
+group("Music", master)
 
 local function apply()
 	for name, id in pairs(SETTINGS) do

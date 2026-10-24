@@ -127,6 +127,21 @@ function SoundConfig.KeyFor(kind, ...)
 	return entry
 end
 
+-- Background music (the Music client script): these tracks, shuffled, one after another,
+-- through the Music volume setting. All are Roblox's licensed APM Music library, free to use
+-- in any experience; swap or add ids from the Creator Store's music (APMOfficial).
+--   volume  0..1 before the setting;  fade  seconds in and out;  gap  seconds of quiet between
+SoundConfig.Music = {
+	volume = 0.4,
+	fade = 2,
+	gap = 4,
+	tracks = {
+		{ id = 1837120254, name = "No Tearz" }, -- warm 90s hip hop, city at night
+		{ id = 1836402423, name = "Cold Front 1" },
+		{ id = 1844412739, name = "Heroic Sentiment" },
+	},
+}
+
 -- one clip id of `sound` (a SoundConfig.Sounds entry): its id, or a random one of its ids
 function SoundConfig.PickId(sound, random)
 	if sound.ids then
