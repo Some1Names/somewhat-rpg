@@ -24,7 +24,7 @@ Keybinds.Actions = {
 	{ id = "SkillC", label = "Skill 3", default = "C" },
 	{ id = "SkillV", label = "Skill 4", default = "V" },
 	{ id = "SkillF", label = "Skill 5 (ultimate)", default = "F" },
-	{ id = "Special", label = "Overcharge / Flight / Undo", default = "G" },
+	{ id = "Special", label = "Passive ability", default = "G" },
 	{ id = "Dash", label = "Dash", default = "Q" },
 	{ id = "Block", label = "Block", default = "LeftAlt", yields = true },
 	{ id = "Reload", label = "Reload", default = "R" },

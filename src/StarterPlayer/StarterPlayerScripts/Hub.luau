@@ -41,6 +41,7 @@ local NAV_ROW = 34
 local NAV_TOP = 64 -- the first tab button, this far under the brand
 local LIST_TRANSPARENCY = 0.35 -- the nav's list, smoked glass beside the solid rail
 local BAR_HEIGHT = 4 -- the accent bar after the #TITLE
+local APART_GAP = 17 -- px between the numbered tabs' room and a tab kept apart
 -- Roblox's own buttons sit in a band across the top: the hub leaves it empty paper.
 -- Its height is read on each open (it's often still 0 while the game loads).
 local ROBLOX_BAR_FALLBACK = 58
@@ -415,10 +416,28 @@ label(listPanel, {
 local navList = make("Frame", {
 	Parent = listPanel,
 	Position = UDim2.fromOffset(0, NAV_TOP),
-	Size = UDim2.new(1, -1, 1, -(NAV_TOP + 20)),
+	Size = UDim2.new(1, -1, 1, -(NAV_TOP + 20 + NAV_ROW + APART_GAP)),
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = navList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
+-- at the list's foot, apart from the rest behind a thin line: the tabs registered `apart`
+-- (Settings), with no number
+local navApart = make("Frame", {
+	Parent = listPanel,
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 0, 1, -20),
+	Size = UDim2.new(1, -1, 0, NAV_ROW),
+	BackgroundTransparency = 1,
+})
+make("UIListLayout", { Parent = navApart, SortOrder = Enum.SortOrder.LayoutOrder })
+make("Frame", {
+	Parent = listPanel,
+	Position = UDim2.new(0, NAV_PAD, 1, -(20 + NAV_ROW + APART_GAP / 2)),
+	Size = UDim2.new(1, -2 * NAV_PAD, 0, 1),
+	BackgroundColor3 = Theme.Edge,
+	BackgroundTransparency = Theme.EdgeTransparency,
+	BorderSizePixel = 0,
+})
 
 local closeButton = make("TextButton", {
 	Parent = body,
@@ -452,10 +471,21 @@ local function tabList()
 	return list
 end
 
+-- the numbered tabs (not the ones kept apart) in nav order
+local function numberedOrder()
+	local list = {}
+	for _, tab in pairs(tabs) do
+		if not tab.apart then
+			table.insert(list, tab)
+		end
+	end
+	return HubRules.Order(list)
+end
+
 -- each entry: its number (01, 02 ...), and the selected one in the accent, larger, with the
 -- accent bar on its left and the accent fading out behind it
 local function paintNav()
-	for i, name in ipairs(HubRules.Order(tabList())) do
+	for i, name in ipairs(numberedOrder()) do
 		tabs[name].numberLabel.Text = string.format("%02d", i)
 	end
 	for _, tab in pairs(tabs) do
@@ -495,12 +525,12 @@ local function paintHeader()
 	local tab = current and tabs[current]
 	titleLabel.Text = tab and ("#" .. tab.title) or ""
 	local position = 0
-	for i, name in ipairs(HubRules.Order(tabList())) do
+	for i, name in ipairs(numberedOrder()) do
 		if name == current then
 			position = i
 		end
 	end
-	numberLabel.Text = string.format("(%02d)", position)
+	numberLabel.Text = position > 0 and string.format("(%02d)", position) or ""
 end
 
 -- shows `name`'s frame, and tells its listeners and the pose
@@ -617,6 +647,7 @@ local function close()
 	wanted = nil
 	only = false
 	navList.Visible = true
+	navApart.Visible = true
 	for _, fn in ipairs(closedListeners) do
 		task.spawn(fn, last)
 	end
@@ -644,6 +675,7 @@ end
 function Hub.OpenOnly(name)
 	only = true
 	navList.Visible = false
+	navApart.Visible = false
 	Hub.Open(name)
 end
 
@@ -723,7 +755,8 @@ function Hub.Badge(name, text)
 	end
 end
 
--- registers a tab: opts = { order, title, key (Enum.KeyCode), locked, pose }.
+-- registers a tab: opts = { order, title, key (Enum.KeyCode), locked, pose, apart }.
+-- An `apart` tab sits at the foot of the nav, unnumbered (Settings).
 -- A tab with no pose gets the whole width (no character strip).
 -- Returns the frame to build it in (nil for a locked slot).
 function Hub.Tab(name, opts)
@@ -734,9 +767,10 @@ function Hub.Tab(name, opts)
 		key = opts.key,
 		locked = opts.locked == true,
 		pose = opts.pose,
+		apart = opts.apart == true,
 	}
 	tab.button = make("TextButton", {
-		Parent = navList,
+		Parent = tab.apart and navApart or navList,
 		LayoutOrder = opts.order * 10, -- in tenths: a tab can slot in between (Map's 2.5)
 		Size = UDim2.new(1, 0, 0, NAV_ROW),
 		BackgroundTransparency = 1,
@@ -765,6 +799,7 @@ function Hub.Tab(name, opts)
 		TextSize = 13,
 		TextColor3 = Theme.Muted,
 		Size = UDim2.fromOffset(20, NAV_ROW),
+		Visible = not tab.apart,
 	})
 	tab.nameLabel = label(row, {
 		LayoutOrder = 2,

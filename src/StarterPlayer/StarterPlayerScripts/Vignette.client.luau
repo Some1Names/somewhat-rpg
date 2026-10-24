@@ -11,7 +11,7 @@ local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 
 local player = Players.LocalPlayer
 
-local OPACITY = 0.45 -- at the very edge, at the setting's 100%
+local OPACITY = 0.45 -- at the very edge, at the setting's 100% (it starts at 50%)
 local DEPTH = 0.22 -- how far in from each edge it reaches, a share of the screen
 -- how dark it is going inward, as a share of OPACITY: falling off fast, then fading out
 local FALLOFF = { { 0, 1 }, { 0.3, 0.45 }, { 0.65, 0.12 }, { 1, 0 } }
@@ -47,7 +47,7 @@ end
 
 -- the fade at the setting's strength
 local function paint()
-	local opacity = OPACITY * Preferences.Scale("Vignette")
+	local opacity = OPACITY * Preferences.Get("Vignette") / 100
 	gui.Enabled = opacity > 0
 	local keypoints = {}
 	for _, point in ipairs(FALLOFF) do

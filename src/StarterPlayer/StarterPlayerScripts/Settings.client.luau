@@ -1,5 +1,5 @@
--- Settings: the hub's Settings tab (P, the top bar's gear, or the title menu's SETTINGS,
--- which shows it alone), full screen in the hub's Modern Warfare look. Along the top, its
+-- Settings: the hub's Settings tab, kept apart at the foot of its nav (the top bar's gear,
+-- or the title menu's SETTINGS, which shows it alone), full screen in the hub's Modern Warfare look. Along the top, its
 -- sections as numbered sub-tabs: KEYBINDS, then the Preferences sections (GAMEPLAY,
 -- EFFECTS, INTERFACE). On the left the section's rows, on the right a card saying what
 -- the row under the cursor does. The row under the cursor is the selected one: the
@@ -79,7 +79,7 @@ local function onClick(frame, fn)
 	end)
 end
 
-local tabFrame = Hub.Tab("Settings", { order = 7, title = "SETTINGS", key = Enum.KeyCode.P })
+local tabFrame = Hub.Tab("Settings", { order = 7, title = "SETTINGS", apart = true })
 local ink = Hub.InkAccent()
 
 -- saving -----------------------------------------------------------------------------

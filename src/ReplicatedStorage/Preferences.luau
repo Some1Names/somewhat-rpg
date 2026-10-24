@@ -56,7 +56,7 @@ Preferences.Options = {
 		max = 100,
 		step = 10,
 		suffix = "%",
-		default = 100,
+		default = 50,
 		description = "How dark the screen's edges are. 0 turns it off.",
 	},
 	{

@@ -1,5 +1,5 @@
 -- The HUD's icons, up in Roblox's top bar and dressed like its own buttons
--- (dark see-through pills, white icons). Top right, one pill: Settings (P),
+-- (dark see-through pills, white icons). Top right, one pill: Settings,
 -- and Admin (`) for admins. Top left, just right of Roblox's chat button: the
 -- Menu button (its own gui, above the hub, so it can close it too). Bottom
 -- left, above the Hotbar's equipment cards: the player's yen as gold text.
@@ -38,7 +38,7 @@ local BUTTON_EDGE = 16
 -- left, else the top-right row); Admin appears only for admins
 local ICONS = {
 	{ name = "Admin", title = "Admin", key = "`" },
-	{ name = "Settings", title = "Settings", key = "P" },
+	{ name = "Settings", title = "Settings" },
 	{ name = "Hub", title = "Menu", top = true }, -- no key of its own: B, J and M open its tabs
 }
 

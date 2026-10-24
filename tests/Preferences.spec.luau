@@ -64,13 +64,13 @@ check("options_order", Preferences.Options[1].id == "QuickRespawn" and Preferenc
 	and Preferences.Options[7].id == "KeyHints" and Preferences.Options[7].section == "INTERFACE")
 
 -- sliders
-check("slider_defaults", defaults.HudSway == 100 and defaults.StatusSway == 100 and defaults.Vignette == 100)
+check("slider_defaults", defaults.HudSway == 100 and defaults.StatusSway == 100 and defaults.Vignette == 50)
 
 local slid = Preferences.Parse("Vignette=30,HudSway=150")
 check("slider_parse", slid.Vignette == 30 and slid.HudSway == 150 and slid.StatusSway == 100)
 
 local offStep = Preferences.Parse("Vignette=35,HudSway=250,StatusSway=-10,Vignette=x")
-check("slider_bad_values_ignored", offStep.Vignette == 100 and offStep.HudSway == 100 and offStep.StatusSway == 100)
+check("slider_bad_values_ignored", offStep.Vignette == 50 and offStep.HudSway == 100 and offStep.StatusSway == 100)
 
 check("slider_old_off_reads_zero", Preferences.Parse("HudSway=0").HudSway == 0
 	and Preferences.Serialize(Preferences.Parse("HudSway=0")) == "HudSway=0")
