@@ -2,7 +2,7 @@
 -- ServerScriptService.RaidBoss runs the fight, RaidServer spawns them on a
 -- timer, the client RaidClient draws the boss bar, the banners, the ground
 -- warnings and the grab QTE.
--- A boss spawns at its arena (workspace.BossArenas.<key>, a part) every
+-- A boss spawns at its arena (the workspace part named by its `arena`) every
 -- `interval` seconds, announced `warning` seconds early to the whole server.
 -- Its health grows with the players in the arena when it spawns. It fights in
 -- phases (by health left): each phase adds moves and casts its moves faster,
@@ -18,7 +18,6 @@
 local RaidConfig = {}
 
 RaidConfig.Tag = "RaidBoss" -- on the boss model (it's also tagged "Enemy")
-RaidConfig.ArenaFolder = "BossArenas" -- in workspace: a part per boss, named by its key
 RaidConfig.RemoteName = "RaidEvent" -- in ReplicatedStorage, created by RaidBoss
 RaidConfig.QteKeys = { "E", "R", "T", "F" }
 
@@ -28,6 +27,7 @@ RaidConfig.Bosses = {
 	HideSeto = {
 		name = "Hide Seto",
 		title = "THE MANDELA",
+		arena = "MandelaSpawn", -- a part in workspace: he spawns on it and fights around it
 		level = 90,
 		color = { 170, 255, 200 }, -- Mandela's green
 		overchargeColor = { 255, 70, 80 }, -- Backbone Power's red

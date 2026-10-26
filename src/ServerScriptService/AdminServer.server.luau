@@ -19,6 +19,7 @@ local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local RaidConfig = require(ReplicatedStorage:WaitForChild("RaidConfig"))
 local adminAction = ReplicatedStorage:WaitForChild("AdminAction")
 
 -- admins besides the game's owner, by UserId
@@ -296,8 +297,12 @@ function actions.FreezeTime()
 	return true, "Time is running"
 end
 
--- Hide Seto (RaidBoss), with his arena around a spot 25 studs in front of the target
+-- Hide Seto (RaidBoss) at his arena, or 25 studs in front of the target if the map has none
 function actions.SpawnBoss(target)
+	local arena = workspace:FindFirstChild(RaidConfig.Bosses.HideSeto.arena)
+	if arena then
+		return RaidBoss.Spawn("HideSeto", arena.CFrame)
+	end
 	local root = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return false, "They have no character"

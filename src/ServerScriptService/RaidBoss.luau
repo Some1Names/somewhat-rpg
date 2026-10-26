@@ -2,7 +2,7 @@
 -- puts one in the world and fights it until it dies, leaves (its lifetime) or
 -- is removed. RaidServer spawns them on their timers; the admin panel can too.
 -- The boss is its model in ServerStorage.Bosses.<key> if there is one, else a
--- plain R6 stand-in. It's tagged RaidBoss (so EnemyAI leaves it alone) and
+-- plain R6 stand-in; either way it's unanchored and stood on the ground by its root. It's tagged RaidBoss (so EnemyAI leaves it alone) and
 -- Enemy (lock-on, aim assist, Drops: its EnemyConfig entry has the drops).
 -- Each tick it picks a target among the living players in its arena (the
 -- nearest, kept a few seconds) and casts a move RaidConfig.PickMove allows, or
@@ -470,7 +470,7 @@ end
 -- the dome: everyone has `windUp` seconds to break his shield
 function MOVES.Possibility(fight)
 	local move = fight.boss.moves.Possibility
-	fight.model:PivotTo(fight.home + Vector3.new(0, 3, 0))
+	fight.model:PivotTo(fight.home + fight.stand)
 	local center = ground(fight.home.Position)
 	local shield = RaidConfig.ShieldHealth(fight.boss, #playersIn(fight.home.Position, fight.boss.arenaRadius, true))
 	fight.shield = shield
@@ -535,7 +535,7 @@ local function reset(fight)
 	fight.readyAt = {}
 	fight.damageBy = {}
 	fight.humanoid.Health = fight.humanoid.MaxHealth
-	fight.model:PivotTo(fight.home + Vector3.new(0, 3, 0))
+	fight.model:PivotTo(fight.home + fight.stand)
 end
 
 local function finish(fight)
@@ -699,7 +699,15 @@ function RaidBoss.Spawn(key, cframe)
 		return false, "His model has no Humanoid"
 	end
 	model.Name = boss.name
-	local home = CFrame.new(cframe.Position)
+	for _, part in ipairs(model:GetDescendants()) do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+		end
+	end
+	model.PrimaryPart = humanoid.RootPart
+	-- the floor under the spot, and how high its root stands over a floor
+	local home = CFrame.new(ground(cframe.Position))
+	local stand = Vector3.new(0, humanoid.RigType == Enum.HumanoidRigType.R6 and 3 or humanoid.HipHeight + humanoid.RootPart.Size.Y / 2, 0)
 	local maxHealth = RaidConfig.MaxHealth(boss, #playersIn(home.Position, boss.arenaRadius, true))
 	humanoid.MaxHealth = maxHealth
 	humanoid.Health = maxHealth
@@ -711,7 +719,7 @@ function RaidBoss.Spawn(key, cframe)
 	model:SetAttribute("XPReward", 0)
 	model:SetAttribute("YenReward", 0)
 	model:SetAttribute("Rarity", "Dark")
-	model:PivotTo(home + Vector3.new(0, 3, 0))
+	model:PivotTo(home + stand)
 	-- RaidBoss before Enemy, so EnemyAI never picks it up
 	CollectionService:AddTag(model, RaidConfig.Tag)
 	model.Parent = workspace
@@ -731,6 +739,7 @@ function RaidBoss.Spawn(key, cframe)
 		model = model,
 		humanoid = humanoid,
 		home = home,
+		stand = stand, -- root above the floor
 		phase = 1,
 		readyAt = {},
 		busy = false,
