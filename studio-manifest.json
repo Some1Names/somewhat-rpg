@@ -2464,5 +2464,17 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/RaidAyato.luau",
+  "names": [
+   "ServerScriptService",
+   "RaidAyato"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
  }
 ]

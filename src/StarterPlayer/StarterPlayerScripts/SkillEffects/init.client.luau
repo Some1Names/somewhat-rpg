@@ -2757,6 +2757,11 @@ Players.PlayerAdded:Connect(watchPlayer)
 for _, other in ipairs(Players:GetPlayers()) do
 	watchPlayer(other)
 end
+-- and raid bosses (Ayato Yoji's Prism Form phase)
+CollectionService:GetInstanceAddedSignal("RaidBoss"):Connect(watchForm)
+for _, model in ipairs(CollectionService:GetTagged("RaidBoss")) do
+	task.spawn(watchForm, model)
+end
 
 -- Ranged moves and guns --------------------------------------------------
 

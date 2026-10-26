@@ -87,6 +87,41 @@ check("the last key completes it", progress == 4 and done)
 -- helpers
 check("a helper dealt helperShare", R.IsHelper(seto, 900, 30000) and not R.IsHelper(seto, 899, 30000))
 
+-- Ayato Yoji
+local ayato = R.Get("AyatoYoji")
+check("Ayato has an entry at level 95", type(ayato) == "table" and ayato.level == 95 and ayato.arena == "AyatoSpawn")
+local ayatoNamed = true
+for _, phase in ipairs(ayato.phases) do
+	for _, name in ipairs(phase.moves) do
+		local move = ayato.moves[name]
+		if not move or not move.range or not move.weight then
+			ayatoNamed = false
+		end
+	end
+	if phase.opener and not ayato.moves[phase.opener] then
+		ayatoNamed = false
+	end
+end
+check("every Ayato phase's moves and opener exist", ayatoNamed)
+check("he flies", ayato.flight and ayato.flight.every > 0 and ayato.flight.height > 0)
+
+-- ground and air
+check("a move with no `where` is ground only", R.CastableHere({}, false) and not R.CastableHere({}, true))
+check("an air move only in the air", R.CastableHere({ where = "air" }, true) and not R.CastableHere({ where = "air" }, false))
+check("an any move both ways", R.CastableHere({ where = "any" }, true) and R.CastableHere({ where = "any" }, false))
+check("flying, no combo", R.PickMove(ayato, 1, 3, { PrismShot = 9, LightVolley = 9, RefractionField = 9 }, 0, fixed(0), true) == nil)
+check("flying, the volley", R.PickMove(ayato, 1, 50, { PrismShot = 9, RefractionField = 9 }, 0, fixed(0), true) == "LightVolley")
+check("on the ground, no volley", R.PickMove(ayato, 1, 50, { PrismShot = 9, RefractionField = 9 }, 0, fixed(0), false) == nil)
+check("Hide Seto casts nothing in the air", R.PickMove(seto, 3, 3, {}, 0, fixed(0), true) == nil)
+
+-- safe domes
+local spots = R.SafeDomeSpots(3, 25, 70, fixed(0))
+check("three spots", #spots == 3)
+check("each at the least distance with a 0 roll", math.abs(math.sqrt(spots[2][1] ^ 2 + spots[2][2] ^ 2) - 25) < 1e-6)
+check("spread evenly", math.abs(math.atan2(spots[2][2], spots[2][1]) - 2 * math.pi / 3) < 1e-6)
+check("inside a dome", R.InAnyDome(spots[1][1] + 8, spots[1][2], spots, 9))
+check("outside them all", not R.InAnyDome(0, 0, spots, 9))
+
 if failures > 0 then
 	error(failures .. " failed")
 end

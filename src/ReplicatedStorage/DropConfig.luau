@@ -71,6 +71,7 @@ DropConfig.Materials = {
 	WolfFang = { tier = "Rare", display = "Wolf Fang" },
 	ThugBadge = { tier = "Rare", display = "Thug Badge" },
 	SetoVertebra = { tier = "Dark", display = "Seto's Vertebra" },
+	PrismShard = { tier = "Dark", display = "Prism Shard" },
 }
 
 -- what any enemy of at least `minLevel` rolls, per helper
@@ -98,6 +99,14 @@ DropConfig.Tables = {
 		{ material = "Core", chance = 1, min = 2, max = 4 },
 		{ material = "Crystal", chance = 0.5, min = 1, max = 2 },
 		{ material = "Essence", chance = 0.15, min = 1, max = 1 },
+	},
+	-- Ayato Yoji, the raid boss (RaidConfig): a shard of his light every time
+	AyatoYoji = {
+		exclusive = true,
+		{ material = "PrismShard", chance = 1, min = 1, max = 2 },
+		{ material = "Core", chance = 1, min = 2, max = 4 },
+		{ material = "Crystal", chance = 0.6, min = 1, max = 2 },
+		{ material = "Essence", chance = 0.2, min = 1, max = 1 },
 	},
 	-- the test dummies in the map ("Drop Test - <material>"): always that one material
 	TestScrap = { exclusive = true, { material = "Scrap", chance = 1, min = 1, max = 1 } },

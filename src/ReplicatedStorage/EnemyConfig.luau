@@ -32,6 +32,12 @@ EnemyConfig.Types = {
 		talisman = { key = "SetoBackbone", chance = 0.05 },
 		helperShare = 0.03,
 	},
+	-- the raid boss Ayato Yoji (RaidConfig.Bosses.AyatoYoji): his drops
+	AyatoYoji = {
+		dropTable = "AyatoYoji",
+		talisman = { key = "AyatoLuminance", chance = 0.05 },
+		helperShare = 0.03,
+	},
 }
 
 function EnemyConfig.Get(enemyType)

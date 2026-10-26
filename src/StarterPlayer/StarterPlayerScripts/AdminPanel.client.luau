@@ -601,10 +601,18 @@ page = pages.WORLD
 heading("RAID BOSS")
 buttonRow({
 	{ "Spawn Hide Seto", function()
-		run("SpawnBoss")
+		run("SpawnBoss", "HideSeto")
 	end },
-	{ "Remove him", function()
-		run("RemoveBoss")
+	{ "Remove Seto", function()
+		run("RemoveBoss", "HideSeto")
+	end },
+})
+buttonRow({
+	{ "Spawn Ayato", function()
+		run("SpawnBoss", "AyatoYoji")
+	end },
+	{ "Remove Ayato", function()
+		run("RemoveBoss", "AyatoYoji")
 	end },
 })
 heading("TIME OF DAY")

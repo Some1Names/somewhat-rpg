@@ -297,21 +297,28 @@ function actions.FreezeTime()
 	return true, "Time is running"
 end
 
--- Hide Seto (RaidBoss) at his arena, or 25 studs in front of the target if the map has none
-function actions.SpawnBoss(target)
-	local arena = workspace:FindFirstChild(RaidConfig.Bosses.HideSeto.arena)
+-- a raid boss (RaidBoss) at its arena, or 25 studs in front of the target if the map has none
+function actions.SpawnBoss(target, key)
+	local boss = RaidConfig.Get(key)
+	if not boss then
+		return false, "No such boss"
+	end
+	local arena = workspace:FindFirstChild(boss.arena)
 	if arena then
-		return RaidBoss.Spawn("HideSeto", arena.CFrame)
+		return RaidBoss.Spawn(key, arena.CFrame)
 	end
 	local root = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
 	if not root then
 		return false, "They have no character"
 	end
-	return RaidBoss.Spawn("HideSeto", CFrame.new(root.Position + root.CFrame.LookVector * 25))
+	return RaidBoss.Spawn(key, CFrame.new(root.Position + root.CFrame.LookVector * 25))
 end
 
-function actions.RemoveBoss()
-	return RaidBoss.Remove("HideSeto")
+function actions.RemoveBoss(_, key)
+	if not RaidConfig.Get(key) then
+		return false, "No such boss"
+	end
+	return RaidBoss.Remove(key)
 end
 
 -- binds as "Action=KeyName" pairs separated by commas, e.g. "ResetCooldowns=H"

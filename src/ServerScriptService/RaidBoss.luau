@@ -1,6 +1,9 @@
 -- Raid bosses (numbers and pure rules in ReplicatedStorage.RaidConfig): Spawn
 -- puts one in the world and fights it until it dies, leaves (its lifetime) or
 -- is removed. RaidServer spawns them on their timers; the admin panel can too.
+-- Hide Seto's moves are below; Ayato Yoji's are in RaidAyato, built from `kit`.
+-- A boss with `flight` takes off on a timer: its root is anchored and moved by
+-- hand while it hovers, and only its "air" and "any" moves can be cast up there.
 -- The boss is its model in ServerStorage.Bosses.<key> if there is one, else a
 -- plain R6 stand-in; either way it's unanchored and stood on the ground by its root. It's tagged RaidBoss (so EnemyAI leaves it alone) and
 -- Enemy (lock-on, aim assist, Drops: its EnemyConfig entry has the drops).
@@ -29,6 +32,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
+local TweenService = game:GetService("TweenService")
 
 local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local CrowdControl = require(ServerScriptService:WaitForChild("CrowdControl"))
@@ -46,6 +50,8 @@ remote.Name = RaidConfig.RemoteName
 remote.Parent = ReplicatedStorage
 
 local TICK = 0.15 -- seconds between decisions
+local RISE_TIME = 0.6 -- seconds to take off or land
+local HOVER_KEEP = { 14, 30 } -- flat studs it keeps from its target while it hovers
 local RETARGET = 4 -- seconds it keeps a target before looking for the nearest again
 local REACH_TOLERANCE = 1.5 -- extra studs a target may have moved during a swing's wind-up
 local LUNGE_SPEED = 70 -- studs per second
@@ -650,6 +656,82 @@ function MOVES.Possibility(fight)
 	humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + humanoid.MaxHealth * move.heal)
 end
 
+-- up `height` studs over the floor below it (or over `over`, a point to rise above)
+local function takeOff(fight, height, over)
+	local root = fight.humanoid.RootPart
+	local from = over or root.Position
+	local floor = ground(from)
+	local to = Vector3.new(from.X, floor.Y + height, from.Z)
+	fight.humanoid:MoveTo(root.Position)
+	root.Anchored = true
+	fight.flying = true
+	fight.hoverHeight = height
+	fight.model:SetAttribute("Flying", true)
+	TweenService:Create(root, TweenInfo.new(RISE_TIME, Enum.EasingStyle.Quad), { CFrame = CFrame.new(to) * root.CFrame.Rotation }):Play()
+	task.wait(RISE_TIME)
+end
+
+-- back down onto the floor below it
+local function land(fight)
+	local root = fight.humanoid.RootPart
+	if root and fight.flying then
+		local to = CFrame.new(ground(root.Position) + fight.stand) * root.CFrame.Rotation
+		TweenService:Create(root, TweenInfo.new(RISE_TIME, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { CFrame = to }):Play()
+		task.wait(RISE_TIME)
+		root = fight.humanoid.RootPart
+		if root then
+			root.Anchored = false
+		end
+	end
+	fight.flying = false
+	fight.model:SetAttribute("Flying", nil)
+	fight.nextFlightAt = os.clock() + (fight.boss.flight and fight.boss.flight.every or 0)
+end
+
+-- one step of hovering: toward a spot a little way off its target, at its
+-- height over the floor there, inside its arena, facing them
+local function hover(fight, target, dt)
+	local root = fight.humanoid.RootPart
+	local away = flat(root.Position - target.root.Position)
+	local keep = math.clamp(away.Magnitude, HOVER_KEEP[1], HOVER_KEEP[2])
+	local goal = target.root.Position + (away.Magnitude > 0.1 and away.Unit or Vector3.xAxis) * keep
+	local fromHome = flat(goal - fight.home.Position)
+	if fromHome.Magnitude > fight.boss.arenaRadius then
+		goal = fight.home.Position + fromHome.Unit * fight.boss.arenaRadius
+	end
+	goal = Vector3.new(goal.X, ground(goal).Y + fight.hoverHeight, goal.Z)
+	local step = goal - root.Position
+	local position = root.Position
+	if step.Magnitude > 0.05 then
+		position += step.Unit * math.min(fight.boss.flight.speed * dt, step.Magnitude)
+	end
+	root.CFrame = CFrame.lookAt(position, Vector3.new(target.root.Position.X, position.Y, target.root.Position.Z))
+end
+
+-- what a boss's own moves (RaidAyato) are built from
+local kit = {
+	remote = remote,
+	skillEffects = skillEffects,
+	flat = flat,
+	flatUnit = flatUnit,
+	rotated = rotated,
+	playersIn = playersIn,
+	stillThere = stillThere,
+	ground = ground,
+	alive = alive,
+	color = color,
+	hurt = hurt,
+	face = face,
+	push = push,
+	fling = fling,
+	mark = mark,
+	takeOff = takeOff,
+	land = land,
+}
+for name, move in pairs(require(script.Parent:WaitForChild("RaidAyato"))(kit)) do
+	MOVES[name] = move
+end
+
 local function cast(fight, name, target)
 	fight.busy = true
 	local move = fight.boss.moves[name]
@@ -666,10 +748,11 @@ local function cast(fight, name, target)
 	end)
 end
 
--- the Mandela wearables on his body: the OverchargeOnly ones only while
--- overcharged, when the TintWhenOvercharged ones turn red
+-- the wearables of the boss's skill set on its body: the OverchargeOnly ones only
+-- while overcharged, when the TintWhenOvercharged ones take its overcharge colour
 local function dress(fight, overcharged)
-	local pieces = mandela:FindFirstChild("Wearables")
+	local assets = fight.boss.skillSet and ServerStorage:WaitForChild("SkillSets"):FindFirstChild(fight.boss.skillSet)
+	local pieces = assets and assets:FindFirstChild("Wearables")
 	if not pieces then
 		return
 	end
@@ -677,7 +760,7 @@ local function dress(fight, overcharged)
 	if not folder then
 		folder = Instance.new("Folder")
 		folder.Name = WEARABLES_FOLDER
-		folder:SetAttribute("SkillSet", "Mandela")
+		folder:SetAttribute("SkillSet", fight.boss.skillSet)
 		folder.Parent = fight.model
 	end
 	local red = RaidConfig.Color(fight.boss.overchargeColor)
@@ -730,12 +813,19 @@ local function setPhase(fight, index)
 	fight.phase = index
 	fight.model:SetAttribute("Phase", index)
 	fight.model:SetAttribute("Overcharged", phase.overcharged == true)
+	-- (SkillEffects draws Prism Form from this, as on a player)
+	fight.model:SetAttribute("PrismForm", phase.prismForm or nil)
 	fight.humanoid.WalkSpeed = fight.boss.walkSpeed * phase.speedScale
 	dress(fight, phase.overcharged == true)
 end
 
 -- nobody's left in the arena: back to full and the first phase
 local function reset(fight)
+	if fight.flying then
+		fight.humanoid.RootPart.Anchored = false
+		fight.flying = false
+		fight.model:SetAttribute("Flying", nil)
+	end
 	setPhase(fight, 1)
 	fight.readyAt = {}
 	fight.damageBy = {}
@@ -813,8 +903,28 @@ local function run(fight)
 					cast(fight, opener, nil)
 				end
 			end
+			-- take off or come down on its timer
+			local flight = boss.flight
+			if flight and not fight.busy and now >= fight.staggerUntil then
+				if fight.flying and now >= fight.flightEndsAt then
+					fight.busy = true
+					task.spawn(function()
+						land(fight)
+						fight.busy = false
+					end)
+				elseif not fight.flying and now >= fight.nextFlightAt then
+					fight.busy = true
+					task.spawn(function()
+						takeOff(fight, flight.height)
+						fight.flightEndsAt = os.clock() + flight.duration
+						fight.busy = false
+					end)
+				end
+			end
 			if now < fight.staggerUntil then
-				humanoid:MoveTo(root.Position)
+				if not fight.flying then
+					humanoid:MoveTo(root.Position)
+				end
 			elseif not fight.busy then
 				-- the nearest player, kept a few seconds
 				if not stillThere(fight.target) or now >= fight.retargetAt or flat(fight.target.root.Position - fight.home.Position).Magnitude > boss.arenaRadius then
@@ -830,9 +940,11 @@ local function run(fight)
 				end
 				local target = fight.target
 				local distance = (target.root.Position - root.Position).Magnitude
-				local name = RaidConfig.PickMove(boss, fight.phase, distance, fight.readyAt, now, math.random)
+				local name = RaidConfig.PickMove(boss, fight.phase, distance, fight.readyAt, now, math.random, fight.flying)
 				if name then
 					cast(fight, name, target)
+				elseif fight.flying then
+					hover(fight, target, TICK)
 				else
 					humanoid:MoveTo(target.root.Position)
 				end
@@ -859,14 +971,14 @@ local function buildModel(key, boss)
 		return template:Clone()
 	end
 	local description = Instance.new("HumanoidDescription")
-	local skin = Color3.fromRGB(234, 184, 146)
-	local dark = Color3.fromRGB(28, 32, 30)
+	local look = boss.standIn or { skin = { 234, 184, 146 }, top = { 28, 32, 30 }, bottom = { 28, 32, 30 } }
+	local skin = RaidConfig.Color(look.skin)
 	description.HeadColor = skin
 	description.LeftArmColor = skin
 	description.RightArmColor = skin
-	description.TorsoColor = dark
-	description.LeftLegColor = dark
-	description.RightLegColor = dark
+	description.TorsoColor = RaidConfig.Color(look.top)
+	description.LeftLegColor = RaidConfig.Color(look.bottom)
+	description.RightLegColor = RaidConfig.Color(look.bottom)
 	local model = Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R6)
 	local outline = Instance.new("Highlight")
 	outline.FillTransparency = 1
@@ -952,6 +1064,9 @@ function RaidBoss.Spawn(key, cframe)
 		retargetAt = 0,
 		damageBy = {}, -- player -> damage, for the rewards
 		misrememberedAt = 0, -- os.clock() its next erase is ready
+		flying = false,
+		nextFlightAt = os.clock() + (boss.flight and boss.flight.every or 0),
+		flightEndsAt = 0,
 		spawnedAt = os.clock(),
 		walkTrack = walkTrack,
 		slashTrack = slashTrack,
@@ -978,8 +1093,13 @@ function RaidBoss.Spawn(key, cframe)
 			end
 			return 0
 		end
+		-- Prism Form: physical hits pass partly through him
+		local reduction = boss.phases[fight.phase].physicalReduction
+		if reduction and options.melee then
+			amount *= 1 - reduction
+		end
 		-- Misremembered: the next hit never happened
-		if not options.dot and os.clock() >= fight.misrememberedAt then
+		if boss.misremembered and not options.dot and os.clock() >= fight.misrememberedAt then
 			fight.misrememberedAt = os.clock() + boss.misremembered.cooldown
 			skillEffects:FireAllClients("Misremember", model, color(fight))
 			return 0
@@ -990,6 +1110,9 @@ function RaidBoss.Spawn(key, cframe)
 	humanoid.Died:Once(function()
 		local grabbed = fight.grabbed
 		finish(fight)
+		if humanoid.RootPart then
+			humanoid.RootPart.Anchored = false
+		end
 		if grabbed and grabbed.player.Character then
 			local root = grabbed.player.Character:FindFirstChild("HumanoidRootPart")
 			if root then

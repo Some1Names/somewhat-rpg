@@ -130,6 +130,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `Damage.SetAbsorber` gives it Misremembered and the dome's shield), `RaidServer` (spawns each on the workspace part its `arena` names, on a
   timer; admin panel WORLD page spawns/removes), `RaidClient` (boss bar, banners, ground warnings, the grab QTE). Hide Seto (Mandela,
   Lv 90) is the first: he spawns on `workspace.MandelaSpawn`, his model is `ServerStorage.Bosses.HideSeto` (R6); drops via his `EnemyConfig` entry.
+  Ayato Yoji (Iridescent Requiem, Lv 95) is the second: his moves are in `RaidAyato` (built from RaidBoss's `kit`), he flies
+  on a timer (`flight`), and his ultimate needs players inside the safe domes; arena `workspace.AyatoSpawn`, model `ServerStorage.Bosses.AyatoYoji`.
 - **Factions and parties**: `FactionConfig` (three factions, their rank names, colours and shop discount; pure rules, Lune-tested), `Factions` + `FactionServer` (a model tagged `FactionRecruiter` opens the `FactionMenu` close-up; JOIN goes through the `FactionAction` remote; standing from kills; saved `FactionData`), the overhead title in `OverheadHealth` and a card in `HubProfile`. Parties: `PartyRules` (pure, Lune-tested), `Party` + `PartyServer` (the `PartyAction` remote), the hub tab `PartyMenu` and `PartyHUD`.
 - **Melee weapons**: a set with `kind = "melee"` fills the hotbar's MELEE slot (saved as the `MeleeSet` attribute, kept by `Loadout`
   like `WeaponSet`) and swings a combo from `PunchConfig.Weapons`. Its Tool needs a `SkillSet` attribute. Katana (B, needs 5 Strength,

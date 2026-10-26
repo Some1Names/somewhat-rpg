@@ -145,7 +145,7 @@ check("the attribute name matches Reforge's", DropConfig.Attribute("Scrap") == R
 local sorted = DropConfig.Sorted()
 check(
 	"sorted by tier, then display name",
-	#sorted == 7 and table.concat(sorted, ",") == "Scrap,Core,ThugBadge,WolfFang,Crystal,Essence,SetoVertebra"
+	#sorted == 8 and table.concat(sorted, ",") == "Scrap,Core,ThugBadge,WolfFang,Crystal,Essence,PrismShard,SetoVertebra"
 )
 
 -- the Henchman's table (EnemyConfig names it): extra rolls on top of the generic ones

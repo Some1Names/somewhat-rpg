@@ -5,7 +5,8 @@
 -- ground markings for its wind-ups, and the grab's QTE: press the keys shown, in
 -- order, before the bar runs out (a wrong key starts over; the boxes can be
 -- tapped too). Plain white text with a dark stroke, square.
--- His moves use the Mandela set's own visuals (RaidBoss).
+-- The bosses' moves use their sets' own visuals (RaidBoss, RaidAyato); the safe
+-- domes of Ayato's ultimate here are placeholder parts until the owner's VFX.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -407,6 +408,32 @@ function events.DomeEnd(outcome, broken, parts)
 	elseif outcome == "spared" then
 		showBanner("THE DOME BREAKS", string.format("%d of %d parts broken: no harm done", broken, parts), 2)
 	end
+end
+
+-- Above the Cumulonimbus: domes of light to shelter in until the sun bursts
+local safeDomes = {}
+function events.SafeDomes(positions, radius, time)
+	for _, part in ipairs(safeDomes) do
+		part:Destroy()
+	end
+	safeDomes = {}
+	for _, position in ipairs(positions) do
+		local dome = effectPart(Enum.PartType.Ball, Color3.fromRGB(60, 224, 230), Vector3.one * radius * 2, CFrame.new(position), time + 2)
+		dome.Material = Enum.Material.ForceField
+		dome.Transparency = 0.1
+		local rim = effectPart(Enum.PartType.Cylinder, Color3.fromRGB(255, 154, 60), Vector3.new(0.2, radius * 2, radius * 2), CFrame.new(position + Vector3.new(0, 0.15, 0)) * CFrame.Angles(0, 0, math.rad(90)), time + 2)
+		rim.Transparency = 0.5
+		table.insert(safeDomes, dome)
+		table.insert(safeDomes, rim)
+	end
+	showBanner("ABOVE THE CUMULONIMBUS", string.format("Get inside a dome of light: the sun bursts in %d seconds", math.floor(time + 0.5)), time - 1)
+end
+
+function events.SafeDomesEnd()
+	for _, part in ipairs(safeDomes) do
+		part:Destroy()
+	end
+	safeDomes = {}
 end
 
 function events.Qte(keys, time)

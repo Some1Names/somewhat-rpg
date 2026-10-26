@@ -53,6 +53,15 @@ TalismanConfig.Items = {
 		dropOnly = true,
 		description = "+12% damage dealt. Take 6% less damage.",
 	},
+	-- Ayato Yoji's, from the raid (EnemyConfig AyatoYoji)
+	{
+		key = "AyatoLuminance",
+		name = "Luminance Talisman",
+		color = { 255, 154, 60 },
+		effects = { damageDealt = 0.1, regen = 3 },
+		dropOnly = true,
+		description = "+10% damage dealt. +3 HP per second of regeneration.",
+	},
 }
 
 local byKey = {}
