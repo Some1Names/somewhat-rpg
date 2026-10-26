@@ -231,6 +231,18 @@ Preferences.Options = {
 		default = 100,
 		description = "The background music. 0 turns it off.",
 	},
+	{
+		id = "VolAmbience",
+		label = "Ambience",
+		section = "SOUND",
+		kind = "slider",
+		min = 0,
+		max = 100,
+		step = 5,
+		suffix = "%",
+		default = 100,
+		description = "The sound of the city or nature around you. 0 turns it off.",
+	},
 }
 
 local byId = {}

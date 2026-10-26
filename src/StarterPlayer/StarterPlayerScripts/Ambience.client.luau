@@ -2,7 +2,7 @@
 -- sounds in the ZoneConfig zones marked `ambience = "nature"` (the Upper Shrine and the
 -- Training Grounds), by where the camera is (so the title menu's drift has it
 -- too). A kind's tracks play in turn, back to back; walking into the other kind of area
--- cross-fades to it. Through the Effects volume setting (AudioMix), like other world sounds.
+-- cross-fades to it. Through its own volume setting, Ambience (AudioMix).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
@@ -20,7 +20,7 @@ local function newSound(name)
 	local sound = Instance.new("Sound")
 	sound.Name = name
 	sound.Volume = 0
-	sound.SoundGroup = AudioMix.Group("Effects")
+	sound.SoundGroup = AudioMix.Group("Ambience")
 	sound.Parent = SoundService
 	return sound
 end
