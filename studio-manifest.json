@@ -2394,5 +2394,59 @@
   "class": "Script",
   "runContext": "Client",
   "enabled": true
+ },
+ {
+  "file": "src/ReplicatedStorage/RaidConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "RaidConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/RaidBoss.luau",
+  "names": [
+   "ServerScriptService",
+   "RaidBoss"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/RaidServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "RaidServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/RaidClient.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "RaidClient"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]
