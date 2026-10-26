@@ -76,29 +76,14 @@ local function caughtInside(character, center)
 	return caught
 end
 
--- The dome of glass: a skirt going straight down from the rim (for ground
--- that dips), then DomeRings rings of flat panes up to the top, each pane
--- facing the middle and each ring offset half a pane from the one below.
--- Panes are as wide as their ring's lower edge, so they overlap rather than
--- leave gaps. Invisible here (clients draw the mirror), but solid.
-local function buildDome(center)
-	local wall = Instance.new("Model")
-	wall.Name = "RewriteWall"
-	wall.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
-	local radius = CONFIG.Radius
+-- The dome's panes (CFrames and sizes): a skirt going straight down from the
+-- rim (for ground that dips), then DomeRings rings of flat panes up to the top,
+-- each pane facing the middle and each ring offset half a pane from the one
+-- below. Panes are as wide as their ring's lower edge, so they overlap rather
+-- than leave gaps. The raid boss's dome (RaidBoss) is laid out by this too.
+local function domePanes(center, radius)
 	local frames, sizes = {}, {}
 	local function addPane(frame, size)
-		local pane = Instance.new("Part")
-		pane.Name = "Pane"
-		pane.Anchored = true
-		pane.CanCollide = true
-		pane.CanTouch = false
-		pane.CastShadow = false
-		pane.Transparency = 1
-		pane.Size = size
-		pane.CFrame = frame
-		CollectionService:AddTag(pane, WALL_TAG)
-		pane.Parent = wall
 		table.insert(frames, frame)
 		table.insert(sizes, size)
 	end
@@ -128,6 +113,28 @@ local function buildDome(center)
 				+ Vector3.new(math.cos(mid) * math.cos(theta), math.sin(mid), math.cos(mid) * math.sin(theta)) * radius
 			addPane(CFrame.lookAt(point, center), size)
 		end
+	end
+	return frames, sizes
+end
+
+-- The dome of glass, invisible here (clients draw the mirror), but solid.
+local function buildDome(center)
+	local wall = Instance.new("Model")
+	wall.Name = "RewriteWall"
+	wall.ModelStreamingMode = Enum.ModelStreamingMode.Persistent
+	local frames, sizes = domePanes(center, CONFIG.Radius)
+	for i, frame in ipairs(frames) do
+		local pane = Instance.new("Part")
+		pane.Name = "Pane"
+		pane.Anchored = true
+		pane.CanCollide = true
+		pane.CanTouch = false
+		pane.CastShadow = false
+		pane.Transparency = 1
+		pane.Size = sizes[i]
+		pane.CFrame = frame
+		CollectionService:AddTag(pane, WALL_TAG)
+		pane.Parent = wall
 	end
 	wall.Parent = workspace
 	return wall, frames, sizes
@@ -199,6 +206,7 @@ end
 local PlaceWhereDreamEnds = {}
 
 PlaceWhereDreamEnds.WallTag = WALL_TAG
+PlaceWhereDreamEnds.DomePanes = domePanes
 
 function PlaceWhereDreamEnds.Cast(player, character, aim)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")

@@ -5,8 +5,7 @@
 -- ground markings for its wind-ups, and the grab's QTE: press the keys shown, in
 -- order, before the bar runs out (a wrong key starts over; the boxes can be
 -- tapped too). Plain white text with a dark stroke, square.
--- His moves use the Mandela set's own visuals (RaidBoss); the dome here is a
--- placeholder part until the owner's VFX.
+-- His moves use the Mandela set's own visuals (RaidBoss).
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -367,24 +366,12 @@ function events.Warn(shape, cframe, size, time, color)
 	groundWarning(shape, cframe, size, time, color)
 end
 
--- the dome: glass closing in over the arena until the shield breaks or it lands
-local dome
-function events.Dome(center, radius, time, color)
-	if dome then
-		dome:Destroy()
-	end
-	dome = effectPart(Enum.PartType.Ball, color, Vector3.one * radius * 2, CFrame.new(center), time + 1)
-	dome.Material = Enum.Material.ForceField
-	dome.Transparency = 0.2
+-- the dome (its glass is SkillEffects' Rewrite, Mandela's ultimate)
+function events.Dome()
 	showBanner("OVERCOME THE POSSIBILITY", "Break his shield before the dome closes", 3)
-	TweenService:Create(dome, TweenInfo.new(time, Enum.EasingStyle.Linear), { Color = WHITE }):Play()
 end
 
 function events.DomeEnd(broken)
-	if dome then
-		dome:Destroy()
-		dome = nil
-	end
 	if broken then
 		showBanner("POSSIBILITY BROKEN", "He's staggered!", 2)
 	end

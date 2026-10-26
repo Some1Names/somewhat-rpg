@@ -19,8 +19,9 @@
 -- pieces moved onto R6 arms) and his moves use the set's own visuals: the axe
 -- throw, the black hole and tornado templates (drawn by SkillEffects from their
 -- attributes, as for a player's cast), Spine Lash, the knives, BoneSpikes,
--- Shockwave, PossibilityWave, Misremember and Overcharge. RaidClient draws the
--- ground markings and the dome (a placeholder until the owner's VFX).
+-- Shockwave, Misremember, Overcharge and the dome of mirror glass from his
+-- ultimate (the Rewrite events of Skills.PlaceWhereDreamEnds, without its solid
+-- wall). RaidClient draws the ground markings.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -36,6 +37,7 @@ local EnemyAttackConfig = require(ReplicatedStorage:WaitForChild("EnemyAttackCon
 local PlayerStats = require(ServerScriptService:WaitForChild("PlayerStats"))
 local Projectiles = require(ServerScriptService:WaitForChild("Projectiles"))
 local RaidConfig = require(ReplicatedStorage:WaitForChild("RaidConfig"))
+local PlaceWhereDreamEnds = require(ServerScriptService:WaitForChild("Skills"):WaitForChild("PlaceWhereDreamEnds"))
 
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -74,6 +76,8 @@ local TORNADO_GROW_TIME = 0.5
 local TORNADO_WOBBLE = 4 -- studs side to side, as Skills.Tornado
 local TORNADO_WOBBLE_FREQUENCY = 2.2
 local TORNADO_CLEANUP = 0.6
+local DOME_GHOSTS = 3 -- reflections of him the glass keeps as his shield is hit
+local domeCount = 0
 local mandela = ServerStorage:WaitForChild("SkillSets"):WaitForChild("Mandela")
 
 local RaidBoss = {}
@@ -586,7 +590,9 @@ function MOVES.Roar(fight)
 	skillEffects:FireAllClients("Shockwave", center, move.radius, color(fight))
 end
 
--- the dome: everyone has `windUp` seconds to break his shield
+-- the dome of mirror glass (Mandela's ultimate): everyone has `windUp` seconds
+-- to break his shield; hits on it crack the glass and leave reflections of
+-- him. Broken, it shatters and he reels; if it holds, it rewrites everyone inside.
 function MOVES.Possibility(fight)
 	local move = fight.boss.moves.Possibility
 	fight.model:PivotTo(fight.home + fight.stand)
@@ -595,6 +601,11 @@ function MOVES.Possibility(fight)
 	fight.shield = shield
 	fight.model:SetAttribute("ShieldMax", shield)
 	fight.model:SetAttribute("Shield", shield)
+	domeCount += 1
+	local castId = "Raid" .. domeCount
+	fight.dome = { castId = castId, ghosts = 0 }
+	local frames, sizes = PlaceWhereDreamEnds.DomePanes(center, move.radius)
+	skillEffects:FireAllClients("Rewrite", castId, fight.model, center, move.radius, move.windUp, frames, sizes, color(fight))
 	remote:FireAllClients("Dome", center, move.radius, move.windUp, color(fight))
 	local endsAt = os.clock() + move.windUp
 	while os.clock() < endsAt and fight.shield > 0 and alive(fight) do
@@ -602,24 +613,26 @@ function MOVES.Possibility(fight)
 	end
 	local broken = fight.shield <= 0
 	fight.shield = nil
+	fight.dome = nil
 	fight.model:SetAttribute("Shield", nil)
 	fight.model:SetAttribute("ShieldMax", nil)
 	remote:FireAllClients("DomeEnd", broken)
-	if not alive(fight) then
+	if not alive(fight) or broken then
+		skillEffects:FireAllClients("RewriteSnap", castId, center, move.radius, {}, {}, color(fight))
+		if alive(fight) then
+			fight.staggerUntil = os.clock() + move.stagger
+			fight.model:SetAttribute("StaggeredUntil", workspace:GetServerTimeNow() + move.stagger)
+			skillEffects:FireAllClients("PoiseBreak", fight.model)
+		end
 		return
 	end
-	if broken then
-		fight.staggerUntil = os.clock() + move.stagger
-		fight.model:SetAttribute("StaggeredUntil", workspace:GetServerTimeNow() + move.stagger)
-		skillEffects:FireAllClients("PoiseBreak", fight.model)
-		return
-	end
-	local struck = {}
+	local positions, struck = {}, {}
 	for _, victim in ipairs(playersIn(center, move.radius, true)) do
-		Damage.Deal(nil, victim.humanoid, victim.humanoid.MaxHealth * move.failShare, { unavoidable = true, guard = "unblockable" })
+		Damage.Deal(nil, victim.humanoid, victim.humanoid.MaxHealth * move.failShare, { unavoidable = true, guard = "unblockable", critical = true })
+		table.insert(positions, victim.root.Position)
 		table.insert(struck, victim.character)
 	end
-	skillEffects:FireAllClients("PossibilityWave", fight.model, center, move.radius, true, color(fight), struck)
+	skillEffects:FireAllClients("RewriteSnap", castId, center, move.radius, positions, struck, color(fight))
 	local humanoid = fight.humanoid
 	humanoid.Health = math.min(humanoid.MaxHealth, humanoid.Health + humanoid.MaxHealth * move.heal)
 end
@@ -944,6 +957,12 @@ function RaidBoss.Spawn(key, cframe)
 		if fight.shield then
 			fight.shield = math.max(fight.shield - amount, 0)
 			model:SetAttribute("Shield", fight.shield)
+			-- the glass keeps a few reflections of him and cracks
+			local dome = fight.dome
+			if dome and dome.ghosts < DOME_GHOSTS and not options.dot then
+				dome.ghosts += 1
+				skillEffects:FireAllClients("RewriteHit", dome.castId, model, color(fight))
+			end
 			return 0
 		end
 		-- Misremembered: the next hit never happened
