@@ -115,6 +115,7 @@ local function hints()
 	if GuardConfig.Enabled and Keybinds.Current().Block then
 		table.insert(result, { Keybinds.Text("Block"), "Block / Parry" })
 	end
+	table.insert(result, { Keybinds.Text("ItemWheel"), "Item wheel" })
 	if set and set.ranged then
 		table.insert(result, { "RMB", "Aim" })
 	end

@@ -30,6 +30,7 @@ Keybinds.Actions = {
 	{ id = "Reload", label = "Reload", default = "R" },
 	{ id = "Gallery", label = "Photo Gallery", default = "T" },
 	{ id = "HideHud", label = "Hide HUD", default = "H" }, -- HideHud
+	{ id = "ItemWheel", label = "Item wheel", default = "CapsLock", yields = true }, -- Hotbar
 }
 
 local byId = {}
