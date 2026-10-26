@@ -70,6 +70,7 @@ DropConfig.Materials = {
 	Essence = { tier = "Dark", display = "Essence" },
 	WolfFang = { tier = "Rare", display = "Wolf Fang" },
 	ThugBadge = { tier = "Rare", display = "Thug Badge" },
+	SetoVertebra = { tier = "Dark", display = "Seto's Vertebra" },
 }
 
 -- what any enemy of at least `minLevel` rolls, per helper
@@ -89,6 +90,14 @@ DropConfig.Tables = {
 		{ material = "Scrap", chance = 0.6, min = 1, max = 3 },
 		{ material = "ThugBadge", chance = 0.15, min = 1, max = 1 },
 		{ material = "Core", chance = 0.1, min = 1, max = 1 },
+	},
+	-- Hide Seto, the raid boss (RaidConfig): his vertebra every time, and the rarer materials
+	HideSeto = {
+		exclusive = true,
+		{ material = "SetoVertebra", chance = 1, min = 1, max = 2 },
+		{ material = "Core", chance = 1, min = 2, max = 4 },
+		{ material = "Crystal", chance = 0.5, min = 1, max = 2 },
+		{ material = "Essence", chance = 0.15, min = 1, max = 1 },
 	},
 	-- the test dummies in the map ("Drop Test - <material>"): always that one material
 	TestScrap = { exclusive = true, { material = "Scrap", chance = 1, min = 1, max = 1 } },
@@ -129,8 +138,9 @@ function DropConfig.Rolls(level, tableName, random)
 	return rolls
 end
 
-function DropConfig.IsHelper(damage, maxHealth)
-	return maxHealth > 0 and damage > 0 and damage >= maxHealth * DropConfig.ContributionShare
+-- `share` overrides ContributionShare (a raid boss's helperShare)
+function DropConfig.IsHelper(damage, maxHealth, share)
+	return maxHealth > 0 and damage > 0 and damage >= maxHealth * (share or DropConfig.ContributionShare)
 end
 
 -- how much of `amount` a bag holding `current` takes, and how much is left over

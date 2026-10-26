@@ -172,7 +172,7 @@ local function onKill(_killer, character, _hit, victimIsPlayer)
 			return
 		end
 		for player, damage in pairs(ledger) do
-			if player.Parent and DropConfig.IsHelper(damage, maxHealth) then
+			if player.Parent and DropConfig.IsHelper(damage, maxHealth, entry and entry.helperShare) then
 				for _, drop in ipairs(DropConfig.Rolls(level, tableName, math.random)) do
 					spawnOrb(player, drop.material, drop.amount, position, character)
 				end

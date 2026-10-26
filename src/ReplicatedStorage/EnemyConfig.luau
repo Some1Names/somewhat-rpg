@@ -9,6 +9,7 @@
 --   comboPause: seconds of rest after the last step, instead of AttackCooldown
 --   dropTable: a key of DropConfig.Tables (the model's DropTable attribute wins)
 --   talisman: { key, chance }, rolled once per helper on a kill (TalismanConfig.dropOnly)
+--   helperShare: the share of its max health a player must deal to get drops (DropConfig.ContributionShare if none)
 local EnemyConfig = {}
 
 EnemyConfig.Types = {
@@ -23,6 +24,13 @@ EnemyConfig.Types = {
 		comboPause = 1.2,
 		dropTable = "Henchman",
 		talisman = { key = "ThugKnuckle", chance = 0.03 },
+	},
+	-- the raid boss (RaidConfig.Bosses.HideSeto): RaidBoss fights him, not EnemyAI;
+	-- this entry is only his drops
+	HideSeto = {
+		dropTable = "HideSeto",
+		talisman = { key = "SetoBackbone", chance = 0.05 },
+		helperShare = 0.03,
 	},
 }
 

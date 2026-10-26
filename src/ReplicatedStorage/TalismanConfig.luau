@@ -44,6 +44,15 @@ TalismanConfig.Items = {
 		dropOnly = true,
 		description = "+10% damage dealt. Heal 2% max HP on every kill.",
 	},
+	-- Hide Seto's, from the raid (EnemyConfig HideSeto)
+	{
+		key = "SetoBackbone",
+		name = "Backbone Talisman",
+		color = { 170, 255, 200 },
+		effects = { damageDealt = 0.12, damageReduction = 0.06 },
+		dropOnly = true,
+		description = "+12% damage dealt. Take 6% less damage.",
+	},
 }
 
 local byKey = {}

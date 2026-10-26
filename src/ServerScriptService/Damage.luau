@@ -105,6 +105,14 @@ function Damage.OnDealt(listener)
 	end
 end
 
+-- Something that soaks hits on an NPC (a raid boss's shield or Misremembered,
+-- RaidBoss): called as absorber(amount, attacker, options) before the hit
+-- lands, it returns what's left to take. nil removes it.
+local absorbers = setmetatable({}, { __mode = "k" })
+function Damage.SetAbsorber(humanoid, absorber)
+	absorbers[humanoid] = absorber
+end
+
 -- the player who last hit this humanoid, if any (EnemyAI turns on them)
 function Damage.LastAttacker(humanoid)
 	return lastAttacker[humanoid]
@@ -227,6 +235,13 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 		lastAttacker[humanoid] = attacker
 		local _, holding = SkillSetConfig.Equipped(attacker.Character)
 		lastHit[humanoid] = { at = os.clock(), skillSet = options.skillSet or holding, skill = options.skill }
+	end
+	local absorber = absorbers[humanoid]
+	if absorber then
+		amount = absorber(amount, attacker, options)
+		if amount <= 0 then
+			return 0
+		end
 	end
 	if options.critical then
 		-- HitFeedback shows the health drop that follows as a critical hit

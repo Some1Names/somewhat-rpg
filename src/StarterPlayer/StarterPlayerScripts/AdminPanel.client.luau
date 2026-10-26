@@ -598,6 +598,15 @@ buttonRow({
 
 -- WORLD: the time is the world's, whoever the panel's player is
 page = pages.WORLD
+heading("RAID BOSS")
+buttonRow({
+	{ "Spawn Hide Seto", function()
+		run("SpawnBoss")
+	end },
+	{ "Remove him", function()
+		run("RemoveBoss")
+	end },
+})
 heading("TIME OF DAY")
 inputRow("Time (0-24)", "Set", function(value)
 	run("SetTime", value)

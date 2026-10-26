@@ -403,7 +403,8 @@ end
 
 local active = {}
 local function start(model)
-	if active[model] or not model:IsA("Model") or not model:IsDescendantOf(workspace) then
+	-- a raid boss (RaidBoss) fights on its own
+	if active[model] or not model:IsA("Model") or not model:IsDescendantOf(workspace) or CollectionService:HasTag(model, "RaidBoss") then
 		return
 	end
 	active[model] = true

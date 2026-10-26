@@ -11,6 +11,7 @@ local DayClock = require(script.Parent:WaitForChild("DayClock"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Loadout = require(script.Parent:WaitForChild("Loadout"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local RaidBoss = require(script.Parent:WaitForChild("RaidBoss"))
 local SkillCooldowns = require(script.Parent:WaitForChild("SkillCooldowns"))
 local StatusEffects = require(script.Parent:WaitForChild("StatusEffects"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -293,6 +294,19 @@ function actions.FreezeTime()
 		return true, "Time frozen at " .. clockText(DayClock.Hour())
 	end
 	return true, "Time is running"
+end
+
+-- Hide Seto (RaidBoss), with his arena around a spot 25 studs in front of the target
+function actions.SpawnBoss(target)
+	local root = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return false, "They have no character"
+	end
+	return RaidBoss.Spawn("HideSeto", CFrame.new(root.Position + root.CFrame.LookVector * 25))
+end
+
+function actions.RemoveBoss()
+	return RaidBoss.Remove("HideSeto")
 end
 
 -- binds as "Action=KeyName" pairs separated by commas, e.g. "ResetCooldowns=H"
