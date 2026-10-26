@@ -2,20 +2,24 @@
 -- group), in three moods:
 --   title    the menu theme, looping while the title menu is up (TitleMenu's gui, gone once
 --            PLAY has faded in)
+--   boss     the boss theme, looping while you're near a living raid boss (RaidConfig: within
+--            its arena radius); it beats combat
 --   combat   while you're fighting another player (CombatRules' PvP attribute on your
 --            character, the same 30 s as the shops): the combat tracks in turn, back to back
 --   explore  otherwise: the game tracks shuffled (never the same one twice in a row), each
 --            fading in and out with a quiet stretch of `gap` seconds after it
--- A change of mood fades the playing track out (combat cuts in quickly, even mid-silence),
+-- A change of mood fades the playing track out (combat and boss cut in quickly, even mid-silence),
 -- and leaving combat or the title is followed by a quiet stretch. A track that won't load
 -- is skipped. One Sound in SoundService. While any menu but the title is open (Menus: the
 -- hub, settings, a shop...) it's muffled: the highs cut and a little quieter.
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
+local RaidConfig = require(ReplicatedStorage:WaitForChild("RaidConfig"))
 local SoundConfig = require(ReplicatedStorage:WaitForChild("SoundConfig"))
 local AudioMix = require(script.Parent:WaitForChild("AudioMix"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
@@ -51,9 +55,33 @@ end)
 
 local title = playerGui:WaitForChild("TitleMenu", TITLE_WAIT)
 
+-- near a living raid boss
+local function nearBoss()
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return false
+	end
+	for _, model in ipairs(CollectionService:GetTagged(RaidConfig.Tag)) do
+		local boss = RaidConfig.Get(model:GetAttribute("BossKey"))
+		local humanoid = model:FindFirstChildOfClass("Humanoid")
+		local bossRoot = humanoid and humanoid.RootPart
+		if boss and bossRoot and humanoid.Health > 0 and (bossRoot.Position - root.Position).Magnitude <= boss.arenaRadius then
+			return true
+		end
+	end
+	return false
+end
+
+-- combat and the boss cut in, rather than waiting out a quiet stretch
+local URGENT = { combat = true, boss = true }
+
 local function mood()
 	if title and title.Parent then
 		return "title"
+	end
+	if nearBoss() then
+		return "boss"
 	end
 	local character = player.Character
 	local at = character and character:GetAttribute(CombatRules.PvPAttribute)
@@ -84,7 +112,7 @@ local function load(track)
 end
 
 -- plays `track` (looping, if `looped`) while the mood stays `want`; fades it out at its end
--- or when the mood changes (quickly into combat)
+-- or when the mood changes (quickly into combat or the boss)
 local function play(track, want, looped)
 	if not load(track) then
 		return
@@ -98,15 +126,15 @@ local function play(track, want, looped)
 	while mood() == want and (looped or os.clock() < endAt) do
 		task.wait(CHECK)
 	end
-	fade(0, mood() == "combat" and MUSIC.combatFade or MUSIC.fade)
+	fade(0, URGENT[mood()] and MUSIC.combatFade or MUSIC.fade)
 	sound:Stop()
 	sound.Looped = false
 end
 
--- a quiet stretch, cut short if combat starts
+-- a quiet stretch, cut short if combat or a boss starts
 local function silence()
 	local untilAt = os.clock() + math.random(MUSIC.gap[1], MUSIC.gap[2])
-	while os.clock() < untilAt and mood() ~= "combat" do
+	while os.clock() < untilAt and not URGENT[mood()] do
 		task.wait(CHECK)
 	end
 end
@@ -131,10 +159,15 @@ while true do
 	if now == "title" then
 		play(MUSIC.menuTheme, "title", true)
 		silence()
+	elseif now == "boss" then
+		play(MUSIC.bossTheme, "boss", true)
+		if not URGENT[mood()] then
+			silence()
+		end
 	elseif now == "combat" then
 		combatTurn = combatTurn % #MUSIC.combat + 1
 		play(MUSIC.combat[combatTurn], "combat")
-		if mood() ~= "combat" then
+		if not URGENT[mood()] then
 			silence()
 		end
 	else

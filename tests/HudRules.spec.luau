@@ -82,6 +82,9 @@ for _, zone in ipairs(ZoneConfig.Zones) do
 end
 check("every ZoneConfig zone has a name and min below max", shaped)
 check("the spawn is in a zone", HudRules.ZoneAt(ZoneConfig.Zones, 113, 2) ~= nil)
+check("a zone's ambience", HudRules.AmbienceAt({ { name = "Woods", min = { 0, 0 }, max = { 10, 10 }, ambience = "nature" } }, 5, 5, "city") == "nature")
+check("a zone without one, and outside every zone, give the default", HudRules.AmbienceAt(ZONES, 5, 5, "city") == "city" and HudRules.AmbienceAt(ZONES, 500, 0, "city") == "city")
+check("the shrine is nature and the spawn city", HudRules.AmbienceAt(ZoneConfig.Zones, 0, 300, "city") == "nature" and HudRules.AmbienceAt(ZoneConfig.Zones, 113, 2, "city") == "city")
 
 if failures > 0 then
 	error(string.format("%d HudRules test(s) failed", failures))

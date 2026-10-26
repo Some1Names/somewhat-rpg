@@ -14,6 +14,8 @@
 -- The Headhunter's name (ReplicatedStorage's Headhunter attribute) is red.
 -- A player in a faction shows their rank as a title before the name, in the
 -- faction's colour for that rank (FactionConfig).
+-- A raid boss (tagged RaidBoss) gets none: RaidClient's boss bar is its HUD.
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -205,7 +207,7 @@ end
 
 local function track(humanoid)
 	local model = humanoid.Parent
-	if tracked[humanoid] or not model or not model:IsA("Model") or model:GetAttribute("Invulnerable") then
+	if tracked[humanoid] or not model or not model:IsA("Model") or model:GetAttribute("Invulnerable") or CollectionService:HasTag(model, "RaidBoss") then
 		return
 	end
 	local head = model:FindFirstChild("Head") or model:WaitForChild("Head", 5)

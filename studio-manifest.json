@@ -2448,5 +2448,21 @@
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Ambience.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Ambience"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
  }
 ]

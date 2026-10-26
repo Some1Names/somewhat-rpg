@@ -150,6 +150,22 @@ SoundConfig.Music = {
 		{ id = 119869321896015, name = "Combat 2" },
 		{ id = 140658568629873, name = "Combat 3" },
 	},
+	-- looping while you're near a raid boss (Music's "boss" mood, before combat)
+	bossTheme = { id = 134787761105966, name = "Boss theme" },
+}
+
+-- Background ambience (Ambience), by area: ZoneConfig zones with `ambience = "nature"`
+-- play nature, everywhere else plays city. A kind's tracks play in turn, back to back.
+SoundConfig.Ambience = {
+	volume = 0.25,
+	fade = 2.5, -- seconds to cross-fade between areas
+	city = {
+		{ id = 9112757705, name = "City 1" },
+		{ id = 9112757815, name = "City 2" },
+	},
+	nature = {
+		{ id = 9112781689, name = "Nature" },
+	},
 }
 
 -- one clip id of `sound` (a SoundConfig.Sounds entry): its id, or a random one of its ids

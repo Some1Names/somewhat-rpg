@@ -79,4 +79,14 @@ function HudRules.ZoneAt(zones, x, z)
 	return nil
 end
 
+-- the ambience of the first zone holding the point that names one, else `default`
+function HudRules.AmbienceAt(zones, x, z, default)
+	for _, zone in ipairs(zones) do
+		if x >= zone.min[1] and x <= zone.max[1] and z >= zone.min[2] and z <= zone.max[2] then
+			return zone.ambience or default
+		end
+	end
+	return default
+end
+
 return HudRules
