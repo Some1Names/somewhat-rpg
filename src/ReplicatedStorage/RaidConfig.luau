@@ -92,7 +92,7 @@ RaidConfig.Bosses = {
 				failShare = 0.45, -- of the grabbed player's max health
 				stagger = 3, -- seconds he reels when they break out
 			},
-			Tornado = { range = { 0, 70 }, cooldown = 15, weight = 2, windUp = 1, count = 3, spread = 35, length = 80, speed = 20, radius = 7, tick = 0.4, damage = 0.4 },
+			Tornado = { range = { 0, 70 }, cooldown = 15, weight = 2, windUp = 1, count = 3, spread = 35, length = 80, speed = 20, radius = 10, tick = 0.4, damage = 0.4 },
 			-- Backbone Power's opener: a blast around him
 			Roar = { windUp = 1, radius = 28, damage = 1 },
 			-- his dome: break the shield before it closes, or everyone in it is struck

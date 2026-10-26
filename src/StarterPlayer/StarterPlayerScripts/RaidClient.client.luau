@@ -5,8 +5,8 @@
 -- ground markings for its wind-ups, and the grab's QTE: press the keys shown, in
 -- order, before the bar runs out (a wrong key starts over; the boxes can be
 -- tapped too). Plain white text with a dark stroke, square.
--- The axe, the black hole, the tornadoes and the dome are placeholder parts
--- until the owner's VFX.
+-- His moves use the Mandela set's own visuals (RaidBoss); the dome here is a
+-- placeholder part until the owner's VFX.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -365,56 +365,6 @@ end
 
 function events.Warn(shape, cframe, size, time, color)
 	groundWarning(shape, cframe, size, time, color)
-end
-
--- the axe: a spinning slab out to `to` and back
-function events.Axe(from, to, outTime, color)
-	local axe = effectPart(Enum.PartType.Block, color, Vector3.new(0.4, 3, 2.2), CFrame.new(from), outTime * 2 + 0.1)
-	local started = os.clock()
-	local connection
-	connection = RunService.RenderStepped:Connect(function()
-		local t = os.clock() - started
-		if t > outTime * 2 or not axe.Parent then
-			connection:Disconnect()
-			return
-		end
-		local along = t <= outTime and t / outTime or 2 - t / outTime
-		axe.CFrame = CFrame.lookAt(from:Lerp(to, along), to) * CFrame.Angles(t * 25, 0, 0)
-	end)
-end
-
--- the black hole: a dark core that holds, then shrinks away
-function events.Hole(center, radius, duration, color)
-	local core = effectPart(Enum.PartType.Ball, BLACK, Vector3.one * 0.5, CFrame.new(center), duration + 0.4)
-	core.Material = Enum.Material.SmoothPlastic
-	local rim = effectPart(Enum.PartType.Ball, color, Vector3.one * 0.5, CFrame.new(center), duration + 0.4)
-	rim.Transparency = 0.7
-	TweenService:Create(core, TweenInfo.new(0.3), { Size = Vector3.one * 7 }):Play()
-	TweenService:Create(rim, TweenInfo.new(0.3), { Size = Vector3.one * 9 }):Play()
-	task.delay(duration, function()
-		TweenService:Create(core, TweenInfo.new(0.3), { Size = Vector3.one * 0.1 }):Play()
-		TweenService:Create(rim, TweenInfo.new(0.3), { Size = Vector3.one * 0.1, Transparency = 1 }):Play()
-	end)
-end
-
--- tornadoes: spinning columns along each direction
-function events.Tornado(from, directions, length, speed, radius, color)
-	local duration = length / speed
-	for _, direction in ipairs(directions) do
-		local column = effectPart(Enum.PartType.Cylinder, color, Vector3.new(16, radius * 1.4, radius * 1.4), CFrame.new(from), duration + 0.1)
-		column.Material = Enum.Material.ForceField
-		column.Transparency = 0.3
-		local started = os.clock()
-		local connection
-		connection = RunService.RenderStepped:Connect(function()
-			local t = os.clock() - started
-			if t > duration or not column.Parent then
-				connection:Disconnect()
-				return
-			end
-			column.CFrame = CFrame.new(from + direction * speed * t + Vector3.new(0, 8, 0)) * CFrame.Angles(0, t * 12, math.rad(90))
-		end)
-	end
 end
 
 -- the dome: glass closing in over the arena until the shield breaks or it lands

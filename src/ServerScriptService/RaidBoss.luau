@@ -15,9 +15,12 @@
 -- extra). The grab (SpineLash) holds a player for a QTE their client shows
 -- (RaidEvent "Qte"; they answer with ("Qte", key)): finish it, or have allies
 -- hit him hard enough, and he reels; fail and they're impaled.
--- Visuals are placeholders until the owner's VFX: the Mandela set's own
--- SkillEffects (SpineLash, BoneSpikes, Shockwave, PossibilityWave, Misremember,
--- Overcharge, knives) and RaidClient's ground markings, axe, hole, tornadoes, dome.
+-- He wears the Mandela set's wearables (ServerStorage.SkillSets.Mandela; the R15
+-- pieces moved onto R6 arms) and his moves use the set's own visuals: the axe
+-- throw, the black hole and tornado templates (drawn by SkillEffects from their
+-- attributes, as for a player's cast), Spine Lash, the knives, BoneSpikes,
+-- Shockwave, PossibilityWave, Misremember and Overcharge. RaidClient draws the
+-- ground markings and the dome (a placeholder until the owner's VFX).
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
@@ -51,6 +54,27 @@ local FLING_TIME = 0.3
 local BOSS_FOLDER = "Bosses" -- in ServerStorage
 local WALK_ANIMATION = "rbxassetid://180426354" -- R6, when its model's Animate has none
 local SLASH_ANIMATION = "rbxassetid://129967390"
+local WEARABLES_FOLDER = "SkillSetWearables" -- SkillEffects' AxeThrow finds the axe here
+local TINT_AMOUNT = 0.45 -- how far a TintWhenOvercharged piece shifts toward the red
+-- the R15 body parts the wearables name, on an R6 body: its part and an offset
+local R6_PARTS = {
+	RightHand = { "Right Arm", CFrame.new(0, -0.85, 0) },
+	LeftHand = { "Left Arm", CFrame.new(0, -0.85, 0) },
+	RightUpperArm = { "Right Arm", CFrame.new(0, 0.4, 0) },
+	LeftUpperArm = { "Left Arm", CFrame.new(0, 0.4, 0) },
+	UpperTorso = { "Torso", CFrame.new(0, 0.2, 0) },
+}
+local HOLE_TUNED_RADIUS = 30 -- the radius the BlackHole templates are built at
+local HOLE_HOVER = 6 -- studs above the ground
+local HOLE_GROW_TIME = 0.4
+local HOLE_COLLAPSE_TIME = 0.25
+local ORB_SPEED = 90 -- studs per second from his hand to where the hole opens
+local TORNADO_SIZE = 0.42 -- of the template, like the overcharged cast's three
+local TORNADO_GROW_TIME = 0.5
+local TORNADO_WOBBLE = 4 -- studs side to side, as Skills.Tornado
+local TORNADO_WOBBLE_FREQUENCY = 2.2
+local TORNADO_CLEANUP = 0.6
+local mandela = ServerStorage:WaitForChild("SkillSets"):WaitForChild("Mandela")
 
 local RaidBoss = {}
 local live = {} -- boss key -> its fight
@@ -100,6 +124,12 @@ local function ground(position)
 	end
 	for _, model in ipairs(CollectionService:GetTagged(RaidConfig.Tag)) do
 		table.insert(ignore, model)
+	end
+	-- black holes and tornadoes
+	for _, child in ipairs(workspace:GetChildren()) do
+		if child:GetAttribute("ClientEffect") then
+			table.insert(ignore, child)
+		end
 	end
 	params.FilterDescendantsInstances = ignore
 	local hit = workspace:Raycast(position + Vector3.new(0, 4, 0), Vector3.new(0, -60, 0), params)
@@ -196,38 +226,73 @@ function MOVES.Combo(fight, target)
 	end
 end
 
--- the axe flies out along a line and back, striking everyone on each pass
+-- his worn axe, hidden while it's thrown (as Skills.AxeBoomerang does)
+local function hideAxe(fight, hidden)
+	local folder = fight.model:FindFirstChild(WEARABLES_FOLDER)
+	local axe = folder and folder:FindFirstChild("Axe")
+	if not axe then
+		return
+	end
+	for _, instance in ipairs({ axe, table.unpack(axe:GetDescendants()) }) do
+		if instance:IsA("BasePart") then
+			if hidden then
+				instance:SetAttribute("ShownTransparency", instance:GetAttribute("ShownTransparency") or instance.Transparency)
+				instance.Transparency = 1
+			elseif instance:GetAttribute("ShownTransparency") then
+				instance.Transparency = instance:GetAttribute("ShownTransparency")
+			end
+		end
+	end
+end
+
+-- the axe flies out along a line and back to his hand, striking everyone on
+-- each pass; the out leg eases to a stop like SkillEffects' AxeThrow draws it
 function MOVES.AxeBoomerang(fight, target)
 	local move = fight.boss.moves.AxeBoomerang
 	local root = fight.humanoid.RootPart
 	local direction = flatUnit(target.root.Position - root.Position, root.CFrame.LookVector)
 	face(fight, target.root.Position)
-	local from = root.Position
-	mark("line", CFrame.lookAt(ground(from), ground(from) + direction), Vector3.new(move.radius * 2, 0, move.length), move.windUp, color(fight))
+	mark("line", CFrame.lookAt(ground(root.Position), ground(root.Position) + direction), Vector3.new(move.radius * 2, 0, move.length), move.windUp, color(fight))
 	fight.slashTrack:Play(0.1)
 	task.wait(move.windUp)
 	if not alive(fight) then
 		return
 	end
-	remote:FireAllClients("Axe", from, from + direction * move.length, move.outTime, color(fight))
+	local hand = fight.model:FindFirstChild("Right Arm") or fight.humanoid.RootPart
+	local from = hand.Position
+	local to = from + direction * move.length
+	local returnSpeed = move.length / move.outTime
+	fight.model:SetAttribute("WeaponThrown", true)
+	skillEffects:FireAllClients("AxeThrow", fight.model, from, to, workspace:GetServerTimeNow(), move.outTime, returnSpeed, color(fight))
+	hideAxe(fight, true)
 	local struck = { {}, {} } -- out, back
 	local started = os.clock()
-	while true do
+	local position = from
+	while alive(fight) and os.clock() - started < move.outTime * 4 do
 		local t = os.clock() - started
-		if t > move.outTime * 2 or not alive(fight) then
-			break
+		local pass = 1
+		if t < move.outTime then
+			position = from + (to - from) * (1 - (1 - t / move.outTime) ^ 2)
+		else
+			pass = 2
+			local offset = hand.Position - position
+			if offset.Magnitude <= 2 then
+				break
+			end
+			position += offset.Unit * math.min(returnSpeed * RunService.Heartbeat:Wait(), offset.Magnitude)
 		end
-		local pass = t <= move.outTime and 1 or 2
-		local along = pass == 1 and t / move.outTime or 2 - t / move.outTime
-		local position = from + direction * move.length * along
 		for _, victim in ipairs(playersIn(position, move.radius)) do
 			if not struck[pass][victim.humanoid] then
 				struck[pass][victim.humanoid] = true
 				hurt(fight, victim.humanoid, move.damage)
 			end
 		end
-		RunService.Heartbeat:Wait()
+		if pass == 1 then
+			RunService.Heartbeat:Wait()
+		end
 	end
+	fight.model:SetAttribute("WeaponThrown", nil)
+	hideAxe(fight, false)
 end
 
 -- a fan of Mandela's knives
@@ -276,7 +341,28 @@ function MOVES.EventHorizon(fight, target)
 	if not alive(fight) then
 		return
 	end
-	remote:FireAllClients("Hole", center + Vector3.new(0, 4, 0), move.radius, move.duration, color(fight))
+	-- Mandela's own black hole: an orb from his left hand, then the hole (BlackHoleEffect)
+	local overcharged = fight.boss.phases[fight.phase].overcharged
+	local hole = mandela:WaitForChild(overcharged and "BlackHoleOvercharged" or "BlackHole"):Clone()
+	local hand = fight.model:FindFirstChild("Left Arm") or fight.humanoid.RootPart
+	local holeCenter = center + Vector3.new(0, HOLE_HOVER, 0)
+	local travelTime = math.clamp((holeCenter - hand.Position).Magnitude / ORB_SPEED, 0.25, 0.7)
+	local fullScale = hole:GetScale() * move.radius / HOLE_TUNED_RADIUS
+	hole:PivotTo(CFrame.new(holeCenter))
+	hole:ScaleTo(fullScale * 0.05)
+	hole:SetAttribute("FullScale", fullScale)
+	hole:SetAttribute("Duration", move.duration)
+	hole:SetAttribute("GrowTime", HOLE_GROW_TIME)
+	hole:SetAttribute("GroundY", center.Y)
+	hole:SetAttribute("Radius", move.radius)
+	hole:SetAttribute("StartedAt", workspace:GetServerTimeNow() + travelTime)
+	hole:SetAttribute("LaunchFrom", hand.Position)
+	hole:SetAttribute("TravelTime", travelTime)
+	hole.Parent = workspace
+	task.delay(travelTime + move.duration + HOLE_COLLAPSE_TIME + 0.2, function()
+		hole:Destroy()
+	end)
+	task.wait(travelTime)
 	local pulled = {} -- humanoid -> { character, root, mover, attachment }
 	local function release(humanoid)
 		local pull = pulled[humanoid]
@@ -428,15 +514,48 @@ function MOVES.Tornado(fight, target)
 	if not alive(fight) then
 		return
 	end
-	remote:FireAllClients("Tornado", from, directions, move.length, move.speed, move.radius, color(fight))
+	-- Mandela's own tornadoes (TornadoEffect draws them along the same wobbling path)
+	local duration = move.length / move.speed
+	local overcharged = fight.boss.phases[fight.phase].overcharged
+	local template = mandela:WaitForChild("Tornado")
+	for _, each in ipairs(directions) do
+		local tornado = template:Clone()
+		local templateScale = tornado:GetScale()
+		tornado:SetAttribute("StartedAt", workspace:GetServerTimeNow())
+		tornado:SetAttribute("Duration", duration)
+		tornado:SetAttribute("GrowTime", TORNADO_GROW_TIME)
+		tornado:SetAttribute("StartPosition", from)
+		tornado:SetAttribute("Direction", each)
+		tornado:SetAttribute("Speed", move.speed)
+		tornado:SetAttribute("WobbleAmplitude", TORNADO_WOBBLE)
+		tornado:SetAttribute("WobbleFrequency", TORNADO_WOBBLE_FREQUENCY)
+		tornado:SetAttribute("TemplateScale", templateScale)
+		tornado:SetAttribute("FullScale", templateScale * TORNADO_SIZE)
+		if overcharged then
+			local tint = RaidConfig.Color(fight.boss.overchargeColor)
+			tornado:SetAttribute("Tint", tint)
+			for _, part in ipairs(tornado:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.Color = part.Color:Lerp(tint, 0.35)
+				end
+			end
+		end
+		tornado:ScaleTo(templateScale * TORNADO_SIZE * 0.05)
+		tornado:PivotTo(CFrame.new(from))
+		tornado.Parent = workspace
+		task.delay(duration + TORNADO_CLEANUP, function()
+			tornado:Destroy()
+		end)
+	end
 	task.spawn(function()
 		local lastHit = {} -- humanoid -> os.clock()
 		local started = os.clock()
-		local duration = move.length / move.speed
 		while os.clock() - started < duration and alive(fight) do
 			local now = os.clock()
+			local t = now - started
 			for _, each in ipairs(directions) do
-				local position = from + each * move.speed * (now - started)
+				local side = Vector3.new(each.Z, 0, -each.X)
+				local position = from + each * move.speed * t + side * math.sin(t * TORNADO_WOBBLE_FREQUENCY) * TORNADO_WOBBLE
 				for _, victim in ipairs(playersIn(position, move.radius, true)) do
 					if now - (lastHit[victim.humanoid] or 0) >= move.tick then
 						lastHit[victim.humanoid] = now
@@ -521,12 +640,72 @@ local function cast(fight, name, target)
 	end)
 end
 
+-- the Mandela wearables on his body: the OverchargeOnly ones only while
+-- overcharged, when the TintWhenOvercharged ones turn red
+local function dress(fight, overcharged)
+	local pieces = mandela:FindFirstChild("Wearables")
+	if not pieces then
+		return
+	end
+	local folder = fight.model:FindFirstChild(WEARABLES_FOLDER)
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = WEARABLES_FOLDER
+		folder:SetAttribute("SkillSet", "Mandela")
+		folder.Parent = fight.model
+	end
+	local red = RaidConfig.Color(fight.boss.overchargeColor)
+	for _, piece in ipairs(pieces:GetChildren()) do
+		local primary = piece:IsA("Model") and piece.PrimaryPart or piece
+		local wanted = overcharged or not (piece:GetAttribute("OverchargeOnly") or primary:GetAttribute("OverchargeOnly"))
+		local worn = folder:FindFirstChild(piece.Name)
+		if wanted and not worn and primary then
+			local partName, extra = primary:GetAttribute("AttachTo"), CFrame.identity
+			if not fight.model:FindFirstChild(partName) and R6_PARTS[partName] then
+				partName, extra = R6_PARTS[partName][1], R6_PARTS[partName][2]
+			end
+			local bodyPart = fight.model:FindFirstChild(partName)
+			if bodyPart then
+				local anchorName = primary:GetAttribute("AttachAttachment")
+				local anchor = anchorName and bodyPart:FindFirstChild(anchorName)
+				worn = piece:Clone()
+				for _, part in ipairs(worn:IsA("Model") and worn:GetDescendants() or { worn, table.unpack(worn:GetDescendants()) }) do
+					if part:IsA("BasePart") then
+						part.Anchored = false
+						part.CanCollide = false
+						part.Massless = true
+					end
+				end
+				local weld = Instance.new("Weld")
+				weld.Part0 = bodyPart
+				weld.Part1 = worn:IsA("Model") and worn.PrimaryPart or worn
+				weld.C0 = extra * (anchor and anchor.CFrame or CFrame.identity) * primary:GetAttribute("AttachOffset")
+				weld.Parent = weld.Part1
+				worn.Parent = folder
+			end
+		elseif worn and not wanted then
+			worn:Destroy()
+			worn = nil
+		end
+		if worn and primary:GetAttribute("TintWhenOvercharged") then
+			for _, part in ipairs(worn:IsA("Model") and worn:GetDescendants() or { worn, table.unpack(worn:GetDescendants()) }) do
+				if part:IsA("BasePart") then
+					local base = part:GetAttribute("BaseColor") or part.Color
+					part:SetAttribute("BaseColor", base)
+					part.Color = overcharged and base:Lerp(red, TINT_AMOUNT) or base
+				end
+			end
+		end
+	end
+end
+
 local function setPhase(fight, index)
 	local phase = fight.boss.phases[index]
 	fight.phase = index
 	fight.model:SetAttribute("Phase", index)
 	fight.model:SetAttribute("Overcharged", phase.overcharged == true)
 	fight.humanoid.WalkSpeed = fight.boss.walkSpeed * phase.speedScale
+	dress(fight, phase.overcharged == true)
 end
 
 -- nobody's left in the arena: back to full and the first phase
