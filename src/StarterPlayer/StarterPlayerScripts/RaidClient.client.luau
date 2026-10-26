@@ -80,6 +80,19 @@ shieldFill.Size = UDim2.fromScale(0, 1)
 shieldFill.BackgroundColor3 = WHITE
 shieldFill.BorderSizePixel = 0
 shieldFill.Parent = back
+-- the shield's parts, marked off while it's up
+local dividers = {}
+for i = 1, 2 do
+	local divider = Instance.new("Frame")
+	divider.AnchorPoint = Vector2.new(0.5, 0)
+	divider.Size = UDim2.new(0, 2, 1, 0)
+	divider.BackgroundColor3 = BLACK
+	divider.BorderSizePixel = 0
+	divider.ZIndex = 2
+	divider.Visible = false
+	divider.Parent = back
+	dividers[i] = divider
+end
 local edge = Instance.new("UIStroke")
 edge.Color = WHITE
 edge.Transparency = HudConfig.Style.EdgeTransparency
@@ -122,8 +135,18 @@ RunService.Heartbeat:Connect(function()
 	fill.Size = UDim2.fromScale(math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1), 1)
 	local shield, shieldMax = model:GetAttribute("Shield"), model:GetAttribute("ShieldMax")
 	shieldFill.Size = UDim2.fromScale(shield and shieldMax and math.clamp(shield / shieldMax, 0, 1) or 0, 1)
+	local parts = model:GetAttribute("ShieldParts")
+	for i, divider in ipairs(dividers) do
+		divider.Visible = shield ~= nil and parts ~= nil and i < parts
+		if parts then
+			divider.Position = UDim2.fromScale(i / parts, 0)
+		end
+	end
 	phaseLabel.Text = string.upper(phase.name)
-	if shield then
+	local broken = shield and shieldMax and parts and RaidConfig.PartsBroken(shield, shieldMax, parts) or 0
+	if shield and broken > 0 then
+		stateLabel.Text = string.format("SHIELD %d/%d BROKEN", broken, parts)
+	elseif shield then
 		stateLabel.Text = "BREAK HIS SHIELD"
 	elseif (model:GetAttribute("StaggeredUntil") or 0) > workspace:GetServerTimeNow() then
 		stateLabel.Text = "STAGGERED"
@@ -368,12 +391,21 @@ end
 
 -- the dome (its glass is SkillEffects' Rewrite, Mandela's ultimate)
 function events.Dome()
-	showBanner("OVERCOME THE POSSIBILITY", "Break his shield before the dome closes", 3)
+	showBanner("OVERCOME THE POSSIBILITY", "Break a part of his shield before the dome closes", 3)
 end
 
-function events.DomeEnd(broken)
-	if broken then
+-- a part of the dome's shield broke: from the first on, the dome hurts nobody
+function events.ShieldPart(broken, parts)
+	if broken < parts then
+		showBanner(string.format("SHIELD %d/%d BROKEN", broken, parts), broken == 1 and "The dome won't hurt you now. Break them all to stagger him!" or "One more!", 2)
+	end
+end
+
+function events.DomeEnd(outcome, broken, parts)
+	if outcome == "shattered" then
 		showBanner("POSSIBILITY BROKEN", "He's staggered!", 2)
+	elseif outcome == "spared" then
+		showBanner("THE DOME BREAKS", string.format("%d of %d parts broken: no harm done", broken, parts), 2)
 	end
 end
 

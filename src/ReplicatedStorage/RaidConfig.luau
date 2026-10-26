@@ -95,7 +95,9 @@ RaidConfig.Bosses = {
 			Tornado = { range = { 0, 70 }, cooldown = 15, weight = 2, windUp = 1, count = 3, spread = 35, length = 80, speed = 20, radius = 10, tick = 0.4, damage = 0.4 },
 			-- Backbone Power's opener: a blast around him
 			Roar = { windUp = 1, radius = 28, damage = 1 },
-			-- his dome: break the shield before it closes, or everyone in it is struck
+			-- his dome: a shield in `shieldParts` parts, each one kept once it breaks. Break
+			-- at least one before it closes and nobody is hurt; all of them and he reels;
+			-- none and everyone in it is struck
 			Possibility = {
 				range = { 0, 999 },
 				cooldown = 60,
@@ -104,6 +106,7 @@ RaidConfig.Bosses = {
 				radius = 90,
 				shieldBase = 6000,
 				shieldPerPlayer = 3000,
+				shieldParts = 3,
 				failShare = 0.8, -- of each player's max health
 				heal = 0.1, -- share of his max health he gets back if it lands
 				stagger = 5,
@@ -135,6 +138,26 @@ function RaidConfig.ShieldHealth(boss, players)
 	local move = boss.moves.Possibility
 	local extra = math.clamp(math.floor(players or 1), 1, boss.maxScaledPlayers) - 1
 	return move.shieldBase + move.shieldPerPlayer * extra
+end
+
+-- how many of the shield's `parts` are broken with `left` of `max` to go
+function RaidConfig.PartsBroken(left, max, parts)
+	if max <= 0 then
+		return parts
+	end
+	local dealt = math.clamp(max - left, 0, max)
+	return math.min(math.floor(dealt / max * parts + 1e-9), parts)
+end
+
+-- how the dome ends with `broken` of `parts` broken: "shattered" (all of them, he
+-- reels), "spared" (some: nobody is hurt) or "struck" (none: everyone inside is hit)
+function RaidConfig.DomeOutcome(broken, parts)
+	if broken >= parts then
+		return "shattered"
+	elseif broken >= 1 then
+		return "spared"
+	end
+	return "struck"
 end
 
 -- the phase index for a share of health left (0 to 1): the last phase whose

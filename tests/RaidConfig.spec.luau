@@ -37,6 +37,15 @@ check("each more player adds health", R.MaxHealth(seto, 3) == 30000 + 2 * 12000)
 check("capped at maxScaledPlayers", R.MaxHealth(seto, 50) == R.MaxHealth(seto, 8))
 check("shield scales the same way", R.ShieldHealth(seto, 1) == 6000 and R.ShieldHealth(seto, 2) == 9000)
 
+-- shield parts
+check("an untouched shield has no part broken", R.PartsBroken(6000, 6000, 3) == 0)
+check("just short of a third is none", R.PartsBroken(4001, 6000, 3) == 0)
+check("a third is one part", R.PartsBroken(4000, 6000, 3) == 1)
+check("two thirds is two", R.PartsBroken(2000, 6000, 3) == 2)
+check("gone is all three", R.PartsBroken(0, 6000, 3) == 3 and R.PartsBroken(-50, 6000, 3) == 3)
+check("dome outcomes", R.DomeOutcome(0, 3) == "struck" and R.DomeOutcome(1, 3) == "spared" and R.DomeOutcome(2, 3) == "spared" and R.DomeOutcome(3, 3) == "shattered")
+check("Hide Seto's shield has 3 parts", seto.moves.Possibility.shieldParts == 3)
+
 -- phases
 check("full health is phase 1", R.Phase(seto, 1) == 1 and R.Phase(seto, 0.61) == 1)
 check("60% is phase 2", R.Phase(seto, 0.6) == 2 and R.Phase(seto, 0.26) == 2)

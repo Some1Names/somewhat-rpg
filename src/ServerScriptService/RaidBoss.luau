@@ -591,8 +591,10 @@ function MOVES.Roar(fight)
 end
 
 -- the dome of mirror glass (Mandela's ultimate): everyone has `windUp` seconds
--- to break his shield; hits on it crack the glass and leave reflections of
--- him. Broken, it shatters and he reels; if it holds, it rewrites everyone inside.
+-- to break his shield, in `shieldParts` parts that stay broken (RaidConfig); hits
+-- on it crack the glass and leave reflections of him. All parts broken, it
+-- shatters and he reels; some, it shatters harmlessly; none, it rewrites
+-- everyone inside.
 function MOVES.Possibility(fight)
 	local move = fight.boss.moves.Possibility
 	fight.model:PivotTo(fight.home + fight.stand)
@@ -607,19 +609,30 @@ function MOVES.Possibility(fight)
 	local frames, sizes = PlaceWhereDreamEnds.DomePanes(center, move.radius)
 	skillEffects:FireAllClients("Rewrite", castId, fight.model, center, move.radius, move.windUp, frames, sizes, color(fight))
 	remote:FireAllClients("Dome", center, move.radius, move.windUp, color(fight))
+	local parts = move.shieldParts
+	fight.model:SetAttribute("ShieldParts", parts)
+	local broken = 0
 	local endsAt = os.clock() + move.windUp
-	while os.clock() < endsAt and fight.shield > 0 and alive(fight) do
+	while os.clock() < endsAt and broken < parts and alive(fight) do
 		task.wait(0.1)
+		local now = RaidConfig.PartsBroken(fight.shield, shield, parts)
+		if now > broken then
+			broken = now
+			remote:FireAllClients("ShieldPart", broken, parts)
+			skillEffects:FireAllClients("PoiseBreak", fight.model)
+		end
 	end
-	local broken = fight.shield <= 0
+	local outcome = RaidConfig.DomeOutcome(broken, parts)
 	fight.shield = nil
 	fight.dome = nil
 	fight.model:SetAttribute("Shield", nil)
 	fight.model:SetAttribute("ShieldMax", nil)
-	remote:FireAllClients("DomeEnd", broken)
-	if not alive(fight) or broken then
+	fight.model:SetAttribute("ShieldParts", nil)
+	remote:FireAllClients("DomeEnd", outcome, broken, parts)
+	if not alive(fight) or outcome ~= "struck" then
+		-- the glass shatters on nobody
 		skillEffects:FireAllClients("RewriteSnap", castId, center, move.radius, {}, {}, color(fight))
-		if alive(fight) then
+		if alive(fight) and outcome == "shattered" then
 			fight.staggerUntil = os.clock() + move.stagger
 			fight.model:SetAttribute("StaggeredUntil", workspace:GetServerTimeNow() + move.stagger)
 			skillEffects:FireAllClients("PoiseBreak", fight.model)
