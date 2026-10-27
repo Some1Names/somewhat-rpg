@@ -78,6 +78,14 @@ function CharacterLook.Apply(character, look, parts)
 				end
 			end
 			humanoid:AddAccessory(hair)
+			-- AddAccessory welds the hair on, but only physics moves it into place: sit it on
+			-- the head now, for an anchored copy (the customizer's preview) that is never stepped
+			local headPart = character:FindFirstChild("Head")
+			local handleAttachment = handle and handle:FindFirstChildOfClass("Attachment")
+			local headAttachment = headPart and handleAttachment and headPart:FindFirstChild(handleAttachment.Name)
+			if headAttachment then
+				handle.CFrame = headPart.CFrame * headAttachment.CFrame * handleAttachment.CFrame:Inverse()
+			end
 		end
 	end
 

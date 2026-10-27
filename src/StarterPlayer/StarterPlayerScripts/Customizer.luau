@@ -1,12 +1,16 @@
--- The character customizer for an empty slot: a name box, a row of choices for each part
--- of the look (skin, hair, hair colour, face, top, bottom) and a live preview of the
+-- The character customizer for an empty slot: a codename, a row of choices for each part
+-- of the look (skin, hair, hair colour, face, top, bottom) and a big live preview of the
 -- player's own character (a stripped, anchored clone in a ViewportFrame, as HubPose does)
--- wearing the look through CharacterLook. Hair and face styles with no part in
--- ReplicatedStorage.CharacterParts are hidden. CREATE asks the server (SlotAction
--- "Create") and, on success, lets the player in. Also holds the small helpers SlotMenu
--- shares. Square everything; the accent is the hub's.
+-- wearing the look through CharacterLook. The preview turns slowly on an accent ring and
+-- can be dragged round. Hair and face styles with no part in ReplicatedStorage.CharacterParts
+-- are hidden. CREATE asks the server (SlotAction "Create") and, on success, lets the player
+-- in. Also holds the helpers SlotMenu shares (buttons, tween, the dressed preview, the
+-- backdrop). Square everything; the accent is the hub's.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local CharacterLook = require(ReplicatedStorage:WaitForChild("CharacterLook"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
@@ -21,9 +25,12 @@ local remote = ReplicatedStorage:WaitForChild("SlotAction")
 local PANEL_WIDTH = 480
 local OPTION_SIZE = 30
 local FIELD_OF_VIEW = 30
-local CAMERA_DISTANCE = 11.5
 local CAMERA_YAW = 20 -- degrees round from straight in front
-local LOOK_HEIGHT = 0.2 -- studs above the root part the camera looks at
+local LOOK_HEIGHT = -0.25 -- studs above the root part the camera looks at (the middle of a figure, feet to head)
+local FEET = -3.05 -- the root part's height above the floor of the preview, negated
+local TURN_SPEED = 0.6 -- radians a second while nobody drags
+local DRAG_SPEED = 0.012 -- radians a pixel
+local TURN_RESUME = 2 -- seconds after a drag before it turns again
 local ERROR_COLOR = Color3.fromRGB(235, 90, 90)
 
 local Customizer = {}
@@ -72,7 +79,15 @@ local function label(parent, props)
 end
 Customizer.Label = label
 
--- a square button; `filled` buttons are the accent, the rest dark with a thin edge
+local function tween(instance, time, props, style)
+	local tweenObject = TweenService:Create(instance, TweenInfo.new(time, style or Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
+	tweenObject:Play()
+	return tweenObject
+end
+Customizer.Tween = tween
+
+-- a square button; `filled` buttons are the accent, the rest dark with a thin edge. An
+-- accent line sweeps along the bottom on hover.
 local function button(parent, props, onClick)
 	local filled = props.Filled
 	props.Filled = nil
@@ -85,6 +100,23 @@ local function button(parent, props, onClick)
 	props.TextColor3 = filled and Hub.OnInk() or Theme.NavText
 	local instance = make("TextButton", props)
 	make("UIStroke", { Parent = instance, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local sweep = make("Frame", {
+		Parent = instance,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.fromOffset(0, 2),
+		BackgroundColor3 = filled and Hub.OnInk() or Hub.InkAccent(),
+		BorderSizePixel = 0,
+		ZIndex = instance.ZIndex + 1,
+	})
+	instance.MouseEnter:Connect(function()
+		if instance.Active then
+			tween(sweep, 0.2, { Size = UDim2.new(1, 0, 0, 2) })
+		end
+	end)
+	instance.MouseLeave:Connect(function()
+		tween(sweep, 0.2, { Size = UDim2.fromOffset(0, 2) })
+	end)
 	instance.Activated:Connect(function()
 		if instance.Active then
 			UiSfx.Play("menuSelect")
@@ -95,13 +127,50 @@ local function button(parent, props, onClick)
 end
 Customizer.Button = button
 
+-- the dark fill behind a screen, with its edges darker
+function Customizer.Backdrop(gui, alpha)
+	local fill = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Nav, BackgroundTransparency = alpha, BorderSizePixel = 0 })
+	local vignette = make("Frame", { Parent = fill, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0 })
+	make("UIGradient", {
+		Parent = vignette,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.35),
+			NumberSequenceKeypoint.new(0.5, 0.9),
+			NumberSequenceKeypoint.new(1, 0.35),
+		}),
+	})
+	return fill
+end
+
+-- "01  SKIN" in the accent's colour and a thin rule under it
+local function heading(parent, number, title, layoutOrder)
+	label(parent, {
+		Text = string.format('<font color="#%s">%02d</font>  %s', Hub.InkAccent():ToHex(), number, title),
+		RichText = true,
+		Font = Theme.MonoFont,
+		TextSize = 13,
+		TextColor3 = Theme.Muted,
+		Size = UDim2.new(1, 0, 0, 16),
+		LayoutOrder = layoutOrder,
+	})
+	make("Frame", {
+		Parent = parent,
+		LayoutOrder = layoutOrder + 1,
+		Size = UDim2.new(1, 0, 0, 1),
+		BackgroundColor3 = Theme.Muted,
+		BackgroundTransparency = 0.6,
+		BorderSizePixel = 0,
+	})
+end
+
 local function colorOf(rgb)
 	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
 end
 
--- a stripped, anchored copy of the player's character in a ViewportFrame; returns the
--- copy (nil with no character)
-local function buildPreview(parent)
+-- a stripped, anchored copy of the player's character in a ViewportFrame, standing on an
+-- accent ring when `ring`; returns the copy (nil with no character). Dress it with
+-- Customizer.Dress.
+function Customizer.BuildPreview(parent, distance, ring)
 	local viewport = make("ViewportFrame", {
 		Parent = parent,
 		Size = UDim2.fromScale(1, 1),
@@ -113,10 +182,27 @@ local function buildPreview(parent)
 	local camera = make("Camera", { Parent = viewport, FieldOfView = FIELD_OF_VIEW })
 	local yaw = math.rad(CAMERA_YAW)
 	camera.CFrame = CFrame.lookAt(
-		Vector3.new(CAMERA_DISTANCE * math.sin(yaw), LOOK_HEIGHT + 0.3, -CAMERA_DISTANCE * math.cos(yaw)),
+		Vector3.new(distance * math.sin(yaw), LOOK_HEIGHT + 0.3, -distance * math.cos(yaw)),
 		Vector3.new(0, LOOK_HEIGHT, 0)
 	)
 	viewport.CurrentCamera = camera
+	local world = make("WorldModel", { Parent = viewport })
+	if ring then
+		-- two flat discs (a cylinder's axis is X, so it is turned on its side)
+		for _, disc in ipairs({ { 6, 0.35 }, { 9, 0.75 } }) do
+			make("Part", {
+				Parent = world,
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.15, disc[1], disc[1]),
+				CFrame = CFrame.new(0, FEET, 0) * CFrame.Angles(0, 0, math.pi / 2),
+				Anchored = true,
+				CanCollide = false,
+				Material = Enum.Material.Neon,
+				Color = Hub.InkAccent(),
+				Transparency = disc[2],
+			})
+		end
+	end
 	local character = player.Character
 	if not character then
 		return nil
@@ -139,12 +225,13 @@ local function buildPreview(parent)
 		end
 	end
 	copy:PivotTo(CFrame.new())
-	local world = make("WorldModel", { Parent = viewport })
 	copy.Parent = world
 	return copy
 end
 
-local function anchorAll(model)
+-- paints `look` on a preview copy and keeps every part anchored (nothing steps its physics)
+function Customizer.Dress(model, look, parts)
+	CharacterLook.Apply(model, look, parts)
 	for _, item in ipairs(model:GetDescendants()) do
 		if item:IsA("BasePart") then
 			item.Anchored = true
@@ -158,6 +245,8 @@ function Customizer.Open(slot, onDone)
 	local parts = ReplicatedStorage:FindFirstChild("CharacterParts")
 	local look = SlotConfig.DefaultLook()
 	local busy = false
+	local accent = Hub.InkAccent()
+	local connections = {}
 
 	local gui = make("ScreenGui", {
 		Name = "Customizer",
@@ -167,7 +256,12 @@ function Customizer.Open(slot, onDone)
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = player:WaitForChild("PlayerGui"),
 	})
-	make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Nav, BackgroundTransparency = 0.25, BorderSizePixel = 0 })
+	gui.Destroying:Once(function()
+		for _, connection in ipairs(connections) do
+			connection:Disconnect()
+		end
+	end)
+	Customizer.Backdrop(gui, 0.25)
 
 	-- the left panel scrolls: a small screen still reaches CREATE
 	local panel = make("ScrollingFrame", {
@@ -180,28 +274,43 @@ function Customizer.Open(slot, onDone)
 		CanvasSize = UDim2.new(),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 	})
-	make("UIPadding", { Parent = panel, PaddingTop = UDim.new(0, 70), PaddingBottom = UDim.new(0, 30), PaddingRight = UDim.new(0, 12) })
+	make("UIPadding", { Parent = panel, PaddingTop = UDim.new(0, 70), PaddingBottom = UDim.new(0, 30), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 12) })
 	make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 16) })
 
 	label(panel, {
-		Text = "NEW CHARACTER",
-		Font = Theme.TitleFont,
-		TextSize = 34,
-		Size = UDim2.new(1, 0, 0, 40),
+		Text = string.format('[ <font color="#%s">SLOT %02d</font> ]', accent:ToHex(), slot),
+		RichText = true,
+		Font = Theme.MonoFont,
+		TextSize = 14,
+		Size = UDim2.new(1, 0, 0, 16),
 		LayoutOrder = 1,
 	})
+	label(panel, {
+		Text = "NEW CHARACTER",
+		Font = Theme.TitleFont,
+		TextSize = 40,
+		Size = UDim2.new(1, 0, 0, 44),
+		LayoutOrder = 2,
+	})
 
-	-- the name
-	local nameBlock = make("Frame", { Parent = panel, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 74), BackgroundTransparency = 1 })
-	label(nameBlock, { Text = "CODENAME", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
+	-- the codename: no box, just a line under it that lights up while typing
+	local nameBlock = make("Frame", {
+		Parent = panel,
+		LayoutOrder = 3,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+	})
+	make("UIListLayout", { Parent = nameBlock, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+	heading(nameBlock, 0, "CODENAME", 1)
 	local nameBox = make("TextBox", {
 		Parent = nameBlock,
-		Position = UDim2.fromOffset(0, 20),
-		Size = UDim2.new(1, 0, 0, 34),
-		BackgroundColor3 = Theme.Nav,
+		LayoutOrder = 3,
+		Size = UDim2.new(1, 0, 0, 40),
+		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Font = Theme.LabelFont,
-		TextSize = 18,
+		Font = Theme.TitleFont,
+		TextSize = 28,
 		TextColor3 = Theme.NavText,
 		PlaceholderText = "Codename",
 		PlaceholderColor3 = Theme.Muted,
@@ -209,46 +318,116 @@ function Customizer.Open(slot, onDone)
 		ClearTextOnFocus = false,
 		TextXAlignment = Enum.TextXAlignment.Left,
 	})
-	make("UIStroke", { Parent = nameBox, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-	make("UIPadding", { Parent = nameBox, PaddingLeft = UDim.new(0, 10) })
+	local underline = make("Frame", {
+		Parent = nameBlock,
+		LayoutOrder = 4,
+		Size = UDim2.new(1, 0, 0, 2),
+		BackgroundColor3 = Theme.Muted,
+		BorderSizePixel = 0,
+	})
+	nameBox.Focused:Connect(function()
+		tween(underline, 0.2, { BackgroundColor3 = accent })
+	end)
+	nameBox.FocusLost:Connect(function()
+		tween(underline, 0.2, { BackgroundColor3 = Theme.Muted })
+	end)
 	local hint = label(nameBlock, {
-		Position = UDim2.fromOffset(0, 56),
+		LayoutOrder = 5,
 		Size = UDim2.new(1, 0, 0, 16),
 		Text = "",
 		TextSize = 13,
 		TextColor3 = Theme.Muted,
 	})
 
-	-- the preview, on the right
+	-- the preview, on the right: it turns on its own and can be dragged
 	local previewHolder = make("Frame", {
 		Parent = gui,
 		Position = UDim2.new(0, 60 + PANEL_WIDTH + 20, 0, 0),
 		Size = UDim2.new(1, -(60 + PANEL_WIDTH + 80), 1, 0),
 		BackgroundTransparency = 1,
 	})
-	local model = buildPreview(previewHolder)
+	local model = Customizer.BuildPreview(previewHolder, 17.5, true)
+	local hit = make("TextButton", {
+		Parent = previewHolder,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 2,
+	})
+	label(previewHolder, {
+		Text = "DRAG TO TURN",
+		Font = Theme.MonoFont,
+		TextSize = 12,
+		TextColor3 = Theme.Muted,
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -28),
+		Size = UDim2.new(1, 0, 0, 14),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		ZIndex = 3,
+	})
+	local angle = 0
+	local dragging = false
+	local lastX = 0
+	local turnAgainAt = 0
+	local function isPointer(input)
+		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+	end
+	hit.InputBegan:Connect(function(input)
+		if isPointer(input) then
+			dragging = true
+			lastX = input.Position.X
+		end
+	end)
+	table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			angle += (input.Position.X - lastX) * DRAG_SPEED
+			lastX = input.Position.X
+		end
+	end))
+	table.insert(connections, UserInputService.InputEnded:Connect(function(input)
+		if dragging and isPointer(input) then
+			dragging = false
+			turnAgainAt = os.clock() + TURN_RESUME
+		end
+	end))
+	table.insert(connections, RunService.RenderStepped:Connect(function(dt)
+		if not model then
+			return
+		end
+		if not dragging and os.clock() >= turnAgainAt then
+			angle += dt * TURN_SPEED
+		end
+		model:PivotTo(CFrame.Angles(0, angle, 0))
+	end))
 
 	local function repaint()
 		if model then
-			CharacterLook.Apply(model, look, parts)
-			anchorAll(model)
+			Customizer.Dress(model, look, parts)
 		end
 	end
 
 	-- one row of choices for a part of the look; `swatches` are colours, the rest names
 	local choices = {} -- field -> { [index] = button }
-	local function refreshRow(field)
+	local function refreshRow(field, animate)
 		for index, option in pairs(choices[field]) do
 			local selected = look[field] == index
 			local stroke = option:FindFirstChildOfClass("UIStroke")
 			stroke.Color = selected and Color3.new(1, 1, 1) or Theme.Edge
 			stroke.Transparency = selected and 0 or 0.6
 			stroke.Thickness = selected and 2 or 1
+			if selected and animate then
+				local pop = option:FindFirstChild("Pop")
+				pop.Scale = 1.3
+				tween(pop, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+			end
 		end
 	end
 	local order = 3
+	local number = 0
 	local function addRow(field, title, count, build)
 		order += 1
+		number += 1
 		local frame = make("Frame", {
 			Parent = panel,
 			LayoutOrder = order,
@@ -256,11 +435,11 @@ function Customizer.Open(slot, onDone)
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
 		})
-		make("UIListLayout", { Parent = frame, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
-		label(frame, { Text = title, Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14), LayoutOrder = 1 })
+		make("UIListLayout", { Parent = frame, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+		heading(frame, number, title, 1)
 		local options = make("Frame", {
 			Parent = frame,
-			LayoutOrder = 2,
+			LayoutOrder = 3,
 			Size = UDim2.new(1, 0, 0, 0),
 			AutomaticSize = Enum.AutomaticSize.Y,
 			BackgroundTransparency = 1,
@@ -277,16 +456,17 @@ function Customizer.Open(slot, onDone)
 			local option = build(options, index)
 			if option then
 				option.LayoutOrder = index
+				make("UIScale", { Name = "Pop", Parent = option })
 				choices[field][index] = option
 				option.Activated:Connect(function()
 					UiSfx.Play("menuSelect")
 					look[field] = index
-					refreshRow(field)
+					refreshRow(field, true)
 					repaint()
 				end)
 			end
 		end
-		refreshRow(field)
+		refreshRow(field, false)
 	end
 
 	local function swatches(palette)
@@ -332,7 +512,7 @@ function Customizer.Open(slot, onDone)
 	addRow("top", "TOP", #SlotConfig.OutfitColors, swatches(SlotConfig.OutfitColors))
 	addRow("bottom", "BOTTOM", #SlotConfig.OutfitColors, swatches(SlotConfig.OutfitColors))
 
-	-- the answer from the server, or what is wrong with the name
+	-- the answer from the server, or what is wrong with the codename
 	order += 1
 	local status = label(panel, {
 		LayoutOrder = order,
@@ -342,7 +522,7 @@ function Customizer.Open(slot, onDone)
 		TextColor3 = ERROR_COLOR,
 	})
 	order += 1
-	local buttons = make("Frame", { Parent = panel, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
+	local buttons = make("Frame", { Parent = panel, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1 })
 	local create
 	create = button(buttons, { Text = "CREATE", Filled = true, Size = UDim2.new(0.5, -4, 1, 0) }, function()
 		if busy then

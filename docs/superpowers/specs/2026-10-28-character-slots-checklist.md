@@ -26,6 +26,28 @@ named `Face_2` .. `Face_4` (a Decal with its `Texture`). A style with no part is
 the customizer, so it works with colours only until you add them. Names for the styles are in
 `SlotConfig` (`HairStyles`, `FaceStyles`), and so are the colour palettes.
 
+## Placeholder hair and faces (already in Studio's `ReplicatedStorage.CharacterParts`)
+
+Mockups from the Creator Store until you make your own; replace the part with the same name to
+swap one. They exist only in Studio, not in this repo.
+
+| Part | What | Source |
+|---|---|---|
+| `Hair_2` Short | messy anime hair | mesh `11307925648`, texture `11307925735` (store asset `116819530261392`) |
+| `Hair_3` Spiky | spiky anime hair | mesh `14578296892` (store asset `114404620603615`) |
+| `Hair_4` Long | white anime hair | mesh `13038459165`, texture `13014002425` (store asset `120216091759609`) |
+| `Hair_5` Tied | samurai topknot | mesh `9374122150`, scale 6 (store asset `92796120117054`) |
+| `Face_2` Calm | anime face | image `114820106` |
+| `Face_3` Fierce | anime face, blue eyes | image `54172037` |
+| `Face_4` Smile | kawaii anime face | image `672612369` |
+
+**The store hair models carried hidden scripts** (a Studio-only script plus a 35 KB local script
+that builds an overlay window, the same in all four). I did not run them. Each hair was rebuilt
+clean (mesh, texture, scale, attachment only) and the originals deleted; `CharacterParts` has no
+scripts. If you insert more free models, check them for scripts first. A decal's asset id is not
+its image id (the image is usually the id minus one), which is why the first face picks showed
+nothing.
+
 ## Playtest
 
 First check the rig: the game is R6 only, and `CharacterLook` paints R6 parts only (`Torso`,
