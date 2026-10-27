@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local CharacterLook = require(ReplicatedStorage:WaitForChild("CharacterLook"))
 local SlotConfig = require(ReplicatedStorage:WaitForChild("SlotConfig"))
 
 local Slots = {}
@@ -172,8 +173,40 @@ local function hold(player, character)
 	end
 end
 
+-- the character wears the slot's look instead of the player's Roblox avatar, on every
+-- spawn. The avatar's accessories arrive a little after the character, so wait for them
+-- and paint once more a second later.
+local function applyLook(player, character)
+	local deadline = os.clock() + 10
+	while not player:HasAppearanceLoaded() and os.clock() < deadline do
+		task.wait(0.2)
+	end
+	local parts = ReplicatedStorage:FindFirstChild("CharacterParts")
+	local look = SlotConfig.ParseLook(player:GetAttribute("Look"))
+	for pass = 1, 2 do
+		if player.Character ~= character or not character.Parent then
+			return
+		end
+		CharacterLook.Apply(character, look, parts)
+		if pass == 1 then
+			task.wait(1)
+		end
+	end
+end
+
+local function watchLook(player)
+	local function onCharacter(character)
+		task.spawn(applyLook, player, character)
+	end
+	player.CharacterAdded:Connect(onCharacter)
+	if player.Character then
+		onCharacter(player.Character)
+	end
+end
+
 local function enter(player, slot)
 	player:SetAttribute("SlotPending", nil)
+	watchLook(player)
 	local character = player.Character
 	if character then
 		local root = character:FindFirstChild("HumanoidRootPart")
