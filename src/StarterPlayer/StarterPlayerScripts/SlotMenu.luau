@@ -124,6 +124,9 @@ function SlotMenu.Open(onEntered, onBack)
 		end
 		label(cards, { Text = "LOADING...", Font = Theme.MonoFont, TextSize = 14, TextColor3 = Theme.Muted, Size = UDim2.fromScale(1, 1), TextXAlignment = Enum.TextXAlignment.Center })
 		local result = Customizer.Call("List")
+		if not gui.Parent then
+			return -- BACK was pressed while it loaded
+		end
 		if not result.ok then
 			for _, child in ipairs(cards:GetChildren()) do
 				if child:IsA("GuiObject") then

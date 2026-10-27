@@ -2,10 +2,13 @@
 -- outfit colours on the torso and legs, a hair accessory and a face from
 -- ReplicatedStorage.CharacterParts (Hair_<n> accessories, Face_<n> decals, made in
 -- Studio). Used by the server for the real character (Slots) and by the customizer for
--- its preview. A hair Handle takes the hair colour only if it has no texture of its own.
+-- its preview. A hair Handle takes the hair colour (a SpecialMesh through its VertexColor)
+-- unless it is a textured MeshPart, which keeps its own colours.
 local CharacterLook = {}
 
 local SlotConfig = require(script.Parent:WaitForChild("SlotConfig"))
+
+local DEFAULT_FACE = "rbxasset://textures/face.png" -- Roblox's smile
 
 local function colorOf(rgb)
 	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
@@ -64,25 +67,46 @@ function CharacterLook.Apply(character, look, parts)
 			hair:SetAttribute("SlotLook", true) -- Slots removes avatar items that arrive late, but not this
 			local handle = hair:FindFirstChild("Handle")
 			if handle and handle:IsA("BasePart") then
-				handle.Color = colorOf(SlotConfig.HairColors[look.hairColor])
+				local tint = colorOf(SlotConfig.HairColors[look.hairColor])
+				local mesh = handle:FindFirstChildOfClass("SpecialMesh")
+				if mesh then
+					mesh.VertexColor = Vector3.new(tint.R, tint.G, tint.B)
+				end
+				-- a textured MeshPart keeps its own colours
+				if not (handle:IsA("MeshPart") and handle.TextureID ~= "") then
+					handle.Color = tint
+				end
 			end
 			humanoid:AddAccessory(hair)
 		end
 	end
 
-	-- face 1 keeps whatever face the rig has
+	-- the head is Roblox's default round one, not the avatar's shape; face 1 is its default
+	-- face, the others come from CharacterParts
 	local head = character:FindFirstChild("Head")
-	if look.face > 1 and parts and head then
-		local template = parts:FindFirstChild("Face_" .. look.face)
-		if template and template:IsA("Decal") then
-			local face = head:FindFirstChild("face")
-			if not face then
-				face = Instance.new("Decal")
-				face.Name = "face"
-				face.Parent = head
-			end
-			face.Texture = template.Texture
+	if head then
+		local mesh = head:FindFirstChildOfClass("SpecialMesh")
+		if mesh then
+			mesh.MeshType = Enum.MeshType.Head
+			mesh.MeshId = ""
+			mesh.TextureId = ""
+			mesh.Scale = Vector3.new(1.25, 1.25, 1.25)
+			mesh.Offset = Vector3.zero
 		end
+		local texture = DEFAULT_FACE
+		if look.face > 1 and parts then
+			local template = parts:FindFirstChild("Face_" .. look.face)
+			if template and template:IsA("Decal") then
+				texture = template.Texture
+			end
+		end
+		local face = head:FindFirstChild("face")
+		if not face then
+			face = Instance.new("Decal")
+			face.Name = "face"
+			face.Parent = head
+		end
+		face.Texture = texture
 	end
 end
 

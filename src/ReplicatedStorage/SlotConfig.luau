@@ -54,12 +54,15 @@ function SlotConfig.CleanName(text)
 	if type(text) ~= "string" then
 		return nil, "Enter a name"
 	end
-	local name = text:match("^%s*(.-)%s*$")
+	local name = text:match("^%s*(.-)%s*$"):gsub(" +", " ") -- trimmed, runs of spaces made one
 	if #name < SlotConfig.NameMin or #name > SlotConfig.NameMax then
 		return nil, string.format("Name must be %d-%d characters", SlotConfig.NameMin, SlotConfig.NameMax)
 	end
 	if not name:match("^[%w _]+$") then
 		return nil, "Letters, numbers, spaces and _ only"
+	end
+	if not name:match("%w") then
+		return nil, "Use at least one letter or number"
 	end
 	return name
 end

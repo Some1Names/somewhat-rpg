@@ -251,9 +251,10 @@ function PlayerStats.LoadSlot(player, slot, startFresh)
 		return false
 	end
 	local saved
+	local allowSave = false -- only set on the player once they are known to still be here
 	if startFresh then
 		saved = {}
-		canSave[player] = store ~= nil
+		allowSave = store ~= nil
 	elseif not store then
 		saved = {}
 	else
@@ -261,7 +262,7 @@ function PlayerStats.LoadSlot(player, slot, startFresh)
 			local ok, result = pcall(store.GetAsync, store, SlotConfig.SlotKey(player.UserId, slot))
 			if ok then
 				saved = result or {}
-				canSave[player] = true
+				allowSave = true
 				break
 			end
 			warn(string.format("[PlayerStats] load %d/%d failed for %s: %s", attempt, LOAD_ATTEMPTS, player.Name, tostring(result)))
@@ -285,6 +286,7 @@ function PlayerStats.LoadSlot(player, slot, startFresh)
 	end
 	saved = typeof(saved) == "table" and saved or {}
 	currentSlot[player] = slot
+	canSave[player] = allowSave
 	-- older saves called Superliminal "Mastery" or "Skill" (points in the old
 	-- Endurance stat simply aren't counted as spent any more, so they come
 	-- back to spend)
@@ -392,10 +394,18 @@ function PlayerStats.OnSaved(callback)
 	table.insert(savedCallbacks, callback)
 end
 
--- forgets the chosen slot and turns saving off (a new slot whose first save failed)
+-- forgets the chosen slot, turns saving off and takes the slot's attributes back off the
+-- player (a new slot whose first save failed): they read as not loaded again
 function PlayerStats.ClearSlot(player)
 	currentSlot[player] = nil
 	canSave[player] = nil
+	for field in pairs(DEFAULTS) do
+		player:SetAttribute(field, nil)
+	end
+	for field in pairs(TEXT_DEFAULTS) do
+		player:SetAttribute(field, nil)
+	end
+	player:SetAttribute("StatPoints", nil)
 end
 
 -- the level and held power the slot screen shows

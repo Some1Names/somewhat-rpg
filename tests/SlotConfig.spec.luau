@@ -21,7 +21,9 @@ check("invalid slots", not S.ValidSlot(0) and not S.ValidSlot(4) and not S.Valid
 
 check("names are trimmed", S.CleanName("  Ayato Yoji ") == "Ayato Yoji")
 check("underscore and digits", S.CleanName("Bob_9") == "Bob_9")
-for _, bad in ipairs({ "", "   ", "ab", string.rep("a", 17), "no!", "a\nb" }) do
+check("repeated spaces collapse", S.CleanName("A          B") == "A B")
+check("single spaces are kept", S.CleanName(string.rep("a ", 8)) == string.rep("a ", 7) .. "a")
+for _, bad in ipairs({ "", "   ", "ab", string.rep("a", 17), "no!", "a\nb", "___", "_ _ _", "1  " }) do
 	local name, reason = S.CleanName(bad)
 	check("refuses " .. string.format("%q", bad), name == nil and type(reason) == "string" and #reason > 0)
 end
