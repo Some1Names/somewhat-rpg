@@ -257,7 +257,7 @@ function Slots.Create(player, slot, name, lookText)
 		end
 		for _, entry in pairs(meta) do
 			if entry.name:lower() == clean:lower() then
-				return false, "You already have a character with that name"
+				return false, "You already have a character with that codename"
 			end
 		end
 		if type(lookText) ~= "string" or SlotConfig.FormatLook(SlotConfig.ParseLook(lookText)) ~= lookText then
@@ -267,10 +267,10 @@ function Slots.Create(player, slot, name, lookText)
 			return TextService:FilterStringAsync(clean, player.UserId):GetNonChatStringForBroadcastAsync()
 		end)
 		if not filtered then
-			return false, "Couldn't check the name, try again"
+			return false, "Couldn't check the codename, try again"
 		end
 		if result ~= clean then
-			return false, "That name isn't allowed"
+			return false, "That codename isn't allowed"
 		end
 		if not PlayerStats.LoadSlot(player, slot, true) then
 			return false, "load"
@@ -330,7 +330,7 @@ function Slots.Delete(player, slot, typedName)
 		end
 		local typed = type(typedName) == "string" and typedName:match("^%s*(.-)%s*$"):lower() or ""
 		if typed ~= entry.name:lower() then
-			return false, "Type the character's name to delete it"
+			return false, "Type the character's codename to delete it"
 		end
 		-- the summary goes first: if it can't be written the character simply stays
 		meta[slot] = nil

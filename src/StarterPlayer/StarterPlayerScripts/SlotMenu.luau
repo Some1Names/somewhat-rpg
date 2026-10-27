@@ -167,7 +167,7 @@ function SlotMenu.Open(onEntered, onBack)
 		make("UIStroke", { Parent = box, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 		make("UIPadding", { Parent = box, PaddingTop = UDim.new(0, 18), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20), PaddingBottom = UDim.new(0, 18) })
 		label(box, { Text = "DELETE " .. string.upper(entry.name), Font = Theme.TitleFont, TextSize = 24, Size = UDim2.new(1, 0, 0, 30), ZIndex = 6 })
-		label(box, { Text = "This can't be undone. Type the name to confirm.", TextSize = 14, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 36), Size = UDim2.new(1, 0, 0, 18), ZIndex = 6 })
+		label(box, { Text = "This can't be undone. Type the codename to confirm.", TextSize = 14, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 36), Size = UDim2.new(1, 0, 0, 18), ZIndex = 6 })
 		local typed = make("TextBox", {
 			Parent = box,
 			Position = UDim2.fromOffset(0, 66),

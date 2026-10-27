@@ -193,7 +193,7 @@ function Customizer.Open(slot, onDone)
 
 	-- the name
 	local nameBlock = make("Frame", { Parent = panel, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 74), BackgroundTransparency = 1 })
-	label(nameBlock, { Text = "NAME", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
+	label(nameBlock, { Text = "CODENAME", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
 	local nameBox = make("TextBox", {
 		Parent = nameBlock,
 		Position = UDim2.fromOffset(0, 20),
@@ -203,7 +203,7 @@ function Customizer.Open(slot, onDone)
 		Font = Theme.LabelFont,
 		TextSize = 18,
 		TextColor3 = Theme.NavText,
-		PlaceholderText = "Character name",
+		PlaceholderText = "Codename",
 		PlaceholderColor3 = Theme.Muted,
 		Text = "",
 		ClearTextOnFocus = false,
