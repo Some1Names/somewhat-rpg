@@ -74,6 +74,12 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   as `CurrentPower`/`PowerStorage`/`LifetimePowers`; numbers and pure rules in `PowerConfig`, Lune-tested;
   `PowerSources` has the gacha, map drops and Robux receipts; Developer Products are the owner's to create),
   `Loadout` (weapons, and who owns what), `ShopServer`, `KillFeed`.
+- **Character slots**: 3 per player, each its own DataStore key (`<UserId>_<slot>`, plus `<UserId>_meta` for the
+  slot screen's summaries; an older single save is copied into slot 1). `PlayerStats` loads nothing on join: it
+  loads the slot the player picks (`LoadSlot`). `SlotConfig` (names, look palettes/text, keys; pure, Lune-tested),
+  `Slots` (server: meta, create/select/delete, holds the player anchored and shielded until they pick) +
+  `SlotServer` (the `SlotAction` remote), `CharacterLook` (paints the R6 rig; hair/face parts in
+  `ReplicatedStorage.CharacterParts`, the owner's), client `SlotMenu` (the 3 cards PLAY opens) and `Customizer`.
 - **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
   attribute; enemies carry an `EnemyType`), and per-set mastery challenges saved in the `Challenges`
   text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so
