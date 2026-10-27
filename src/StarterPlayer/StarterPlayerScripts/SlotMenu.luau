@@ -18,6 +18,8 @@ local make, label, button = Customizer.Make, Customizer.Label, Customizer.Button
 local CARD_WIDTH = 270
 local CARD_HEIGHT = 380
 local CARD_GAP = 16
+local STAGE_WIDTH = 3 * CARD_WIDTH + 2 * CARD_GAP
+local STAGE_HEIGHT = 60 + CARD_HEIGHT + 14 + 20 + 16 + 36 -- title, cards, status line, BACK
 local ERROR_COLOR = Color3.fromRGB(235, 90, 90)
 
 local SlotMenu = {}
@@ -50,20 +52,41 @@ function SlotMenu.Open(onEntered, onBack)
 	})
 	local root = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Nav, BackgroundTransparency = 0.35, BorderSizePixel = 0 })
 
-	label(root, {
-		Text = "CHOOSE YOUR CHARACTER",
-		Font = Theme.TitleFont,
-		TextSize = 34,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 70),
-		Size = UDim2.fromOffset(3 * CARD_WIDTH + 2 * CARD_GAP, 40),
-	})
-
-	local cards = make("Frame", {
+	-- everything but the delete box sits in one fixed-size stage, shrunk to fit a narrow screen
+	local stage = make("Frame", {
 		Parent = root,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(3 * CARD_WIDTH + 2 * CARD_GAP, CARD_HEIGHT),
+		Size = UDim2.fromOffset(STAGE_WIDTH, STAGE_HEIGHT),
+		BackgroundTransparency = 1,
+	})
+	local fit = make("UIScale", { Parent = stage })
+	local function updateFit()
+		local camera = workspace.CurrentCamera
+		if camera then
+			local size = camera.ViewportSize
+			fit.Scale = math.min(1, size.X / (STAGE_WIDTH + 40), size.Y / (STAGE_HEIGHT + 40))
+		end
+	end
+	updateFit()
+	local viewportWatch = workspace.CurrentCamera and workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateFit)
+	gui.Destroying:Once(function()
+		if viewportWatch then
+			viewportWatch:Disconnect()
+		end
+	end)
+
+	label(stage, {
+		Text = "CHOOSE YOUR CHARACTER",
+		Font = Theme.TitleFont,
+		TextSize = 34,
+		Size = UDim2.fromOffset(STAGE_WIDTH, 40),
+	})
+
+	local cards = make("Frame", {
+		Parent = stage,
+		Position = UDim2.fromOffset(0, 60),
+		Size = UDim2.fromOffset(STAGE_WIDTH, CARD_HEIGHT),
 		BackgroundTransparency = 1,
 	})
 	make("UIListLayout", {
@@ -73,24 +96,22 @@ function SlotMenu.Open(onEntered, onBack)
 		Padding = UDim.new(0, CARD_GAP),
 	})
 
-	local status = label(root, {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0.5, CARD_HEIGHT / 2 + 14),
-		Size = UDim2.fromOffset(3 * CARD_WIDTH + 2 * CARD_GAP, 20),
+	local status = label(stage, {
+		Position = UDim2.fromOffset(0, 60 + CARD_HEIGHT + 14),
+		Size = UDim2.fromOffset(STAGE_WIDTH, 20),
 		Text = "",
 		TextSize = 15,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextColor3 = ERROR_COLOR,
 	})
 
-	local back = button(root, { Text = "BACK", TextSize = 16, Position = UDim2.fromOffset(60, 70), Size = UDim2.fromOffset(110, 36) }, function()
+	button(stage, { Text = "BACK", TextSize = 16, Position = UDim2.fromOffset(STAGE_WIDTH / 2 - 55, STAGE_HEIGHT - 36), Size = UDim2.fromOffset(110, 36) }, function()
 		if busy then
 			return
 		end
 		gui:Destroy()
 		onBack()
 	end)
-	back.ZIndex = 2
 
 	local render -- (slots), below
 

@@ -60,10 +60,7 @@ end
 
 -- saved text fields, with their defaults and longest allowed length
 local TEXT_DEFAULTS = {
-	AdminKeybinds = "", -- an admin's own keys for panel actions (AdminPanel, AdminServer)
 	PhotoGallery = "", -- Photoshop's saved photos of places (PhotoshopServer)
-	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
-	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
 	Challenges = "", -- progress on mastery challenges (QuestConfig, Quests)
 	Reforge = "", -- each set's reforge level and modifiers (ReforgeRules, Reforge)
 	FactionData = "", -- the faction joined, "<key>:<standing>:<joinedAt>" (FactionConfig, Factions)
@@ -73,12 +70,19 @@ local TEXT_DEFAULTS = {
 	LifetimePowers = "", -- powers bought with Robux, comma separated (Powers)
 	ConsumableStorage = "", -- consumables kept stored in the Backpack, "NanoSyringe:5,RiftSuture:-" (ConsumableConfig, Consumables)
 	SpawnPoint = "", -- where the player respawns, "x,y,z" set by a Spawn Keeper (SpawnServer)
-	SeenUpdate = "", -- the last update's version whose What's new modal the player saw (UpdateNotes, UpdateNotesServer)
 	TalismanOwned = "", -- the talismans the player owns, comma separated (TalismanConfig, Talismans)
 	TalismanEquipped = "", -- the ones they wear, comma separated (TalismanConfig, Talismans)
 	Explored = "", -- the map cells the player has been near (MapRules, MapServer)
 	CharName = "", -- the slot's character name (SlotConfig, Slots)
 	Look = "", -- the slot's look, "skin;hair;hairColor;face;top;bottom" (SlotConfig, CharacterLook)
+}
+-- saved text that belongs to the player, not to a character: it loads on join (before any
+-- slot is chosen, so the title's Settings work) and is saved under SlotConfig.AccountKey
+local ACCOUNT_DEFAULTS = {
+	AdminKeybinds = "", -- an admin's own keys for panel actions (AdminPanel, AdminServer)
+	Keybinds = "", -- the player's own keys for skills and abilities (Keybinds, SettingsServer)
+	Preferences = "", -- the player's ON/OFF settings (Preferences, SettingsServer)
+	SeenUpdate = "", -- the last update's version whose What's new modal the player saw (UpdateNotes, UpdateNotesServer)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
@@ -108,11 +112,37 @@ end
 
 PlayerStats.Store = store
 
+-- a DataStore read with retries: (true, value), or false when it kept failing. In Studio
+-- a failing read (API access off) counts as "nothing there".
+function PlayerStats.ReadKey(key)
+	if not store then
+		return true, nil
+	end
+	for attempt = 1, LOAD_ATTEMPTS do
+		local ok, result = pcall(store.GetAsync, store, key)
+		if ok then
+			return true, result
+		end
+		warn(string.format("[PlayerStats] read %d/%d of %s failed: %s", attempt, LOAD_ATTEMPTS, key, tostring(result)))
+		-- retrying won't help when the place has Studio API access turned off
+		if tostring(result):find("Studio access to APIs is not allowed", 1, true) then
+			break
+		end
+		if attempt < LOAD_ATTEMPTS then
+			task.wait(2)
+		end
+	end
+	return RunService:IsStudio(), nil
+end
+
 -- only players whose save loaded are saved, so a failed load never wipes a save
 local canSave = {}
 -- the slot each player chose (Slots); nothing loads or saves before that
 local currentSlot = {}
 local savedCallbacks = {}
+-- the account settings: whether they were read (only then are they saved) and what was last saved
+local accountReady = {}
+local accountSaved = {}
 
 -- Sets MaxHealth from Vitality. A fresh character starts full; otherwise the
 -- missing health stays missing.
@@ -188,6 +218,28 @@ local function levelUp(player)
 		updatePoints(player)
 	end
 	return gained
+end
+
+-- Reads the account settings into the player's attributes (defaults when the read fails,
+-- but then they are never saved over the real ones).
+local function loadAccount(player)
+	local ok, saved = PlayerStats.ReadKey(SlotConfig.AccountKey(player.UserId))
+	if ok and saved == nil then
+		-- before character slots these lived in the player's single save
+		ok, saved = PlayerStats.ReadKey(tostring(player.UserId))
+	end
+	if not player.Parent then
+		return
+	end
+	saved = typeof(saved) == "table" and saved or {}
+	for field, default in pairs(ACCOUNT_DEFAULTS) do
+		local value = saved[field]
+		if typeof(value) ~= "string" or #value > (TEXT_LENGTHS[field] or TEXT_MAX_LENGTH) then
+			value = default
+		end
+		player:SetAttribute(field, value)
+	end
+	accountReady[player] = ok or nil
 end
 
 -- Loads the player's chosen slot into their attributes. `startFresh` is a brand-new slot
@@ -273,7 +325,33 @@ function PlayerStats.LoadSlot(player, slot, startFresh)
 	return true
 end
 
+-- the account settings, whether or not a slot is chosen; only when they changed
+local function saveAccount(player)
+	if not accountReady[player] or not PlayerStats.WritesEnabled() then
+		return
+	end
+	local data = {}
+	local changed = accountSaved[player] == nil
+	for field, default in pairs(ACCOUNT_DEFAULTS) do
+		local value = player:GetAttribute(field)
+		data[field] = typeof(value) == "string" and value or default
+		if accountSaved[player] and accountSaved[player][field] ~= data[field] then
+			changed = true
+		end
+	end
+	if not changed then
+		return
+	end
+	local ok, err = pcall(store.SetAsync, store, SlotConfig.AccountKey(player.UserId), data)
+	if ok then
+		accountSaved[player] = data
+	else
+		warn("[PlayerStats] account save failed for " .. player.Name .. ": " .. tostring(err))
+	end
+end
+
 local function save(player)
+	saveAccount(player)
 	local slot = currentSlot[player]
 	if not slot or not canSave[player] or (RunService:IsStudio() and not SAVE_IN_STUDIO) then
 		return false
@@ -556,7 +634,8 @@ local function onPlayerAdded(player)
 	player:GetAttributeChangedSignal(TalentConfig.SaveAttribute):Connect(function()
 		applyHealth(player, false)
 	end)
-	-- nothing loads here: the save is read when the player picks a slot (Slots)
+	-- the character's save is read when the player picks a slot (Slots); the account's now
+	task.spawn(loadAccount, player)
 end
 
 function PlayerStats.Start()
@@ -577,6 +656,8 @@ function PlayerStats.Start()
 		save(player)
 		canSave[player] = nil
 		currentSlot[player] = nil
+		accountReady[player] = nil
+		accountSaved[player] = nil
 	end)
 	game:BindToClose(function()
 		closing = true

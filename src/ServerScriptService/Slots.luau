@@ -7,7 +7,6 @@
 -- the old key is never deleted or changed).
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local TextService = game:GetService("TextService")
 
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
@@ -16,36 +15,14 @@ local SlotConfig = require(ReplicatedStorage:WaitForChild("SlotConfig"))
 
 local Slots = {}
 
-local READ_ATTEMPTS = 3
-
 -- weak keys: the leave-time save of PlayerStats may still need a leaving player's meta
 local metas = setmetatable({}, { __mode = "k" }) -- player -> { [slot] = Entry }, once read
 local loadingMeta = setmetatable({}, { __mode = "k" })
 local entering = setmetatable({}, { __mode = "k" }) -- busy creating, choosing or deleting
 local enteredCallbacks = {}
 
--- a DataStore read with retries. (true, value) or false when it kept failing; in Studio a
--- failing read (API access off) counts as "nothing there", as PlayerStats does
-local function readKey(key)
-	local store = PlayerStats.Store
-	if not store then
-		return true, nil
-	end
-	for attempt = 1, READ_ATTEMPTS do
-		local ok, result = pcall(store.GetAsync, store, key)
-		if ok then
-			return true, result
-		end
-		warn(string.format("[Slots] read %d/%d of %s failed: %s", attempt, READ_ATTEMPTS, key, tostring(result)))
-		if tostring(result):find("Studio access to APIs is not allowed", 1, true) then
-			break
-		end
-		if attempt < READ_ATTEMPTS then
-			task.wait(2)
-		end
-	end
-	return RunService:IsStudio(), nil
-end
+-- a DataStore read with retries: (true, value), or false when it kept failing
+local readKey = PlayerStats.ReadKey
 
 -- true when written, or when nothing is written at all (Studio)
 local function writeKey(key, value)
@@ -57,6 +34,11 @@ local function writeKey(key, value)
 		warn("[Slots] write of " .. key .. " failed: " .. tostring(err))
 	end
 	return ok
+end
+
+-- the summaries are saved with string keys (SlotConfig.EncodeMeta)
+local function writeMeta(userId, meta)
+	return writeKey(SlotConfig.MetaKey(userId), SlotConfig.EncodeMeta(meta))
 end
 
 local function entryOf(player)
@@ -117,7 +99,7 @@ local function loadMeta(player)
 			playedAt = os.time(),
 		},
 	}
-	if not writeKey(SlotConfig.MetaKey(userId), meta) then
+	if not writeMeta(userId, meta) then
 		return nil, "load"
 	end
 	return meta
@@ -153,7 +135,7 @@ function Slots.WriteMeta(player)
 		return
 	end
 	meta[slot] = entryOf(player)
-	writeKey(SlotConfig.MetaKey(player.UserId), meta)
+	return writeMeta(player.UserId, meta)
 end
 
 -- callback(player, slot) once a player is let in
@@ -177,12 +159,30 @@ end
 -- spawn. The avatar's accessories arrive a little after the character, so wait for them
 -- and paint once more a second later.
 local function applyLook(player, character)
+	local parts = ReplicatedStorage:FindFirstChild("CharacterParts")
+	local look = SlotConfig.ParseLook(player:GetAttribute("Look"))
+	-- the avatar can still be arriving on a slow server: for this life, its hats and clothes
+	-- are removed as they appear (the hair CharacterLook adds is marked SlotLook), and the
+	-- look is painted again once the avatar says it has finished
+	local added = character.ChildAdded:Connect(function(child)
+		local avatarItem = child:IsA("Accoutrement") or child:IsA("Clothing") or child:IsA("ShirtGraphic") or child:IsA("CharacterMesh")
+		if avatarItem and not child:GetAttribute("SlotLook") then
+			task.defer(child.Destroy, child)
+		end
+	end)
+	local loaded = player.CharacterAppearanceLoaded:Connect(function(loadedCharacter)
+		if loadedCharacter == character then
+			CharacterLook.Apply(character, look, parts)
+		end
+	end)
+	character.Destroying:Once(function()
+		added:Disconnect()
+		loaded:Disconnect()
+	end)
 	local deadline = os.clock() + 10
 	while not player:HasAppearanceLoaded() and os.clock() < deadline do
 		task.wait(0.2)
 	end
-	local parts = ReplicatedStorage:FindFirstChild("CharacterParts")
-	local look = SlotConfig.ParseLook(player:GetAttribute("Look"))
 	for pass = 1, 2 do
 		if player.Character ~= character or not character.Parent then
 			return
@@ -281,7 +281,13 @@ function Slots.Create(player, slot, name, lookText)
 			PlayerStats.ClearSlot(player)
 			return false, "save"
 		end
+		-- the summary is what makes the slot show up next time, so it must be written too
 		meta[slot] = entryOf(player)
+		if not writeMeta(player.UserId, meta) then
+			meta[slot] = nil
+			PlayerStats.ClearSlot(player)
+			return false, "save"
+		end
 		enter(player, slot)
 		return true
 	end)
@@ -328,7 +334,7 @@ function Slots.Delete(player, slot, typedName)
 		end
 		-- the summary goes first: if it can't be written the character simply stays
 		meta[slot] = nil
-		if not writeKey(SlotConfig.MetaKey(player.UserId), meta) then
+		if not writeMeta(player.UserId, meta) then
 			meta[slot] = entry
 			return false, "save"
 		end

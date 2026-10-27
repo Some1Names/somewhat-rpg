@@ -52,6 +52,17 @@ check("meta keeps a good entry", meta[2] ~= nil and meta[2].name == "Aido" and m
 check("meta drops slot 4, string keys and bad entries", meta[4] == nil and meta.extra == nil and meta[3] == nil and meta[1] == nil)
 check("meta from nothing is empty", next(S.CleanMeta(nil)) == nil)
 
+-- the DataStore can't keep a table with gaps in its integer keys ({ [1] = a, [3] = c }),
+-- so the saved summaries use string keys
+local gapped = S.EncodeMeta({ [1] = entry, [3] = entry })
+check("encoded meta has string keys only", gapped["1"] ~= nil and gapped["3"] ~= nil and gapped[1] == nil and gapped[3] == nil and gapped["2"] == nil)
+local decoded = S.CleanMeta(gapped)
+check("encoded meta round trips with a gap", decoded[1] ~= nil and decoded[2] == nil and decoded[3] ~= nil and decoded[3].name == "Aido")
+local lonely = S.CleanMeta(S.EncodeMeta({ [2] = entry }))
+check("a lone slot 2 survives", lonely[2] ~= nil and lonely[1] == nil and lonely[3] == nil)
+check("encoding nothing is empty", next(S.EncodeMeta({})) == nil)
+check("account key", S.AccountKey(5) == "5_account")
+
 if failures > 0 then
 	error(failures .. " check(s) failed")
 end

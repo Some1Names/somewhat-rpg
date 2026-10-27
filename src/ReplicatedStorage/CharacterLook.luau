@@ -61,6 +61,7 @@ function CharacterLook.Apply(character, look, parts)
 		local template = parts:FindFirstChild("Hair_" .. look.hair)
 		if template and template:IsA("Accoutrement") then
 			local hair = template:Clone()
+			hair:SetAttribute("SlotLook", true) -- Slots removes avatar items that arrive late, but not this
 			local handle = hair:FindFirstChild("Handle")
 			if handle and handle:IsA("BasePart") then
 				handle.Color = colorOf(SlotConfig.HairColors[look.hairColor])

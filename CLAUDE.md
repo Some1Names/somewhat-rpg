@@ -76,7 +76,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `Loadout` (weapons, and who owns what), `ShopServer`, `KillFeed`.
 - **Character slots**: 3 per player, each its own DataStore key (`<UserId>_<slot>`, plus `<UserId>_meta` for the
   slot screen's summaries; an older single save is copied into slot 1). `PlayerStats` loads nothing on join: it
-  loads the slot the player picks (`LoadSlot`). `SlotConfig` (names, look palettes/text, keys; pure, Lune-tested),
+  loads the slot the player picks (`LoadSlot`); keybinds, preferences and the seen-update flag are the
+  player's own (`<UserId>_account`, read on join). `SlotConfig` (names, look palettes/text, keys; pure, Lune-tested),
   `Slots` (server: meta, create/select/delete, holds the player anchored and shielded until they pick) +
   `SlotServer` (the `SlotAction` remote), `CharacterLook` (paints the R6 rig; hair/face parts in
   `ReplicatedStorage.CharacterParts`, the owner's), client `SlotMenu` (the 3 cards PLAY opens) and `Customizer`.

@@ -23,6 +23,7 @@ Store `PlayerStats_v1` (unchanged name), new keys:
 |---|---|
 | `<UserId>_1` .. `<UserId>_3` | One slot: the exact flat record `PlayerStats` saves today, plus text fields `CharName` and `Look`. |
 | `<UserId>_meta` | `{ [1..3] = { name, level, power, look, playedAt } or nil }`, so the slot screen needs one read. |
+| `<UserId>_account` | The player's own settings, not a character's: `Keybinds`, `Preferences`, `AdminKeybinds`, `SeenUpdate`. Read on join (so the title's Settings work before a slot is chosen), saved with every save. First read falls back to the legacy key. |
 | `<UserId>` (legacy) | Read-only after migration; never deleted, so a rollback is possible. |
 
 - **Migration:** on first meta load, if no meta exists and the legacy `<UserId>` key has data, copy
@@ -30,6 +31,8 @@ Store `PlayerStats_v1` (unchanged name), new keys:
   Done once per player; guarded by the meta existing.
 - **Look** is saved text `skin;hair;hairColor;face;top;bottom` (indices into `SlotConfig` palettes),
   validated on load like other text fields. Any bad part falls back to its default.
+- The meta is saved with string keys (`{ ["1"] = entry, ["3"] = entry }`): a DataStore can't keep a
+  table whose integer keys have gaps. `SlotConfig.EncodeMeta` / `CleanMeta` do the conversion.
 - Meta is rewritten whenever a slot is created, deleted, or saved (level and power come from the
   slot's attributes at save time).
 

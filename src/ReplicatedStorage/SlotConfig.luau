@@ -36,6 +36,11 @@ function SlotConfig.MetaKey(userId)
 	return userId .. "_meta"
 end
 
+-- the settings that belong to the player, not to a character (keybinds, preferences...)
+function SlotConfig.AccountKey(userId)
+	return userId .. "_account"
+end
+
 local function isInteger(value, low, high)
 	return type(value) == "number" and value == math.floor(value) and value >= low and value <= high
 end
@@ -114,7 +119,10 @@ function SlotConfig.CleanMeta(value)
 		return clean
 	end
 	for slot = 1, SlotConfig.SlotCount do
-		local entry = value[slot]
+		local entry = value[tostring(slot)]
+		if entry == nil then
+			entry = value[slot]
+		end
 		if
 			type(entry) == "table"
 			and type(entry.name) == "string"
@@ -133,6 +141,18 @@ function SlotConfig.CleanMeta(value)
 		end
 	end
 	return clean
+end
+
+-- the summaries as saved: string keys ("1".."3"), because a DataStore can't keep a table
+-- whose integer keys have gaps
+function SlotConfig.EncodeMeta(meta)
+	local saved = {}
+	for slot = 1, SlotConfig.SlotCount do
+		if meta[slot] then
+			saved[tostring(slot)] = meta[slot]
+		end
+	end
+	return saved
 end
 
 return SlotConfig

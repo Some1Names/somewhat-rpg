@@ -44,5 +44,12 @@ the customizer, so it works with colours only until you add them. Names for the 
 - [ ] Studio playtest: the screen works and nothing is saved (`SAVE_IN_STUDIO` is off).
 - [ ] Turn DataStore access off for a live test or Studio API access off: "Couldn't load" shows with
   RETRY in a live server, and nothing is written.
+- [ ] Settings are the player's, not a character's: rebind a key or change a preference on the title's
+  SETTINGS, press PLAY, Continue: they are still changed; a new character in another slot has them too.
+- [ ] Create characters in slots 1 and 3 only (leave 2 empty), rejoin: both show, 2 is empty.
+- [ ] The hair preview in the customizer sits on the head (the preview's physics isn't solved; if the
+  hair floats, say so and the preview needs to place the hair by hand).
+- [ ] While held on the slot screen, nothing hurts or moves the character (check enemy status effects
+  and crowd control, not just damage).
 - [ ] Other menus still work after entering: hub tabs, stats, quests, hotbar (they used to get
   their data at join; now it arrives when you pick a slot).
