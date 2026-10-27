@@ -66,6 +66,8 @@ paints the look at once rather than waiting for that.
   and bottom colours come from one colour wheel (drag the wheel, the bar for brightness, or type a
   hex). The big preview follows each change; CREATE lets you in as a level 0 character wearing the
   look, not your Roblox avatar (no hats, no shirt).
+- [ ] PLAY opens the slot screen with no dark vertical edge behind it (the title's side gradient is
+  hidden with its column, and comes back on BACK). BACK is plain text, bottom left.
 - [ ] A used slot's card has no buttons: pressing the card continues, and a small DELETE sits in
   its top right corner (it opens the type-the-codename box and does not continue). The character
   shows from the head to about the waist across the top and fades out towards the name.
