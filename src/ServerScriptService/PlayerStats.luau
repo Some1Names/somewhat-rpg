@@ -23,6 +23,7 @@ local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
+local SlotConfig = require(ReplicatedStorage:WaitForChild("SlotConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local TalentConfig = require(ReplicatedStorage:WaitForChild("TalentConfig"))
@@ -76,6 +77,8 @@ local TEXT_DEFAULTS = {
 	TalismanOwned = "", -- the talismans the player owns, comma separated (TalismanConfig, Talismans)
 	TalismanEquipped = "", -- the ones they wear, comma separated (TalismanConfig, Talismans)
 	Explored = "", -- the map cells the player has been near (MapRules, MapServer)
+	CharName = "", -- the slot's character name (SlotConfig, Slots)
+	Look = "", -- the slot's look, "skin;hair;hairColor;face;top;bottom" (SlotConfig, CharacterLook)
 }
 local TEXT_MAX_LENGTH = 200
 -- fields that need more room than the rest
@@ -103,8 +106,13 @@ do
 	end
 end
 
+PlayerStats.Store = store
+
 -- only players whose save loaded are saved, so a failed load never wipes a save
 local canSave = {}
+-- the slot each player chose (Slots); nothing loads or saves before that
+local currentSlot = {}
+local savedCallbacks = {}
 
 -- Sets MaxHealth from Vitality. A fresh character starts full; otherwise the
 -- missing health stays missing.
@@ -182,11 +190,23 @@ local function levelUp(player)
 	return gained
 end
 
-local function load(player)
+-- Loads the player's chosen slot into their attributes. `startFresh` is a brand-new slot
+-- (nothing is read). False when the read failed on a live server: nothing is set and
+-- saving stays off, so a failed load can never overwrite a save. In Studio a failed read
+-- still enters with defaults and no saving, as before.
+function PlayerStats.LoadSlot(player, slot, startFresh)
+	if not SlotConfig.ValidSlot(slot) or currentSlot[player] then
+		return false
+	end
 	local saved
-	if store then
+	if startFresh then
+		saved = {}
+		canSave[player] = store ~= nil
+	elseif not store then
+		saved = {}
+	else
 		for attempt = 1, LOAD_ATTEMPTS do
-			local ok, result = pcall(store.GetAsync, store, tostring(player.UserId))
+			local ok, result = pcall(store.GetAsync, store, SlotConfig.SlotKey(player.UserId, slot))
 			if ok then
 				saved = result or {}
 				canSave[player] = true
@@ -203,9 +223,16 @@ local function load(player)
 		end
 	end
 	if not player.Parent then
-		return
+		return false
+	end
+	if saved == nil then
+		if not RunService:IsStudio() then
+			return false
+		end
+		saved = {}
 	end
 	saved = typeof(saved) == "table" and saved or {}
+	currentSlot[player] = slot
 	-- older saves called Superliminal "Mastery" or "Skill" (points in the old
 	-- Endurance stat simply aren't counted as spent any more, so they come
 	-- back to spend)
@@ -243,10 +270,12 @@ local function load(player)
 	levelUp(player)
 	updatePoints(player)
 	applyHealth(player, true)
+	return true
 end
 
 local function save(player)
-	if not canSave[player] or (RunService:IsStudio() and not SAVE_IN_STUDIO) then
+	local slot = currentSlot[player]
+	if not slot or not canSave[player] or (RunService:IsStudio() and not SAVE_IN_STUDIO) then
 		return false
 	end
 	local data = {}
@@ -256,11 +285,44 @@ local function save(player)
 	for field in pairs(TEXT_DEFAULTS) do
 		data[field] = player:GetAttribute(field)
 	end
-	local ok, err = pcall(store.SetAsync, store, tostring(player.UserId), data)
+	local ok, err = pcall(store.SetAsync, store, SlotConfig.SlotKey(player.UserId, slot), data)
 	if not ok then
 		warn("[PlayerStats] save failed for " .. player.Name .. ": " .. tostring(err))
+		return false
 	end
-	return ok
+	for _, callback in ipairs(savedCallbacks) do
+		local callbackOk, callbackErr = pcall(callback, player)
+		if not callbackOk then
+			warn("[PlayerStats] a saved callback failed for " .. player.Name .. ": " .. tostring(callbackErr))
+		end
+	end
+	return true
+end
+
+-- the slot screen's data: the slot the player chose, whether writes reach the DataStore
+-- at all (not in Studio), and a callback after every successful save (Slots keeps its
+-- summaries current with it)
+function PlayerStats.CurrentSlot(player)
+	return currentSlot[player]
+end
+
+function PlayerStats.WritesEnabled()
+	return store ~= nil and not (RunService:IsStudio() and not SAVE_IN_STUDIO)
+end
+
+function PlayerStats.OnSaved(callback)
+	table.insert(savedCallbacks, callback)
+end
+
+-- forgets the chosen slot and turns saving off (a new slot whose first save failed)
+function PlayerStats.ClearSlot(player)
+	currentSlot[player] = nil
+	canSave[player] = nil
+end
+
+-- the level and held power the slot screen shows
+function PlayerStats.Summary(player)
+	return player:GetAttribute("Level") or 0, player:GetAttribute("CurrentPower") or ""
 end
 
 -- saves now; whether it went through (false too in Studio, where nothing is
@@ -494,7 +556,7 @@ local function onPlayerAdded(player)
 	player:GetAttributeChangedSignal(TalentConfig.SaveAttribute):Connect(function()
 		applyHealth(player, false)
 	end)
-	load(player)
+	-- nothing loads here: the save is read when the player picks a slot (Slots)
 end
 
 function PlayerStats.Start()
@@ -514,6 +576,7 @@ function PlayerStats.Start()
 		end
 		save(player)
 		canSave[player] = nil
+		currentSlot[player] = nil
 	end)
 	game:BindToClose(function()
 		closing = true
