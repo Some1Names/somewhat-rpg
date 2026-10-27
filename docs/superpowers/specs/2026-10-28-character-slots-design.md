@@ -41,15 +41,16 @@ Store `PlayerStats_v1` (unchanged name), new keys:
    `FormatLook` / `DefaultLook`, and the meta summary shape.
 2. **`Slots`** (`ServerScriptService`, module): meta load/save with retries, migration, `Create`,
    `Delete`, `Select`. Holds each player's current slot. Owns the "a player has no slot yet" state.
-3. **`SlotServer`** (`ServerScriptService`, script): creates the remotes by script (`SlotAction`
-   RemoteFunction/RemoteEvent pair: `List`, `Create(slot, name, look)`, `Select(slot)`,
-   `Delete(slot, nameTyped)`), rate-limits them, validates every argument server-side.
+3. **`SlotServer`** (`ServerScriptService`, script): creates the `SlotAction` RemoteFunction by
+   script (actions `List`, `Create(slot, name, look)` which creates the slot and enters it,
+   `Select(slot)`, `Delete(slot, nameTyped)`), rate-limits it, validates every argument server-side.
 4. **`PlayerStats`** (changed): `load(player)` becomes `load(player, slot)`; `save` writes the key
    for `Slots.Current(player)`. Join no longer loads anything; the existing "still loading"
    guards (`Level == nil`, `IsLoaded`) already treat a slot-less player as not loaded.
-5. **`CharacterLook`** (`ServerScriptService`, module): applies a look to the R6 character
-   (BodyColors for skin; outfit colours painted on Torso/Arms/Legs; a hair accessory cloned from
-   `ServerStorage.CharacterParts`; a face decal). Re-applies on every `CharacterAdded`.
+5. **`CharacterLook`** (`ReplicatedStorage`, module, so the client preview uses the same code):
+   applies a look to the R6 character (BodyColors for skin; outfit colours painted on
+   Torso/Legs; a hair accessory cloned from `ReplicatedStorage.CharacterParts`; a face decal).
+   The server re-applies it on every `CharacterAdded` once a slot is chosen.
 6. **`SlotMenu`** (`StarterPlayerScripts`, client): the 3-card screen, opened by `TitleMenu`'s PLAY
    instead of fading straight into the world. Square corners, white text with dark stroke,
    matching the hub style.
@@ -64,7 +65,7 @@ Store `PlayerStats_v1` (unchanged name), new keys:
    anchored and given a ForceField while `SlotPending` is set, so nothing hits a player on the menu.
 2. `TitleMenu` shows PLAY. PLAY requests `List` and opens `SlotMenu`.
 3. Empty slot: Customizer. Confirm sends `Create`; the server validates and filters the name,
-   validates the look, writes the fresh slot and the meta, then runs `Select`.
+   validates the look, starts a fresh record, saves it and the meta, then enters like `Select`.
 4. Used slot: Continue sends `Select`. Delete asks the player to type the character's name, then
    sends `Delete`; the server removes the slot key (via `RemoveAsync`) and clears its meta entry.
 5. `Select(slot)` on the server: refuses unless the slot exists and the player has none selected yet;
@@ -93,7 +94,7 @@ Store `PlayerStats_v1` (unchanged name), new keys:
 
 ## Needs the owner in Studio
 
-- `ServerStorage.CharacterParts` with hair accessories (`Hair_<n>`) and face decals (`Face_<n>`).
+- `ReplicatedStorage.CharacterParts` with hair accessories (`Hair_<n>`) and face decals (`Face_<n>`).
   Options with no part are hidden, so the menu works with skin and outfit colours only until the
   parts exist.
 - No Developer Products or uploads needed.
