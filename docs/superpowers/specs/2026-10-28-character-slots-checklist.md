@@ -28,6 +28,11 @@ the customizer, so it works with colours only until you add them. Names for the 
 
 ## Playtest
 
+First check the rig: the game is R6 only, and `CharacterLook` paints R6 parts only (`Torso`,
+`Left Leg`...). In Game Settings > Avatar, Avatar Type must be **R6** (a Studio playtest on
+"Player Choice" or R15 spawned an R15 character, which the look does not paint). The setting
+is in Studio's Game Settings, not in a script.
+
 - [ ] Join with an existing save (a live server, not Studio): PLAY shows slot 1 with your name,
   level and power, and Continue gives your old progress intact. Slots 2 and 3 are empty.
 - [ ] Make a character in slot 2 (name + look): the preview changes as you pick; CREATE lets you in
