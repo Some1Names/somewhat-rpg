@@ -50,10 +50,14 @@ nothing.
 
 ## Playtest
 
-First check the rig: the game is R6 only, and `CharacterLook` paints R6 parts only (`Torso`,
-`Left Leg`...). In Game Settings > Avatar, Avatar Type must be **R6** (a Studio playtest on
-"Player Choice" or R15 spawned an R15 character, which the look does not paint). The setting
-is in Studio's Game Settings, not in a script.
+The game is R6 only, and `CharacterLook` paints R6 parts only (`Torso`, `Left Leg`...). A Studio
+playtest on Avatar Type "Player Choice" or R15 spawned an R15 character, so the player kept their
+own head and face. To make every player R6 whatever the setting says, Studio has
+`StarterPlayer.StarterCharacter`: a plain R6 rig (Humanoid, the six parts, HumanoidRootPart,
+BodyColors, no scripts). It is an instance, not a script, so it is not in this repo; delete it to
+go back to the avatar the setting picks. Game Settings > Avatar > Avatar Type = **R6** is still
+the clean fix. With a StarterCharacter Roblox never reports the avatar as loaded, so `Slots`
+paints the look at once rather than waiting for that.
 
 - [ ] Join with an existing save (a live server, not Studio): PLAY shows slot 1 with your name,
   level and power, and Continue gives your old progress intact. Slots 2 and 3 are empty.
@@ -62,6 +66,11 @@ is in Studio's Game Settings, not in a script.
   and bottom colours come from one colour wheel (drag the wheel, the bar for brightness, or type a
   hex). The big preview follows each change; CREATE lets you in as a level 0 character wearing the
   look, not your Roblox avatar (no hats, no shirt).
+- [ ] A used slot's card shows its level and yen, and takes its colour from the power that character
+  holds (top line, big number, ring under the character, CONTINUE, the level and the power name).
+  White with no power. The summary is refreshed on every save, so it can lag by an autosave
+  (2 minutes) or the last leave.
+- [ ] Every player spawns R6 (head, face, hair and colours all from the look, not their avatar).
 - [ ] The hub's Profile shows the codename big, with `@<your real username>` under it, and its
   3D model wears the look (it redraws after the server paints it).
 - [ ] Gain XP or yen in slot 2, rejoin: slot 1 is untouched, slot 2 kept its progress, the cards

@@ -149,7 +149,7 @@ function SlotConfig.ParseLook(text)
 	return look
 end
 
--- the saved summaries ({ [slot] = { name, level, power, look, playedAt } }) with anything
+-- the saved summaries ({ [slot] = { name, level, yen, power, look, playedAt } }) with anything
 -- malformed dropped
 function SlotConfig.CleanMeta(value)
 	local clean = {}
@@ -175,6 +175,7 @@ function SlotConfig.CleanMeta(value)
 				power = entry.power,
 				look = entry.look,
 				playedAt = entry.playedAt,
+				yen = type(entry.yen) == "number" and entry.yen or 0, -- not in summaries saved before it was kept
 			}
 		end
 	end

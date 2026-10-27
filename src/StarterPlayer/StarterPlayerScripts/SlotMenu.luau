@@ -10,7 +10,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
+local HubRules = require(ReplicatedStorage:WaitForChild("HubRules"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local SlotConfig = require(ReplicatedStorage:WaitForChild("SlotConfig"))
 local Customizer = require(script.Parent:WaitForChild("Customizer"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
@@ -44,6 +46,20 @@ local function ago(time)
 		return math.floor(seconds / 3600) .. "h ago"
 	end
 	return math.floor(seconds / 86400) .. "d ago"
+end
+
+-- ¥12,400
+local function money(amount)
+	local digits = (tostring(math.floor(amount)):reverse():gsub("(%d%d%d)", "%1,")):reverse()
+	return "¥" .. (digits:gsub("^,", ""))
+end
+
+-- a slot's colour is its held power's, as the hub's accent is (white with none)
+local function powerAccent(power)
+	local set = SkillSetConfig.Sets[power]
+	local color = set and set.color or Theme.NoPower
+	local r, g, b = HubRules.Ink(color.R, color.G, color.B)
+	return Color3.new(r, g, b)
 end
 
 -- Opens the slot screen. onEntered() once a character is chosen or made and the player
@@ -157,7 +173,7 @@ function SlotMenu.Open(onEntered, onBack)
 				entry.hover = over
 				tween(entry.card, 0.2, { Position = over and UDim2.fromOffset(0, -LIFT) or UDim2.new() })
 				tween(entry.sweep, 0.25, { Size = UDim2.new(over and 1 or 0, 0, 0, 3) })
-				tween(entry.stroke, 0.2, { Color = over and accent or Theme.Edge, Transparency = over and 0.2 or 0.6 })
+				tween(entry.stroke, 0.2, { Color = over and entry.accent or Theme.Edge, Transparency = over and 0.2 or 0.6 })
 			end
 		end
 	end)
@@ -271,9 +287,10 @@ function SlotMenu.Open(onEntered, onBack)
 		end)
 	end
 
-	-- a card's frame: the slot (which the list lays out), the card in it (which moves),
-	-- the accent line along the card's top, and the big faint number behind everything
-	local function cardFrame(order)
+	-- a card's frame: the slot (which the list lays out), the card in it (which moves), a
+	-- line along its top and the big faint number behind everything, both in `color` (the
+	-- slot's power colour)
+	local function cardFrame(order, color)
 		local slotFrame = make("Frame", { Parent = cards, LayoutOrder = order, Size = UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT), BackgroundTransparency = 1 })
 		local card = make("Frame", {
 			Parent = slotFrame,
@@ -288,17 +305,19 @@ function SlotMenu.Open(onEntered, onBack)
 			Text = string.format("%02d", order),
 			Font = Theme.TitleFont,
 			TextSize = 150,
-			TextTransparency = 0.9,
+			TextColor3 = color,
+			TextTransparency = 0.86,
 			TextXAlignment = Enum.TextXAlignment.Right,
 			AnchorPoint = Vector2.new(1, 1),
 			Position = UDim2.new(1, -10, 1, -4),
 			Size = UDim2.fromOffset(CARD_WIDTH, 150),
 		})
-		local sweep = make("Frame", { Parent = card, Size = UDim2.fromOffset(0, 3), BackgroundColor3 = accent, BorderSizePixel = 0 })
+		make("Frame", { Parent = card, Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = color, BackgroundTransparency = 0.45, BorderSizePixel = 0 })
+		local sweep = make("Frame", { Parent = card, Size = UDim2.fromOffset(0, 3), BackgroundColor3 = color, BorderSizePixel = 0 })
 		local content = make("Frame", { Parent = card, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
 		make("UIPadding", { Parent = content, PaddingTop = UDim.new(0, 20), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20) })
 		label(content, { Text = string.format("%02d", order), Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
-		local entry = { slotFrame = slotFrame, card = card, sweep = sweep, stroke = stroke, hover = false }
+		local entry = { slotFrame = slotFrame, card = card, sweep = sweep, stroke = stroke, accent = color, hover = false }
 		table.insert(entries, entry)
 		-- slides up after the cards before it, the accent line flashing across as it lands
 		task.delay((order - 1) * ENTRANCE_STAGGER, function()
@@ -319,27 +338,38 @@ function SlotMenu.Open(onEntered, onBack)
 		clearCards()
 		for slot = 1, SlotConfig.SlotCount do
 			local entry = type(slots) == "table" and slots[slot] or nil
-			local content = cardFrame(slot)
-			if type(entry) == "table" then
+			local used = type(entry) == "table"
+			local color = used and powerAccent(entry.power) or accent
+			local content = cardFrame(slot, color)
+			if used then
 				-- the character, dressed in the look this slot wears
 				local previewHolder = make("Frame", { Parent = content, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT), BackgroundTransparency = 1 })
-				local model = Customizer.BuildPreview(previewHolder, 17.5, true)
+				local model = Customizer.BuildPreview(previewHolder, 17.5, color)
 				if model then
 					Customizer.Dress(model, SlotConfig.ParseLook(entry.look), parts)
 				end
-				label(content, { Text = string.upper(entry.name), Font = Theme.TitleFont, TextSize = 28, Position = UDim2.fromOffset(0, 178), Size = UDim2.new(1, 0, 0, 34), TextTruncate = Enum.TextTruncate.AtEnd })
+				label(content, { Text = string.upper(entry.name), Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(0, 176), Size = UDim2.new(1, 0, 0, 30), TextTruncate = Enum.TextTruncate.AtEnd })
 				label(content, {
-					Text = string.format('<font color="#%s">LV %d</font>  ·  %s', accent:ToHex(), entry.level, entry.power ~= "" and string.upper(entry.power) or "NO POWER"),
+					Text = string.format('<font color="#%s">LV %d</font>  ·  %s', color:ToHex(), entry.level, money(entry.yen or 0)),
 					RichText = true,
 					Font = Theme.MonoFont,
 					TextSize = 14,
-					Position = UDim2.fromOffset(0, 214),
+					Position = UDim2.fromOffset(0, 208),
 					Size = UDim2.new(1, 0, 0, 18),
 					TextTruncate = Enum.TextTruncate.AtEnd,
 				})
-				label(content, { Text = "PLAYED " .. string.upper(ago(entry.playedAt)), Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 238), Size = UDim2.new(1, 0, 0, 16) })
-				local bottom = make("Frame", { Parent = content, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 92), BackgroundTransparency = 1 })
-				button(bottom, { Text = "CONTINUE", Filled = true, Size = UDim2.new(1, 0, 0, 42) }, function()
+				label(content, {
+					Text = entry.power ~= "" and string.upper((SkillSetConfig.Sets[entry.power] or {}).tool or entry.power) or "NO POWER",
+					Font = Theme.MonoFont,
+					TextSize = 13,
+					TextColor3 = entry.power ~= "" and color or Theme.Muted,
+					Position = UDim2.fromOffset(0, 228),
+					Size = UDim2.new(1, 0, 0, 16),
+					TextTruncate = Enum.TextTruncate.AtEnd,
+				})
+				label(content, { Text = "PLAYED " .. string.upper(ago(entry.playedAt)), Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 246), Size = UDim2.new(1, 0, 0, 16) })
+				local bottom = make("Frame", { Parent = content, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 84), BackgroundTransparency = 1 })
+				button(bottom, { Text = "CONTINUE", Filled = true, Accent = color, Size = UDim2.new(1, 0, 0, 42) }, function()
 					if busy then
 						return
 					end

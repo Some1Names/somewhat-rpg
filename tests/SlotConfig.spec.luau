@@ -68,6 +68,10 @@ check("a style out of range falls back and the colours stay", badStyle.hair == 1
 local entry = { name = "Aido", level = 12, power = "Mandela", look = "1;1;1;1;1;1", playedAt = 100 }
 local meta = S.CleanMeta({ [2] = entry, [4] = entry, extra = entry, [3] = { name = "X", level = "5", power = "", look = "", playedAt = 1 } })
 check("meta keeps a good entry", meta[2] ~= nil and meta[2].name == "Aido" and meta[2].level == 12 and meta[2].playedAt == 100)
+check("a summary without yen (saved before it was kept) has 0", meta[2].yen == 0)
+local withYen = S.CleanMeta({ ["1"] = { name = "A", level = 1, power = "", look = "", playedAt = 1, yen = 250 } })
+check("a summary keeps its yen", withYen[1] ~= nil and withYen[1].yen == 250)
+check("yen that isn't a number is 0", S.CleanMeta({ ["1"] = { name = "A", level = 1, power = "", look = "", playedAt = 1, yen = "lots" } })[1].yen == 0)
 check("meta drops slot 4, string keys and bad entries", meta[4] == nil and meta.extra == nil and meta[3] == nil and meta[1] == nil)
 check("meta from nothing is empty", next(S.CleanMeta(nil)) == nil)
 

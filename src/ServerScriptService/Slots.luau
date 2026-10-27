@@ -46,6 +46,7 @@ local function entryOf(player)
 	return {
 		name = player:GetAttribute("CharName") or "",
 		level = level,
+		yen = player:GetAttribute("Yen") or 0,
 		power = power,
 		look = player:GetAttribute("Look") or "",
 		playedAt = os.time(),
@@ -94,6 +95,7 @@ local function loadMeta(player)
 		[1] = {
 			name = record.CharName,
 			level = type(legacy.Level) == "number" and legacy.Level or 0,
+			yen = type(legacy.Yen) == "number" and legacy.Yen or 0,
 			power = type(legacy.CurrentPower) == "string" and legacy.CurrentPower or "",
 			look = record.Look,
 			playedAt = os.time(),
@@ -184,6 +186,11 @@ local function applyLook(player, character)
 		added:Disconnect()
 		loaded:Disconnect()
 	end)
+	-- at once: a rig that isn't the player's avatar (StarterCharacter) never reports its
+	-- appearance as loaded, and waiting for it would leave a default rig on screen
+	if character:WaitForChild("Head", 5) then
+		paint()
+	end
 	local deadline = os.clock() + 10
 	while not player:HasAppearanceLoaded() and os.clock() < deadline do
 		task.wait(0.2)

@@ -94,18 +94,25 @@ local function tween(instance, time, props, style)
 end
 Customizer.Tween = tween
 
--- a square button; `filled` buttons are the accent, the rest dark with a thin edge. An
--- accent line sweeps along the bottom on hover.
+-- the colour to write on a fill of `color`
+local function onColor(color)
+	return 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B > 0.4 and Theme.Nav or Color3.new(1, 1, 1)
+end
+
+-- a square button; `filled` buttons are the accent (the hub's, or props.Accent), the rest
+-- dark with a thin edge. An accent line sweeps along the bottom on hover.
 local function button(parent, props, onClick)
 	local filled = props.Filled
+	local accent = props.Accent or Hub.InkAccent()
 	props.Filled = nil
+	props.Accent = nil
 	props.Parent = parent
 	props.Font = props.Font or Theme.TitleFont
 	props.TextSize = props.TextSize or 18
 	props.AutoButtonColor = false
 	props.BorderSizePixel = 0
-	props.BackgroundColor3 = filled and Hub.InkAccent() or Theme.Nav
-	props.TextColor3 = filled and Hub.OnInk() or Theme.NavText
+	props.BackgroundColor3 = filled and accent or Theme.Nav
+	props.TextColor3 = filled and onColor(accent) or Theme.NavText
 	local instance = make("TextButton", props)
 	make("UIStroke", { Parent = instance, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	local sweep = make("Frame", {
@@ -113,7 +120,7 @@ local function button(parent, props, onClick)
 		AnchorPoint = Vector2.new(0, 1),
 		Position = UDim2.fromScale(0, 1),
 		Size = UDim2.fromOffset(0, 2),
-		BackgroundColor3 = filled and Hub.OnInk() or Hub.InkAccent(),
+		BackgroundColor3 = filled and onColor(accent) or accent,
 		BorderSizePixel = 0,
 		ZIndex = instance.ZIndex + 1,
 	})
@@ -191,9 +198,9 @@ local function pointerAt(input)
 	return UserInputService:GetMouseLocation()
 end
 
--- a stripped, anchored copy of the player's character in a ViewportFrame, standing on an
--- accent ring when `ring`; returns the copy (nil with no character). Dress it with
--- Customizer.Dress.
+-- a stripped, anchored copy of the player's character in a ViewportFrame, standing on a
+-- ring when `ring` (true: the hub's accent; or a Color3); returns the copy (nil with no
+-- character). Dress it with Customizer.Dress.
 function Customizer.BuildPreview(parent, distance, ring)
 	local viewport = make("ViewportFrame", {
 		Parent = parent,
@@ -222,7 +229,7 @@ function Customizer.BuildPreview(parent, distance, ring)
 				Anchored = true,
 				CanCollide = false,
 				Material = Enum.Material.Neon,
-				Color = Hub.InkAccent(),
+				Color = typeof(ring) == "Color3" and ring or Hub.InkAccent(),
 				Transparency = disc[2],
 			})
 		end

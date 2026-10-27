@@ -82,6 +82,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `SlotServer` (the `SlotAction` remote), `CharacterLook` (paints the R6 rig; hair/face parts in
   `ReplicatedStorage.CharacterParts`, the owner's), client `SlotMenu` (the 3 cards PLAY opens) and `Customizer`
   (tabs, square hair/face tiles, one colour wheel; a look's colours are free RGB, saved as hex). The hub
+  slot cards show level, yen and take their colour from the held power; the game is R6 only, enforced by an
+  R6 `StarterPlayer.StarterCharacter` rig that exists only in Studio (no script makes it). The hub
   Profile names the character by its codename (`CharName`) with the real `@username` under it; `Slots` bumps the
   character's `LookRev` after each paint so `HubPose` redraws its model.
 - **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
