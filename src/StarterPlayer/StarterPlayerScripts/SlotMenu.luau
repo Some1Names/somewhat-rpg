@@ -25,7 +25,7 @@ local CARD_WIDTH = 270
 local CARD_HEIGHT = 400
 local CARD_GAP = 16
 local HEADER = 76 -- the chip, the title and the rule above the cards
-local PREVIEW_HEIGHT = 150
+local PREVIEW_HEIGHT = 290 -- the character's top half across the top of a used card, fading out below
 local LIFT = 8 -- px the card under the mouse rises
 local ENTRANCE_RISE = 40 -- px a card slides up from
 local ENTRANCE_STAGGER = 0.09 -- s between one card's entrance and the next
@@ -174,6 +174,9 @@ function SlotMenu.Open(onEntered, onBack)
 				tween(entry.card, 0.2, { Position = over and UDim2.fromOffset(0, -LIFT) or UDim2.new() })
 				tween(entry.sweep, 0.25, { Size = UDim2.new(over and 1 or 0, 0, 0, 3) })
 				tween(entry.stroke, 0.2, { Color = over and entry.accent or Theme.Edge, Transparency = over and 0.2 or 0.6 })
+				if entry.hint then
+					tween(entry.hint, 0.2, { TextColor3 = over and entry.accent or Theme.Muted })
+				end
 			end
 		end
 	end)
@@ -314,7 +317,7 @@ function SlotMenu.Open(onEntered, onBack)
 		})
 		make("Frame", { Parent = card, Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = color, BackgroundTransparency = 0.45, BorderSizePixel = 0 })
 		local sweep = make("Frame", { Parent = card, Size = UDim2.fromOffset(0, 3), BackgroundColor3 = color, BorderSizePixel = 0 })
-		local content = make("Frame", { Parent = card, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
+		local content = make("Frame", { Parent = card, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 2 })
 		make("UIPadding", { Parent = content, PaddingTop = UDim.new(0, 20), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20), PaddingBottom = UDim.new(0, 20) })
 		label(content, { Text = string.format("%02d", order), Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Size = UDim2.new(1, 0, 0, 14) })
 		local entry = { slotFrame = slotFrame, card = card, sweep = sweep, stroke = stroke, accent = color, hover = false }
@@ -331,7 +334,7 @@ function SlotMenu.Open(onEntered, onBack)
 				end
 			end)
 		end)
-		return content
+		return content, entry
 	end
 
 	function render(slots)
@@ -340,21 +343,34 @@ function SlotMenu.Open(onEntered, onBack)
 			local entry = type(slots) == "table" and slots[slot] or nil
 			local used = type(entry) == "table"
 			local color = used and powerAccent(entry.power) or accent
-			local content = cardFrame(slot, color)
+			local content, cardEntry = cardFrame(slot, color)
 			if used then
-				-- the character, dressed in the look this slot wears
-				local previewHolder = make("Frame", { Parent = content, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT), BackgroundTransparency = 1 })
-				local model = Customizer.BuildPreview(previewHolder, 17.5, color)
+				-- the character's top half, dressed in the look this slot wears, across the top
+				-- of the card (behind the text) and fading out towards the bottom
+				local previewHolder = make("Frame", { Parent = cardEntry.card, Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT), BackgroundTransparency = 1, ZIndex = 1 })
+				local model = Customizer.BuildPreview(previewHolder, 11, false, -0.55)
 				if model then
 					Customizer.Dress(model, SlotConfig.ParseLook(entry.look), parts)
 				end
-				label(content, { Text = string.upper(entry.name), Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(0, 176), Size = UDim2.new(1, 0, 0, 30), TextTruncate = Enum.TextTruncate.AtEnd })
+				local viewport = previewHolder:FindFirstChildOfClass("ViewportFrame")
+				if viewport then
+					make("UIGradient", {
+						Parent = viewport,
+						Rotation = 90,
+						Transparency = NumberSequence.new({
+							NumberSequenceKeypoint.new(0, 0),
+							NumberSequenceKeypoint.new(0.5, 0),
+							NumberSequenceKeypoint.new(1, 1),
+						}),
+					})
+				end
+				label(content, { Text = string.upper(entry.name), Font = Theme.TitleFont, TextSize = 28, Position = UDim2.fromOffset(0, 246), Size = UDim2.new(1, 0, 0, 32), TextTruncate = Enum.TextTruncate.AtEnd })
 				label(content, {
 					Text = string.format('<font color="#%s">LV %d</font>  ·  %s', color:ToHex(), entry.level, money(entry.yen or 0)),
 					RichText = true,
 					Font = Theme.MonoFont,
 					TextSize = 14,
-					Position = UDim2.fromOffset(0, 208),
+					Position = UDim2.fromOffset(0, 284),
 					Size = UDim2.new(1, 0, 0, 18),
 					TextTruncate = Enum.TextTruncate.AtEnd,
 				})
@@ -363,13 +379,23 @@ function SlotMenu.Open(onEntered, onBack)
 					Font = Theme.MonoFont,
 					TextSize = 13,
 					TextColor3 = entry.power ~= "" and color or Theme.Muted,
-					Position = UDim2.fromOffset(0, 228),
+					Position = UDim2.fromOffset(0, 304),
 					Size = UDim2.new(1, 0, 0, 16),
 					TextTruncate = Enum.TextTruncate.AtEnd,
 				})
-				label(content, { Text = "PLAYED " .. string.upper(ago(entry.playedAt)), Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 246), Size = UDim2.new(1, 0, 0, 16) })
-				local bottom = make("Frame", { Parent = content, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 84), BackgroundTransparency = 1 })
-				button(bottom, { Text = "CONTINUE", Filled = true, Accent = color, Size = UDim2.new(1, 0, 0, 42) }, function()
+				label(content, { Text = "PLAYED " .. string.upper(ago(entry.playedAt)), Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 324), Size = UDim2.new(1, 0, 0, 16) })
+				cardEntry.hint = label(content, {
+					Text = "CLICK TO CONTINUE",
+					Font = Theme.MonoFont,
+					TextSize = 11,
+					TextColor3 = Theme.Muted,
+					AnchorPoint = Vector2.new(0, 1),
+					Position = UDim2.fromScale(0, 1),
+					Size = UDim2.new(1, 0, 0, 14),
+				})
+				-- the whole card continues; DELETE, small in the corner, sits above it
+				local wholeCard = make("TextButton", { Parent = cardEntry.card, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 3 })
+				wholeCard.Activated:Connect(function()
 					if busy then
 						return
 					end
@@ -379,7 +405,7 @@ function SlotMenu.Open(onEntered, onBack)
 					busy = false
 					enterWith(result)
 				end)
-				button(bottom, { Text = "DELETE", TextSize = 15, Position = UDim2.fromOffset(0, 50), Size = UDim2.new(1, 0, 0, 34) }, function()
+				button(cardEntry.card, { Text = "DELETE", TextSize = 11, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 12), Size = UDim2.fromOffset(58, 22), ZIndex = 4 }, function()
 					if not busy then
 						askDelete(slot, entry)
 					end

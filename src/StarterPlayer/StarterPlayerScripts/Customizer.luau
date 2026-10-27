@@ -199,9 +199,11 @@ local function pointerAt(input)
 end
 
 -- a stripped, anchored copy of the player's character in a ViewportFrame, standing on a
--- ring when `ring` (true: the hub's accent; or a Color3); returns the copy (nil with no
--- character). Dress it with Customizer.Dress.
-function Customizer.BuildPreview(parent, distance, ring)
+-- ring when `ring` (true: the hub's accent; or a Color3), the camera `distance` studs away
+-- and aimed `lookHeight` studs above the root part (a whole figure when left out); returns
+-- the copy (nil with no character). Dress it with Customizer.Dress.
+function Customizer.BuildPreview(parent, distance, ring, lookHeight)
+	lookHeight = lookHeight or LOOK_HEIGHT
 	local viewport = make("ViewportFrame", {
 		Parent = parent,
 		Size = UDim2.fromScale(1, 1),
@@ -213,8 +215,8 @@ function Customizer.BuildPreview(parent, distance, ring)
 	local camera = make("Camera", { Parent = viewport, FieldOfView = FIELD_OF_VIEW })
 	local yaw = math.rad(CAMERA_YAW)
 	camera.CFrame = CFrame.lookAt(
-		Vector3.new(distance * math.sin(yaw), LOOK_HEIGHT + 0.3, -distance * math.cos(yaw)),
-		Vector3.new(0, LOOK_HEIGHT, 0)
+		Vector3.new(distance * math.sin(yaw), lookHeight + 0.3, -distance * math.cos(yaw)),
+		Vector3.new(0, lookHeight, 0)
 	)
 	viewport.CurrentCamera = camera
 	local world = make("WorldModel", { Parent = viewport })

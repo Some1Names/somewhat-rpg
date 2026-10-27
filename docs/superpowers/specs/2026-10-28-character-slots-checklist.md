@@ -66,6 +66,9 @@ paints the look at once rather than waiting for that.
   and bottom colours come from one colour wheel (drag the wheel, the bar for brightness, or type a
   hex). The big preview follows each change; CREATE lets you in as a level 0 character wearing the
   look, not your Roblox avatar (no hats, no shirt).
+- [ ] A used slot's card has no buttons: pressing the card continues, and a small DELETE sits in
+  its top right corner (it opens the type-the-codename box and does not continue). The character
+  shows from the head to about the waist across the top and fades out towards the name.
 - [ ] A used slot's card shows its level and yen, and takes its colour from the power that character
   holds (top line, big number, ring under the character, CONTINUE, the level and the power name).
   White with no power. The summary is refreshed on every save, so it can lag by an autosave
