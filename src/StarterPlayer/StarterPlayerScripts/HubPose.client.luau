@@ -204,3 +204,19 @@ player.CharacterAppearanceLoaded:Connect(onCharacter)
 if player.Character then
 	task.spawn(onCharacter, player.Character)
 end
+
+-- the server paints the slot's look on the character after it spawns (Slots bumps LookRev
+-- each time): show it
+local function watchLook(character)
+	character:GetAttributeChangedSignal("LookRev"):Connect(function()
+		rebuild()
+		local showing = Hub.Current()
+		if showing then
+			pose(Hub.PoseFor(showing) or "Idle")
+		end
+	end)
+end
+player.CharacterAdded:Connect(watchLook)
+if player.Character then
+	watchLook(player.Character)
+end

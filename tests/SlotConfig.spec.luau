@@ -30,23 +30,40 @@ end
 check("refuses nil", S.CleanName(nil) == nil)
 check("refuses a number", S.CleanName(12) == nil)
 
-local look = { skin = 2, hair = 3, hairColor = 4, face = 1, top = 5, bottom = 6 }
-check("format look", S.FormatLook(look) == "2;3;4;1;5;6")
-local back = S.ParseLook("2;3;4;1;5;6")
-check("look round trip", back.skin == 2 and back.hair == 3 and back.hairColor == 4 and back.face == 1 and back.top == 5 and back.bottom == 6)
+local function same(a, b)
+	return a ~= nil and a[1] == b[1] and a[2] == b[2] and a[3] == b[3]
+end
+
+-- colours are free RGB (a colour wheel picks them), saved as six hex digits
+check("format colour", S.FormatColor({ 255, 224, 189 }) == "FFE0BD" and S.FormatColor({ 0, 0, 0 }) == "000000")
+check("format colour rounds and clamps", S.FormatColor({ 254.6, -5, 300 }) == "FF00FF")
+check("parse colour", same(S.ParseColor("FFE0BD"), { 255, 224, 189 }) and same(S.ParseColor("abcdef"), { 171, 205, 239 }))
+for _, bad in ipairs({ "", "FFF", "FFE0BDFF", "GGGGGG", "#FFE0BD", "FFE0B" }) do
+	check("refuses colour " .. string.format("%q", bad), S.ParseColor(bad) == nil)
+end
+check("refuses a colour that isn't text", S.ParseColor(nil) == nil and S.ParseColor(123456) == nil)
+
+local look = { skin = { 255, 224, 189 }, hair = 3, hairColor = { 30, 25, 25 }, face = 1, top = { 40, 40, 40 }, bottom = { 171, 205, 239 } }
+check("format look", S.FormatLook(look) == "FFE0BD;3;1E1919;1;282828;ABCDEF")
+local back = S.ParseLook("FFE0BD;3;1E1919;1;282828;ABCDEF")
+check("look round trip", same(back.skin, look.skin) and back.hair == 3 and same(back.hairColor, look.hairColor) and back.face == 1 and same(back.top, look.top) and same(back.bottom, look.bottom))
+check("a look formats the same after a round trip", S.FormatLook(S.ParseLook("FFE0BD;3;1E1919;1;282828;ABCDEF")) == "FFE0BD;3;1E1919;1;282828;ABCDEF")
 
 local default = S.DefaultLook()
-check("default look is all 1", default.skin == 1 and default.hair == 1 and default.hairColor == 1 and default.face == 1 and default.top == 1 and default.bottom == 1)
+check("default look is each list's first", same(default.skin, S.SkinTones[1]) and default.hair == 1 and same(default.hairColor, S.HairColors[1]) and default.face == 1 and same(default.top, S.OutfitColors[1]) and same(default.bottom, S.OutfitColors[1]))
 for _, junk in ipairs({ "", "x;y" }) do
 	local parsed = S.ParseLook(junk)
-	check("junk look " .. string.format("%q", junk), parsed.skin == 1 and parsed.hair == 1 and parsed.top == 1)
+	check("junk look " .. string.format("%q", junk), same(parsed.skin, S.SkinTones[1]) and parsed.hair == 1 and same(parsed.top, S.OutfitColors[1]))
 end
 local nothing = S.ParseLook(nil)
-check("nil look", nothing.skin == 1 and nothing.bottom == 1)
-local outOfRange = S.ParseLook("99;2;3;2;4;5")
-check("out of range falls back alone", outOfRange.skin == 1 and outOfRange.hair == 2 and outOfRange.hairColor == 3 and outOfRange.face == 2 and outOfRange.top == 4 and outOfRange.bottom == 5)
+check("nil look", same(nothing.skin, S.SkinTones[1]) and same(nothing.bottom, S.OutfitColors[1]))
+-- looks saved before the colour wheel counted colours as numbers into the palettes
+local legacy = S.ParseLook("99;2;3;2;4;5")
+check("an older look's numbers still mean palette colours", same(legacy.skin, S.SkinTones[1]) and legacy.hair == 2 and same(legacy.hairColor, S.HairColors[3]) and legacy.face == 2 and same(legacy.top, S.OutfitColors[4]) and same(legacy.bottom, S.OutfitColors[5]))
 local odd = S.ParseLook("-1;1.5;3;2;4;5")
-check("negative and fractional fall back", odd.skin == 1 and odd.hair == 1 and odd.hairColor == 3 and odd.face == 2 and odd.top == 4 and odd.bottom == 5)
+check("negative and fractional fall back", same(odd.skin, S.SkinTones[1]) and odd.hair == 1 and same(odd.hairColor, S.HairColors[3]) and odd.face == 2)
+local badStyle = S.ParseLook("FFFFFF;9;000000;9;FFFFFF;FFFFFF")
+check("a style out of range falls back and the colours stay", badStyle.hair == 1 and badStyle.face == 1 and same(badStyle.skin, { 255, 255, 255 }) and same(badStyle.hairColor, { 0, 0, 0 }))
 
 local entry = { name = "Aido", level = 12, power = "Mandela", look = "1;1;1;1;1;1", playedAt = 100 }
 local meta = S.CleanMeta({ [2] = entry, [4] = entry, extra = entry, [3] = { name = "X", level = "5", power = "", look = "", playedAt = 1 } })

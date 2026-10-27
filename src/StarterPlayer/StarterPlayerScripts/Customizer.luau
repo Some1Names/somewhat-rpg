@@ -1,11 +1,16 @@
--- The character customizer for an empty slot: a codename, a row of choices for each part
--- of the look (skin, hair, hair colour, face, top, bottom) and a big live preview of the
--- player's own character (a stripped, anchored clone in a ViewportFrame, as HubPose does)
--- wearing the look through CharacterLook. The preview turns slowly on an accent ring and
--- can be dragged round. Hair and face styles with no part in ReplicatedStorage.CharacterParts
--- are hidden. CREATE asks the server (SlotAction "Create") and, on success, lets the player
--- in. Also holds the helpers SlotMenu shares (buttons, tween, the dressed preview, the
--- backdrop). Square everything; the accent is the hub's.
+-- The character customizer for an empty slot. A codename, then a catalogue split into tabs:
+-- BODY (skin colour), HAIR (square tiles that show each hair on a head, and its colour),
+-- FACE (square tiles showing each face) and OUTFIT (top and bottom colours). A tile is the
+-- button: pressing one replaces the current hair or face. Colours come from one colour wheel
+-- (hue and saturation round it, brightness on the bar beside it, or type a hex), so any
+-- colour will do. The big preview on the right is the player's own character (a stripped,
+-- anchored clone in a ViewportFrame, as HubPose does) wearing the look through CharacterLook;
+-- it turns slowly on an accent ring and can be dragged. Styles with no part in
+-- ReplicatedStorage.CharacterParts are hidden. CREATE asks the server (SlotAction "Create")
+-- and, on success, lets the player in. Also holds the helpers SlotMenu shares (buttons,
+-- tween, the dressed preview, the backdrop). Square everything (the wheel is the one round
+-- thing); the accent is the hub's.
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -23,7 +28,9 @@ local Theme = HudConfig.HubTheme
 local remote = ReplicatedStorage:WaitForChild("SlotAction")
 
 local PANEL_WIDTH = 480
-local OPTION_SIZE = 30
+local TILE_SIZE = 84
+local WHEEL_SIZE = 220
+local WHEEL_SEGMENTS = 60 -- each bar of the wheel covers a direction and its opposite
 local FIELD_OF_VIEW = 30
 local CAMERA_YAW = 20 -- degrees round from straight in front
 local LOOK_HEIGHT = -0.25 -- studs above the root part the camera looks at (the middle of a figure, feet to head)
@@ -31,6 +38,7 @@ local FEET = -3.05 -- the root part's height above the floor of the preview, neg
 local TURN_SPEED = 0.6 -- radians a second while nobody drags
 local DRAG_SPEED = 0.012 -- radians a pixel
 local TURN_RESUME = 2 -- seconds after a drag before it turns again
+local TILE_REFRESH = 0.12 -- s at the least between repainting the tiles while a colour is dragged
 local ERROR_COLOR = Color3.fromRGB(235, 90, 90)
 
 local Customizer = {}
@@ -167,6 +175,22 @@ local function colorOf(rgb)
 	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
 end
 
+local function rgbOf(color)
+	return { math.floor(color.R * 255 + 0.5), math.floor(color.G * 255 + 0.5), math.floor(color.B * 255 + 0.5) }
+end
+
+local function isPointer(input)
+	return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
+end
+
+-- where a pointer is, in the same pixels as AbsolutePosition (the screens ignore the gui inset)
+local function pointerAt(input)
+	if input.UserInputType == Enum.UserInputType.Touch then
+		return Vector2.new(input.Position.X, input.Position.Y) + GuiService:GetGuiInset()
+	end
+	return UserInputService:GetMouseLocation()
+end
+
 -- a stripped, anchored copy of the player's character in a ViewportFrame, standing on an
 -- accent ring when `ring`; returns the copy (nil with no character). Dress it with
 -- Customizer.Dress.
@@ -237,6 +261,203 @@ function Customizer.Dress(model, look, parts)
 			item.Anchored = true
 		end
 	end
+end
+
+-- a square tile showing one hair or face on a head: a ViewportFrame with the player's own
+-- head (so its attachments and shape are right) and a Humanoid, so CharacterLook can dress
+-- it like a character. Returns { model } (model nil with no character). `kind` is "hair"
+-- or "face".
+local function buildHeadTile(parent, kind)
+	local viewport = make("ViewportFrame", {
+		Parent = parent,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(170, 170, 170),
+		LightColor = Color3.new(1, 1, 1),
+		LightDirection = Vector3.new(-1, -1, 1),
+	})
+	-- hair is seen from a little way off and to one side; a face straight on and close
+	local distance, height, yaw = 7, 0.6, math.rad(20)
+	if kind == "face" then
+		distance, height, yaw = 3.6, 0, 0
+	end
+	local camera = make("Camera", { Parent = viewport, FieldOfView = FIELD_OF_VIEW })
+	camera.CFrame = CFrame.lookAt(Vector3.new(distance * math.sin(yaw), height + 0.1, -distance * math.cos(yaw)), Vector3.new(0, height, 0))
+	viewport.CurrentCamera = camera
+	local head = player.Character and player.Character:FindFirstChild("Head")
+	if not head then
+		return { model = nil }
+	end
+	local world = make("WorldModel", { Parent = viewport })
+	local model = make("Model", { Name = "TileHead", Parent = world })
+	local copy = head:Clone()
+	for _, item in ipairs(copy:GetChildren()) do
+		if item:IsA("BaseScript") or item:IsA("Sound") then
+			item:Destroy()
+		end
+	end
+	copy.Anchored = true
+	copy.CFrame = CFrame.new()
+	copy.Parent = model
+	make("Humanoid", { Parent = model, RigType = Enum.HumanoidRigType.R6 })
+	return { model = model }
+end
+
+-- a copy of the look with this tile's hair or face in it (a face tile is bald: hair would
+-- hide the face)
+local function tileLook(look, kind, index)
+	local copy = {}
+	for key, value in pairs(look) do
+		copy[key] = value
+	end
+	if kind == "face" then
+		copy.face = index
+		copy.hair = 1
+	else
+		copy.hair = index
+	end
+	return copy
+end
+
+-- a colour wheel: hue round it, saturation out from the middle, brightness on the bar
+-- beside it, and the colour as a swatch with its hex to type into. Built from bars turned
+-- about the middle (each bar covers a direction and the opposite one). Returns
+-- { Frame, Bind(rgb, onChange) }: Bind points it at a colour and a function to call with
+-- the new {r, g, b} when the player changes it.
+local function buildPicker(connections)
+	local frame = make("Frame", { Size = UDim2.new(1, 0, 0, WHEEL_SIZE + 16), BackgroundTransparency = 1 })
+	local wheel = make("Frame", { Parent = frame, Position = UDim2.fromOffset(8, 8), Size = UDim2.fromOffset(WHEEL_SIZE, WHEEL_SIZE), BackgroundTransparency = 1 })
+	local barWidth = math.ceil(math.pi * WHEEL_SIZE / WHEEL_SEGMENTS) + 1
+	for index = 0, WHEEL_SEGMENTS - 1 do
+		local rotation = index * 180 / WHEEL_SEGMENTS
+		local hue = rotation / 360
+		local bar = make("Frame", {
+			Parent = wheel,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromOffset(WHEEL_SIZE, barWidth),
+			Rotation = rotation,
+			BackgroundColor3 = Color3.new(1, 1, 1),
+			BorderSizePixel = 0,
+		})
+		make("UIGradient", {
+			Parent = bar,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromHSV((hue + 0.5) % 1, 1, 1)),
+				ColorSequenceKeypoint.new(0.5, Color3.new(1, 1, 1)),
+				ColorSequenceKeypoint.new(1, Color3.fromHSV(hue, 1, 1)),
+			}),
+		})
+	end
+	local marker = make("Frame", { Parent = wheel, Size = UDim2.fromOffset(14, 14), BorderSizePixel = 0, ZIndex = 3 })
+	make("UIStroke", { Parent = marker, Color = Color3.new(1, 1, 1), Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local wheelHit = make("TextButton", { Parent = wheel, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5 })
+
+	local slider = make("Frame", { Parent = frame, Position = UDim2.fromOffset(WHEEL_SIZE + 28, 8), Size = UDim2.fromOffset(22, WHEEL_SIZE), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0 })
+	local sliderGradient = make("UIGradient", { Parent = slider, Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(0, 0, 0)) })
+	make("UIStroke", { Parent = slider, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local handle = make("Frame", { Parent = slider, AnchorPoint = Vector2.new(0, 0.5), Size = UDim2.new(1, 0, 0, 5), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 3 })
+	make("UIStroke", { Parent = handle, Color = Color3.new(0, 0, 0), Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local sliderHit = make("TextButton", { Parent = slider, Size = UDim2.new(1, 8, 1, 0), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5 })
+
+	local side = WHEEL_SIZE + 28 + 22 + 20
+	local swatch = make("Frame", { Parent = frame, Position = UDim2.fromOffset(side, 8), Size = UDim2.fromOffset(64, 64), BorderSizePixel = 0 })
+	make("UIStroke", { Parent = swatch, Color = Theme.Edge, Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	label(frame, { Text = "HEX", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(side, 82), Size = UDim2.fromOffset(100, 14) })
+	local hexBox = make("TextBox", {
+		Parent = frame,
+		Position = UDim2.fromOffset(side, 98),
+		Size = UDim2.fromOffset(110, 32),
+		BackgroundColor3 = Theme.Nav,
+		BorderSizePixel = 0,
+		Font = Theme.MonoFont,
+		TextSize = 16,
+		TextColor3 = Theme.NavText,
+		Text = "",
+		ClearTextOnFocus = false,
+		TextXAlignment = Enum.TextXAlignment.Left,
+	})
+	make("UIStroke", { Parent = hexBox, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	make("UIPadding", { Parent = hexBox, PaddingLeft = UDim.new(0, 8) })
+
+	local hue, saturation, value = 0, 0, 1
+	local onChange
+	local function render()
+		local color = Color3.fromHSV(hue, saturation, value)
+		local radius = WHEEL_SIZE / 2
+		local angle = hue * 2 * math.pi
+		marker.Position = UDim2.fromOffset(radius + saturation * radius * math.cos(angle) - 7, radius + saturation * radius * math.sin(angle) - 7)
+		marker.BackgroundColor3 = color
+		swatch.BackgroundColor3 = color
+		sliderGradient.Color = ColorSequence.new(Color3.fromHSV(hue, saturation, 1), Color3.new(0, 0, 0))
+		handle.Position = UDim2.fromScale(0, 1 - value)
+		if not hexBox:IsFocused() then
+			hexBox.Text = SlotConfig.FormatColor(rgbOf(color))
+		end
+	end
+	local function changed()
+		render()
+		if onChange then
+			onChange(rgbOf(Color3.fromHSV(hue, saturation, value)))
+		end
+	end
+	local function setFromRGB(rgb)
+		hue, saturation, value = colorOf(rgb):ToHSV()
+		render()
+	end
+
+	local dragging = nil -- "wheel" or "slider"
+	local function drag(kind, position)
+		if kind == "wheel" then
+			local center = wheel.AbsolutePosition + wheel.AbsoluteSize / 2
+			local delta = position - center
+			saturation = math.clamp(delta.Magnitude / (wheel.AbsoluteSize.X / 2), 0, 1)
+			hue = (math.atan2(delta.Y, delta.X) / (2 * math.pi)) % 1
+		else
+			value = 1 - math.clamp((position.Y - slider.AbsolutePosition.Y) / slider.AbsoluteSize.Y, 0, 1)
+		end
+		changed()
+	end
+	wheelHit.InputBegan:Connect(function(input)
+		if isPointer(input) then
+			dragging = "wheel"
+			drag("wheel", pointerAt(input))
+		end
+	end)
+	sliderHit.InputBegan:Connect(function(input)
+		if isPointer(input) then
+			dragging = "slider"
+			drag("slider", pointerAt(input))
+		end
+	end)
+	table.insert(connections, UserInputService.InputChanged:Connect(function(input)
+		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			drag(dragging, pointerAt(input))
+		end
+	end))
+	table.insert(connections, UserInputService.InputEnded:Connect(function(input)
+		if dragging and isPointer(input) then
+			dragging = nil
+		end
+	end))
+	hexBox.FocusLost:Connect(function()
+		local rgb = SlotConfig.ParseColor((hexBox.Text:gsub("[#%s]", "")):upper())
+		if rgb then
+			setFromRGB(rgb)
+			changed()
+		else
+			render()
+		end
+	end)
+
+	return {
+		Frame = frame,
+		Bind = function(rgb, callback)
+			onChange = nil
+			setFromRGB(rgb)
+			onChange = callback
+		end,
+	}
 end
 
 -- Opens the customizer for an empty slot. onDone(true) once the character is made and
@@ -367,162 +588,235 @@ function Customizer.Open(slot, onDone)
 		ZIndex = 3,
 	})
 	local angle = 0
-	local dragging = false
+	local turning = false
 	local lastX = 0
 	local turnAgainAt = 0
-	local function isPointer(input)
-		return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
-	end
 	hit.InputBegan:Connect(function(input)
 		if isPointer(input) then
-			dragging = true
+			turning = true
 			lastX = input.Position.X
 		end
 	end)
 	table.insert(connections, UserInputService.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		if turning and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
 			angle += (input.Position.X - lastX) * DRAG_SPEED
 			lastX = input.Position.X
 		end
 	end))
 	table.insert(connections, UserInputService.InputEnded:Connect(function(input)
-		if dragging and isPointer(input) then
-			dragging = false
+		if turning and isPointer(input) then
+			turning = false
 			turnAgainAt = os.clock() + TURN_RESUME
 		end
 	end))
+
+	-- the tiles, kept so they can be repainted when a colour (or the face a hair is shown with) changes
+	local tiles = {} -- { model, kind, index }
+	local previewDirty = false
+	local tilesDirty = false
+	local lastTilesAt = 0
+	local function markDirty()
+		previewDirty = true
+		tilesDirty = true
+	end
 	table.insert(connections, RunService.RenderStepped:Connect(function(dt)
-		if not model then
-			return
+		if model then
+			if previewDirty then
+				previewDirty = false
+				Customizer.Dress(model, look, parts)
+			end
+			if not turning and os.clock() >= turnAgainAt then
+				angle += dt * TURN_SPEED
+			end
+			model:PivotTo(CFrame.Angles(0, angle, 0))
 		end
-		if not dragging and os.clock() >= turnAgainAt then
-			angle += dt * TURN_SPEED
+		if tilesDirty and os.clock() - lastTilesAt >= TILE_REFRESH then
+			tilesDirty = false
+			lastTilesAt = os.clock()
+			for _, tile in ipairs(tiles) do
+				if tile.model then
+					Customizer.Dress(tile.model, tileLook(look, tile.kind, tile.index), parts)
+					local head = tile.model:FindFirstChild("Head")
+					if head then
+						head.CFrame = CFrame.new()
+					end
+				end
+			end
 		end
-		model:PivotTo(CFrame.Angles(0, angle, 0))
 	end))
 
-	local function repaint()
-		if model then
-			Customizer.Dress(model, look, parts)
-		end
+	-- the catalogue: a tab bar and one page at a time
+	local picker = buildPicker(connections)
+	local tabBar = make("Frame", { Parent = panel, LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1 })
+	local pages = make("Frame", { Parent = panel, LayoutOrder = 5, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+	local tabs = {} -- name -> { button, line, page, show }
+	local currentTab
+
+	local function newPage(name, tabIndex)
+		local page = make("Frame", { Parent = pages, Visible = false, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+		make("UIListLayout", { Parent = page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
+		local tabButton = make("TextButton", {
+			Parent = tabBar,
+			Position = UDim2.new((tabIndex - 1) * 0.25, 0, 0, 0),
+			Size = UDim2.new(0.25, -4, 1, 0),
+			BackgroundTransparency = 1,
+			Font = Theme.TitleFont,
+			TextSize = 20,
+			Text = name,
+			TextColor3 = Theme.Muted,
+			AutoButtonColor = false,
+		})
+		local line = make("Frame", { Parent = tabButton, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = accent, BackgroundTransparency = 1, BorderSizePixel = 0 })
+		tabs[name] = { button = tabButton, line = line, page = page }
+		return page
 	end
 
-	-- one row of choices for a part of the look; `swatches` are colours, the rest names
-	local choices = {} -- field -> { [index] = button }
-	local function refreshRow(field, animate)
-		for index, option in pairs(choices[field]) do
-			local selected = look[field] == index
-			local stroke = option:FindFirstChildOfClass("UIStroke")
+	-- the colour wheel sits in whichever page is showing; each page says which colour it edits
+	local pickerSlots = {} -- tab name -> a Frame to hold the wheel
+	local pickerField = {} -- tab name -> the look field the wheel edits there
+	local function bindPicker(tabName)
+		local field = pickerField[tabName]
+		if not field then
+			return
+		end
+		picker.Frame.Parent = pickerSlots[tabName]
+		picker.Bind(look[field], function(rgb)
+			look[field] = rgb
+			markDirty()
+		end)
+	end
+	local function showTab(name)
+		currentTab = name
+		for tabName, tab in pairs(tabs) do
+			local active = tabName == name
+			tab.page.Visible = active
+			tab.button.TextColor3 = active and Theme.NavText or Theme.Muted
+			tween(tab.line, 0.2, { BackgroundTransparency = active and 0 or 1 })
+		end
+		bindPicker(name)
+	end
+
+	-- a page's slot for the wheel
+	local function addPickerSlot(page, tabName, field, order)
+		local slotFrame = make("Frame", { Parent = page, LayoutOrder = order, Size = UDim2.new(1, 0, 0, WHEEL_SIZE + 16), BackgroundTransparency = 1 })
+		pickerSlots[tabName] = slotFrame
+		pickerField[tabName] = field
+	end
+
+	-- a grid of square tiles, each a head showing one hair or face; pressing one replaces
+	-- the current choice
+	local function addTiles(page, kind, names, has, order)
+		local grid = make("Frame", { Parent = page, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+		make("UIGridLayout", { Parent = grid, CellSize = UDim2.fromOffset(TILE_SIZE, TILE_SIZE), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder })
+		local chosen = {} -- index -> its tile frame
+		local function refresh(animate)
+			for index, tile in pairs(chosen) do
+				local selected = look[kind] == index
+				local stroke = tile:FindFirstChildOfClass("UIStroke")
+				stroke.Color = selected and Color3.new(1, 1, 1) or Theme.Edge
+				stroke.Transparency = selected and 0 or 0.6
+				stroke.Thickness = selected and 3 or 1
+				if selected and animate then
+					local pop = tile:FindFirstChild("Pop")
+					pop.Scale = 1.15
+					tween(pop, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
+				end
+			end
+		end
+		for index = 1, #names do
+			if has(parts, index) then
+				local tile = make("Frame", { Parent = grid, LayoutOrder = index, BackgroundColor3 = Theme.Nav, BackgroundTransparency = 0.2, BorderSizePixel = 0 })
+				make("UIStroke", { Parent = tile, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+				make("UIScale", { Name = "Pop", Parent = tile })
+				local built = buildHeadTile(tile, kind)
+				table.insert(tiles, { model = built.model, kind = kind, index = index })
+				label(tile, {
+					Text = string.upper(names[index]),
+					Font = Theme.MonoFont,
+					TextSize = 11,
+					BackgroundTransparency = 0.35,
+					BackgroundColor3 = Color3.new(0, 0, 0),
+					AnchorPoint = Vector2.new(0, 1),
+					Position = UDim2.fromScale(0, 1),
+					Size = UDim2.new(1, 0, 0, 16),
+					TextXAlignment = Enum.TextXAlignment.Center,
+					ZIndex = 3,
+				})
+				local pick = make("TextButton", { Parent = tile, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5 })
+				pick.Activated:Connect(function()
+					UiSfx.Play("menuSelect")
+					look[kind] = index
+					refresh(true)
+					markDirty()
+				end)
+				chosen[index] = tile
+			end
+		end
+		refresh(false)
+	end
+
+	-- BODY: the skin colour
+	local body = newPage("BODY", 1)
+	heading(body, 1, "SKIN COLOUR", 1)
+	addPickerSlot(body, "BODY", "skin", 3)
+
+	-- HAIR: the style, then its colour
+	local hair = newPage("HAIR", 2)
+	heading(hair, 1, "STYLE", 1)
+	addTiles(hair, "hair", SlotConfig.HairStyles, CharacterLook.HasHair, 3)
+	heading(hair, 2, "HAIR COLOUR", 4)
+	addPickerSlot(hair, "HAIR", "hairColor", 6)
+
+	-- FACE: the style
+	local face = newPage("FACE", 3)
+	heading(face, 1, "STYLE", 1)
+	addTiles(face, "face", SlotConfig.FaceStyles, CharacterLook.HasFace, 3)
+
+	-- OUTFIT: top or bottom, then its colour
+	local outfit = newPage("OUTFIT", 4)
+	heading(outfit, 1, "PIECE", 1)
+	local chips = make("Frame", { Parent = outfit, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1 })
+	local chipFor = {}
+	local function selectPiece(field)
+		pickerField.OUTFIT = field
+		for chipField, chip in pairs(chipFor) do
+			local selected = chipField == field
+			local stroke = chip:FindFirstChildOfClass("UIStroke")
 			stroke.Color = selected and Color3.new(1, 1, 1) or Theme.Edge
 			stroke.Transparency = selected and 0 or 0.6
 			stroke.Thickness = selected and 2 or 1
-			if selected and animate then
-				local pop = option:FindFirstChild("Pop")
-				pop.Scale = 1.3
-				tween(pop, 0.35, { Scale = 1 }, Enum.EasingStyle.Back)
-			end
+		end
+		if currentTab == "OUTFIT" then
+			bindPicker("OUTFIT")
 		end
 	end
-	local order = 3
-	local number = 0
-	local function addRow(field, title, count, build)
-		order += 1
-		number += 1
-		local frame = make("Frame", {
-			Parent = panel,
-			LayoutOrder = order,
-			Size = UDim2.new(1, 0, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-		})
-		make("UIListLayout", { Parent = frame, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
-		heading(frame, number, title, 1)
-		local options = make("Frame", {
-			Parent = frame,
-			LayoutOrder = 3,
-			Size = UDim2.new(1, 0, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
-		})
-		make("UIListLayout", {
-			Parent = options,
-			FillDirection = Enum.FillDirection.Horizontal,
-			Wraps = true,
-			SortOrder = Enum.SortOrder.LayoutOrder,
-			Padding = UDim.new(0, 6),
-		})
-		choices[field] = {}
-		for index = 1, count do
-			local option = build(options, index)
-			if option then
-				option.LayoutOrder = index
-				make("UIScale", { Name = "Pop", Parent = option })
-				choices[field][index] = option
-				option.Activated:Connect(function()
-					UiSfx.Play("menuSelect")
-					look[field] = index
-					refreshRow(field, true)
-					repaint()
-				end)
-			end
-		end
-		refreshRow(field, false)
+	for position, piece in ipairs({ { "top", "TOP" }, { "bottom", "BOTTOM" } }) do
+		local chip = button(chips, { Text = piece[2], TextSize = 16, Position = UDim2.new((position - 1) * 0.5, position == 2 and 4 or 0, 0, 0), Size = UDim2.new(0.5, -4, 1, 0) }, function()
+			selectPiece(piece[1])
+		end)
+		chipFor[piece[1]] = chip
 	end
+	heading(outfit, 2, "COLOUR", 4)
+	addPickerSlot(outfit, "OUTFIT", "top", 6)
+	selectPiece("top")
 
-	local function swatches(palette)
-		return function(parent, index)
-			local swatch = make("TextButton", {
-				Parent = parent,
-				Size = UDim2.fromOffset(OPTION_SIZE, OPTION_SIZE),
-				BackgroundColor3 = colorOf(palette[index]),
-				BorderSizePixel = 0,
-				Text = "",
-				AutoButtonColor = false,
-			})
-			make("UIStroke", { Parent = swatch, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-			return swatch
-		end
+	for name, tab in pairs(tabs) do
+		tab.button.Activated:Connect(function()
+			UiSfx.Play("menuSelect")
+			showTab(name)
+		end)
 	end
-	local function styles(names, has)
-		return function(parent, index)
-			if not has(parts, index) then
-				return nil
-			end
-			local option = make("TextButton", {
-				Parent = parent,
-				Size = UDim2.fromOffset(0, OPTION_SIZE),
-				AutomaticSize = Enum.AutomaticSize.X,
-				BackgroundColor3 = Theme.Nav,
-				BorderSizePixel = 0,
-				Font = Theme.LabelFont,
-				TextSize = 15,
-				TextColor3 = Theme.NavText,
-				Text = " " .. string.upper(names[index]) .. " ",
-				AutoButtonColor = false,
-			})
-			make("UIStroke", { Parent = option, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-			return option
-		end
-	end
-
-	addRow("skin", "SKIN", #SlotConfig.SkinTones, swatches(SlotConfig.SkinTones))
-	addRow("hair", "HAIR", #SlotConfig.HairStyles, styles(SlotConfig.HairStyles, CharacterLook.HasHair))
-	addRow("hairColor", "HAIR COLOUR", #SlotConfig.HairColors, swatches(SlotConfig.HairColors))
-	addRow("face", "FACE", #SlotConfig.FaceStyles, styles(SlotConfig.FaceStyles, CharacterLook.HasFace))
-	addRow("top", "TOP", #SlotConfig.OutfitColors, swatches(SlotConfig.OutfitColors))
-	addRow("bottom", "BOTTOM", #SlotConfig.OutfitColors, swatches(SlotConfig.OutfitColors))
+	showTab("BODY")
 
 	-- the answer from the server, or what is wrong with the codename
-	order += 1
 	local status = label(panel, {
-		LayoutOrder = order,
+		LayoutOrder = 6,
 		Size = UDim2.new(1, 0, 0, 18),
 		Text = "",
 		TextSize = 14,
 		TextColor3 = ERROR_COLOR,
 	})
-	order += 1
-	local buttons = make("Frame", { Parent = panel, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1 })
+	local buttons = make("Frame", { Parent = panel, LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1 })
 	local create
 	create = button(buttons, { Text = "CREATE", Filled = true, Size = UDim2.new(0.5, -4, 1, 0) }, function()
 		if busy then
@@ -568,7 +862,7 @@ function Customizer.Open(slot, onDone)
 		hint.Text = name and "" or reason
 	end)
 
-	repaint()
+	markDirty()
 end
 
 return Customizer

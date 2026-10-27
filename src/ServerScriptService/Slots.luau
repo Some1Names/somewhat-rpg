@@ -164,6 +164,11 @@ local function applyLook(player, character)
 	-- the avatar can still be arriving on a slow server: for this life, its hats and clothes
 	-- are removed as they appear (the hair CharacterLook adds is marked SlotLook), and the
 	-- look is painted again once the avatar says it has finished
+	-- LookRev counts the paints, so the client's models of the character (the profile's) redraw
+	local function paint()
+		CharacterLook.Apply(character, look, parts)
+		character:SetAttribute("LookRev", (character:GetAttribute("LookRev") or 0) + 1)
+	end
 	local added = character.ChildAdded:Connect(function(child)
 		local avatarItem = child:IsA("Accoutrement") or child:IsA("Clothing") or child:IsA("ShirtGraphic") or child:IsA("CharacterMesh")
 		if avatarItem and not child:GetAttribute("SlotLook") then
@@ -172,7 +177,7 @@ local function applyLook(player, character)
 	end)
 	local loaded = player.CharacterAppearanceLoaded:Connect(function(loadedCharacter)
 		if loadedCharacter == character then
-			CharacterLook.Apply(character, look, parts)
+			paint()
 		end
 	end)
 	character.Destroying:Once(function()
@@ -187,7 +192,7 @@ local function applyLook(player, character)
 		if player.Character ~= character or not character.Parent then
 			return
 		end
-		CharacterLook.Apply(character, look, parts)
+		paint()
 		if pass == 1 then
 			task.wait(1)
 		end

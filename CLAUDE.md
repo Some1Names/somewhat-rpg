@@ -80,7 +80,10 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   player's own (`<UserId>_account`, read on join). `SlotConfig` (names, look palettes/text, keys; pure, Lune-tested),
   `Slots` (server: meta, create/select/delete, holds the player anchored and shielded until they pick) +
   `SlotServer` (the `SlotAction` remote), `CharacterLook` (paints the R6 rig; hair/face parts in
-  `ReplicatedStorage.CharacterParts`, the owner's), client `SlotMenu` (the 3 cards PLAY opens) and `Customizer`.
+  `ReplicatedStorage.CharacterParts`, the owner's), client `SlotMenu` (the 3 cards PLAY opens) and `Customizer`
+  (tabs, square hair/face tiles, one colour wheel; a look's colours are free RGB, saved as hex). The hub
+  Profile names the character by its codename (`CharName`) with the real `@username` under it; `Slots` bumps the
+  character's `LookRev` after each paint so `HubPose` redraws its model.
 - **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
   attribute; enemies carry an `EnemyType`), and per-set mastery challenges saved in the `Challenges`
   text. Every `Damage.Deal` options table carries `skill = "<key>"|"ranged"|"dash"|"melee"` so

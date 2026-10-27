@@ -57,8 +57,13 @@ is in Studio's Game Settings, not in a script.
 
 - [ ] Join with an existing save (a live server, not Studio): PLAY shows slot 1 with your name,
   level and power, and Continue gives your old progress intact. Slots 2 and 3 are empty.
-- [ ] Make a character in slot 2 (name + look): the preview changes as you pick; CREATE lets you in
-  as a level 0 character wearing the look, not your Roblox avatar (no hats, no shirt).
+- [ ] Make a character in slot 2: the customizer has four tabs (BODY, HAIR, FACE, OUTFIT). HAIR and
+  FACE show square head tiles, and pressing one replaces the current hair or face. Skin, hair, top
+  and bottom colours come from one colour wheel (drag the wheel, the bar for brightness, or type a
+  hex). The big preview follows each change; CREATE lets you in as a level 0 character wearing the
+  look, not your Roblox avatar (no hats, no shirt).
+- [ ] The hub's Profile shows the codename big, with `@<your real username>` under it, and its
+  3D model wears the look (it redraws after the server paints it).
 - [ ] Gain XP or yen in slot 2, rejoin: slot 1 is untouched, slot 2 kept its progress, the cards
   show the new level.
 - [ ] Die and respawn: the look is re-applied each time, even if your avatar's hat loads late.

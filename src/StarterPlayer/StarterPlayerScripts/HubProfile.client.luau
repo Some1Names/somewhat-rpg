@@ -148,17 +148,27 @@ for i = 1, #TalismanConfig.SlotLevels do
 	talismanLines[i] = { bar = bar, text = text, note = note }
 end
 
+-- the character's codename (Slots), or the Roblox display name until a slot is chosen; the
+-- real username goes under it as @name
+local function codename()
+	local chosen = player:GetAttribute("CharName")
+	return string.upper(typeof(chosen) == "string" and chosen ~= "" and chosen or player.DisplayName)
+end
+
 -- at the top: the player's name with the level at the far right, the XP
 -- toward the next level as a bar, then yen; all plain on the paper
 local nameRow = make("Frame", { Parent = column, LayoutOrder = -5, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-label(nameRow, {
-	Text = string.upper(player.DisplayName),
+local nameLabel = label(nameRow, {
+	Text = codename(),
 	Font = Theme.TitleFont,
 	TextSize = 30,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
 	Size = UDim2.new(1, -110, 1, 0),
 	TextTruncate = Enum.TextTruncate.AtEnd,
 })
+player:GetAttributeChangedSignal("CharName"):Connect(function()
+	nameLabel.Text = codename()
+end)
 label(nameRow, {
 	Text = "LEVEL",
 	TextSize = 10,

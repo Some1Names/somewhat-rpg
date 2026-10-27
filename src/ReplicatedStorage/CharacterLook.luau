@@ -6,8 +6,6 @@
 -- unless it is a textured MeshPart, which keeps its own colours.
 local CharacterLook = {}
 
-local SlotConfig = require(script.Parent:WaitForChild("SlotConfig"))
-
 local DEFAULT_FACE = "rbxasset://textures/face.png" -- Roblox's smile
 
 local function colorOf(rgb)
@@ -35,9 +33,9 @@ function CharacterLook.Apply(character, look, parts)
 		end
 	end
 
-	local skin = colorOf(SlotConfig.SkinTones[look.skin])
-	local top = colorOf(SlotConfig.OutfitColors[look.top])
-	local bottom = colorOf(SlotConfig.OutfitColors[look.bottom])
+	local skin = colorOf(look.skin)
+	local top = colorOf(look.top)
+	local bottom = colorOf(look.bottom)
 	local function paint(name, color)
 		local part = character:FindFirstChild(name)
 		if part and part:IsA("BasePart") then
@@ -67,7 +65,7 @@ function CharacterLook.Apply(character, look, parts)
 			hair:SetAttribute("SlotLook", true) -- Slots removes avatar items that arrive late, but not this
 			local handle = hair:FindFirstChild("Handle")
 			if handle and handle:IsA("BasePart") then
-				local tint = colorOf(SlotConfig.HairColors[look.hairColor])
+				local tint = colorOf(look.hairColor)
 				local mesh = handle:FindFirstChildOfClass("SpecialMesh")
 				if mesh then
 					mesh.VertexColor = Vector3.new(tint.R, tint.G, tint.B)

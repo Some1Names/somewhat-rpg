@@ -67,33 +67,58 @@ function SlotConfig.CleanName(text)
 	return name
 end
 
--- a look is an index into each palette
+-- colours are any RGB (the customizer's colour wheel picks them), {r, g, b} 0-255, saved as
+-- six hex digits ("FFE0BD"); they start from the first colour of their palette above
+function SlotConfig.FormatColor(rgb)
+	local function channel(value)
+		return math.clamp(math.floor(value + 0.5), 0, 255)
+	end
+	return string.format("%02X%02X%02X", channel(rgb[1]), channel(rgb[2]), channel(rgb[3]))
+end
+
+-- the colour of six hex digits, or nil
+function SlotConfig.ParseColor(text)
+	if type(text) ~= "string" or not text:match("^%x%x%x%x%x%x$") then
+		return nil
+	end
+	return { tonumber(text:sub(1, 2), 16), tonumber(text:sub(3, 4), 16), tonumber(text:sub(5, 6), 16) }
+end
+
+local function copyColor(rgb)
+	return { rgb[1], rgb[2], rgb[3] }
+end
+
+-- a look: skin, hairColor, top and bottom are colours; hair and face are a style number
+-- (an index into HairStyles / FaceStyles)
 local LOOK_FIELDS = {
-	{ "skin", SlotConfig.SkinTones },
-	{ "hair", SlotConfig.HairStyles },
-	{ "hairColor", SlotConfig.HairColors },
-	{ "face", SlotConfig.FaceStyles },
-	{ "top", SlotConfig.OutfitColors },
-	{ "bottom", SlotConfig.OutfitColors },
+	{ "skin", "color", SlotConfig.SkinTones },
+	{ "hair", "style", SlotConfig.HairStyles },
+	{ "hairColor", "color", SlotConfig.HairColors },
+	{ "face", "style", SlotConfig.FaceStyles },
+	{ "top", "color", SlotConfig.OutfitColors },
+	{ "bottom", "color", SlotConfig.OutfitColors },
 }
 
 function SlotConfig.DefaultLook()
 	local look = {}
 	for _, field in ipairs(LOOK_FIELDS) do
-		look[field[1]] = 1
+		look[field[1]] = field[2] == "color" and copyColor(field[3][1]) or 1
 	end
 	return look
 end
 
+-- "skin;hair;hairColor;face;top;bottom", e.g. "FFE0BD;1;1E1919;1;282828;282828"
 function SlotConfig.FormatLook(look)
 	local parts = {}
 	for _, field in ipairs(LOOK_FIELDS) do
-		table.insert(parts, tostring(look[field[1]]))
+		local value = look[field[1]]
+		table.insert(parts, field[2] == "color" and SlotConfig.FormatColor(value) or tostring(value))
 	end
 	return table.concat(parts, ";")
 end
 
--- any field that is missing or isn't a whole number inside its palette falls back to 1
+-- any field that is missing or isn't valid falls back to its default. A colour may also be
+-- a whole number into its palette (looks saved before the colour wheel).
 function SlotConfig.ParseLook(text)
 	local look = SlotConfig.DefaultLook()
 	if type(text) ~= "string" then
@@ -106,9 +131,19 @@ function SlotConfig.ParseLook(text)
 		if not field then
 			break
 		end
-		local value = tonumber(piece)
-		if isInteger(value, 1, #field[2]) then
-			look[field[1]] = value
+		if field[2] == "color" then
+			local color = SlotConfig.ParseColor(piece)
+			local number = tonumber(piece)
+			if color then
+				look[field[1]] = color
+			elseif isInteger(number, 1, #field[3]) then
+				look[field[1]] = copyColor(field[3][number])
+			end
+		else
+			local number = tonumber(piece)
+			if isInteger(number, 1, #field[3]) then
+				look[field[1]] = number
+			end
 		end
 	end
 	return look
