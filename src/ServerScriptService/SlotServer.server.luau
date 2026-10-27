@@ -1,5 +1,6 @@
 -- The slot screen's remote: SlotAction (a RemoteFunction) takes ("List"), ("Create", slot,
--- name, look), ("Select", slot) and ("Delete", slot, typedName) and answers
+-- name, look), ("Select", slot), ("Recustomize", slot, look) and ("Delete", slot, typedName)
+-- and answers
 -- { ok, reason?, slots? }. slots is a list of SlotCount entries, false for an empty slot
 -- (a table with gaps wouldn't survive the trip). All the rules are in Slots.
 local Players = game:GetService("Players")
@@ -50,6 +51,15 @@ local function onInvoke(player, action, first, second, third)
 		end
 		local ok, reason = Slots.Select(player, first)
 		return { ok = ok, reason = reason }
+	elseif action == "Recustomize" then
+		if typeof(first) ~= "number" or typeof(second) ~= "string" then
+			return { ok = false, reason = "Invalid request" }
+		end
+		local ok, reason = Slots.Recustomize(player, first, second)
+		if not ok then
+			return { ok = false, reason = reason }
+		end
+		return listOf(player)
 	elseif action == "Delete" then
 		if typeof(first) ~= "number" or typeof(second) ~= "string" then
 			return { ok = false, reason = "Invalid request" }

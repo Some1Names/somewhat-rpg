@@ -14,7 +14,9 @@ end
 
 check("three slots", S.SlotCount == 3)
 check("slot keys", S.SlotKey(5, 2) == "5_2" and S.MetaKey(5) == "5_meta")
-check("palette sizes", #S.SkinTones == 8 and #S.OutfitColors == 12 and #S.HairColors == 10 and #S.HairStyles == 5 and #S.FaceStyles == 4)
+check("palette sizes", #S.SkinTones == 8 and #S.OutfitColors == 12 and #S.HairColors == 10)
+check("style list sizes", #S.HairStyles == 9 and #S.FaceStyles == 10 and #S.AccessoryStyles == 7 and #S.TeeStyles == 3 and #S.ShirtStyles == 1 and #S.PantsStyles == 1)
+check("every style list starts with its none/default", S.HairStyles[1] == "None" and S.FaceStyles[1] == "Default" and S.AccessoryStyles[1] == "None" and S.TeeStyles[1] == "None")
 
 check("valid slots", S.ValidSlot(1) and S.ValidSlot(2) and S.ValidSlot(3))
 check("invalid slots", not S.ValidSlot(0) and not S.ValidSlot(4) and not S.ValidSlot(1.5) and not S.ValidSlot("1") and not S.ValidSlot(nil))
@@ -44,10 +46,16 @@ end
 check("refuses a colour that isn't text", S.ParseColor(nil) == nil and S.ParseColor(123456) == nil)
 
 local look = { skin = { 255, 224, 189 }, hair = 3, hairColor = { 30, 25, 25 }, face = 1, top = { 40, 40, 40 }, bottom = { 171, 205, 239 } }
-check("format look", S.FormatLook(look) == "FFE0BD;3;1E1919;1;282828;ABCDEF")
+-- a look with no shirt, tee, pants or accessory fields formats them as 1 (none)
+check("format look", S.FormatLook(look) == "FFE0BD;3;1E1919;1;282828;ABCDEF;1;1;1;1")
 local back = S.ParseLook("FFE0BD;3;1E1919;1;282828;ABCDEF")
 check("look round trip", same(back.skin, look.skin) and back.hair == 3 and same(back.hairColor, look.hairColor) and back.face == 1 and same(back.top, look.top) and same(back.bottom, look.bottom))
-check("a look formats the same after a round trip", S.FormatLook(S.ParseLook("FFE0BD;3;1E1919;1;282828;ABCDEF")) == "FFE0BD;3;1E1919;1;282828;ABCDEF")
+check("a six-field look (made before clothes and accessories) gets none of them", back.shirt == 1 and back.tee == 1 and back.pants == 1 and back.accessory == 1)
+check("a look formats the same after a round trip", S.FormatLook(S.ParseLook("FFE0BD;3;1E1919;1;282828;ABCDEF;1;2;1;4")) == "FFE0BD;3;1E1919;1;282828;ABCDEF;1;2;1;4")
+local full = S.ParseLook("FFE0BD;3;1E1919;2;282828;ABCDEF;1;2;1;4")
+check("tee and accessory parse", full.tee == 2 and full.accessory == 4 and full.shirt == 1 and full.pants == 1 and full.face == 2)
+local tooFar = S.ParseLook("FFE0BD;3;1E1919;2;282828;ABCDEF;5;9;5;99")
+check("shirt, tee, pants and accessory out of range fall back to none", tooFar.shirt == 1 and tooFar.tee == 1 and tooFar.pants == 1 and tooFar.accessory == 1 and tooFar.hair == 3)
 
 local default = S.DefaultLook()
 check("default look is each list's first", same(default.skin, S.SkinTones[1]) and default.hair == 1 and same(default.hairColor, S.HairColors[1]) and default.face == 1 and same(default.top, S.OutfitColors[1]) and same(default.bottom, S.OutfitColors[1]))
@@ -62,7 +70,7 @@ local legacy = S.ParseLook("99;2;3;2;4;5")
 check("an older look's numbers still mean palette colours", same(legacy.skin, S.SkinTones[1]) and legacy.hair == 2 and same(legacy.hairColor, S.HairColors[3]) and legacy.face == 2 and same(legacy.top, S.OutfitColors[4]) and same(legacy.bottom, S.OutfitColors[5]))
 local odd = S.ParseLook("-1;1.5;3;2;4;5")
 check("negative and fractional fall back", same(odd.skin, S.SkinTones[1]) and odd.hair == 1 and same(odd.hairColor, S.HairColors[3]) and odd.face == 2)
-local badStyle = S.ParseLook("FFFFFF;9;000000;9;FFFFFF;FFFFFF")
+local badStyle = S.ParseLook("FFFFFF;99;000000;99;FFFFFF;FFFFFF")
 check("a style out of range falls back and the colours stay", badStyle.hair == 1 and badStyle.face == 1 and same(badStyle.skin, { 255, 255, 255 }) and same(badStyle.hairColor, { 0, 0, 0 }))
 
 local entry = { name = "Aido", level = 12, power = "Mandela", look = "1;1;1;1;1;1", playedAt = 100 }

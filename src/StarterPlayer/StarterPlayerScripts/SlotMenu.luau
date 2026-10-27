@@ -1,13 +1,14 @@
--- The slot screen PLAY opens (TitleMenu): three big character cards over the title shot. A
--- used slot shows its character from the head to about the waist across the top (dressed in
--- the look it wears, fading out below), its codename, level, yen, power and when it was last
--- played; pressing the card continues, and a small DELETE in its corner asks for the codename
--- first. An empty slot opens the Customizer. A card takes its colour from the power its
--- character holds. The cards slide up one after another, and the one under the mouse lifts,
--- with an accent line sweeping across its top and corner brackets lighting up. BACK is plain
--- text at the bottom left. Everything goes through the SlotAction remote (see
--- Customizer.Call), and the server decides; this only shows the answer. Square everything;
--- the accent is the hub's.
+-- The slot screen PLAY opens (TitleMenu): three character cards over the title shot. A used
+-- slot shows its character from the head to about the waist across the top (dressed in the
+-- look it wears, fading out below), its codename, level, yen, power and when it was last
+-- played; pressing the card continues, and a three-dot menu in its corner offers RECUSTOMIZE
+-- (the customizer, on this character), RANDOMIZE (the customizer, starting from a random look)
+-- and DELETE (which asks for the codename first). An empty slot opens the Customizer. A card
+-- takes its colour from the power its character holds. The cards slide up one after another,
+-- and the one under the mouse lifts, with an accent line sweeping across its top and corner
+-- brackets lighting up. BACK is plain text at the bottom left. Everything goes through the
+-- SlotAction remote (see Customizer.Call), and the server decides; this only shows the answer.
+-- Square everything; the accent is the hub's.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -24,17 +25,23 @@ local player = Players.LocalPlayer
 local Theme = HudConfig.HubTheme
 local make, label, button, tween = Customizer.Make, Customizer.Label, Customizer.Button, Customizer.Tween
 
-local CARD_WIDTH = 340
-local CARD_HEIGHT = 540
+local CARD_WIDTH = 316
+local CARD_HEIGHT = 500
 local CARD_GAP = 18
 local HEADER = 76 -- the chip, the title and the rule above the cards
-local PREVIEW_HEIGHT = 400 -- the character's top half across the top of a used card, fading out below
+local CARDS_TOP = HEADER + 22 -- the cards start this far down: a gap under the header
+local PREVIEW_HEIGHT = 350 -- the character's top half across the top of a used card, fading out below
 local LIFT = 8 -- px the card under the mouse rises
 local ENTRANCE_RISE = 40 -- px a card slides up from
 local ENTRANCE_STAGGER = 0.09 -- s between one card's entrance and the next
 local STAGE_WIDTH = 3 * CARD_WIDTH + 2 * CARD_GAP
-local STAGE_HEIGHT = HEADER + CARD_HEIGHT + 14 + 20 -- header, cards, status line
+local STAGE_HEIGHT = CARDS_TOP + CARD_HEIGHT + 14 + 20 -- header, gap, cards, status line
 local ERROR_COLOR = Color3.fromRGB(235, 90, 90)
+
+-- where a used card's text sits (the content is padded 20px, so these are card y minus 20)
+local NAME_Y = PREVIEW_HEIGHT - 48
+local STAT_Y = NAME_Y + 52
+local CHIP_Y = NAME_Y + 110
 
 local SlotMenu = {}
 
@@ -139,7 +146,7 @@ function SlotMenu.Open(onEntered, onBack)
 
 	local cards = make("Frame", {
 		Parent = stage,
-		Position = UDim2.fromOffset(0, HEADER),
+		Position = UDim2.fromOffset(0, CARDS_TOP),
 		Size = UDim2.fromOffset(STAGE_WIDTH, CARD_HEIGHT),
 		BackgroundTransparency = 1,
 	})
@@ -151,7 +158,7 @@ function SlotMenu.Open(onEntered, onBack)
 	})
 
 	local status = label(stage, {
-		Position = UDim2.fromOffset(0, HEADER + CARD_HEIGHT + 14),
+		Position = UDim2.fromOffset(0, CARDS_TOP + CARD_HEIGHT + 14),
 		Size = UDim2.fromOffset(STAGE_WIDTH, 20),
 		Text = "",
 		TextSize = 15,
@@ -213,8 +220,30 @@ function SlotMenu.Open(onEntered, onBack)
 			end
 		end
 	end)
+
+	-- the open three-dot menu, if any: a click outside it closes it
+	local openMenu -- the menu Frame
+	local menuClosedAt = 0
+	local function closeMenu()
+		if openMenu then
+			openMenu:Destroy()
+			openMenu = nil
+			menuClosedAt = os.clock()
+		end
+	end
+	local clickAway = UserInputService.InputBegan:Connect(function(input)
+		if openMenu and input.UserInputType == Enum.UserInputType.MouseButton1 then
+			local mouse = UserInputService:GetMouseLocation()
+			local position, size = openMenu.AbsolutePosition, openMenu.AbsoluteSize
+			if mouse.X < position.X or mouse.X > position.X + size.X or mouse.Y < position.Y or mouse.Y > position.Y + size.Y then
+				closeMenu()
+			end
+		end
+	end)
+
 	gui.Destroying:Once(function()
 		hoverWatch:Disconnect()
+		clickAway:Disconnect()
 		if viewportWatch then
 			viewportWatch:Disconnect()
 		end
@@ -223,6 +252,7 @@ function SlotMenu.Open(onEntered, onBack)
 	local render -- (slots), below
 
 	local function clearCards()
+		closeMenu()
 		entries = {}
 		for _, child in ipairs(cards:GetChildren()) do
 			if child:IsA("GuiObject") then
@@ -323,6 +353,70 @@ function SlotMenu.Open(onEntered, onBack)
 		end)
 	end
 
+	-- the customizer on an existing character; the list is read again when it saves
+	local function customize(slot, entry, random)
+		gui.Enabled = false
+		Customizer.Open(slot, function(saved)
+			gui.Enabled = true
+			if saved then
+				refresh()
+			end
+		end, { name = entry.name, lookText = entry.look, random = random })
+	end
+
+	-- the three-dot menu under a card's corner button
+	local function showMenu(cardEntry, slot, entry)
+		closeMenu()
+		local menu = make("Frame", {
+			Parent = cardEntry.card,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -14, 0, 50),
+			Size = UDim2.fromOffset(200, 116),
+			BackgroundColor3 = Theme.Nav,
+			BorderSizePixel = 0,
+			ZIndex = 8,
+		})
+		make("UIStroke", { Parent = menu, Color = cardEntry.accent, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+		make("UIPadding", { Parent = menu, PaddingTop = UDim.new(0, 4), PaddingBottom = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), PaddingRight = UDim.new(0, 4) })
+		make("UIListLayout", { Parent = menu, SortOrder = Enum.SortOrder.LayoutOrder })
+		local options = {
+			{ "RECUSTOMIZE", function() customize(slot, entry, false) end },
+			{ "RANDOMIZE", function() customize(slot, entry, true) end },
+			{ "DELETE", function() askDelete(slot, entry) end, true },
+		}
+		for order, option in ipairs(options) do
+			local row = make("TextButton", {
+				Parent = menu,
+				LayoutOrder = order,
+				Size = UDim2.new(1, 0, 0, 34),
+				BackgroundColor3 = Color3.new(1, 1, 1),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				Font = Theme.TitleFont,
+				TextSize = 16,
+				Text = "  " .. option[1],
+				TextColor3 = option[3] and ERROR_COLOR or Theme.NavText,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				AutoButtonColor = false,
+				ZIndex = 9,
+			})
+			row.MouseEnter:Connect(function()
+				tween(row, 0.1, { BackgroundTransparency = 0.88 })
+			end)
+			row.MouseLeave:Connect(function()
+				tween(row, 0.1, { BackgroundTransparency = 1 })
+			end)
+			row.Activated:Connect(function()
+				if busy then
+					return
+				end
+				closeMenu()
+				option[2]()
+			end)
+		end
+		openMenu = menu
+	end
+
 	-- a card's frame: the slot (which the list lays out), the card in it (which moves), the
 	-- big faint number behind everything, a wash of colour behind the character, a line along
 	-- the top and corner brackets that light up on hover, all in `color` (the slot's power
@@ -341,13 +435,13 @@ function SlotMenu.Open(onEntered, onBack)
 		label(card, {
 			Text = string.format("%02d", order),
 			Font = Theme.TitleFont,
-			TextSize = 200,
+			TextSize = 180,
 			TextColor3 = color,
 			TextTransparency = 0.86,
 			TextXAlignment = Enum.TextXAlignment.Right,
 			AnchorPoint = Vector2.new(1, 1),
 			Position = UDim2.new(1, -10, 1, -4),
-			Size = UDim2.fromOffset(CARD_WIDTH, 200),
+			Size = UDim2.fromOffset(CARD_WIDTH, 180),
 		})
 		local wash = make("Frame", { Parent = card, Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT), BackgroundColor3 = color, BorderSizePixel = 0 })
 		make("UIGradient", {
@@ -401,8 +495,8 @@ function SlotMenu.Open(onEntered, onBack)
 
 	-- a small caption over a big value, side by side in a card's stats row
 	local function stat(content, x, width, caption, value, valueColor)
-		label(content, { Text = caption, Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(x, 404), Size = UDim2.fromOffset(width, 14) })
-		label(content, { Text = value, Font = Theme.TitleFont, TextSize = 26, TextColor3 = valueColor, Position = UDim2.fromOffset(x, 418), Size = UDim2.fromOffset(width, 32), TextTruncate = Enum.TextTruncate.AtEnd })
+		label(content, { Text = caption, Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(x, STAT_Y), Size = UDim2.fromOffset(width, 14) })
+		label(content, { Text = value, Font = Theme.TitleFont, TextSize = 26, TextColor3 = valueColor, Position = UDim2.fromOffset(x, STAT_Y + 14), Size = UDim2.fromOffset(width, 32), TextTruncate = Enum.TextTruncate.AtEnd })
 	end
 
 	function render(slots)
@@ -432,14 +526,14 @@ function SlotMenu.Open(onEntered, onBack)
 						}),
 					})
 				end
-				label(content, { Text = string.upper(entry.name), Font = Theme.TitleFont, TextSize = 36, Position = UDim2.fromOffset(0, 352), Size = UDim2.new(1, 0, 0, 42), TextTruncate = Enum.TextTruncate.AtEnd })
+				label(content, { Text = string.upper(entry.name), Font = Theme.TitleFont, TextSize = 34, Position = UDim2.fromOffset(0, NAME_Y), Size = UDim2.new(1, 0, 0, 40), TextTruncate = Enum.TextTruncate.AtEnd })
 				stat(content, 0, 90, "LEVEL", tostring(entry.level), color)
-				stat(content, 100, 200, "YEN", money(entry.yen or 0), Theme.NavText)
+				stat(content, 100, 190, "YEN", money(entry.yen or 0), Theme.NavText)
 				-- the held power as a tag in its colour, and when the character last played
 				local hasPower = entry.power ~= ""
 				local chip = make("Frame", {
 					Parent = content,
-					Position = UDim2.fromOffset(0, 462),
+					Position = UDim2.fromOffset(0, CHIP_Y),
 					Size = UDim2.fromOffset(0, 22),
 					AutomaticSize = Enum.AutomaticSize.X,
 					BackgroundColor3 = hasPower and color or Theme.Nav,
@@ -456,7 +550,7 @@ function SlotMenu.Open(onEntered, onBack)
 					Size = UDim2.fromOffset(0, 22),
 					AutomaticSize = Enum.AutomaticSize.X,
 				})
-				label(content, { Text = "PLAYED " .. string.upper(ago(entry.playedAt)), Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.fromOffset(0, 462), Size = UDim2.new(1, 0, 0, 22) })
+				label(content, { Text = "PLAYED " .. string.upper(ago(entry.playedAt)), Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.fromOffset(0, CHIP_Y), Size = UDim2.new(1, 0, 0, 22) })
 				cardEntry.hint = label(content, {
 					Text = "CLICK TO CONTINUE",
 					Font = Theme.MonoFont,
@@ -466,7 +560,7 @@ function SlotMenu.Open(onEntered, onBack)
 					Position = UDim2.fromScale(0, 1),
 					Size = UDim2.new(1, 0, 0, 14),
 				})
-				-- the whole card continues; DELETE, small in the corner, sits above it
+				-- the whole card continues; the three-dot menu, small in the corner, sits above it
 				local wholeCard = make("TextButton", { Parent = cardEntry.card, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 3 })
 				wholeCard.Activated:Connect(function()
 					if busy then
@@ -478,10 +572,33 @@ function SlotMenu.Open(onEntered, onBack)
 					busy = false
 					enterWith(result)
 				end)
-				button(cardEntry.card, { Text = "DELETE", TextSize = 11, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -18, 0, 18), Size = UDim2.fromOffset(58, 22), ZIndex = 4 }, function()
-					if not busy then
-						askDelete(slot, entry)
+				local dots = make("TextButton", {
+					Parent = cardEntry.card,
+					AnchorPoint = Vector2.new(1, 0),
+					Position = UDim2.new(1, -14, 0, 14),
+					Size = UDim2.fromOffset(30, 30),
+					BackgroundColor3 = Theme.Nav,
+					BackgroundTransparency = 0.3,
+					BorderSizePixel = 0,
+					Text = "",
+					AutoButtonColor = false,
+					ZIndex = 4,
+				})
+				local dotsStroke = make("UIStroke", { Parent = dots, Color = Theme.Edge, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+				for dot = 0, 2 do
+					make("Frame", { Parent = dots, Position = UDim2.fromOffset(13, 6 + dot * 7), Size = UDim2.fromOffset(4, 4), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, ZIndex = 5 })
+				end
+				dots.MouseEnter:Connect(function()
+					tween(dotsStroke, 0.15, { Color = color, Transparency = 0 })
+				end)
+				dots.MouseLeave:Connect(function()
+					tween(dotsStroke, 0.15, { Color = Theme.Edge, Transparency = 0.5 })
+				end)
+				dots.Activated:Connect(function()
+					if busy or os.clock() - menuClosedAt < 0.25 then
+						return -- (a click on the dots while the menu is open closes it: don't open it again)
 					end
+					showMenu(cardEntry, slot, entry)
 				end)
 			else
 				label(content, { Text = "EMPTY SLOT", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 16) })

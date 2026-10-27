@@ -1,15 +1,17 @@
--- The character customizer for an empty slot. A codename, then a catalogue split into tabs:
--- BODY (skin colour), HAIR (square tiles that show each hair on a head, and its colour),
--- FACE (square tiles showing each face) and OUTFIT (top and bottom colours). A tile is the
--- button: pressing one replaces the current hair or face. Colours come from one colour wheel
--- (hue and saturation round it, brightness on the bar beside it, or type a hex), so any
--- colour will do. The big preview on the right is the player's own character (a stripped,
--- anchored clone in a ViewportFrame, as HubPose does) wearing the look through CharacterLook;
--- it turns slowly on an accent ring and can be dragged. Styles with no part in
--- ReplicatedStorage.CharacterParts are hidden. CREATE asks the server (SlotAction "Create")
--- and, on success, lets the player in. Also holds the helpers SlotMenu shares (buttons,
--- tween, the dressed preview, the backdrop). Square everything (the wheel is the one round
--- thing); the accent is the hub's.
+-- The character customizer: for an empty slot (a new character) or an existing one
+-- (recustomize: its codename stays, its look changes). A codename, then a catalogue split into
+-- tabs: BODY (skin colour), HAIR (square tiles that show each hair on a head, and its colour),
+-- FACE (tiles showing each face), OUTFIT (top and bottom colours, and shirt, tee and pants
+-- tiles) and EXTRAS (accessories). A tile is the button: pressing one replaces the current
+-- choice. Colours come from one colour wheel (hue and saturation round it, brightness on the
+-- bar beside it, or type a hex); a piece that can't change colour (a shirt or pants picture)
+-- hides the wheel and says so. RANDOMIZE rolls a whole look. The big preview on the right is
+-- the player's own character (a stripped, anchored clone in a ViewportFrame, as HubPose does)
+-- wearing the look through CharacterLook, standing on a ring; it turns slowly and can be
+-- dragged. Styles with no part in ReplicatedStorage.CharacterParts are hidden. CREATE (or SAVE)
+-- asks the server (SlotAction "Create" / "Recustomize"). Also holds the helpers SlotMenu shares
+-- (buttons, tween, the dressed preview, the backdrop). Square everything (the wheel is the one
+-- round thing); the accent is the hub's.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,12 +36,23 @@ local WHEEL_SEGMENTS = 60 -- each bar of the wheel covers a direction and its op
 local FIELD_OF_VIEW = 30
 local CAMERA_YAW = 20 -- degrees round from straight in front
 local LOOK_HEIGHT = -0.25 -- studs above the root part the camera looks at (the middle of a figure, feet to head)
-local FEET = -3.05 -- the root part's height above the floor of the preview, negated
+local FEET = -3.05 -- the ring's height above the root part, negated
+local FLOOR = FEET + 0.075 -- the top of the ring: where the figure's feet stand
 local TURN_SPEED = 0.6 -- radians a second while nobody drags
 local DRAG_SPEED = 0.012 -- radians a pixel
 local TURN_RESUME = 2 -- seconds after a drag before it turns again
 local TILE_REFRESH = 0.12 -- s at the least between repainting the tiles while a colour is dragged
 local ERROR_COLOR = Color3.fromRGB(235, 90, 90)
+
+-- the tile kinds: the CharacterParts prefix, the look field and what a tile shows
+local KINDS = {
+	hair = { prefix = "Hair", field = "hair", styles = SlotConfig.HairStyles, head = true },
+	face = { prefix = "Face", field = "face", styles = SlotConfig.FaceStyles, head = true },
+	accessory = { prefix = "Acc", field = "accessory", styles = SlotConfig.AccessoryStyles, head = true },
+	shirt = { prefix = "Shirt", field = "shirt", styles = SlotConfig.ShirtStyles, image = "ShirtTemplate" },
+	tee = { prefix = "Tee", field = "tee", styles = SlotConfig.TeeStyles, image = "Graphic" },
+	pants = { prefix = "Pants", field = "pants", styles = SlotConfig.PantsStyles, image = "PantsTemplate" },
+}
 
 local Customizer = {}
 
@@ -272,10 +285,16 @@ function Customizer.Dress(model, look, parts)
 	end
 end
 
--- a square tile showing one hair or face on a head: a ViewportFrame with the player's own
--- head (so its attachments and shape are right) and a Humanoid, so CharacterLook can dress
--- it like a character. Returns { model } (model nil with no character). `kind` is "hair"
--- or "face".
+-- how far up a preview copy must go for its feet to stand on the ring (it sits where the
+-- character's root part is; the copy's pivot is not always where the feet are)
+local function standOnRing(model)
+	local center, size = model:GetBoundingBox()
+	return FLOOR - (center.Position.Y - size.Y / 2)
+end
+
+-- a square tile showing one hair, face or accessory on a head: a ViewportFrame with the
+-- player's own head (so its attachments and shape are right) and a Humanoid, so CharacterLook
+-- can dress it like a character. Returns { model } (model nil with no character).
 local function buildHeadTile(parent, kind)
 	local viewport = make("ViewportFrame", {
 		Parent = parent,
@@ -285,10 +304,12 @@ local function buildHeadTile(parent, kind)
 		LightColor = Color3.new(1, 1, 1),
 		LightDirection = Vector3.new(-1, -1, 1),
 	})
-	-- hair is seen from a little way off and to one side; a face straight on and close
+	-- hair and hats are seen from a little way off and to one side; a face straight on and close
 	local distance, height, yaw = 7, 0.6, math.rad(20)
 	if kind == "face" then
 		distance, height, yaw = 3.6, 0, 0
+	elseif kind == "accessory" then
+		distance, height, yaw = 6, 0.5, math.rad(15)
 	end
 	local camera = make("Camera", { Parent = viewport, FieldOfView = FIELD_OF_VIEW })
 	camera.CFrame = CFrame.lookAt(Vector3.new(distance * math.sin(yaw), height + 0.1, -distance * math.cos(yaw)), Vector3.new(0, height, 0))
@@ -312,19 +333,20 @@ local function buildHeadTile(parent, kind)
 	return { model = model }
 end
 
--- a copy of the look with this tile's hair or face in it (a face tile is bald: hair would
--- hide the face)
+-- a copy of the look with this tile's style in it (a face tile is bald and a hair tile
+-- hatless: they would hide what the tile shows)
 local function tileLook(look, kind, index)
 	local copy = {}
 	for key, value in pairs(look) do
 		copy[key] = value
 	end
 	if kind == "face" then
-		copy.face = index
 		copy.hair = 1
-	else
-		copy.hair = index
+		copy.accessory = 1
+	elseif kind == "hair" then
+		copy.accessory = 1
 	end
+	copy[KINDS[kind].field] = index
 	return copy
 end
 
@@ -469,14 +491,18 @@ local function buildPicker(connections)
 	}
 end
 
--- Opens the customizer for an empty slot. onDone(true) once the character is made and
--- the player let in, onDone(false) on BACK.
-function Customizer.Open(slot, onDone)
+-- Opens the customizer for slot `slot`. options: { name, lookText } to recustomize that
+-- character (its codename stays), { random = true } to start from a random look. onDone(true)
+-- once the character is made (and the player let in) or saved, onDone(false) on BACK.
+function Customizer.Open(slot, onDone, options)
+	options = options or {}
+	local recustomize = options.name ~= nil
 	local parts = ReplicatedStorage:FindFirstChild("CharacterParts")
-	local look = SlotConfig.DefaultLook()
+	local look = options.lookText and SlotConfig.ParseLook(options.lookText) or SlotConfig.DefaultLook()
 	local busy = false
 	local accent = Hub.InkAccent()
 	local connections = {}
+	local random = Random.new()
 
 	local gui = make("ScreenGui", {
 		Name = "Customizer",
@@ -516,14 +542,15 @@ function Customizer.Open(slot, onDone)
 		LayoutOrder = 1,
 	})
 	label(panel, {
-		Text = "NEW CHARACTER",
+		Text = recustomize and "RECUSTOMIZE" or "NEW CHARACTER",
 		Font = Theme.TitleFont,
 		TextSize = 40,
 		Size = UDim2.new(1, 0, 0, 44),
 		LayoutOrder = 2,
 	})
 
-	-- the codename: no box, just a line under it that lights up while typing
+	-- the codename: no box, just a line under it that lights up while typing (a recustomized
+	-- character keeps its codename: shown, not typed)
 	local nameBlock = make("Frame", {
 		Parent = panel,
 		LayoutOrder = 3,
@@ -533,41 +560,46 @@ function Customizer.Open(slot, onDone)
 	})
 	make("UIListLayout", { Parent = nameBlock, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 	heading(nameBlock, 0, "CODENAME", 1)
-	local nameBox = make("TextBox", {
-		Parent = nameBlock,
-		LayoutOrder = 3,
-		Size = UDim2.new(1, 0, 0, 40),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Font = Theme.TitleFont,
-		TextSize = 28,
-		TextColor3 = Theme.NavText,
-		PlaceholderText = "Codename",
-		PlaceholderColor3 = Theme.Muted,
-		Text = "",
-		ClearTextOnFocus = false,
-		TextXAlignment = Enum.TextXAlignment.Left,
-	})
-	local underline = make("Frame", {
-		Parent = nameBlock,
-		LayoutOrder = 4,
-		Size = UDim2.new(1, 0, 0, 2),
-		BackgroundColor3 = Theme.Muted,
-		BorderSizePixel = 0,
-	})
-	nameBox.Focused:Connect(function()
-		tween(underline, 0.2, { BackgroundColor3 = accent })
-	end)
-	nameBox.FocusLost:Connect(function()
-		tween(underline, 0.2, { BackgroundColor3 = Theme.Muted })
-	end)
-	local hint = label(nameBlock, {
-		LayoutOrder = 5,
-		Size = UDim2.new(1, 0, 0, 16),
-		Text = "",
-		TextSize = 13,
-		TextColor3 = Theme.Muted,
-	})
+	local nameBox, hint
+	if recustomize then
+		label(nameBlock, { LayoutOrder = 3, Text = string.upper(options.name), Font = Theme.TitleFont, TextSize = 28, Size = UDim2.new(1, 0, 0, 40), TextTruncate = Enum.TextTruncate.AtEnd })
+	else
+		nameBox = make("TextBox", {
+			Parent = nameBlock,
+			LayoutOrder = 3,
+			Size = UDim2.new(1, 0, 0, 40),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Font = Theme.TitleFont,
+			TextSize = 28,
+			TextColor3 = Theme.NavText,
+			PlaceholderText = "Codename",
+			PlaceholderColor3 = Theme.Muted,
+			Text = "",
+			ClearTextOnFocus = false,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		})
+		local underline = make("Frame", {
+			Parent = nameBlock,
+			LayoutOrder = 4,
+			Size = UDim2.new(1, 0, 0, 2),
+			BackgroundColor3 = Theme.Muted,
+			BorderSizePixel = 0,
+		})
+		nameBox.Focused:Connect(function()
+			tween(underline, 0.2, { BackgroundColor3 = accent })
+		end)
+		nameBox.FocusLost:Connect(function()
+			tween(underline, 0.2, { BackgroundColor3 = Theme.Muted })
+		end)
+		hint = label(nameBlock, {
+			LayoutOrder = 5,
+			Size = UDim2.new(1, 0, 0, 16),
+			Text = "",
+			TextSize = 13,
+			TextColor3 = Theme.Muted,
+		})
+	end
 
 	-- the preview, on the right: it turns on its own and can be dragged
 	local previewHolder = make("Frame", {
@@ -621,9 +653,11 @@ function Customizer.Open(slot, onDone)
 
 	-- the tiles, kept so they can be repainted when a colour (or the face a hair is shown with) changes
 	local tiles = {} -- { model, kind, index }
+	local refreshers = {} -- functions that redraw which tile (or option) is selected
 	local previewDirty = false
 	local tilesDirty = false
 	local lastTilesAt = 0
+	local lift -- how far up the preview goes to stand on the ring, worked out at the first paint
 	local function markDirty()
 		previewDirty = true
 		tilesDirty = true
@@ -633,11 +667,12 @@ function Customizer.Open(slot, onDone)
 			if previewDirty then
 				previewDirty = false
 				Customizer.Dress(model, look, parts)
+				lift = lift or standOnRing(model)
 			end
 			if not turning and os.clock() >= turnAgainAt then
 				angle += dt * TURN_SPEED
 			end
-			model:PivotTo(CFrame.Angles(0, angle, 0))
+			model:PivotTo(CFrame.new(0, lift or 0, 0) * CFrame.Angles(0, angle, 0))
 		end
 		if tilesDirty and os.clock() - lastTilesAt >= TILE_REFRESH then
 			tilesDirty = false
@@ -658,19 +693,20 @@ function Customizer.Open(slot, onDone)
 	local picker = buildPicker(connections)
 	local tabBar = make("Frame", { Parent = panel, LayoutOrder = 4, Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1 })
 	local pages = make("Frame", { Parent = panel, LayoutOrder = 5, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
-	local tabs = {} -- name -> { button, line, page, show }
+	local tabs = {} -- name -> { button, line, page }
 	local currentTab
 
+	local TAB_COUNT = 5
 	local function newPage(name, tabIndex)
 		local page = make("Frame", { Parent = pages, Visible = false, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 		make("UIListLayout", { Parent = page, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
 		local tabButton = make("TextButton", {
 			Parent = tabBar,
-			Position = UDim2.new((tabIndex - 1) * 0.25, 0, 0, 0),
-			Size = UDim2.new(0.25, -4, 1, 0),
+			Position = UDim2.new((tabIndex - 1) / TAB_COUNT, 0, 0, 0),
+			Size = UDim2.new(1 / TAB_COUNT, -4, 1, 0),
 			BackgroundTransparency = 1,
 			Font = Theme.TitleFont,
-			TextSize = 20,
+			TextSize = 18,
 			Text = name,
 			TextColor3 = Theme.Muted,
 			AutoButtonColor = false,
@@ -681,11 +717,21 @@ function Customizer.Open(slot, onDone)
 	end
 
 	-- the colour wheel sits in whichever page is showing; each page says which colour it edits
+	-- (and may say the wheel can't be used right now)
 	local pickerSlots = {} -- tab name -> a Frame to hold the wheel
 	local pickerField = {} -- tab name -> the look field the wheel edits there
+	local pickerBlocked = {} -- tab name -> function() -> a reason the wheel is off, or nil
+	local notes = {} -- tab name -> the note shown in place of a wheel that is off
 	local function bindPicker(tabName)
 		local field = pickerField[tabName]
 		if not field then
+			return
+		end
+		local reason = pickerBlocked[tabName] and pickerBlocked[tabName]()
+		notes[tabName].Visible = reason ~= nil
+		if reason then
+			notes[tabName].Text = reason
+			picker.Frame.Parent = nil
 			return
 		end
 		picker.Frame.Parent = pickerSlots[tabName]
@@ -705,22 +751,45 @@ function Customizer.Open(slot, onDone)
 		bindPicker(name)
 	end
 
-	-- a page's slot for the wheel
-	local function addPickerSlot(page, tabName, field, order)
+	-- a page's slot for the wheel, with a note that stands in for it when it is off
+	local function addPickerSlot(page, tabName, field, order, blocked)
 		local slotFrame = make("Frame", { Parent = page, LayoutOrder = order, Size = UDim2.new(1, 0, 0, WHEEL_SIZE + 16), BackgroundTransparency = 1 })
+		notes[tabName] = label(slotFrame, {
+			Visible = false,
+			Font = Theme.MonoFont,
+			TextSize = 13,
+			TextColor3 = Theme.Muted,
+			TextWrapped = true,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			Size = UDim2.new(1, 0, 0, 40),
+			Text = "",
+		})
 		pickerSlots[tabName] = slotFrame
 		pickerField[tabName] = field
+		pickerBlocked[tabName] = blocked
 	end
 
-	-- a grid of square tiles, each a head showing one hair or face; pressing one replaces
-	-- the current choice
-	local function addTiles(page, kind, names, has, order)
-		local grid = make("Frame", { Parent = page, LayoutOrder = order, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+	-- a grid of square tiles for one kind of style; pressing one replaces the current choice.
+	-- Head kinds show the style on a head; clothes show their picture. Nothing is made (and
+	-- false is returned) when no part exists for any style but the first.
+	local function addTiles(page, number, title, kind, order)
+		local spec = KINDS[kind]
+		local available = {}
+		for index = 1, #spec.styles do
+			if CharacterLook.Has(parts, spec.prefix, index) then
+				table.insert(available, index)
+			end
+		end
+		if #available < 2 then
+			return false
+		end
+		heading(page, number, title, order)
+		local grid = make("Frame", { Parent = page, LayoutOrder = order + 2, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 		make("UIGridLayout", { Parent = grid, CellSize = UDim2.fromOffset(TILE_SIZE, TILE_SIZE), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder })
 		local chosen = {} -- index -> its tile frame
 		local function refresh(animate)
 			for index, tile in pairs(chosen) do
-				local selected = look[kind] == index
+				local selected = look[spec.field] == index
 				local stroke = tile:FindFirstChildOfClass("UIStroke")
 				stroke.Color = selected and Color3.new(1, 1, 1) or Theme.Edge
 				stroke.Transparency = selected and 0 or 0.6
@@ -732,36 +801,53 @@ function Customizer.Open(slot, onDone)
 				end
 			end
 		end
-		for index = 1, #names do
-			if has(parts, index) then
-				local tile = make("Frame", { Parent = grid, LayoutOrder = index, BackgroundColor3 = Theme.Nav, BackgroundTransparency = 0.2, BorderSizePixel = 0 })
-				make("UIStroke", { Parent = tile, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-				make("UIScale", { Name = "Pop", Parent = tile })
+		table.insert(refreshers, refresh)
+		for _, index in ipairs(available) do
+			local tile = make("Frame", { Parent = grid, LayoutOrder = index, BackgroundColor3 = Theme.Nav, BackgroundTransparency = 0.2, BorderSizePixel = 0 })
+			make("UIStroke", { Parent = tile, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+			make("UIScale", { Name = "Pop", Parent = tile })
+			if spec.head then
 				local built = buildHeadTile(tile, kind)
 				table.insert(tiles, { model = built.model, kind = kind, index = index })
-				label(tile, {
-					Text = string.upper(names[index]),
-					Font = Theme.MonoFont,
-					TextSize = 11,
-					BackgroundTransparency = 0.35,
-					BackgroundColor3 = Color3.new(0, 0, 0),
-					AnchorPoint = Vector2.new(0, 1),
-					Position = UDim2.fromScale(0, 1),
-					Size = UDim2.new(1, 0, 0, 16),
-					TextXAlignment = Enum.TextXAlignment.Center,
-					ZIndex = 3,
+			elseif index > 1 then
+				-- a shirt, tee or pants: its picture
+				local part = parts:FindFirstChild(spec.prefix .. "_" .. index)
+				make("ImageLabel", {
+					Parent = tile,
+					Size = UDim2.new(1, -8, 1, -24),
+					Position = UDim2.fromOffset(4, 4),
+					BackgroundTransparency = 1,
+					Image = part and part[spec.image] or "",
+					ScaleType = Enum.ScaleType.Fit,
 				})
-				local pick = make("TextButton", { Parent = tile, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5 })
-				pick.Activated:Connect(function()
-					UiSfx.Play("menuSelect")
-					look[kind] = index
-					refresh(true)
-					markDirty()
-				end)
-				chosen[index] = tile
 			end
+			label(tile, {
+				Text = string.upper(spec.styles[index]),
+				Font = Theme.MonoFont,
+				TextSize = 11,
+				BackgroundTransparency = 0.35,
+				BackgroundColor3 = Color3.new(0, 0, 0),
+				AnchorPoint = Vector2.new(0, 1),
+				Position = UDim2.fromScale(0, 1),
+				Size = UDim2.new(1, 0, 0, 16),
+				TextXAlignment = Enum.TextXAlignment.Center,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				ZIndex = 3,
+			})
+			local pick = make("TextButton", { Parent = tile, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 5 })
+			pick.Activated:Connect(function()
+				UiSfx.Play("menuSelect")
+				look[spec.field] = index
+				refresh(true)
+				markDirty()
+				if currentTab then
+					bindPicker(currentTab)
+				end
+			end)
+			chosen[index] = tile
 		end
 		refresh(false)
+		return true
 	end
 
 	-- BODY: the skin colour
@@ -771,17 +857,16 @@ function Customizer.Open(slot, onDone)
 
 	-- HAIR: the style, then its colour
 	local hair = newPage("HAIR", 2)
-	heading(hair, 1, "STYLE", 1)
-	addTiles(hair, "hair", SlotConfig.HairStyles, CharacterLook.HasHair, 3)
+	addTiles(hair, 1, "STYLE", "hair", 1)
 	heading(hair, 2, "HAIR COLOUR", 4)
 	addPickerSlot(hair, "HAIR", "hairColor", 6)
 
 	-- FACE: the style
 	local face = newPage("FACE", 3)
-	heading(face, 1, "STYLE", 1)
-	addTiles(face, "face", SlotConfig.FaceStyles, CharacterLook.HasFace, 3)
+	addTiles(face, 1, "STYLE", "face", 1)
 
-	-- OUTFIT: top or bottom, then its colour
+	-- OUTFIT: top or bottom and its colour (off when a shirt or pants picture is on that
+	-- piece), then the tiles for shirts, tees and pants
 	local outfit = newPage("OUTFIT", 4)
 	heading(outfit, 1, "PIECE", 1)
 	local chips = make("Frame", { Parent = outfit, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1 })
@@ -806,8 +891,25 @@ function Customizer.Open(slot, onDone)
 		chipFor[piece[1]] = chip
 	end
 	heading(outfit, 2, "COLOUR", 4)
-	addPickerSlot(outfit, "OUTFIT", "top", 6)
+	addPickerSlot(outfit, "OUTFIT", "top", 6, function()
+		if pickerField.OUTFIT == "top" and look.shirt > 1 then
+			return "THIS SHIRT KEEPS ITS OWN COLOURS. CHOOSE NONE TO PICK A COLOUR."
+		elseif pickerField.OUTFIT == "bottom" and look.pants > 1 then
+			return "THESE PANTS KEEP THEIR OWN COLOURS. CHOOSE NONE TO PICK A COLOUR."
+		end
+		return nil
+	end)
+	local number = 2
+	for _, extra in ipairs({ { "shirt", "SHIRT", 7 }, { "tee", "T-SHIRT", 10 }, { "pants", "PANTS", 13 } }) do
+		if addTiles(outfit, number + 1, extra[2], extra[1], extra[3]) then
+			number += 1
+		end
+	end
 	selectPiece("top")
+
+	-- EXTRAS: accessories
+	local extras = newPage("EXTRAS", 5)
+	addTiles(extras, 1, "ACCESSORY", "accessory", 1)
 
 	for name, tab in pairs(tabs) do
 		tab.button.Activated:Connect(function()
@@ -817,6 +919,48 @@ function Customizer.Open(slot, onDone)
 	end
 	showTab("BODY")
 
+	-- RANDOMIZE: a whole look at once. Colours are random but never muddy; styles come from
+	-- what exists.
+	local function randomColor(saturationLow, saturationHigh, valueLow, valueHigh)
+		return rgbOf(Color3.fromHSV(random:NextNumber(), random:NextNumber(saturationLow, saturationHigh), random:NextNumber(valueLow, valueHigh)))
+	end
+	local function pickStyle(kind)
+		local spec = KINDS[kind]
+		local choices = {}
+		for index = 1, #spec.styles do
+			if CharacterLook.Has(parts, spec.prefix, index) then
+				table.insert(choices, index)
+			end
+		end
+		return choices[random:NextInteger(1, #choices)]
+	end
+	local function randomLook()
+		local rolled = SlotConfig.DefaultLook()
+		local tone = SlotConfig.SkinTones[random:NextInteger(1, #SlotConfig.SkinTones)]
+		rolled.skin = { tone[1], tone[2], tone[3] }
+		rolled.hair = pickStyle("hair")
+		local natural = SlotConfig.HairColors[random:NextInteger(1, #SlotConfig.HairColors)]
+		rolled.hairColor = random:NextInteger(1, 2) == 1 and { natural[1], natural[2], natural[3] } or randomColor(0.3, 0.95, 0.3, 0.95)
+		rolled.face = pickStyle("face")
+		rolled.top = randomColor(0.1, 0.9, 0.2, 0.9)
+		rolled.bottom = randomColor(0.1, 0.8, 0.15, 0.7)
+		rolled.shirt = pickStyle("shirt")
+		rolled.tee = random:NextInteger(1, 3) == 1 and pickStyle("tee") or 1
+		rolled.pants = pickStyle("pants")
+		rolled.accessory = random:NextInteger(1, 2) == 1 and pickStyle("accessory") or 1
+		return rolled
+	end
+	local function takeLook(newLook)
+		for key, value in pairs(newLook) do
+			look[key] = value
+		end
+		for _, refresh in ipairs(refreshers) do
+			refresh(false)
+		end
+		bindPicker(currentTab)
+		markDirty()
+	end
+
 	-- the answer from the server, or what is wrong with the codename
 	local status = label(panel, {
 		LayoutOrder = 6,
@@ -825,23 +969,35 @@ function Customizer.Open(slot, onDone)
 		TextSize = 14,
 		TextColor3 = ERROR_COLOR,
 	})
-	local buttons = make("Frame", { Parent = panel, LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1 })
+	local bottom = make("Frame", { Parent = panel, LayoutOrder = 7, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+	make("UIListLayout", { Parent = bottom, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+	button(bottom, { Text = "RANDOMIZE", LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 40) }, function()
+		takeLook(randomLook())
+	end)
+	local buttons = make("Frame", { Parent = bottom, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1 })
 	local create
-	create = button(buttons, { Text = "CREATE", Filled = true, Size = UDim2.new(0.5, -4, 1, 0) }, function()
+	create = button(buttons, { Text = recustomize and "SAVE" or "CREATE", Filled = true, Size = UDim2.new(0.5, -4, 1, 0) }, function()
 		if busy then
 			return
 		end
-		local name, reason = SlotConfig.CleanName(nameBox.Text)
-		if not name then
-			status.Text = reason
-			return
-		end
+		local result
 		busy = true
-		create.Text = "..."
 		status.Text = ""
-		local result = Customizer.Call("Create", slot, name, SlotConfig.FormatLook(look))
+		create.Text = "..."
+		if recustomize then
+			result = Customizer.Call("Recustomize", slot, SlotConfig.FormatLook(look))
+		else
+			local name, reason = SlotConfig.CleanName(nameBox.Text)
+			if not name then
+				busy = false
+				create.Text = "CREATE"
+				status.Text = reason
+				return
+			end
+			result = Customizer.Call("Create", slot, name, SlotConfig.FormatLook(look))
+		end
 		busy = false
-		create.Text = "CREATE"
+		create.Text = recustomize and "SAVE" or "CREATE"
 		if result.ok then
 			gui:Destroy()
 			onDone(true)
@@ -857,21 +1013,27 @@ function Customizer.Open(slot, onDone)
 		onDone(false)
 	end)
 
-	nameBox:GetPropertyChangedSignal("Text"):Connect(function()
-		if #nameBox.Text > SlotConfig.NameMax then
-			nameBox.Text = nameBox.Text:sub(1, SlotConfig.NameMax)
-			return
-		end
-		status.Text = ""
-		if nameBox.Text == "" then
-			hint.Text = ""
-			return
-		end
-		local name, reason = SlotConfig.CleanName(nameBox.Text)
-		hint.Text = name and "" or reason
-	end)
+	if nameBox then
+		nameBox:GetPropertyChangedSignal("Text"):Connect(function()
+			if #nameBox.Text > SlotConfig.NameMax then
+				nameBox.Text = nameBox.Text:sub(1, SlotConfig.NameMax)
+				return
+			end
+			status.Text = ""
+			if nameBox.Text == "" then
+				hint.Text = ""
+				return
+			end
+			local name, reason = SlotConfig.CleanName(nameBox.Text)
+			hint.Text = name and "" or reason
+		end)
+	end
 
-	markDirty()
+	if options.random then
+		takeLook(randomLook())
+	else
+		markDirty()
+	end
 end
 
 return Customizer

@@ -24,8 +24,17 @@ SlotConfig.HairColors = {
 }
 -- display names; the part for style n is ReplicatedStorage.CharacterParts.Hair_<n> (a style
 -- with no part is hidden in the customizer), and Face_<n> for faces
-SlotConfig.HairStyles = { "None", "Short", "Spiky", "Long", "Tied" }
-SlotConfig.FaceStyles = { "Default", "Calm", "Fierce", "Smile" }
+SlotConfig.HairStyles = { "None", "Messy", "Spiky", "Ponytail", "Side Part", "Swoop", "Neat", "Long", "Bangs" }
+SlotConfig.FaceStyles = { "Default", "Calm", "Fierce", "Kawaii", "Gentleman", "Glow", "Shades", "Smirk", "Grin", "Braces" }
+-- clothes and accessories: the part for style n is CharacterParts.Shirt_<n> / Tee_<n> /
+-- Pants_<n> / Acc_<n>. A shirt or pants is a picture that keeps its own colours (it hides the
+-- colour wheel for its piece); a tee is a graphic over the top colour. A list with only "None"
+-- has nothing to pick yet (no free shirt or pants worth shipping): add names here and the
+-- parts in Studio.
+SlotConfig.ShirtStyles = { "None" }
+SlotConfig.TeeStyles = { "None", "Spiral", "VIP" }
+SlotConfig.PantsStyles = { "None" }
+SlotConfig.AccessoryStyles = { "None", "Fedora", "Top Hat", "Cowboy", "Witch", "Reading Glasses", "Sunglasses" }
 
 -- the keys in the DataStore: one record per slot, one for the summaries
 function SlotConfig.SlotKey(userId, slot)
@@ -97,6 +106,10 @@ local LOOK_FIELDS = {
 	{ "face", "style", SlotConfig.FaceStyles },
 	{ "top", "color", SlotConfig.OutfitColors },
 	{ "bottom", "color", SlotConfig.OutfitColors },
+	{ "shirt", "style", SlotConfig.ShirtStyles },
+	{ "tee", "style", SlotConfig.TeeStyles },
+	{ "pants", "style", SlotConfig.PantsStyles },
+	{ "accessory", "style", SlotConfig.AccessoryStyles },
 }
 
 function SlotConfig.DefaultLook()
@@ -107,12 +120,13 @@ function SlotConfig.DefaultLook()
 	return look
 end
 
--- "skin;hair;hairColor;face;top;bottom", e.g. "FFE0BD;1;1E1919;1;282828;282828"
+-- "skin;hair;hairColor;face;top;bottom;shirt;tee;pants;accessory", e.g.
+-- "FFE0BD;1;1E1919;1;282828;282828;1;1;1;1" (an older look with fewer fields still reads)
 function SlotConfig.FormatLook(look)
 	local parts = {}
 	for _, field in ipairs(LOOK_FIELDS) do
 		local value = look[field[1]]
-		table.insert(parts, field[2] == "color" and SlotConfig.FormatColor(value) or tostring(value))
+		table.insert(parts, field[2] == "color" and SlotConfig.FormatColor(value) or tostring(value or 1))
 	end
 	return table.concat(parts, ";")
 end

@@ -326,6 +326,41 @@ function Slots.Select(player, slot)
 	end)
 end
 
+-- a saved character gets a new look (the customizer's SAVE on an existing slot): its record
+-- and its summary both change, nothing else. Done from the slot screen, before a slot is chosen.
+function Slots.Recustomize(player, slot, lookText)
+	return exclusive(player, function()
+		if not SlotConfig.ValidSlot(slot) then
+			return false, "No such slot"
+		end
+		local meta, reason = Slots.List(player)
+		if not meta then
+			return false, reason
+		end
+		local entry = meta[slot]
+		if not entry then
+			return false, "That slot is empty"
+		end
+		if type(lookText) ~= "string" or SlotConfig.FormatLook(SlotConfig.ParseLook(lookText)) ~= lookText then
+			return false, "Invalid look"
+		end
+		if PlayerStats.WritesEnabled() then
+			local key = SlotConfig.SlotKey(player.UserId, slot)
+			local ok, record = readKey(key)
+			if not ok or type(record) ~= "table" then
+				return false, "load" -- never write over a record that couldn't be read
+			end
+			record.Look = lookText
+			if not writeKey(key, record) then
+				return false, "save"
+			end
+		end
+		entry.look = lookText
+		writeMeta(player.UserId, meta)
+		return true
+	end)
+end
+
 -- deletes a character; the player types its name to confirm
 function Slots.Delete(player, slot, typedName)
 	return exclusive(player, function()
