@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Crafting = require(script.Parent:WaitForChild("Crafting"))
 local DayClock = require(script.Parent:WaitForChild("DayClock"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Loadout = require(script.Parent:WaitForChild("Loadout"))
@@ -101,6 +102,23 @@ function actions.GiveMaterials(target)
 		target:SetAttribute(attribute, math.min((target:GetAttribute(attribute) or 0) + 50, DropConfig.MaxPerMaterial))
 	end
 	return true, "Gave " .. target.Name .. " 50 of each material"
+end
+
+-- the printer: every recipe learned, every running print finished (Crafting)
+function actions.LearnAllRecipes(target)
+	if target:GetAttribute("RecipesKnown") == nil then
+		return false, loadingMessage(target)
+	end
+	Crafting.LearnAll(target)
+	return true, target.Name .. " knows every printer recipe"
+end
+
+function actions.FinishPrints(target)
+	if target:GetAttribute("PrintJobs") == nil then
+		return false, loadingMessage(target)
+	end
+	Crafting.FinishAll(target)
+	return true, target.Name .. "'s prints are done"
 end
 
 function actions.SetLevel(target, level)

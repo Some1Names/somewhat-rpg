@@ -19,6 +19,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local CraftConfig = require(ReplicatedStorage:WaitForChild("CraftConfig"))
 local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 
@@ -98,7 +99,15 @@ function Quests.Abandon(player)
 end
 
 local function completeBounty(player, quest)
+	local questId = player:GetAttribute(ID_ATTRIBUTE)
 	clear(player)
+	-- a bounty may teach printer recipes (a CraftConfig "quest" route names it)
+	for _, id in ipairs(CraftConfig.TaughtBy(questId)) do
+		local known = CraftConfig.Learn(player:GetAttribute(CraftConfig.KnownAttribute), id, "quest")
+		if known then
+			player:SetAttribute(CraftConfig.KnownAttribute, known)
+		end
+	end
 	local xp, yen = QuestConfig.reward(quest.count, quest.level)
 	local source = PlayerStats.Source(quest.title, "Gold")
 	PlayerStats.AddXP(player, xp, source)

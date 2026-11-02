@@ -154,6 +154,12 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   Ayato Yoji (Iridescent Requiem, Lv 95) is the second: his moves are in `RaidAyato` (built from RaidBoss's `kit`), he flies
   on a timer (`flight`), and his ultimate needs players inside the safe domes; arena `workspace.AyatoSpawn`, model `ServerStorage.Bosses.AyatoYoji`.
 - **Factions and parties**: `FactionConfig` (three factions, their rank names, colours and shop discount; pure rules, Lune-tested), `Factions` + `FactionServer` (a model tagged `FactionRecruiter` opens the `FactionMenu` close-up; JOIN goes through the `FactionAction` remote; standing from kills; saved `FactionData`), the overhead title in `OverheadHealth` and a card in `HubProfile`. Parties: `PartyRules` (pure, Lune-tested), `Party` + `PartyServer` (the `PartyAction` remote), the hub tab `PartyMenu` and `PartyHUD`.
+- **Crafting**: the 3D printer (anything tagged `Printer`, a part or model; `workspace.Printer` is a plain part for now).
+  `CraftConfig` (recipes, job slots by level, the saved `PrintJobs` "recipe|seed|finishAt" and `RecipesKnown` texts; pure,
+  Lune-tested), `Crafting` (server: Start/Collect/Cancel/Learn, all-or-nothing; the result rolls from the job's seed at
+  collect), `CraftServer` (the `CraftAction` RemoteFunction, made by script; range and busy checks), client `PrinterMenu`
+  (adds the prompt itself). Learn routes: yen, a blueprint material (`DropConfig`), a bounty (`Quests` teaches it when
+  done) or a faction rank. Gear outputs need `ServerScriptService.Gear` (`Gear.Grant`), not built yet.
 - **Melee weapons**: a set with `kind = "melee"` fills the hotbar's MELEE slot (saved as the `MeleeSet` attribute, kept by `Loadout`
   like `WeaponSet`) and swings a combo from `PunchConfig.Weapons`. Its Tool needs a `SkillSet` attribute. Katana (B, needs 5 Strength,
   shop ¥1,200) is the first; no moves yet.

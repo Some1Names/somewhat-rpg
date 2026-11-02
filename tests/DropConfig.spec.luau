@@ -145,7 +145,7 @@ check("the attribute name matches Reforge's", DropConfig.Attribute("Scrap") == R
 local sorted = DropConfig.Sorted()
 check(
 	"sorted by tier, then display name",
-	#sorted == 8 and table.concat(sorted, ",") == "Scrap,Core,ThugBadge,WolfFang,Crystal,Essence,PrismShard,SetoVertebra"
+	#sorted == 9 and table.concat(sorted, ",") == "Scrap,Core,ThugBadge,WolfFang,Crystal,Essence,PrismHelmBlueprint,PrismShard,SetoVertebra"
 )
 
 -- the Henchman's table (EnemyConfig names it): extra rolls on top of the generic ones
@@ -180,6 +180,24 @@ check("an unknown table is ignored", #DropConfig.Rolls(10, "NoSuchTable", functi
 end) == #DropConfig.Rolls(10, nil, function()
 	return 0
 end))
+
+-- the printer's blueprints (CraftConfig "drop" routes) are counted materials, and Ayato drops his
+local CraftConfig = require("../src/ReplicatedStorage/CraftConfig")
+local blueprintsExist = true
+for _, recipe in ipairs(CraftConfig.Recipes) do
+	local route = CraftConfig.Route(recipe, "drop")
+	if route and not DropConfig.Materials[route.blueprint] then
+		blueprintsExist = false
+	end
+end
+check("every blueprint a recipe names is a material", blueprintsExist and DropConfig.Materials.PrismHelmBlueprint ~= nil)
+local ayatoBlueprint = false
+for _, entry in ipairs(DropConfig.Tables.AyatoYoji) do
+	if entry.material == "PrismHelmBlueprint" then
+		ayatoBlueprint = entry.chance > 0 and entry.chance < 1
+	end
+end
+check("ayato sometimes drops the prism helm blueprint", ayatoBlueprint)
 
 if failures > 0 then
 	error(failures .. " failed")

@@ -409,6 +409,11 @@ end)
 buttonRow({ { "Materials +50 each", function()
 	run("GiveMaterials")
 end } })
+buttonRow({ { "Learn all recipes", function()
+	run("LearnAllRecipes")
+end }, { "Finish prints", function()
+	run("FinishPrints")
+end } })
 
 heading("STATS")
 local statLabels = {}

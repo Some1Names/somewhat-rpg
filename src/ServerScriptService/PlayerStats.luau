@@ -15,6 +15,7 @@ local RunService = game:GetService("RunService")
 
 local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
+local CraftConfig = require(ReplicatedStorage:WaitForChild("CraftConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local MapRules = require(ReplicatedStorage:WaitForChild("MapRules"))
 local MasteryRules = require(ReplicatedStorage:WaitForChild("MasteryRules"))
@@ -72,6 +73,8 @@ local TEXT_DEFAULTS = {
 	SpawnPoint = "", -- where the player respawns, "x,y,z" set by a Spawn Keeper (SpawnServer)
 	TalismanOwned = "", -- the talismans the player owns, comma separated (TalismanConfig, Talismans)
 	TalismanEquipped = "", -- the ones they wear, comma separated (TalismanConfig, Talismans)
+	PrintJobs = "", -- the printer's running prints, "recipe|seed|finishAt;..." (CraftConfig, Crafting)
+	RecipesKnown = "", -- the printer recipes learned, comma separated (CraftConfig, Crafting)
 	Explored = "", -- the map cells the player has been near (MapRules, MapServer)
 	CharName = "", -- the slot's character name (SlotConfig, Slots)
 	Look = "", -- the slot's look, "skin;hair;hairColor;face;top;bottom" (SlotConfig, CharacterLook)
@@ -92,6 +95,8 @@ local TEXT_LENGTHS = {
 	FactionData = FactionConfig.MaxSaveLength,
 	Talents = TalentConfig.MaxSaveLength,
 	ConsumableStorage = ConsumableConfig.MaxSaveLength,
+	PrintJobs = CraftConfig.MaxSaveLength,
+	RecipesKnown = CraftConfig.MaxSaveLength,
 	Explored = MapRules.MaxSaveLength,
 	Preferences = Preferences.MaxLength,
 }

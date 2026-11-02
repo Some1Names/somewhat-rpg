@@ -1,7 +1,8 @@
 -- Enemy drops: every number and name. Enemies tagged "Enemy" drop materials
 -- as orbs (ServerScriptService.Drops); each player who helped gets their own.
 -- Materials are the saved player attributes Mat_<key>, spent in Reforge
--- (ReforgeConfig). The rules at the bottom are pure so tests/ can check them.
+-- (ReforgeConfig) and at the printer (CraftConfig). The rules at the bottom
+-- are pure so tests/ can check them.
 local DropConfig = {}
 
 DropConfig.ContributionShare = 0.1 -- a helper dealt this share of the enemy's max health
@@ -72,6 +73,8 @@ DropConfig.Materials = {
 	ThugBadge = { tier = "Rare", display = "Thug Badge" },
 	SetoVertebra = { tier = "Dark", display = "Seto's Vertebra" },
 	PrismShard = { tier = "Dark", display = "Prism Shard" },
+	-- blueprints: spent at the printer to learn a recipe (CraftConfig "drop" routes)
+	PrismHelmBlueprint = { tier = "Dark", display = "Prism Helm Blueprint" },
 }
 
 -- what any enemy of at least `minLevel` rolls, per helper
@@ -104,6 +107,7 @@ DropConfig.Tables = {
 	AyatoYoji = {
 		exclusive = true,
 		{ material = "PrismShard", chance = 1, min = 1, max = 2 },
+		{ material = "PrismHelmBlueprint", chance = 0.15, min = 1, max = 1 },
 		{ material = "Core", chance = 1, min = 2, max = 4 },
 		{ material = "Crystal", chance = 0.6, min = 1, max = 2 },
 		{ material = "Essence", chance = 0.2, min = 1, max = 1 },
