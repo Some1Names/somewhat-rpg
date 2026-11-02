@@ -151,7 +151,7 @@ function Menus.Fit(panel, side)
 	local function update()
 		local extra = padding and (padding.PaddingTop.Offset + padding.PaddingBottom.Offset) or 0
 		local available = screenHeight(gui) - FIT_TOP - bottom
-		panel.Size = UDim2.fromOffset(width, math.min(layout.AbsoluteContentSize.Y + extra, math.max(available, FIT_MIN_HEIGHT)))
+		panel.Size = UDim2.fromOffset(width, math.min(layout.AbsoluteContentSize.Y / UIScale.Get() + extra, math.max(available, FIT_MIN_HEIGHT)))
 		panel.Position = UDim2.new(x.X.Scale, x.X.Offset, 0, FIT_TOP + available / 2)
 	end
 	layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(update)
