@@ -5,26 +5,33 @@
 -- the checking. The Power Dealer's rows (briefcase items) also have SELL,
 -- for a briefcase you carry, and LIFETIME R$ where the power has a Robux
 -- product (PowerSources prompts the purchase). Closes when you walk away, or when another menu opens (Menus).
--- It fills the screen: the camera closes in on the shopkeeper (on the right, the list on the
--- left), the player's own character is hidden and their controls are off until it closes
--- (ShopFocus does all that, and makes E leave). The
--- header shows what the shopkeeper's overhead tag used to say (their ShopTitle and ShopSubtitle
--- attributes); the tag itself now shows only their own name (ShopkeeperName, dressTag).
+-- It fills the screen in the title menu's look: black bars along the top and bottom (E LEAVE and
+-- your yen in the bottom one), the camera closed in on the shopkeeper on the right, and down the
+-- left, over a dark fading off the edge, the shop's line, its name big and the keeper's name on a
+-- chip in the shop's colour (their ShopSubtitle, ShopTitle and ShopkeeperName attributes; their
+-- overhead tag now shows only their own name, dressTag), then the items. The keeper's lines are
+-- subtitles under them. The player's own character is hidden and their controls are off until it
+-- closes (ShopFocus does all that, and makes E leave).
 -- It won't open while you're fighting other players (not enemies), and closes if you start while it's open.
 local CollectionService = game:GetService("CollectionService")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
 local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local MenuFooter = require(script.Parent:WaitForChild("MenuFooter"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local UiSfx = require(script.Parent:WaitForChild("UiSfx"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
 local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
@@ -41,15 +48,31 @@ local function priceOf(item)
 	return FactionConfig.DiscountedPrice(item.price, player:GetAttribute("FactionDiscount") or 0)
 end
 
-local PANEL_WIDTH = 440
-local PADDING = 14
-local ITEM_HEIGHT = 70
-local CONSUMABLE_HEIGHT = 104 -- name, uses, detail (two lines), owned
-local POWER_HEIGHT = 116 -- a power's row: picture, name, tier, detail (three lines), owned
+local PAD = 64 -- the screen's left edge to the column (as on the title menu)
+local COLUMN_WIDTH = 460
+local COLUMN_GAP = 26 -- between the top bar and the column, and the column and the bottom bar
+local HEADER = 150 -- the column's top: the shop's line, its name big, the keeper on a chip
+local BOTTOM_BAR = 44 -- the black bar along the bottom; the top one is as tall as Roblox's band
+local ROBLOX_BAR_FALLBACK = 58 -- Roblox's band across the top, while GetGuiInset still says 0
+local SHADE_SHARE = 0.62 -- how far across the screen the dark fades off the left edge
+local SPEECH_AT = 0.72 -- the middle of the keeper's subtitles, across the screen (ShopFocus sets them right of centre)
+local OPEN_TIME = 0.45 -- the bars closing in, the column sliding in
+local HOVER_TIME = 0.15
+local PREVIEW_GAP = 28 -- between the column and the chosen item's preview
+local PREVIEW_MAX = 240 -- the preview's width at most; it shrinks to the room left of the shopkeeper
+local PREVIEW_MIN = 150 -- narrower than this, it isn't shown
+local PREVIEW_CAPTION = 52 -- under the preview's box: the item's number and name
+local PREVIEW_TURN = 0.6 -- radians a second a model in the preview turns
+local SHOPKEEPER_HALF = 230 -- about how far left of their middle (SPEECH_AT) the shopkeeper reaches
+local NUMBER_WIDTH = 28 -- a row's number, at its left
+local ITEM_HEIGHT = 76
+local CONSUMABLE_HEIGHT = 108 -- name, uses, detail (two lines), owned
+local POWER_HEIGHT = 122 -- a power's row: picture, name, tier, detail (three lines), owned
 local IMAGE_SIZE = 84 -- a power's picture, a square
 local BADGE_SIZE = 30 -- a set's tier letter
 local Style = HudConfig.Style
-local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass
+local Theme = HudConfig.HubTheme
+local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass; the text on a filled button
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local GOLD = Color3.fromRGB(255, 205, 60)
@@ -130,148 +153,270 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- darkens the left of the screen for the list; the right stays clear for the shopkeeper.
--- Active, so a click anywhere on the screen is taken by the menu and never punches or shoots.
-local backdrop = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Active = true })
+local function tween(instance, time, props)
+	local tweenObject = TweenService:Create(instance, TweenInfo.new(time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
+	tweenObject:Play()
+	return tweenObject
+end
+
+-- the colour to write on a fill of `color`
+local function onColor(color)
+	return 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B > 0.4 and BACKGROUND or TEXT
+end
+
+-- the title menu's look: black bars along the top and the bottom, the dark fading off the left
+-- edge for the column, the right left clear for the shopkeeper. The frame over the whole screen
+-- is Active, so a click anywhere is taken by the menu and never punches or shoots.
+local backdrop = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Active = true })
+local shade = make("Frame", { Parent = backdrop, Size = UDim2.fromScale(SHADE_SHARE, 1), BackgroundColor3 = Theme.Nav, BorderSizePixel = 0 })
 make("UIGradient", {
-	Parent = backdrop,
+	Parent = shade,
 	Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.15),
-		NumberSequenceKeypoint.new(0.45, 0.5),
-		NumberSequenceKeypoint.new(0.8, 1),
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(0.5, 0.45),
 		NumberSequenceKeypoint.new(1, 1),
 	}),
 })
-
-local panel = make("ScrollingFrame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 40, 0.5, 0),
-	Size = UDim2.new(0, PANEL_WIDTH, 1, -120),
-	CanvasSize = UDim2.new(),
-	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollBarThickness = 4,
-	ScrollBarImageColor3 = MUTED,
-	ScrollingDirection = Enum.ScrollingDirection.Y,
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.2,
+local topBar = make("Frame", { Parent = backdrop, Size = UDim2.fromScale(1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 4 })
+local bottomBar = make("Frame", {
+	Parent = backdrop,
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.fromScale(0, 1),
+	Size = UDim2.fromScale(1, 0),
+	BackgroundColor3 = Color3.new(0, 0, 0),
 	BorderSizePixel = 0,
+	ClipsDescendants = true,
+	ZIndex = 4,
 })
-local panelStroke = make("UIStroke", { Parent = panel, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-make("UIPadding", {
-	Parent = panel,
-	PaddingTop = UDim.new(0, PADDING),
-	PaddingBottom = UDim.new(0, PADDING),
-	PaddingLeft = UDim.new(0, PADDING),
-	PaddingRight = UDim.new(0, PADDING),
-})
-make("UIListLayout", { Parent = panel, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
-local order = 0
-local function section(height)
-	order += 1
-	return make("Frame", { Parent = panel, LayoutOrder = order, Size = UDim2.new(1, 0, 0, height), BackgroundTransparency = 1 })
+for _, edge in ipairs({ { topBar, 1 }, { bottomBar, 0 } }) do
+	make("Frame", {
+		Parent = edge[1],
+		AnchorPoint = Vector2.new(0, edge[2]),
+		Position = UDim2.fromScale(0, edge[2]),
+		Size = UDim2.new(1, 0, 0, 1),
+		BackgroundColor3 = Theme.Edge,
+		BackgroundTransparency = Theme.EdgeTransparency,
+		BorderSizePixel = 0,
+		ZIndex = 4,
+	})
 end
+-- the player's yen, on the right of the bottom bar (E LEAVE is on its left)
+local balance = label(bottomBar, {
+	Text = "",
+	RichText = true,
+	Font = Style.MonoFont,
+	TextSize = 12,
+	TextColor3 = MUTED,
+	TextXAlignment = Enum.TextXAlignment.Right,
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -PAD, 0.5, 0),
+	Size = UDim2.new(0.5, -PAD, 0, 16),
+	ZIndex = 5,
+})
 
--- header: what the shopkeeper's overhead tag used to say (the role big, the shop's line above), close
-local header = section(58)
-local subtitle = label(header, { Text = "", Font = Style.MonoFont, TextSize = 11, Size = UDim2.new(1, -30, 0, 16) })
-local title = label(header, {
+-- the column down the left: the shop's line with the accent before it, the shop's name big, the
+-- keeper's name on an accent chip with a rule running on, then the items (they scroll on a short screen)
+local column = make("Frame", { Parent = backdrop, BackgroundTransparency = 1, ZIndex = 5 })
+local kickerBar = make("Frame", { Parent = column, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(24, 2), BackgroundColor3 = GOLD, BorderSizePixel = 0, ZIndex = 5 })
+local subtitle = label(column, { Text = "", Font = Style.MonoFont, TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(34, 0), Size = UDim2.new(1, -34, 0, 14), ZIndex = 5 })
+local title = label(column, {
 	Text = "SHOP",
 	Font = Style.TitleFont,
-	TextSize = 36,
-	Position = UDim2.fromOffset(0, 18),
-	Size = UDim2.new(1, -30, 0, 38),
+	TextScaled = true,
+	Position = UDim2.fromOffset(-2, 18),
+	Size = UDim2.new(1, 0, 0, 72),
+	ZIndex = 5,
 })
--- the player's yen, top right of the screen
-local balanceBox = make("Frame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -40, 0, 28),
-	Size = UDim2.fromOffset(240, 40),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.3,
-	BorderSizePixel = 0,
-})
-make("UIStroke", { Parent = balanceBox, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-label(balanceBox, { Text = "CASH", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0.4, 0, 1, 0) })
-local balance = label(balanceBox, {
-	Font = Style.MonoFont,
-	TextSize = 18,
-	TextColor3 = GOLD,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Size = UDim2.new(1, -12, 1, 0),
-})
-local closeButton = make("TextButton", {
-	Parent = header,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(22, 22),
-	BackgroundTransparency = 1,
-	Font = Enum.Font.Highway,
-	Text = "×",
+make("UITextSizeConstraint", { Parent = title, MaxTextSize = 72 })
+local chip = make("TextLabel", {
+	Parent = column,
+	Font = Style.TitleFont,
 	TextSize = 20,
-	TextColor3 = MUTED,
+	BorderSizePixel = 0,
+	Position = UDim2.fromOffset(1, 102),
+	Size = UDim2.fromOffset(0, 24),
+	AutomaticSize = Enum.AutomaticSize.X,
+	ZIndex = 5,
 })
-
--- the items; the panel itself scrolls when the screen is too short for them (one scroll bar)
-order += 1
-local list = make("Frame", {
-	Parent = panel,
-	LayoutOrder = order,
-	Size = UDim2.new(1, 0, 0, 0),
+local chipRule = make("Frame", { Parent = column, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = MUTED, BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = 5 })
+local panel = make("ScrollingFrame", {
+	Parent = column,
+	Position = UDim2.fromOffset(0, HEADER),
+	Size = UDim2.new(1, 0, 1, -HEADER),
+	CanvasSize = UDim2.new(),
+	AutomaticCanvasSize = Enum.AutomaticSize.Y,
+	ScrollBarThickness = 3,
+	ScrollBarImageColor3 = MUTED,
+	ScrollBarImageTransparency = 0.4,
+	ScrollingDirection = Enum.ScrollingDirection.Y,
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
+	ZIndex = 5,
 })
-local listLayout = make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
--- as tall as the items need
-listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-	list.Size = UDim2.new(1, 0, 0, listLayout.AbsoluteContentSize.Y)
-end)
-
-local status = label(section(14), { Text = "", TextSize = 11, TextColor3 = MUTED, Size = UDim2.fromScale(1, 1) })
-
-local leave = make("TextButton", {
-	Parent = section(34),
-	Size = UDim2.fromScale(1, 1),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.4,
-	BorderSizePixel = 0,
-	Font = Enum.Font.Highway,
-	Text = "LEAVE SHOP",
-	TextSize = 13,
-	TextColor3 = TEXT,
-})
+-- the items, as tall as they need
+local list = make("Frame", { Parent = panel, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, BorderSizePixel = 0 })
+make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder })
 
 local rows = {}
+local selectedRow -- the row lit and in the preview: the last one under the mouse (or pressed)
 
--- the shopkeeper's speech box, bottom right under them (the list is on the left): their name and a line
--- that types out. Square, white text with a dark stroke over a see-through dark box.
+-- the chosen item's preview, between the column and the shopkeeper: its picture (a power's
+-- `image`), its model turning (the server's copy in ReplicatedStorage.ShopPreviews) or its tier
+-- letter or initial, in a dark box with corner brackets, its number and name under it. It only
+-- shows when there's room left of the shopkeeper.
+local preview = make("Frame", { Parent = backdrop, BackgroundTransparency = 1, Visible = false, ZIndex = 5 })
+local previewBox = make("Frame", {
+	Parent = preview,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.new(0.5, 0, 0.5, -PREVIEW_CAPTION / 2),
+	Size = UDim2.new(1, 0, 1, -PREVIEW_CAPTION),
+	BackgroundColor3 = Theme.Nav,
+	BackgroundTransparency = 0.35,
+	BorderSizePixel = 0,
+	ZIndex = 5,
+})
+local previewWash = make("Frame", { Parent = previewBox, Size = UDim2.fromScale(1, 1), BackgroundColor3 = GOLD, BorderSizePixel = 0, ZIndex = 5 })
+make("UIGradient", {
+	Parent = previewWash,
+	Rotation = 90,
+	Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.6, 0.88),
+		NumberSequenceKeypoint.new(1, 0.72),
+	}),
+})
+local previewPop = make("UIScale", { Parent = previewBox })
+local previewBrackets = {}
+for _, corner in ipairs({ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }) do
+	for _, size in ipairs({ Vector2.new(16, 2), Vector2.new(2, 16) }) do
+		table.insert(previewBrackets, make("Frame", {
+			Parent = previewBox,
+			AnchorPoint = Vector2.new(corner[1], corner[2]),
+			Position = UDim2.fromScale(corner[1], corner[2]),
+			Size = UDim2.fromOffset(size.X, size.Y),
+			BackgroundColor3 = GOLD,
+			BorderSizePixel = 0,
+			ZIndex = 7,
+		}))
+	end
+end
+local previewCount = label(preview, { Text = "", Font = Style.MonoFont, TextSize = 11, TextColor3 = MUTED, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 0, 1, -28), Size = UDim2.new(1, 0, 0, 14), ZIndex = 5 })
+local previewName = label(preview, { Text = "", Font = Style.TitleFont, TextSize = 22, TextTruncate = Enum.TextTruncate.AtEnd, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 26), ZIndex = 5 })
+local previewFits = false -- whether there's room for it on this screen
+local previewContent -- what's in the box: an ImageLabel, a ViewportFrame or the letter
+local previewModel -- the model turning in it, if any
+local previewAngle = 0
+
+-- the top bar is as tall as Roblox's band; the column fills the room between the bars
+local band = ROBLOX_BAR_FALLBACK
+local function place()
+	band = GuiService:GetGuiInset().Y / UIScale.Get() -- Roblox's band is in real pixels
+	band = band > 0 and band or ROBLOX_BAR_FALLBACK / UIScale.Get()
+	column.Position = UDim2.fromOffset(PAD, band + COLUMN_GAP)
+	column.Size = UDim2.new(0, COLUMN_WIDTH, 1, -(band + BOTTOM_BAR + 2 * COLUMN_GAP))
+	if topBar.Size.Y.Offset > 0 then
+		topBar.Size = UDim2.new(1, 0, 0, band)
+	end
+	-- the preview takes the room between the column and the shopkeeper, level with the keeper's chip
+	local view = workspace.CurrentCamera
+	local left = PAD + COLUMN_WIDTH + PREVIEW_GAP
+	local size = math.min(PREVIEW_MAX, SPEECH_AT * (view and view.ViewportSize.X or 1371) / UIScale.Get() - SHOPKEEPER_HALF - left)
+	previewFits = size >= PREVIEW_MIN
+	preview.Position = UDim2.fromOffset(left, band + COLUMN_GAP + 102)
+	preview.Size = UDim2.fromOffset(math.max(size, 0), math.max(size, 0) + PREVIEW_CAPTION)
+	preview.Visible = previewFits and selectedRow ~= nil
+end
+place()
+UIScale.OnChange(place)
+if workspace.CurrentCamera then
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(place)
+end
+
+-- the bars close in and the column slides in from the left
+local function intro()
+	topBar.Size = UDim2.fromScale(1, 0)
+	bottomBar.Size = UDim2.fromScale(1, 0)
+	tween(topBar, OPEN_TIME, { Size = UDim2.new(1, 0, 0, band) })
+	tween(bottomBar, OPEN_TIME, { Size = UDim2.new(1, 0, 0, BOTTOM_BAR) })
+	shade.BackgroundTransparency = 1
+	tween(shade, OPEN_TIME, { BackgroundTransparency = 0 })
+	local at = UDim2.fromOffset(PAD, band + COLUMN_GAP)
+	column.Position = at - UDim2.fromOffset(PAD + COLUMN_WIDTH, 0)
+	tween(column, OPEN_TIME, { Position = at })
+end
+
+-- the keeper's lines, as subtitles under them (the list is on the left): their name small in the
+-- shop's colour over the line typing out (white with a dark edge), and what the shop has to tell
+-- you (not enough yen, a failure) under that
 local speech = make("Frame", {
 	Parent = gui,
 	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.695, 0, 1, -60), -- its bottom edge lines up with the list panel's
-	Size = UDim2.new(0.36, 0, 0, 120),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.35,
-	BorderSizePixel = 0,
+	Position = UDim2.new(SPEECH_AT, 0, 1, -(BOTTOM_BAR + 24)),
+	Size = UDim2.new(0.42, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	BackgroundTransparency = 1,
 	Visible = false,
+	ZIndex = 6,
 })
-local speechStroke = make("UIStroke", { Parent = speech, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-make("UIPadding", { Parent = speech, PaddingTop = UDim.new(0, 12), PaddingBottom = UDim.new(0, 12), PaddingLeft = UDim.new(0, 20), PaddingRight = UDim.new(0, 20) })
-local speakerLabel = label(speech, { Text = "", TextSize = 16, TextColor3 = GOLD, Size = UDim2.new(1, 0, 0, 20) })
+make("UIListLayout", { Parent = speech, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
+local speakerLabel = label(speech, {
+	LayoutOrder = 1,
+	Text = "",
+	Font = Style.MonoFont,
+	TextSize = 12,
+	TextColor3 = GOLD,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextStrokeColor3 = Color3.new(0, 0, 0),
+	TextStrokeTransparency = 0.5,
+	Size = UDim2.new(1, 0, 0, 14),
+	ZIndex = 6,
+})
 local speechText = label(speech, {
+	LayoutOrder = 2,
 	Text = "",
 	TextSize = 22,
 	TextWrapped = true,
-	TextYAlignment = Enum.TextYAlignment.Top,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextStrokeColor3 = Color3.new(0, 0, 0),
+	TextStrokeTransparency = 0.25,
+	Size = UDim2.new(1, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	ZIndex = 6,
+})
+local note = label(speech, {
+	LayoutOrder = 3,
+	Text = "",
+	TextSize = 14,
+	TextColor3 = GOLD,
+	TextXAlignment = Enum.TextXAlignment.Center,
 	TextStrokeColor3 = Color3.new(0, 0, 0),
 	TextStrokeTransparency = 0.4,
-	Position = UDim2.fromOffset(0, 28),
-	Size = UDim2.new(1, 0, 1, -28),
+	Size = UDim2.new(1, 0, 0, 16),
+	Visible = false,
+	ZIndex = 6,
 })
 local currentShopId = ShopConfig.DefaultShop
+local accent = GOLD -- the open shop's colour
 local speakCount = 0
 local TYPE_SPEED = 0.008 -- seconds per letter
+
+-- names the shop and its keeper, and paints the column and the subtitles in the shop's colour
+local function paintShop(shop, info)
+	accent = info.color
+	local keeper = shop:GetAttribute("ShopkeeperName")
+	title.Text = string.upper(shop:GetAttribute("ShopTitle") or info.title)
+	subtitle.Text = string.upper(shop:GetAttribute("ShopSubtitle") or "")
+	kickerBar.BackgroundColor3 = accent
+	chip.Visible = keeper ~= nil
+	chip.Text = keeper and (" " .. string.upper(keeper) .. " ") or ""
+	chip.BackgroundColor3 = accent
+	chip.TextColor3 = onColor(accent)
+	local ruleAt = keeper and TextService:GetTextSize(chip.Text, chip.TextSize, chip.Font, Vector2.new(1000, 100)).X + 14 or 0
+	chipRule.Position = UDim2.fromOffset(ruleAt, 114)
+	chipRule.Size = UDim2.new(1, -ruleAt, 0, 1)
+	speakerLabel.TextColor3 = accent
+	speakerLabel.Text = string.upper(keeper or title.Text)
+end
 
 -- the shopkeeper says a line for a moment (greet, buy, poor, full, fail, sell), typed out letter by letter
 local function say(kind, itemName)
@@ -298,8 +443,12 @@ local function say(kind, itemName)
 end
 
 local function setStatus(text, failed)
-	status.Text = text
-	status.TextColor3 = failed and DANGER or GOLD
+	note.Text = text
+	note.Visible = text ~= ""
+	note.TextColor3 = failed and DANGER or GOLD
+	if text ~= "" then
+		speech.Visible = true
+	end
 	if failed then
 		UiSfx.Play("purchaseFail")
 	end
@@ -366,7 +515,7 @@ end
 
 local function refresh()
 	local yen = player:GetAttribute("Yen") or 0
-	balance.Text = formatYen(yen)
+	balance.Text = string.format('CASH  <font color="#%s">%s</font>', GOLD:ToHex(), formatYen(yen))
 	for _, row in ipairs(rows) do
 		local item = row.item
 		if row.ownedLabel then
@@ -374,9 +523,9 @@ local function refresh()
 				-- only shown once you have the power
 				local where = powerOwnership(item.set)
 				row.ownedLabel.Visible = where ~= nil
-				row.ownedLabel.Text = where and ("owned: " .. where) or ""
+				row.ownedLabel.Text = where and string.upper("owned: " .. where) or ""
 			else
-				row.ownedLabel.Text = "owned: " .. consumableCount(item)
+				row.ownedLabel.Text = "OWNED: " .. consumableCount(item)
 			end
 		end
 		local owned = owns(item)
@@ -483,7 +632,106 @@ local function sell(item)
 	refresh()
 end
 
--- one row per item the shop sells
+-- the item's model for the preview: a copy of the server's (ReplicatedStorage.ShopPreviews, by the
+-- item's id) with its middle at the origin, or nil
+local function previewModelOf(item)
+	local folder = ReplicatedStorage:FindFirstChild("ShopPreviews")
+	local source = folder and folder:FindFirstChild(item.id)
+	if not source then
+		return nil
+	end
+	local model = source:Clone()
+	model.WorldPivot = model:GetBoundingBox()
+	model:PivotTo(CFrame.new())
+	return model
+end
+
+-- puts `entry`'s item in the preview (its picture, its model turning, or its letter), popping in
+local function showPreview(entry)
+	if previewContent then
+		previewContent:Destroy()
+		previewContent, previewModel = nil, nil
+	end
+	if not entry then
+		return
+	end
+	local item = entry.item
+	previewWash.BackgroundColor3 = accent
+	for _, bracket in ipairs(previewBrackets) do
+		bracket.BackgroundColor3 = accent
+	end
+	previewCount.Text = string.format("ITEM %02d / %02d", table.find(rows, entry) or 0, #rows)
+	previewName.Text = string.upper(item.name)
+	local model = not item.image and previewModelOf(item)
+	if item.image then
+		previewContent = make("ImageLabel", {
+			Parent = previewBox,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.86, 0.86),
+			BackgroundTransparency = 1,
+			Image = item.image,
+			ScaleType = Enum.ScaleType.Fit,
+			ZIndex = 6,
+		})
+	elseif model then
+		local viewport = make("ViewportFrame", {
+			Parent = previewBox,
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Ambient = Color3.fromRGB(170, 170, 170),
+			LightColor = Color3.new(1, 1, 1),
+			LightDirection = Vector3.new(-1, -1, -1),
+			ZIndex = 6,
+		})
+		local _, size = model:GetBoundingBox()
+		local reach = size.Magnitude / 2
+		local camera = make("Camera", { Parent = viewport, FieldOfView = 30 })
+		camera.CFrame = CFrame.lookAt(Vector3.new(0, reach * 0.25, reach / math.tan(math.rad(15)) * 1.05), Vector3.zero)
+		viewport.CurrentCamera = camera
+		model.Parent = viewport
+		previewContent, previewModel, previewAngle = viewport, model, 0
+	else
+		-- nothing to show yet: its tier letter (in the tier's colour) or its name's first letter, big and faint
+		local tier = tierOf(item)
+		local tierInfo = tier and SkillSetConfig.Tiers[tier]
+		previewContent = label(previewBox, {
+			Text = tier or string.upper(string.sub(item.name, 1, 1)),
+			Font = Style.TitleFont,
+			TextScaled = true,
+			TextColor3 = tierInfo and tierInfo.color or accent,
+			TextTransparency = 0.35,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.5, 0.5),
+			ZIndex = 6,
+		})
+	end
+	previewPop.Scale = 0.94
+	tween(previewPop, 0.3, { Scale = 1 })
+end
+
+-- chooses `entry` (nil: none): lights its row, unlights the last one and shows its item in the preview
+local function choose(entry)
+	if entry == selectedRow then
+		return
+	end
+	if selectedRow then
+		selectedRow.paint(false)
+	end
+	selectedRow = entry
+	if entry then
+		entry.paint(true)
+	end
+	showPreview(entry)
+	preview.Visible = previewFits and entry ~= nil
+end
+
+-- one row per item the shop sells, as the title menu's buttons: its number, a picture or a tier,
+-- the name, uses or tier, detail and owned, and on the right the price and its buttons. The chosen
+-- row (under the mouse, or pressed) has the shop's colour fading in behind it, a bar down its left
+-- edge and its number lit (hoverRows, choose).
 local function buildRows(shopId)
 	for _, child in ipairs(list:GetChildren()) do
 		if child:IsA("GuiObject") then
@@ -491,6 +739,8 @@ local function buildRows(shopId)
 		end
 	end
 	rows = {}
+	selectedRow = nil
+	preview.Visible = false
 	for _, item in ipairs(shopItems(shopId)) do
 		if ShopConfig.ShopOf(item) == shopId then
 			-- a consumable's or a power's row: name, uses or tier, detail, owned (the others: name and detail)
@@ -501,19 +751,42 @@ local function buildRows(shopId)
 				Parent = list,
 				LayoutOrder = #rows + 1,
 				Size = UDim2.new(1, 0, 0, bodyHeight),
-				BackgroundColor3 = Color3.new(0, 0, 0),
-				BackgroundTransparency = 0.6,
+				BackgroundTransparency = 1,
 			})
-			make("UIStroke", { Parent = row, Color = TEXT, Transparency = Style.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-			make("UIPadding", { Parent = row, PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) })
-			local textLeft = 0
+			local highlight = make("Frame", { Parent = row, Size = UDim2.fromScale(1, 1), BackgroundColor3 = accent, BackgroundTransparency = 1, BorderSizePixel = 0 })
+			make("UIGradient", { Parent = highlight, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }) })
+			local bar = make("Frame", {
+				Parent = row,
+				AnchorPoint = Vector2.new(0, 0.5),
+				Position = UDim2.fromScale(0, 0.5),
+				Size = UDim2.fromOffset(3, 0),
+				BackgroundColor3 = accent,
+				BorderSizePixel = 0,
+				ZIndex = 2,
+			})
+			-- the thin rule under each row
+			make("Frame", { Parent = row, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
+			-- pressing the row anywhere but its buttons chooses it too (touch has no hover). Made before the
+			-- body: this gui's ZIndex is global, so the buttons in the body, coming later, take their own clicks
+			local selector = make("TextButton", { Parent = row, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false })
+			local body = make("Frame", { Parent = row, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 2 })
+			make("UIPadding", { Parent = body, PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 6), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) })
+			local number = label(body, {
+				Text = string.format("%02d", #rows + 1),
+				Font = Style.MonoFont,
+				TextSize = 11,
+				TextColor3 = MUTED,
+				Size = UDim2.fromOffset(NUMBER_WIDTH, 22),
+			})
+			local textLeft = NUMBER_WIDTH
 			local tier = tierOf(item)
 			if item.briefcase then
 				-- a power's picture goes here (an `image` on its ShopConfig item); until there is one the
 				-- tier letter holds the place
 				local tierColor = tier and SkillSetConfig.Tiers[tier] and SkillSetConfig.Tiers[tier].color or SkillSetConfig.NoTierColor
 				local picture = make("ImageLabel", {
-					Parent = row,
+					Parent = body,
+					Position = UDim2.fromOffset(textLeft, 0),
 					Size = UDim2.fromOffset(IMAGE_SIZE, IMAGE_SIZE),
 					BackgroundColor3 = Color3.fromRGB(14, 14, 20),
 					BorderSizePixel = 0,
@@ -532,87 +805,88 @@ local function buildRows(shopId)
 						Size = UDim2.fromScale(1, 1),
 					})
 				end
-				textLeft = IMAGE_SIZE + 12
+				textLeft += IMAGE_SIZE + 12
 			elseif tier then
 				local tierColor = SkillSetConfig.Tiers[tier] and SkillSetConfig.Tiers[tier].color or SkillSetConfig.NoTierColor
-				local badge = label(row, {
+				local badge = label(body, {
 					Text = tier,
 					Font = Style.TitleFont,
 					TextSize = 18,
 					TextColor3 = tierColor,
 					TextXAlignment = Enum.TextXAlignment.Center,
 					AnchorPoint = Vector2.new(0, 0.5),
-					Position = UDim2.fromScale(0, 0.5),
+					Position = UDim2.new(0, textLeft, 0.5, 0),
 					Size = UDim2.fromOffset(BADGE_SIZE, BADGE_SIZE),
 				})
 				make("UIStroke", { Parent = badge, Color = tierColor, Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-				textLeft = BADGE_SIZE + 10
+				textLeft += BADGE_SIZE + 10
 			end
 			local dim = item.comingSoon
-			label(row, {
+			label(body, {
 				Text = string.upper(item.name),
 				Font = Style.TitleFont,
-				TextSize = 16,
+				TextSize = 22,
 				TextColor3 = dim and MUTED or TEXT,
 				TextTruncate = Enum.TextTruncate.AtEnd,
 				Position = UDim2.fromOffset(textLeft, 0),
-				Size = UDim2.new(1, -(rightMargin + textLeft), 0, 16),
+				Size = UDim2.new(1, -(rightMargin + textLeft), 0, 22),
 			})
-			local descriptionTop = 19
+			local descriptionTop = 25
 			local infoLine = item.uses or (item.briefcase and tier and (tier .. "-tier power"))
 			if infoLine then
-				label(row, {
-					Text = infoLine,
-					Font = Enum.Font.Highway,
+				label(body, {
+					Text = string.upper(infoLine),
+					Font = Style.MonoFont,
 					TextSize = 11,
-					TextColor3 = GOLD,
-					Position = UDim2.fromOffset(textLeft, 19),
+					TextColor3 = accent,
+					Position = UDim2.fromOffset(textLeft, 25),
 					Size = UDim2.new(1, -(rightMargin + textLeft), 0, 14),
 				})
-				descriptionTop = 36
+				descriptionTop = 42
 			end
-			label(row, {
+			label(body, {
 				Text = item.briefcase and string.gsub(item.description, "^%a%-tier power%.%s*", "") or item.description,
-				TextSize = 11,
+				TextSize = 12,
 				TextColor3 = MUTED,
 				TextTransparency = dim and 0.3 or 0,
 				TextWrapped = true,
 				TextYAlignment = Enum.TextYAlignment.Top,
 				Position = UDim2.fromOffset(textLeft, descriptionTop),
-				Size = UDim2.new(1, -(rightMargin + textLeft), 0, item.briefcase and 42 or item.consumable and 30 or ITEM_HEIGHT - 16 - 19),
+				Size = UDim2.new(1, -(rightMargin + textLeft), 0, item.briefcase and 42 or item.consumable and 30 or ITEM_HEIGHT - 16 - 25),
 			})
 			local ownedLabel
 			if item.consumable or item.briefcase then
-				ownedLabel = label(row, {
-					Text = "owned: 0",
+				ownedLabel = label(body, {
+					Text = "OWNED: 0",
+					Font = Style.MonoFont,
 					TextSize = 11,
 					TextColor3 = TEXT,
-					Position = UDim2.fromOffset(textLeft, item.briefcase and 82 or 70),
+					Position = UDim2.fromOffset(textLeft, item.briefcase and 88 or 76),
 					Size = UDim2.new(1, -(rightMargin + textLeft), 0, 14),
 				})
 			end
 			-- the price sits top right, the BUY button bottom right
 			if item.price and not item.comingSoon then
-				label(row, {
+				label(body, {
 					Text = item.price == 0 and "FREE" or formatYen(priceOf(item)),
 					Font = Style.MonoFont,
-					TextSize = 15,
+					TextSize = 16,
 					TextColor3 = GOLD,
 					TextXAlignment = Enum.TextXAlignment.Right,
 					AnchorPoint = Vector2.new(1, 0),
 					Position = UDim2.fromScale(1, 0),
-					Size = UDim2.fromOffset(90, 18),
+					Size = UDim2.fromOffset(110, 20),
 				})
 			end
 			local button = make("TextButton", {
-				Parent = row,
+				Parent = body,
 				AnchorPoint = Vector2.new(1, 1),
 				Position = UDim2.new(1, 0, 0, bodyHeight - 16 - (item.briefcase and 28 * (robuxPrice and 2 or 1) or 0)),
 				Size = item.briefcase and UDim2.fromOffset(112, 24) or UDim2.fromOffset(84, 28),
-				BackgroundColor3 = GOLD,
+				BackgroundColor3 = accent,
 				BorderSizePixel = 0,
-				Font = Enum.Font.Highway,
-				TextSize = item.comingSoon and 10 or 12,
+				Font = Style.TitleFont,
+				TextSize = item.comingSoon and 12 or 15,
 				TextColor3 = BACKGROUND,
 			})
 			button.Activated:Connect(function()
@@ -634,19 +908,27 @@ local function buildRows(shopId)
 					buySound = UiSfx.Play("buy")
 				end
 			end)
-			local entry = { item = item, buy = button, ownedLabel = ownedLabel }
+			local function paint(over)
+				tween(highlight, HOVER_TIME, { BackgroundTransparency = over and 0.82 or 1 })
+				tween(bar, HOVER_TIME, { Size = UDim2.new(0, 3, over and 1 or 0, 0) })
+				tween(number, HOVER_TIME, { TextColor3 = over and accent or MUTED })
+			end
+			local entry = { item = item, buy = button, ownedLabel = ownedLabel, frame = row, paint = paint }
+			selector.Activated:Connect(function()
+				choose(entry)
+			end)
 			if item.briefcase then
 				-- in the column under the price: BUY (yen), the Robux lifetime copy, and sell a carried briefcase
 				local set = SkillSetConfig.Sets[item.set]
 				entry.sell = make("TextButton", {
-					Parent = row,
+					Parent = body,
 					AnchorPoint = Vector2.new(1, 1),
 					Position = UDim2.new(1, 0, 0, bodyHeight - 16),
 					Size = UDim2.fromOffset(112, 24),
-					BackgroundColor3 = GOLD,
+					BackgroundColor3 = accent,
 					BorderSizePixel = 0,
-					Font = Enum.Font.Highway,
-					TextSize = 11,
+					Font = Style.TitleFont,
+					TextSize = 13,
 					TextColor3 = BACKGROUND,
 					Text = "SELL " .. formatYen(PowerConfig.sellPrice(item.set, set.tier)),
 				})
@@ -656,14 +938,14 @@ local function buildRows(shopId)
 				if robuxPrice then
 					entry.robuxPrice = robuxPrice
 					entry.lifetime = make("TextButton", {
-						Parent = row,
+						Parent = body,
 						AnchorPoint = Vector2.new(1, 1),
 						Position = UDim2.new(1, 0, 0, bodyHeight - 16 - 28),
 						Size = UDim2.fromOffset(112, 24),
-						BackgroundColor3 = GOLD,
+						BackgroundColor3 = accent,
 						BorderSizePixel = 0,
-						Font = Enum.Font.Highway,
-						TextSize = 10,
+						Font = Style.TitleFont,
+						TextSize = 12,
 						TextColor3 = BACKGROUND,
 						Text = "LIFETIME " .. formatRobux(robuxPrice),
 					})
@@ -764,11 +1046,34 @@ local function close()
 	gui.Enabled = false
 	speakCount += 1 -- stops a line still typing
 	speech.Visible = false
+	choose(nil)
 	openAt = nil
 	Menus.Close("Shop")
 end
-closeButton.Activated:Connect(close)
-leave.Activated:Connect(close)
+-- E LEAVE, on the left of the bottom bar
+MenuFooter.Leave(gui, close, UDim2.new(0, PAD, 1, -(BOTTOM_BAR - HudConfig.HintsHeight) / 2))
+
+-- chooses the row under the mouse (polled: a row's buttons take the mouse from the row itself);
+-- off the list, the last one chosen stays
+local function hoverRows()
+	local mouse = UserInputService:GetMouseLocation() - GuiService:GetGuiInset() -- the mouse counts from the very top, the gui from under Roblox's band
+	local function inside(frame)
+		local position, size = frame.AbsolutePosition, frame.AbsoluteSize
+		return mouse.X >= position.X and mouse.X <= position.X + size.X and mouse.Y >= position.Y and mouse.Y <= position.Y + size.Y
+	end
+	local over
+	if inside(panel) then
+		for _, row in ipairs(rows) do
+			if inside(row.frame) then
+				over = row
+				break
+			end
+		end
+	end
+	if over then
+		choose(over)
+	end
+end
 
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	local shop = prompt:FindFirstAncestorOfClass("Model")
@@ -781,28 +1086,24 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		local shopId = ShopConfig.ShopIdOf(shop)
 		local info = ShopConfig.Shops[shopId] or ShopConfig.Shops[ShopConfig.DefaultShop]
 		openAt = shop
-		title.Text = shop:GetAttribute("ShopTitle") or info.title
-		subtitle.Text = shop:GetAttribute("ShopSubtitle") or ""
-		subtitle.TextColor3 = info.color
-		panelStroke.Color = info.color
-		speechStroke.Color = info.color
-		speakerLabel.TextColor3 = info.color
-		speakerLabel.Text = string.upper(shop:GetAttribute("ShopkeeperName") or title.Text)
+		paintShop(shop, info)
 		currentShopId = shopId
 		buildRows(shopId)
+		choose(rows[1])
 		setStatus("")
 		say("greet")
 		refresh()
 		panel.CanvasPosition = Vector2.zero
 		Menus.Open("Shop", close)
 		gui.Enabled = true
+		intro()
 		UiSfx.Play("shopEnter")
 		-- the full-screen close-up on the shopkeeper (E leaves)
 		ShopFocus.Begin(shop, { ignoreGui = gui, onLeave = close })
 	end
 end)
 
-RunService.Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function(dt)
 	if not openAt then
 		return
 	end
@@ -814,6 +1115,11 @@ RunService.Heartbeat:Connect(function()
 	if os.clock() - lastRefresh > 0.3 then
 		lastRefresh = os.clock() -- a bought Tool arrives a moment after the purchase
 		refresh()
+	end
+	hoverRows()
+	if previewModel then
+		previewAngle += dt * PREVIEW_TURN
+		previewModel:PivotTo(CFrame.Angles(0, previewAngle, 0))
 	end
 	ShopFocus.Step()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")

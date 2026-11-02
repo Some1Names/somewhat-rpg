@@ -1,7 +1,7 @@
 -- Smith menu, like Elden Ring's blacksmith: opens from a smith's prompt (a model
 -- tagged "Smith") over a full-screen close-up of the smith (ShopFocus, which also
--- makes E leave). On the left the powers and weapons you own with their +level;
--- on the right, for the one you pick, three tabs: STRENGTHEN (the next +level,
+-- makes E leave). Down the left the powers and weapons you own with their +level;
+-- beside them, for the one you pick, three tabs: STRENGTHEN (the next +level,
 -- the damage change and the materials needed against what you hold), AFFINITY
 -- (the two slots, opened at +3 and +7, where you choose the affinity and see the
 -- value each would have) and AWAKEN (powers only: at +10, Essence awakens it
@@ -9,11 +9,20 @@
 -- the server mirrors; every action goes through the ReforgeAction remote
 -- (ReforgeServer), which does all the checking. Closes when you walk away, or
 -- when another menu opens (Menus).
+-- It's in the shops' look (ShopMenu): black bars along the top and bottom (E LEAVE and your yen in
+-- the bottom one), the smith on the right, and down the left, over a dark fading off the edge, the
+-- smith's line, their title big and their name on a chip in the forge's orange (the ShopSubtitle,
+-- ShopTitle and ShopkeeperName attributes), then what you own as rows, the picked one lit, with its
+-- tabs in a pane beside them. The server's replies are subtitles under the smith.
 local CollectionService = game:GetService("CollectionService")
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
@@ -21,17 +30,33 @@ local ReforgeConfig = require(ReplicatedStorage:WaitForChild("ReforgeConfig"))
 local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local MenuFooter = require(script.Parent:WaitForChild("MenuFooter"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
+local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local remote = ReplicatedStorage:WaitForChild(ReforgeConfig.Remote)
 local player = Players.LocalPlayer
 
-local PANEL_WIDTH = 700
-local PADDING = 14
-local LIST_WIDTH = 220
-local ROW_HEIGHT = 44
-local CAMERA_SHIFT = 3.6 -- studs the smith sits right of centre, clear of the wide panel
+local PAD = 64 -- the screen's left edge to the column (as on the title menu and the shops)
+local COLUMN_WIDTH = 400 -- a little narrower than a shop's, for the pane beside it
+local COLUMN_GAP = 26 -- between the top bar and the column, and the column and the bottom bar
+local HEADER = 150 -- the column's top: the smith's line, their title big, their name on a chip
+local BOTTOM_BAR = 44 -- the black bar along the bottom; the top one is as tall as Roblox's band
+local ROBLOX_BAR_FALLBACK = 58 -- Roblox's band across the top, while GetGuiInset still says 0
+local SHADE_SHARE = 0.62 -- how far across the screen the dark fades off the left edge
+local SPEECH_AT = 0.85 -- the middle of the smith's subtitles, across the screen (under them: CAMERA_SHIFT)
+local SPEECH_WIDTH = 0.26
+local OPEN_TIME = 0.45 -- the bars closing in, the column sliding in
+local HOVER_TIME = 0.15
+local NUMBER_WIDTH = 28 -- a row's number, at its left
+local ROW_HEIGHT = 58 -- a set's row: name, what it is
+local BADGE_SIZE = 30 -- a set's tier letter
+local DETAIL_GAP = 28 -- between the list and the picked set's pane
+local DETAIL_WIDTH = 340
+local DETAIL_TOP = 102 -- the pane's top: level with the smith's chip, as a shop's item preview
+local CAMERA_SHIFT = 3.6 -- studs the smith sits right of centre, clear of the list and the pane
 local Style = HudConfig.Style
-local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass
+local Theme = HudConfig.HubTheme
+local BACKGROUND = Style.Glass -- Modern Warfare's smoked glass; the text on a filled button
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
 local GOLD = Color3.fromRGB(255, 205, 60)
@@ -78,9 +103,11 @@ local function clear(parent)
 	end
 end
 
--- "IridescentRequiem" -> "Iridescent Requiem"
+-- a set's name as everywhere else: its Tool's ("Aido" -> "Deus Ex Machina"), else "IridescentRequiem" ->
+-- "Iridescent Requiem"
 local function displayName(setName)
-	return (string.gsub(setName, "(%l)(%u)", "%1 %2"))
+	local set = SkillSetConfig.Sets[setName]
+	return set and set.tool or (string.gsub(setName, "(%l)(%u)", "%1 %2"))
 end
 
 -- the sets the player owns, best tier first
@@ -151,153 +178,239 @@ local gui = make("ScreenGui", {
 	Parent = player:WaitForChild("PlayerGui"),
 })
 
--- darkens the left of the screen for the menu; the right stays clear for the smith.
--- Active, so a click anywhere on the screen is taken by the menu and never punches or shoots.
-local backdrop = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Active = true })
+local function tween(instance, time, props)
+	local tweenObject = TweenService:Create(instance, TweenInfo.new(time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), props)
+	tweenObject:Play()
+	return tweenObject
+end
+
+-- the colour to write on a fill of `color`
+local function onColor(color)
+	return 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B > 0.4 and BACKGROUND or TEXT
+end
+
+-- the shops' look: black bars along the top and the bottom, the dark fading off the left edge for
+-- the column, the right left clear for the smith. The frame over the whole screen is Active, so a
+-- click anywhere is taken by the menu and never punches or shoots.
+local backdrop = make("Frame", { Parent = gui, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Active = true })
+local shade = make("Frame", { Parent = backdrop, Size = UDim2.fromScale(SHADE_SHARE, 1), BackgroundColor3 = Theme.Nav, BorderSizePixel = 0 })
 make("UIGradient", {
-	Parent = backdrop,
+	Parent = shade,
 	Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.15),
-		NumberSequenceKeypoint.new(0.5, 0.5),
-		NumberSequenceKeypoint.new(0.85, 1),
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(0.5, 0.45),
 		NumberSequenceKeypoint.new(1, 1),
 	}),
 })
-
-local panel = make("Frame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(0, 0.5),
-	Position = UDim2.new(0, 40, 0.5, 0),
-	Size = UDim2.new(0, PANEL_WIDTH, 1, -120),
-	BackgroundColor3 = BACKGROUND,
-	BackgroundTransparency = 0.2,
-	BorderSizePixel = 0,
-})
-make("UIStroke", { Parent = panel, Color = FORGE, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-make("UIPadding", {
-	Parent = panel,
-	PaddingTop = UDim.new(0, PADDING),
-	PaddingBottom = UDim.new(0, PADDING),
-	PaddingLeft = UDim.new(0, PADDING),
-	PaddingRight = UDim.new(0, PADDING),
-})
-
--- header: the smith's role big with the line above it (like a shop's), close
-local subtitle = label(panel, { Text = "REFORGE", Font = Style.MonoFont, TextSize = 11, TextColor3 = FORGE, Size = UDim2.new(1, -30, 0, 16) })
-local title = label(panel, {
-	Text = "SMITH",
-	Font = Style.TitleFont,
-	TextSize = 36,
-	Position = UDim2.fromOffset(0, 18),
-	Size = UDim2.new(1, -30, 0, 38),
-})
-local closeButton = make("TextButton", {
-	Parent = panel,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.fromScale(1, 0),
-	Size = UDim2.fromOffset(22, 22),
-	BackgroundTransparency = 1,
-	Font = Enum.Font.Highway,
-	Text = "×",
-	TextSize = 20,
-	TextColor3 = MUTED,
-})
-
--- the player's yen, top right of the screen
-local balanceBox = make("Frame", {
-	Parent = gui,
-	AnchorPoint = Vector2.new(1, 0),
-	Position = UDim2.new(1, -40, 0, 28),
-	Size = UDim2.fromOffset(240, 40),
-	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.3,
-	BorderSizePixel = 0,
-})
-make("UIStroke", { Parent = balanceBox, Color = GOLD, Transparency = 0.4, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-label(balanceBox, { Text = "CASH", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(0.4, 0, 1, 0) })
-local balance = label(balanceBox, {
-	Font = Style.MonoFont,
-	TextSize = 18,
-	TextColor3 = GOLD,
-	TextXAlignment = Enum.TextXAlignment.Right,
-	Size = UDim2.new(1, -12, 1, 0),
-})
-
--- the bottom: a status line and the leave button
-local leave = make("TextButton", {
-	Parent = panel,
+local topBar = make("Frame", { Parent = backdrop, Size = UDim2.fromScale(1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, ZIndex = 4 })
+local bottomBar = make("Frame", {
+	Parent = backdrop,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.fromScale(0, 1),
-	Size = UDim2.new(1, 0, 0, 34),
+	Size = UDim2.fromScale(1, 0),
 	BackgroundColor3 = Color3.new(0, 0, 0),
-	BackgroundTransparency = 0.4,
 	BorderSizePixel = 0,
-	Font = Enum.Font.Highway,
-	Text = "LEAVE SMITH",
-	TextSize = 13,
-	TextColor3 = TEXT,
+	ClipsDescendants = true,
+	ZIndex = 4,
 })
-local status = label(panel, {
+for _, edge in ipairs({ { topBar, 1 }, { bottomBar, 0 } }) do
+	make("Frame", {
+		Parent = edge[1],
+		AnchorPoint = Vector2.new(0, edge[2]),
+		Position = UDim2.fromScale(0, edge[2]),
+		Size = UDim2.new(1, 0, 0, 1),
+		BackgroundColor3 = Theme.Edge,
+		BackgroundTransparency = Theme.EdgeTransparency,
+		BorderSizePixel = 0,
+		ZIndex = 4,
+	})
+end
+-- the player's yen, on the right of the bottom bar (E LEAVE is on its left)
+local balance = label(bottomBar, {
 	Text = "",
+	RichText = true,
+	Font = Style.MonoFont,
 	TextSize = 12,
 	TextColor3 = MUTED,
-	AnchorPoint = Vector2.new(0, 1),
-	Position = UDim2.new(0, 0, 1, -40),
-	Size = UDim2.new(1, 0, 0, 16),
+	TextXAlignment = Enum.TextXAlignment.Right,
+	AnchorPoint = Vector2.new(1, 0.5),
+	Position = UDim2.new(1, -PAD, 0.5, 0),
+	Size = UDim2.new(0.5, -PAD, 0, 16),
+	ZIndex = 5,
 })
-local function setStatus(text, failed)
-	status.Text = text
-	status.TextColor3 = failed and DANGER or GOLD
-end
 
--- the body: the list of sets on the left, the picked set's tabs on the right
-local BODY_TOP = 64
-local body = make("Frame", {
-	Parent = panel,
-	Position = UDim2.fromOffset(0, BODY_TOP),
-	Size = UDim2.new(1, 0, 1, -(BODY_TOP + 62)),
-	BackgroundTransparency = 1,
+-- the column down the left: the smith's line with the forge's orange before it, their title big,
+-- their name on a chip with a rule running on, then what you own (it scrolls on a short screen)
+local column = make("Frame", { Parent = backdrop, BackgroundTransparency = 1, ZIndex = 5 })
+make("Frame", { Parent = column, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(24, 2), BackgroundColor3 = FORGE, BorderSizePixel = 0, ZIndex = 5 })
+local subtitle = label(column, { Text = "REFORGE", Font = Style.MonoFont, TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(34, 0), Size = UDim2.new(1, -34, 0, 14), ZIndex = 5 })
+local title = label(column, {
+	Text = "SMITH",
+	Font = Style.TitleFont,
+	TextScaled = true,
+	Position = UDim2.fromOffset(-2, 18),
+	Size = UDim2.new(1, 0, 0, 72),
+	ZIndex = 5,
 })
-local list = make("ScrollingFrame", {
-	Parent = body,
-	Size = UDim2.new(0, LIST_WIDTH, 1, 0),
-	BackgroundTransparency = 1,
+make("UITextSizeConstraint", { Parent = title, MaxTextSize = 72 })
+local chip = make("TextLabel", {
+	Parent = column,
+	Font = Style.TitleFont,
+	TextSize = 20,
+	TextColor3 = onColor(FORGE),
+	BackgroundColor3 = FORGE,
 	BorderSizePixel = 0,
+	Position = UDim2.fromOffset(1, 102),
+	Size = UDim2.fromOffset(0, 24),
+	AutomaticSize = Enum.AutomaticSize.X,
+	ZIndex = 5,
+})
+local chipRule = make("Frame", { Parent = column, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = MUTED, BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = 5 })
+local panel = make("ScrollingFrame", {
+	Parent = column,
+	Position = UDim2.fromOffset(0, HEADER),
+	Size = UDim2.new(1, 0, 1, -HEADER),
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollBarThickness = 4,
+	ScrollBarThickness = 3,
 	ScrollBarImageColor3 = MUTED,
+	ScrollBarImageTransparency = 0.4,
 	ScrollingDirection = Enum.ScrollingDirection.Y,
-	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
-})
-make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
-make("Frame", { Parent = body, Position = UDim2.fromOffset(LIST_WIDTH + 8, 0), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = TEXT, BackgroundTransparency = 0.85, BorderSizePixel = 0 })
-
-local DETAIL_LEFT = LIST_WIDTH + 18
-local detail = make("Frame", {
-	Parent = body,
-	Position = UDim2.fromOffset(DETAIL_LEFT, 0),
-	Size = UDim2.new(1, -DETAIL_LEFT, 1, 0),
 	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ZIndex = 5,
 })
-local detailTitle = label(detail, { Text = "", Font = Style.TitleFont, TextSize = 22, Size = UDim2.new(1, 0, 0, 22) })
-local detailSub = label(detail, { Text = "", Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 24), Size = UDim2.new(1, 0, 0, 14) })
-local tabRow = make("Frame", { Parent = detail, Position = UDim2.fromOffset(0, 46), Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
-make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
+-- the sets, as tall as they need
+local list = make("Frame", { Parent = panel, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, BorderSizePixel = 0 })
+make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder })
+
+-- the picked set's pane, beside the list: its name and +level, what it is, the tabs over a rule, then
+-- the tab's rows (they scroll)
+local detail = make("Frame", {
+	Parent = column,
+	Position = UDim2.fromOffset(COLUMN_WIDTH + DETAIL_GAP, DETAIL_TOP),
+	Size = UDim2.new(0, DETAIL_WIDTH, 1, -HEADER),
+	BackgroundColor3 = Theme.Nav,
+	BackgroundTransparency = 0.25,
+	BorderSizePixel = 0,
+})
+make("UIStroke", { Parent = detail, Color = Theme.Edge, Transparency = Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+make("UIPadding", {
+	Parent = detail,
+	PaddingTop = UDim.new(0, 16),
+	PaddingBottom = UDim.new(0, 16),
+	PaddingLeft = UDim.new(0, 16),
+	PaddingRight = UDim.new(0, 16),
+})
+local detailTitle = label(detail, { Text = "", RichText = true, Font = Style.TitleFont, TextSize = 28, TextTruncate = Enum.TextTruncate.AtEnd, Size = UDim2.new(1, 0, 0, 30) })
+local detailSub = label(detail, { Text = "", Font = Style.MonoFont, TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 34), Size = UDim2.new(1, 0, 0, 14) })
+local tabRow = make("Frame", { Parent = detail, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1 })
+make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 18) })
+make("Frame", { Parent = detail, Position = UDim2.fromOffset(0, 86), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
 local content = make("ScrollingFrame", {
 	Parent = detail,
-	Position = UDim2.fromOffset(0, 80),
-	Size = UDim2.new(1, 0, 1, -80),
+	Position = UDim2.fromOffset(0, 98),
+	Size = UDim2.new(1, 0, 1, -98),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	CanvasSize = UDim2.new(),
 	AutomaticCanvasSize = Enum.AutomaticSize.Y,
-	ScrollBarThickness = 4,
+	ScrollBarThickness = 3,
 	ScrollBarImageColor3 = MUTED,
+	ScrollBarImageTransparency = 0.4,
 	ScrollingDirection = Enum.ScrollingDirection.Y,
 	VerticalScrollBarInset = Enum.ScrollBarInset.ScrollBar,
 })
-make("UIListLayout", { Parent = content, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+make("UIListLayout", { Parent = content, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+
+local setRows = {} -- the list's rows
+local hoveredRow -- the row under the mouse, lit
+
+-- the top bar is as tall as Roblox's band; the column fills the room between the bars
+local band = ROBLOX_BAR_FALLBACK
+local function place()
+	band = GuiService:GetGuiInset().Y / UIScale.Get() -- Roblox's band is in real pixels
+	band = band > 0 and band or ROBLOX_BAR_FALLBACK / UIScale.Get()
+	column.Position = UDim2.fromOffset(PAD, band + COLUMN_GAP)
+	column.Size = UDim2.new(0, COLUMN_WIDTH, 1, -(band + BOTTOM_BAR + 2 * COLUMN_GAP))
+	if topBar.Size.Y.Offset > 0 then
+		topBar.Size = UDim2.new(1, 0, 0, band)
+	end
+end
+place()
+UIScale.OnChange(place)
+
+-- the bars close in and the column (with the pane) slides in from the left
+local function intro()
+	topBar.Size = UDim2.fromScale(1, 0)
+	bottomBar.Size = UDim2.fromScale(1, 0)
+	tween(topBar, OPEN_TIME, { Size = UDim2.new(1, 0, 0, band) })
+	tween(bottomBar, OPEN_TIME, { Size = UDim2.new(1, 0, 0, BOTTOM_BAR) })
+	shade.BackgroundTransparency = 1
+	tween(shade, OPEN_TIME, { BackgroundTransparency = 0 })
+	local at = UDim2.fromOffset(PAD, band + COLUMN_GAP)
+	column.Position = at - UDim2.fromOffset(PAD + COLUMN_WIDTH + DETAIL_GAP + DETAIL_WIDTH, 0)
+	tween(column, OPEN_TIME, { Position = at })
+end
+
+-- the smith's replies, as subtitles under them: their name small in the forge's orange over what the
+-- server said (gold, or red when it refused)
+local speech = make("Frame", {
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 1),
+	Position = UDim2.new(SPEECH_AT, 0, 1, -(BOTTOM_BAR + 24)),
+	Size = UDim2.new(SPEECH_WIDTH, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	BackgroundTransparency = 1,
+	Visible = false,
+	ZIndex = 6,
+})
+make("UIListLayout", { Parent = speech, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
+local speakerLabel = label(speech, {
+	LayoutOrder = 1,
+	Text = "",
+	Font = Style.MonoFont,
+	TextSize = 12,
+	TextColor3 = FORGE,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextStrokeColor3 = Color3.new(0, 0, 0),
+	TextStrokeTransparency = 0.5,
+	Size = UDim2.new(1, 0, 0, 14),
+	ZIndex = 6,
+})
+local note = label(speech, {
+	LayoutOrder = 2,
+	Text = "",
+	TextSize = 14,
+	TextColor3 = GOLD,
+	TextWrapped = true,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	TextStrokeColor3 = Color3.new(0, 0, 0),
+	TextStrokeTransparency = 0.4,
+	Size = UDim2.new(1, 0, 0, 0),
+	AutomaticSize = Enum.AutomaticSize.Y,
+	ZIndex = 6,
+})
+
+local function setStatus(text, failed)
+	note.Text = text
+	note.TextColor3 = failed and DANGER or GOLD
+	speech.Visible = text ~= ""
+end
+
+-- names the smith: their line, their title big and their name on the chip (the ShopSubtitle,
+-- ShopTitle and ShopkeeperName attributes; no name hides the chip), and over the subtitles
+local function paintHeader(smith)
+	local keeper = smith:GetAttribute("ShopkeeperName")
+	title.Text = string.upper(smith:GetAttribute("ShopTitle") or "SMITH")
+	subtitle.Text = string.upper(smith:GetAttribute("ShopSubtitle") or "Reforge")
+	chip.Visible = keeper ~= nil
+	chip.Text = keeper and (" " .. string.upper(keeper) .. " ") or ""
+	local ruleAt = keeper and TextService:GetTextSize(chip.Text, chip.TextSize, chip.Font, Vector2.new(1000, 100)).X + 14 or 0
+	chipRule.Position = UDim2.fromOffset(ruleAt, 114)
+	chipRule.Size = UDim2.new(1, -ruleAt, 0, 1)
+	speakerLabel.Text = string.upper(keeper or title.Text)
+end
 
 local selected -- the set picked in the list
 local tab = "strengthen"
@@ -331,21 +444,32 @@ local function nextOrder()
 end
 
 local function heading(text)
-	label(content, { LayoutOrder = nextOrder(), Text = text, Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+	label(content, { LayoutOrder = nextOrder(), Text = text, Font = Style.MonoFont, TextSize = 11, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 16) })
+end
+
+-- a row with a thin rule under it, as the list's: `name` on the left, `value` on the right (it wraps
+-- when it's long)
+local function ruledRow(name, nameColor, value, valueColor)
+	local row = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 26), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+	make("Frame", { Parent = row, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
+	label(row, { Text = name, TextSize = 13, TextColor3 = nameColor, Size = UDim2.new(1, 0, 0, 26) })
+	local valueLabel = label(row, {
+		Text = value,
+		TextSize = 12,
+		TextColor3 = valueColor,
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.fromScale(1, 0),
+		Size = UDim2.new(0.62, 0, 0, 26),
+		AutomaticSize = Enum.AutomaticSize.Y,
+	})
+	make("UIPadding", { Parent = valueLabel, PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) })
 end
 
 -- "Damage        +12%  →  +16%"
 local function preview(name, from, to, dim)
-	local row = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0 })
-	label(row, { Text = name, TextSize = 12, TextColor3 = dim and MUTED or TEXT, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
-	label(row, {
-		Text = to and string.format("%s   →   %s", from, to) or from,
-		Font = Enum.Font.Highway,
-		TextSize = 12,
-		TextColor3 = to and FORGE or TEXT,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Size = UDim2.new(1, -10, 1, 0),
-	})
+	ruledRow(name, dim and MUTED or TEXT, to and string.format("%s   →   %s", from, to) or from, to and FORGE or TEXT)
 end
 
 -- a cost as rows of what's needed against what you hold: the material in its tier's colour, the
@@ -358,29 +482,21 @@ local function costRows(cost, yen)
 		{ name = "Yen", color = GOLD, need = cost.yen, have = yen, text = string.format("%s / %s", formatYen(yen), formatYen(cost.yen)) },
 	}
 	for _, entry in ipairs(rows) do
-		local row = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0 })
-		label(row, { Text = entry.name, Font = Enum.Font.Highway, TextSize = 12, TextColor3 = entry.color, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
-		label(row, {
-			Text = entry.text,
-			TextSize = 12,
-			TextColor3 = entry.have >= entry.need and TEXT or DANGER,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			Size = UDim2.new(1, -10, 1, 0),
-		})
+		ruledRow(entry.name, entry.color, entry.text, entry.have >= entry.need and TEXT or DANGER)
 	end
 end
 
--- a wide button; `enabled` greys it out (the server still checks)
+-- a wide button in the forge's orange; `enabled` greys it out (the server still checks)
 local function wideButton(text, enabled, onClick)
 	local b = make("TextButton", {
 		Parent = content,
 		LayoutOrder = nextOrder(),
-		Size = UDim2.new(1, 0, 0, 34),
+		Size = UDim2.new(1, 0, 0, 36),
 		BackgroundColor3 = FORGE,
 		BackgroundTransparency = enabled and 0 or 0.6,
 		BorderSizePixel = 0,
-		Font = Enum.Font.Highway,
-		TextSize = 13,
+		Font = Style.TitleFont,
+		TextSize = 16,
 		TextColor3 = BACKGROUND,
 		Text = text,
 		AutoButtonColor = enabled,
@@ -401,9 +517,9 @@ local function strengthenTab(setName, state, yen)
 		LayoutOrder = nextOrder(),
 		Text = atMax and string.format("+%d   MAX", state.level) or string.format("+%d   →   +%d", state.level, state.level + 1),
 		Font = Style.TitleFont,
-		TextSize = 28,
+		TextSize = 32,
 		TextColor3 = FORGE,
-		Size = UDim2.new(1, 0, 0, 34),
+		Size = UDim2.new(1, 0, 0, 36),
 	})
 	local bonus = ReforgeRules.DamageBonus(state)
 	local nextState = { level = math.min(state.level + 1, ReforgeConfig.MaxLevel), mods = state.mods, awakening = state.awakening }
@@ -413,7 +529,7 @@ local function strengthenTab(setName, state, yen)
 	if ReforgeRules.SlotsUnlocked(state.level) < ReforgeRules.SlotsUnlocked(nextState.level) then
 		preview("Unlocks", "an affinity slot")
 	end
-	label(content, { LayoutOrder = nextOrder(), Text = "Affinities get stronger with every level.", TextSize = 11, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 14) })
+	label(content, { LayoutOrder = nextOrder(), Text = "Affinities get stronger with every level.", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 16) })
 	if atMax then
 		return
 	end
@@ -428,12 +544,14 @@ local function strengthenTab(setName, state, yen)
 end
 
 local function affinityTab(setName, state, yen)
-	label(content, { LayoutOrder = nextOrder(), Text = "Pick an affinity for each slot. Its strength grows with the level and with awakening.", TextSize = 11, TextColor3 = MUTED, TextWrapped = true, Size = UDim2.new(1, 0, 0, 28) })
+	label(content, { LayoutOrder = nextOrder(), Text = "Pick an affinity for each slot. Its strength grows with the level and with awakening.", TextSize = 12, TextColor3 = MUTED, TextWrapped = true, Size = UDim2.new(1, 0, 0, 30) })
 	local open = ReforgeRules.SlotsUnlocked(state.level)
 	for slot = 1, #ReforgeConfig.SlotUnlockLevels do
-		local block = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0 })
-		make("UIPadding", { Parent = block, PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8), PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+		local block = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
+		make("UIPadding", { Parent = block, PaddingBottom = UDim.new(0, 6) })
 		make("UIListLayout", { Parent = block, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
+		-- the thin rule over each slot
+		make("Frame", { Parent = block, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
 		local mod = state.mods[slot]
 		local current
 		if slot > open then
@@ -443,7 +561,14 @@ local function affinityTab(setName, state, yen)
 		else
 			current = "empty"
 		end
-		label(block, { LayoutOrder = 1, Text = string.format("SLOT %d    %s", slot, current), Font = Enum.Font.Highway, TextSize = 12, TextColor3 = slot > open and MUTED or TEXT, Size = UDim2.new(1, 0, 0, 16) })
+		label(block, {
+			LayoutOrder = 1,
+			RichText = true,
+			Text = string.format('<font color="#%s">SLOT %d</font>   %s', (slot > open and MUTED or FORGE):ToHex(), slot, current),
+			TextSize = 13,
+			TextColor3 = slot > open and MUTED or TEXT,
+			Size = UDim2.new(1, 0, 0, 18),
+		})
 		if slot <= open then
 			local cost = ReforgeConfig.ChangeCosts[slot]
 			local info = DropConfig.Materials[cost.material]
@@ -453,7 +578,9 @@ local function affinityTab(setName, state, yen)
 				Text = string.format("Choosing costs %s %d (you have %d) and %s", info and info.display or cost.material, cost.amount, bag[cost.material], formatYen(cost.yen)),
 				TextSize = 11,
 				TextColor3 = short and DANGER or MUTED,
-				Size = UDim2.new(1, 0, 0, 14),
+				TextWrapped = true,
+				Size = UDim2.new(1, 0, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
 			})
 			local grid = make("Frame", { Parent = block, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 			make("UIGridLayout", { Parent = grid, CellSize = UDim2.new(0.5, -3, 0, 40), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder })
@@ -475,7 +602,10 @@ local function affinityTab(setName, state, yen)
 					Text = "",
 					AutoButtonColor = not isCurrent and not blocked,
 				})
-				label(option, { Text = config.name .. (blocked and ("  (slot " .. otherSlot .. ")") or ""), Font = Enum.Font.Highway, TextSize = 12, TextColor3 = isCurrent and BACKGROUND or (blocked and MUTED or TEXT), Position = UDim2.fromOffset(8, 3), Size = UDim2.new(1, -16, 0, 16) })
+				if not isCurrent then
+					make("UIStroke", { Parent = option, Color = Theme.Edge, Transparency = Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+				end
+				label(option, { Text = string.upper(config.name) .. (blocked and ("  (SLOT " .. otherSlot .. ")") or ""), Font = Style.TitleFont, TextSize = 15, TextColor3 = isCurrent and BACKGROUND or (blocked and MUTED or TEXT), Position = UDim2.fromOffset(8, 3), Size = UDim2.new(1, -16, 0, 17) })
 				label(option, {
 					Text = describeValue(config.id, ReforgeRules.AffinityValue(config.id, state.level, state.awakening)),
 					TextSize = 10,
@@ -500,13 +630,13 @@ local function awakenTab(setName, state, yen)
 	-- the stages as squares
 	local pips = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1 })
 	make("UIListLayout", { Parent = pips, FillDirection = Enum.FillDirection.Horizontal, VerticalAlignment = Enum.VerticalAlignment.Center, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
-	label(pips, { LayoutOrder = 0, Text = "AWAKENING", Font = Enum.Font.Highway, TextSize = 12, TextColor3 = MUTED, Size = UDim2.fromOffset(86, 20) })
+	label(pips, { LayoutOrder = 0, Text = "AWAKENING", Font = Style.MonoFont, TextSize = 11, TextColor3 = MUTED, Size = UDim2.fromOffset(86, 20) })
 	for index = 1, ReforgeConfig.MaxAwakening do
 		local lit = index <= stage
-		local pip = make("Frame", { Parent = pips, LayoutOrder = index, Size = UDim2.fromOffset(20, 20), BackgroundColor3 = lit and FORGE or Color3.new(0, 0, 0), BackgroundTransparency = lit and 0 or 0.5, BorderSizePixel = 0 })
+		local pip = make("Frame", { Parent = pips, LayoutOrder = index, Size = UDim2.fromOffset(18, 18), BackgroundColor3 = lit and FORGE or Color3.new(0, 0, 0), BackgroundTransparency = lit and 0 or 0.5, BorderSizePixel = 0 })
 		make("UIStroke", { Parent = pip, Color = FORGE, Transparency = lit and 0 or 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	end
-	label(content, { LayoutOrder = nextOrder(), Text = string.format("Each stage: +%d%% damage and affinities %d%% stronger. Needs the power at +%d and Essence.", math.floor(ReforgeConfig.DamagePerAwakening * 100 + 0.5), math.floor(ReforgeConfig.AwakenAffinityBonus * 100 + 0.5), ReforgeConfig.MaxLevel), TextSize = 11, TextColor3 = MUTED, TextWrapped = true, Size = UDim2.new(1, 0, 0, 30) })
+	label(content, { LayoutOrder = nextOrder(), Text = string.format("Each stage: +%d%% damage and affinities %d%% stronger. Needs the power at +%d and Essence.", math.floor(ReforgeConfig.DamagePerAwakening * 100 + 0.5), math.floor(ReforgeConfig.AwakenAffinityBonus * 100 + 0.5), ReforgeConfig.MaxLevel), TextSize = 12, TextColor3 = MUTED, TextWrapped = true, Size = UDim2.new(1, 0, 0, 30) })
 	local nextState = { level = state.level, mods = state.mods, awakening = math.min(stage + 1, ReforgeConfig.MaxAwakening) }
 	preview("Damage", percent(ReforgeRules.DamageBonus(state)), not atMax and percent(ReforgeRules.DamageBonus(nextState)) or nil)
 	for slot = 1, #ReforgeConfig.SlotUnlockLevels do
@@ -518,53 +648,57 @@ local function awakenTab(setName, state, yen)
 		end
 	end
 	if atMax then
-		label(content, { LayoutOrder = nextOrder(), Text = "Fully awakened", Font = Enum.Font.Highway, TextSize = 14, TextColor3 = FORGE, Size = UDim2.new(1, 0, 0, 20) })
+		label(content, { LayoutOrder = nextOrder(), Text = "FULLY AWAKENED", Font = Style.TitleFont, TextSize = 18, TextColor3 = FORGE, Size = UDim2.new(1, 0, 0, 22) })
 		return
 	end
 	heading("REQUIRED")
 	local reached = state.level >= ReforgeConfig.MaxLevel
-	local levelRow = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 24), BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.6, BorderSizePixel = 0 })
-	label(levelRow, { Text = "Level", Font = Enum.Font.Highway, TextSize = 12, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0.5, -10, 1, 0) })
-	label(levelRow, { Text = string.format("+%d / +%d", state.level, ReforgeConfig.MaxLevel), TextSize = 12, TextColor3 = reached and TEXT or DANGER, TextXAlignment = Enum.TextXAlignment.Right, Size = UDim2.new(1, -10, 1, 0) })
+	ruledRow("Level", TEXT, string.format("+%d / +%d", state.level, ReforgeConfig.MaxLevel), reached and TEXT or DANGER)
 	costRows(ReforgeConfig.AwakenCosts[stage + 1], yen)
 	local can = ReforgeRules.PlanAwaken(state, true, bag, yen)
-	wideButton(string.format("AWAKEN  stage %d → %d", stage, stage + 1), can, function()
+	wideButton(string.format("AWAKEN  STAGE %d → %d", stage, stage + 1), can, function()
 		request("awaken", setName)
 		render()
 	end)
 end
 
+-- the tabs: titles over the pane's rule, the open one white and underlined in the forge's orange
 local tabButtons = {}
 for index, entry in ipairs(TABS) do
 	local button = make("TextButton", {
 		Parent = tabRow,
 		LayoutOrder = index,
-		Size = UDim2.fromOffset(112, 26),
-		BackgroundColor3 = TEXT,
-		Font = Enum.Font.Highway,
+		Size = UDim2.fromOffset(0, 28),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		AutoButtonColor = false,
+		Font = Style.TitleFont,
 		Text = entry.title,
-		TextSize = 11,
-		BorderSizePixel = 0,
+		TextSize = 16,
+		TextColor3 = MUTED,
 	})
-	make("UIStroke", { Parent = button, Color = TEXT, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	local underline = make("Frame", { Parent = button, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = FORGE, BorderSizePixel = 0, Visible = false })
 	button.Activated:Connect(function()
 		tab = entry.id
 		render()
 	end)
-	tabButtons[entry.id] = button
+	tabButtons[entry.id] = { button = button, underline = underline }
 end
 
 -- the whole menu --------------------------------------------------------------------
 
 render = function()
 	local yen = player:GetAttribute("Yen") or 0
-	balance.Text = formatYen(yen)
+	balance.Text = string.format('CASH  <font color="#%s">%s</font>', GOLD:ToHex(), formatYen(yen))
 
-	-- the list of sets
+	-- the list of sets, as the shops' rows: number, tier, name, what it is and the +level. The picked
+	-- one is lit; a row under the mouse brightens a little (hoverRows)
 	clear(list)
+	setRows = {}
+	hoveredRow = nil
 	local owned = ownedSets()
 	if #owned == 0 then
-		label(list, { Text = "You own nothing to reforge", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, ROW_HEIGHT) })
+		label(list, { Text = "You own nothing to reforge", TextSize = 13, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, ROW_HEIGHT) })
 	end
 	if selected and not table.find(owned, selected) then
 		selected = nil
@@ -578,44 +712,92 @@ render = function()
 			Parent = list,
 			LayoutOrder = index,
 			Size = UDim2.new(1, 0, 0, ROW_HEIGHT),
-			BackgroundColor3 = isSelected and FORGE or Color3.new(0, 0, 0),
-			BackgroundTransparency = isSelected and 0.75 or 0.6,
-			BorderSizePixel = 0,
+			BackgroundTransparency = 1,
 			Text = "",
 			AutoButtonColor = false,
 		})
-		if isSelected then
-			make("UIStroke", { Parent = row, Color = FORGE, Transparency = 0.2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+		local highlight = make("Frame", { Parent = row, Size = UDim2.fromScale(1, 1), BackgroundColor3 = FORGE, BackgroundTransparency = isSelected and 0.82 or 1, BorderSizePixel = 0 })
+		make("UIGradient", { Parent = highlight, Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) }) })
+		local bar = make("Frame", {
+			Parent = row,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.fromScale(0, 0.5),
+			Size = UDim2.new(0, 3, isSelected and 1 or 0, 0),
+			BackgroundColor3 = FORGE,
+			BorderSizePixel = 0,
+			ZIndex = 2,
+		})
+		-- the thin rule under each row
+		make("Frame", { Parent = row, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
+		local body = make("Frame", { Parent = row, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 2 })
+		make("UIPadding", { Parent = body, PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 10), PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8) })
+		local number = label(body, {
+			Text = string.format("%02d", index),
+			Font = Style.MonoFont,
+			TextSize = 11,
+			TextColor3 = isSelected and FORGE or MUTED,
+			Size = UDim2.fromOffset(NUMBER_WIDTH, 22),
+		})
+		local badge = label(body, {
+			Text = set.tier or "",
+			Font = Style.TitleFont,
+			TextSize = 18,
+			TextColor3 = tierColor(setName),
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, NUMBER_WIDTH, 0.5, 0),
+			Size = UDim2.fromOffset(BADGE_SIZE, BADGE_SIZE),
+		})
+		if set.tier then
+			make("UIStroke", { Parent = badge, Color = tierColor(setName), Transparency = 0.3, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 		end
-		label(row, { Text = set.tier or "", Font = Style.TitleFont, TextSize = 20, TextColor3 = tierColor(setName), TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(4, 0), Size = UDim2.new(0, 26, 1, 0) })
-		label(row, { Text = string.upper(displayName(setName)), Font = Style.TitleFont, TextSize = 15, TextTruncate = Enum.TextTruncate.AtEnd, Position = UDim2.fromOffset(36, 0), Size = UDim2.new(1, -96, 1, 0) })
-		label(row, {
+		local textLeft = NUMBER_WIDTH + BADGE_SIZE + 10
+		label(body, {
+			Text = string.upper(displayName(setName)),
+			Font = Style.TitleFont,
+			TextSize = 22,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Position = UDim2.fromOffset(textLeft, 0),
+			Size = UDim2.new(1, -(textLeft + 44), 0, 22),
+		})
+		label(body, {
+			Text = string.upper(string.format("%s-tier %s%s", set.tier or "?", set.kind, state.awakening > 0 and ("  ·  awakened " .. state.awakening) or "")),
+			Font = Style.MonoFont,
+			TextSize = 11,
+			TextColor3 = FORGE,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Position = UDim2.fromOffset(textLeft, 26),
+			Size = UDim2.new(1, -(textLeft + 44), 0, 14),
+		})
+		-- the +level, top right (where a shop's row has its price)
+		label(body, {
 			Text = state.level > 0 and ("+" .. state.level) or "",
-			Font = Enum.Font.Highway,
-			TextSize = 14,
+			Font = Style.MonoFont,
+			TextSize = 16,
 			TextColor3 = FORGE,
 			TextXAlignment = Enum.TextXAlignment.Right,
-			Size = UDim2.new(1, -10, 1, 0),
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.fromScale(1, 0),
+			Size = UDim2.fromOffset(44, 20),
 		})
-		if state.awakening > 0 then
-			label(row, { Text = "AWK " .. state.awakening, Font = Style.MonoFont, TextSize = 9, TextColor3 = GOLD, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -10, 1, -4), Size = UDim2.fromOffset(50, 10) })
+		-- under the mouse a row only brightens a little, so the picked one stays the one lit
+		local function paint(over)
+			tween(highlight, HOVER_TIME, { BackgroundTransparency = isSelected and 0.82 or over and 0.93 or 1 })
+			tween(number, HOVER_TIME, { TextColor3 = isSelected and FORGE or over and TEXT or MUTED })
 		end
 		row.Activated:Connect(function()
 			selected = setName
 			setStatus("")
 			render()
 		end)
+		table.insert(setRows, { frame = row, paint = paint })
 	end
 
-	-- the picked set's tabs
+	-- the picked set's pane
 	clear(content)
 	contentOrder = 0
+	detail.Visible = selected ~= nil
 	if not selected then
-		detailTitle.Text = ""
-		detailSub.Text = ""
-		for _, button in pairs(tabButtons) do
-			button.Visible = false
-		end
 		return
 	end
 	local state = stateOf(selected)
@@ -623,14 +805,14 @@ render = function()
 	if tab == "awaken" and not power then
 		tab = "strengthen"
 	end
-	detailTitle.Text = string.format("%s   +%d", displayName(selected), state.level)
-	detailSub.Text = string.format("%s-tier %s%s", SkillSetConfig.Sets[selected].tier or "?", SkillSetConfig.Sets[selected].kind, state.awakening > 0 and ("   ·   awakened " .. state.awakening) or "")
+	detailTitle.Text = string.format('%s  <font color="#%s">+%d</font>', string.upper(displayName(selected)), FORGE:ToHex(), state.level)
+	detailSub.Text = string.upper(string.format("%s-tier %s%s", SkillSetConfig.Sets[selected].tier or "?", SkillSetConfig.Sets[selected].kind, state.awakening > 0 and ("   ·   awakened " .. state.awakening) or ""))
 	detailSub.TextColor3 = tierColor(selected)
-	for id, button in pairs(tabButtons) do
-		button.Visible = id ~= "awaken" or power
+	for id, entry in pairs(tabButtons) do
+		entry.button.Visible = id ~= "awaken" or power
 		local active = id == tab
-		button.BackgroundTransparency = active and 0 or 1
-		button.TextColor3 = active and BACKGROUND or TEXT
+		entry.button.TextColor3 = active and TEXT or MUTED
+		entry.underline.Visible = active
 	end
 	if tab == "strengthen" then
 		strengthenTab(selected, state, yen)
@@ -667,8 +849,35 @@ local function close()
 	openAt = nil
 	Menus.Close("Reforge")
 end
-closeButton.Activated:Connect(close)
-leave.Activated:Connect(close)
+-- E LEAVE, on the left of the bottom bar
+MenuFooter.Leave(gui, close, UDim2.new(0, PAD, 1, -(BOTTOM_BAR - HudConfig.HintsHeight) / 2))
+
+-- lights the row under the mouse (polled, as the shops' rows are)
+local function hoverRows()
+	local mouse = UserInputService:GetMouseLocation() - GuiService:GetGuiInset() -- (AbsolutePosition starts under Roblox's band)
+	local function inside(frame)
+		local position, size = frame.AbsolutePosition, frame.AbsoluteSize
+		return mouse.X >= position.X and mouse.X <= position.X + size.X and mouse.Y >= position.Y and mouse.Y <= position.Y + size.Y
+	end
+	local over
+	if inside(panel) then
+		for _, row in ipairs(setRows) do
+			if inside(row.frame) then
+				over = row
+				break
+			end
+		end
+	end
+	if over ~= hoveredRow then
+		if hoveredRow then
+			hoveredRow.paint(false)
+		end
+		hoveredRow = over
+		if over then
+			over.paint(true)
+		end
+	end
+end
 
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	local smith = prompt:FindFirstAncestorOfClass("Model")
@@ -677,12 +886,12 @@ ProximityPromptService.PromptTriggered:Connect(function(prompt)
 		setStatus("")
 		selected = nil
 		tab = "strengthen"
-		title.Text = smith:GetAttribute("ShopTitle") or "SMITH"
-		subtitle.Text = smith:GetAttribute("ShopSubtitle") or "Reforge"
+		paintHeader(smith)
 		render()
-		list.CanvasPosition = Vector2.zero
+		panel.CanvasPosition = Vector2.zero
 		Menus.Open("Reforge", close)
 		gui.Enabled = true
+		intro()
 		-- the full-screen close-up on the smith (E leaves)
 		ShopFocus.Begin(smith, { ignoreGui = gui, onLeave = close, shift = CAMERA_SHIFT })
 	end
@@ -692,6 +901,7 @@ RunService.Heartbeat:Connect(function()
 	if not openAt then
 		return
 	end
+	hoverRows()
 	ShopFocus.Step()
 	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	if not root or not openAt.Parent or (openAt:GetPivot().Position - root.Position).Magnitude > ReforgeConfig.Range then

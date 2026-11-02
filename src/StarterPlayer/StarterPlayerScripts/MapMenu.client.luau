@@ -1,11 +1,8 @@
--- The hub's Map tab (M): the place as a 3D model of blocks in a ViewportFrame, built
--- from MapLayout (baked from the parts by tools/bake_map.luau; bake again after the map
--- changes), lit from the north-west, each height step a little lighter. It's grey where
--- the player hasn't been and in the parts' own colours where they have: walking about
--- paints it, a square MapRules.RevealRadius each way round them (their saved Explored
--- text; MapRules cuts the place into small cells, and a block over many of them into
--- explored and unexplored pieces; MapServer reveals). Over it,
--- flat markers: you (an arrow the way you face), your party mates, the Bounty Hunters,
+-- The hub's Map tab (M): the place as a 3D model of blocks in a ViewportFrame (MapModel,
+-- which the travel map shares: built from MapLayout, lit from the north-west, each height
+-- step a little lighter, grey where the player hasn't been and in the parts' own colours
+-- where they have; walking about paints it, a square MapRules.RevealRadius each way round
+-- them). Over it, flat markers: you (an arrow the way you face), your party mates, the Bounty Hunters,
 -- the smith, recruiter, shops and gacha, and the spawns; the legend under the map turns
 -- each kind on and off, and a marker's name shows only while the cursor is over it (or
 -- a finger holds it). With streaming on far-off parts aren't here, so the NPCs come from
@@ -23,6 +20,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local Hub = require(script.Parent:WaitForChild("Hub"))
+local MapModel = require(script.Parent:WaitForChild("MapModel"))
 local UIScale = require(script.Parent:WaitForChild("UIScale"))
 local MapLayout = require(ReplicatedStorage:WaitForChild("MapLayout"))
 local MapRules = require(ReplicatedStorage:WaitForChild("MapRules"))
@@ -53,26 +51,14 @@ local GRID = 32 -- px between the background grid's lines
 local GRID_TRANSPARENCY = 0.93
 local FADE = 56 -- px over which the map fades into the paper at the box's edges
 local PAPER_SEE_THROUGH = 0.1 -- the hub paper's own transparency, so the faded edge matches it
-local KIND_COLOURS = {
-	green = Color3.fromRGB(34, 46, 37),
-	land = Color3.fromRGB(50, 46, 40),
-	road = Color3.fromRGB(84, 84, 92),
-	water = Color3.fromRGB(24, 36, 54),
-	build = Color3.fromRGB(56, 56, 64),
-}
-local HIGH = Color3.fromRGB(226, 226, 232) -- what each height step lightens a colour toward
-local STEP_LIGHT = { 0, 0.12, 0.24, 0.38, 0.52, 0.68 } -- how far, by MapRules.HeightBand
-local FLOOR = -20 -- studs: no block goes lower (the backdrop towers reach far underground)
-local LIGHT_DIRECTION = Vector3.new(1, -3, 1) -- the way the light falls: from the north-west, high
-local LIGHT = Color3.fromRGB(200, 200, 200)
-local AMBIENT = Color3.fromRGB(100, 100, 110) -- the sides facing away from the light
-local WATER = Color3.fromRGB(46, 104, 150) -- the sea, whatever its parts are made of
-local HEIGHT_TINT = 0.5 -- how much of a height step's lightening the parts' own colours take
-local GREY_DIM = 0.8 -- an unexplored block's grey, as a share of its colour's lightness
 local UNEXPLORED = Color3.fromRGB(110, 110, 110) -- its square in the legend
 local OFF = Theme.BarBack -- a filter that's off
-local QUEST = Color3.fromRGB(255, 196, 64)
-local PIN_COLOURS = { Quest = QUEST, Service = Theme.Ink, Spawn = Theme.Muted }
+local QUEST = Color3.fromRGB(235, 64, 64) -- bounty: red
+local SHOP = Color3.fromRGB(255, 214, 64)
+local POWER = Color3.fromRGB(170, 90, 235)
+local SPAWN = Color3.fromRGB(60, 224, 230)
+local NPC = Color3.fromRGB(255, 255, 255) -- any other NPC
+local PIN_COLOURS = { Quest = QUEST, Shop = SHOP, Power = POWER, Service = NPC, Spawn = SPAWN }
 
 local bounds = MapLayout.Bounds
 
@@ -112,14 +98,11 @@ local viewport = make("ViewportFrame", {
 	Parent = box,
 	Size = UDim2.fromScale(1, 1),
 	BackgroundTransparency = 1,
-	Ambient = AMBIENT,
-	LightColor = LIGHT,
-	LightDirection = LIGHT_DIRECTION,
 	ZIndex = 2,
 })
+MapModel.Light(viewport)
 local camera = make("Camera", { Parent = viewport, FieldOfView = MapRules.Fov })
 viewport.CurrentCamera = camera
-local blocks = make("Model", { Name = "Blocks", Parent = viewport })
 local pinLayer = make("Frame", { Parent = box, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 3 })
 -- left, right, top, bottom: { anchor and position, size, gradient turn (paper at the edge, clear inside) }
 for _, edge in ipairs({
@@ -208,94 +191,10 @@ local function legendEntry(order, text, colours, isFilter)
 	return holder, swatches, word
 end
 
--- a block for the model: a box from `bottom` to `top`, turned about its middle
-local function block(parent, x, z, width, depth, turn, bottom, top, colour)
-	local height = math.max(top - bottom, 0.2)
-	return make("Part", {
-		Parent = parent,
-		Anchored = true,
-		CanCollide = false,
-		CastShadow = false,
-		Material = Enum.Material.SmoothPlastic,
-		Color = colour,
-		Size = Vector3.new(width, height, depth),
-		CFrame = CFrame.new(x, bottom + height / 2, z) * CFrame.Angles(0, -math.rad(turn), 0),
-	})
-end
-
--- the blocks, built on the first showing, each with its colour and its grey. A square-on
--- block over more than one cell is built by paint, as the pieces of it that are explored
--- or not; any other block is one part, listed under the cell its middle is in (an older
--- bake has no bottoms or colours: a slab under each top, in its kind's tone)
-local drawn = false
-local cellBlocks = {} -- cell (0 off the grid) -> { { part, colour, grey } }
-local wideBlocks = {} -- { minX, minZ, maxX, maxZ, bottom, top, colour, grey, parts = {}, key }
-local function drawShapes()
-	drawn = true
-	for _, shape in ipairs(MapLayout.Shapes) do
-		local top = shape[6]
-		local own = shape[7] == "water" and WATER or shape[9] and Color3.fromHex(shape[9]) or KIND_COLOURS[shape[7]] or KIND_COLOURS.build
-		local colour = own:Lerp(HIGH, STEP_LIGHT[MapRules.HeightBand(top)] * HEIGHT_TINT)
-		local lightness = (0.299 * colour.R + 0.587 * colour.G + 0.114 * colour.B) * GREY_DIM
-		local grey = Color3.new(lightness, lightness, lightness)
-		local bottom = math.max(shape[8] or top - 1, FLOOR)
-		local minX, minZ, maxX, maxZ = MapRules.SquareFootprint(shape[1], shape[2], shape[3], shape[4], shape[5])
-		if minX and MapRules.CellAt(minX, minZ) ~= MapRules.CellAt(maxX - 0.01, maxZ - 0.01) then
-			table.insert(wideBlocks, { minX, minZ, maxX, maxZ, bottom, top, colour, grey, parts = {}, key = "" })
-		else
-			local cell = MapRules.CellAt(shape[1], shape[2]) or 0
-			cellBlocks[cell] = cellBlocks[cell] or {}
-			table.insert(cellBlocks[cell], { block(blocks, shape[1], shape[2], shape[3], shape[4], shape[5], bottom, top, grey), colour, grey })
-		end
-	end
-end
-
--- each explored cell's blocks in their colours, the rest grey; a wide block is built again
--- only when its pieces change
-local painted = {} -- cell -> whether its blocks show their colours
-local function paint()
-	local explored = MapRules.DecodeExplored(player:GetAttribute("Explored"))
-	for cell, list in pairs(cellBlocks) do
-		local on = explored[cell] == true
-		if painted[cell] ~= on then
-			painted[cell] = on
-			for _, entry in ipairs(list) do
-				entry[1].Color = on and entry[2] or entry[3]
-			end
-		end
-	end
-	for _, wide in ipairs(wideBlocks) do
-		local rects = MapRules.PaintRects(wide[1], wide[2], wide[3], wide[4], explored)
-		local keys = {}
-		for i, rect in ipairs(rects) do
-			keys[i] = string.format("%g %g %g %g %s", rect[1], rect[2], rect[3], rect[4], tostring(rect[5]))
-		end
-		table.sort(keys)
-		local key = table.concat(keys, ";")
-		if key ~= wide.key then
-			wide.key = key
-			for _, part in ipairs(wide.parts) do
-				part:Destroy()
-			end
-			table.clear(wide.parts)
-			for _, rect in ipairs(rects) do
-				local x, z = (rect[1] + rect[3]) / 2, (rect[2] + rect[4]) / 2
-				local colour = rect[5] and wide[7] or wide[8]
-				table.insert(wide.parts, block(blocks, x, z, rect[3] - rect[1], rect[4] - rect[2], 0, wide[5], wide[6], colour))
-			end
-		end
-	end
-end
-player:GetAttributeChangedSignal("Explored"):Connect(function()
-	if drawn then
-		paint()
-	end
-end)
-
 -- markers: a square at a point in the world, its name shown while hovered; `filter` is
 -- the legend entry that shows or hides it
 local pins = {} -- every marker: { frame (the hover area), square, filter, world }
-local shown = { Self = true, Quest = true, Service = true, Spawn = true, Zone = true }
+local shown = { Self = true, Quest = true, Shop = true, Power = true, Service = true, Spawn = true, Zone = true }
 local ink = Theme.Ink
 
 local function makePin(colour, text, filter)
@@ -663,8 +562,10 @@ end
 for i, filter in ipairs({
 	{ "Self", "YOU / PARTY", Theme.Ink },
 	{ "Quest", "BOUNTY", QUEST },
-	{ "Service", "SHOPS & SERVICES", Theme.Ink },
-	{ "Spawn", "SPAWN", Theme.Muted },
+	{ "Shop", "SHOPS", SHOP },
+	{ "Power", "POWERS", POWER },
+	{ "Service", "NPCS", NPC },
+	{ "Spawn", "SPAWN", SPAWN },
 	{ "Zone", "AREAS", Theme.Ink },
 }) do
 	local key = filter[1]
@@ -676,11 +577,7 @@ for i, filter in ipairs({
 		paintFilter(key)
 	end)
 end
-local steps = {}
-for i = 1, #STEP_LIGHT do
-	steps[i] = KIND_COLOURS.build:Lerp(HIGH, STEP_LIGHT[i])
-end
-legendEntry(10, "LOW TO HIGH", steps, false)
+legendEntry(10, "LOW TO HIGH", MapModel.StepColours(), false)
 legendEntry(11, "UNEXPLORED", { UNEXPLORED }, false)
 
 Hub.OnAccent(function(_, accentInk)
@@ -697,10 +594,7 @@ end)
 local rendering
 local running = false
 Hub.OnShown("Map", function()
-	if not drawn then
-		drawShapes()
-		paint()
-	end
+	MapModel.Show(viewport) -- the travel map may have had it
 	resetView()
 	if not rendering then
 		rendering = RunService.RenderStepped:Connect(function(dt)

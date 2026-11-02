@@ -68,7 +68,7 @@ function SlotConfig.CleanName(text)
 		return nil, string.format("Codename must be %d-%d characters", SlotConfig.NameMin, SlotConfig.NameMax)
 	end
 	if not name:match("^[%w _]+$") then
-		return nil, "Letters, numbers, spaces and _ only"
+		return nil, "English letters, numbers, spaces and _ only"
 	end
 	if not name:match("%w") then
 		return nil, "Use at least one letter or number"

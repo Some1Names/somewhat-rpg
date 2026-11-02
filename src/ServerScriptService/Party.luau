@@ -35,6 +35,8 @@ local function clearMember(player)
 	player:SetAttribute("PartyId", nil)
 	player:SetAttribute("PartyLeader", nil)
 	player:SetAttribute("PartyIndex", nil)
+	player:SetAttribute("PartyPublic", nil)
+	player:SetAttribute("PartyFriendlyFire", nil)
 end
 
 local function publish(party)
@@ -45,6 +47,8 @@ local function publish(party)
 			member:SetAttribute("PartyId", party.id)
 			member:SetAttribute("PartyLeader", party.leader)
 			member:SetAttribute("PartyIndex", index)
+			member:SetAttribute("PartyPublic", party.public)
+			member:SetAttribute("PartyFriendlyFire", party.friendlyFire)
 		end
 	end
 end
@@ -85,6 +89,61 @@ function Party.Mates(player)
 		end
 	end
 	return list
+end
+
+-- starts a party of one, so a leader can open it to the public before anyone has joined
+function Party.Create(player)
+	if partyOf[player] then
+		return false, "Leave your party first"
+	end
+	nextId += 1
+	local party = PartyRules.New("P" .. nextId, player.UserId)
+	parties[party.id] = party
+	publish(party)
+	return true, "Party created"
+end
+
+-- the leader opens the party to anyone (true) or makes it invite only (false)
+function Party.SetPublic(leader, public)
+	local party = partyOf[leader]
+	local ok, reason = PartyRules.CanConfigure(party, leader.UserId)
+	if not ok then
+		return false, reason
+	end
+	party.public = public
+	publish(party)
+	tell(party, public and "The party is now public" or "The party is now invite only", leader)
+	return true, public and "Party is public" or "Party is invite only"
+end
+
+function Party.SetFriendlyFire(leader, enabled)
+	local party = partyOf[leader]
+	local ok, reason = PartyRules.CanConfigure(party, leader.UserId)
+	if not ok then
+		return false, reason
+	end
+	party.friendlyFire = enabled
+	publish(party)
+	tell(party, enabled and "Friendly fire is on" or "Friendly fire is off", leader)
+	return true, enabled and "Friendly fire on" or "Friendly fire off"
+end
+
+-- walk into the public party led by `leaderUserId`
+function Party.Join(player, leaderUserId)
+	local leader = Players:GetPlayerByUserId(leaderUserId)
+	local party = leader and partyOf[leader]
+	if not party or party.leader ~= leaderUserId then
+		return false, "That party is gone"
+	end
+	local ok, reason = PartyRules.CanEnter(party, player.UserId, partyOf[player])
+	if not ok then
+		return false, reason
+	end
+	clearInvite(player)
+	PartyRules.Add(party, player.UserId)
+	publish(party)
+	tell(party, player.DisplayName .. " joined the party", player)
+	return true, "Joined the party"
 end
 
 function Party.Invite(inviter, target)

@@ -1,6 +1,7 @@
--- Shift lock everyone can use without turning on Roblox's Shift Lock Switch
--- setting: Left Ctrl locks the mouse to the center, turns the character
--- with the camera and moves the camera over the shoulder. While it's on, the mouse
+-- Shift lock everyone gets without turning on Roblox's Shift Lock Switch
+-- setting: it is always on (the mouse locked to the center, the character turned
+-- with the camera, the camera over the shoulder), except while Left Alt is held, which frees the
+-- camera and mouse, and while a menu or the title screen is up. While it's on, the mouse
 -- is hidden and a crosshair is drawn in the middle instead, in the Crosshair setting's
 -- style (Crosshair; NONE draws nothing). While something is locked onto (LockOn), shift
 -- lock or not, it sits on them instead and the mouse stays hidden: the cursor is where every
@@ -22,7 +23,7 @@ local Menus = require(script.Parent:WaitForChild("Menus"))
 
 local player = Players.LocalPlayer
 
-local TOGGLE_KEY = Enum.KeyCode.LeftControl
+local FREE_KEY = Enum.KeyCode.LeftAlt -- held: the camera and mouse are free
 local SHOULDER_OFFSET = Vector3.new(1.75, 0, 0)
 local CROSSHAIR_SIZE = 24 -- px, the room the crosshair is drawn in
 local RENDER_STEP_NAME = "ShiftLock"
@@ -147,6 +148,11 @@ end
 -- the middle in shift lock, and the mouse hidden while either is on
 local hidingMouse = false
 local function placeCrosshair()
+	-- shift lock follows the free-camera key, menus and the title screen
+	local wantLocked = not UserInputService:IsKeyDown(FREE_KEY) and not Menus.Blocks() and not player.PlayerGui:FindFirstChild("TitleMenu")
+	if wantLocked ~= locked then
+		setLocked(wantLocked)
+	end
 	local camera = workspace.CurrentCamera
 	local _, targetRoot = LockOn.Target()
 	local point
@@ -170,12 +176,6 @@ local function placeCrosshair()
 	end
 end
 RunService:BindToRenderStep(CROSSHAIR_STEP_NAME, Enum.RenderPriority.Camera.Value + 3, placeCrosshair)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not gameProcessed and input.KeyCode == TOGGLE_KEY then
-		setLocked(not locked)
-	end
-end)
 
 -- a new Shoulder side slides the camera across
 local drawnSide = Preferences.Choice("Side")

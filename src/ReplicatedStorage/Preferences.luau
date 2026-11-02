@@ -1,7 +1,7 @@
 -- Each player's settings from the Settings menu: ON/OFF ones, sliders and choices. Quick
 -- respawn (SettingsServer respawns them the moment they die, skipping the death screen),
 -- Field of view and the Colour filter (ScreenSettings), the Shoulder side (ShiftLock,
--- StatusHUD), Camera shake and Flashes & impact
+-- StatusHUD), Sprint hold or toggle (Sprint), Camera shake and Flashes & impact
 -- frames (VFX and SkillEffects skip them when off), Other players' effects (SkillEffects),
 -- the Vignette's strength (Vignette), the Low health warning (LowHealth), Damage numbers
 -- and their size and colour (HitFeedback), the Crosshair (ShiftLock, Crosshair), Key hints
@@ -51,6 +51,15 @@ Preferences.Options = {
 		choices = { "RIGHT", "LEFT" },
 		default = 1,
 		description = "Which shoulder the camera looks over in shift lock, and which side of your character your HP and stamina bar sits.",
+	},
+	{
+		id = "Sprint",
+		label = "Sprint",
+		section = "GAMEPLAY",
+		kind = "choice",
+		choices = { "HOLD", "TOGGLE" },
+		default = 1,
+		description = "Hold Shift to sprint, or press it once to start and again (or stop moving) to end.",
 	},
 	{
 		id = "CameraShake",
@@ -126,8 +135,8 @@ Preferences.Options = {
 		section = "INTERFACE",
 		kind = "choice",
 		choices = { "RED", "WHITE", "ORANGE", "CYAN" },
-		default = 1,
-		description = "The colour of a normal hit's number. Critical hits stay gold.",
+		default = 2,
+		description = "The colour of a normal hit's number. Critical hits stay yellow-orange.",
 	},
 	{
 		id = "Xhair",

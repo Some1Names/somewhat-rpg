@@ -96,9 +96,9 @@ local rightList = make("UIListLayout", { Parent = right, SortOrder = Enum.SortOr
 local live = {} -- things to update in place: { kind = "hp", player, fill } / { kind = "countdown", label, expires }
 local inkItems = {} -- parts drawn in the held power's colour
 
--- members of my party, leader first, or an empty list
-local function myParty()
-	local id = player:GetAttribute("PartyId")
+-- members of `who`'s party, leader first, or an empty list
+local function myPartyOf(who)
+	local id = who:GetAttribute("PartyId")
 	local list = {}
 	if id then
 		for _, other in ipairs(Players:GetPlayers()) do
@@ -111,6 +111,10 @@ local function myParty()
 		end)
 	end
 	return list
+end
+
+local function myParty()
+	return myPartyOf(player)
 end
 
 local function openInvite()
@@ -131,13 +135,21 @@ end
 
 -- who is where, as text: the page is rebuilt only when it changes
 local function signature(members, invitedBy)
-	local parts = { tostring(player:GetAttribute("PartyLeader")), invitedBy and tostring(invitedBy.UserId) or "-" }
+	local parts = {
+		tostring(player:GetAttribute("PartyLeader")),
+		invitedBy and tostring(invitedBy.UserId) or "-",
+		tostring(player:GetAttribute("PartyPublic")),
+		tostring(player:GetAttribute("PartyFriendlyFire")),
+	}
 	for _, member in ipairs(members) do
 		table.insert(parts, member.UserId)
 	end
 	table.insert(parts, "|")
 	for _, other in ipairs(Players:GetPlayers()) do
-		table.insert(parts, other.UserId .. (other:GetAttribute("PartyId") and "p" or "") .. (other:GetAttribute("PartyInvite") and "i" or ""))
+		table.insert(parts, other.UserId .. (other:GetAttribute("PartyId") and "p" or "") .. (other:GetAttribute("PartyInvite") and "i" or "") .. (other:GetAttribute("PartyPublic") and "o" or ""))
+		if other:GetAttribute("PartyPublic") then
+			table.insert(parts, "n" .. #myPartyOf(other))
+		end
 	end
 	return table.concat(parts, ",")
 end
@@ -203,9 +215,31 @@ local function rebuild(members, invitedBy, expires)
 		end
 	end
 	if inParty then
+		-- the party's two settings: the leader toggles them, everyone else reads them
+		local public = player:GetAttribute("PartyPublic") == true
+		local friendlyFire = player:GetAttribute("PartyFriendlyFire") == true
+		local settings = make("Frame", { Parent = left, LayoutOrder = 9, Size = UDim2.new(1, 0, 0, 26), BackgroundTransparency = 1 })
+		make("UIListLayout", { Parent = settings, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, GAP) })
+		local publicText = public and "PUBLIC: ANYONE CAN JOIN" or "PRIVATE: INVITE ONLY"
+		local fireText = friendlyFire and "FRIENDLY FIRE: ON" or "FRIENDLY FIRE: OFF"
+		if amLeader then
+			button(settings, publicText, { LayoutOrder = 1, Size = UDim2.fromOffset(170, 26) }, function()
+				send("public", not public)
+			end, public)
+			button(settings, fireText, { LayoutOrder = 2, Size = UDim2.fromOffset(140, 26) }, function()
+				send("friendlyfire", not friendlyFire)
+			end, friendlyFire)
+		else
+			chip(settings, publicText, 1).Size = UDim2.fromOffset(0, 26)
+			chip(settings, fireText, 2).Size = UDim2.fromOffset(0, 26)
+		end
 		button(left, "LEAVE PARTY", { LayoutOrder = 10, Size = UDim2.fromOffset(120, 26) }, function()
 			send("leave")
 		end)
+	else
+		button(left, "CREATE PARTY", { LayoutOrder = 10, Size = UDim2.fromOffset(120, 26) }, function()
+			send("create")
+		end, true)
 	end
 
 	-- right: an invite to me, then the players to invite
@@ -224,7 +258,7 @@ local function rebuild(members, invitedBy, expires)
 			send("decline")
 		end)
 	end
-	chip(right, "INVITE A PLAYER", 1)
+	chip(right, inParty and "INVITE A PLAYER" or "OPEN PARTIES + PLAYERS", 1)
 	local listFrame = make("ScrollingFrame", {
 		Parent = right,
 		LayoutOrder = 2,
@@ -238,6 +272,24 @@ local function rebuild(members, invitedBy, expires)
 	})
 	make("UIListLayout", { Parent = listFrame, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 4) })
 	local shown = 0
+	-- public parties, which you walk into without an invite
+	if not inParty then
+		for _, other in ipairs(Players:GetPlayers()) do
+			if other ~= player and other:GetAttribute("PartyPublic") and other:GetAttribute("PartyLeader") == other.UserId then
+				shown += 1
+				local count = #myPartyOf(other)
+				local row = make("Frame", { Parent = listFrame, LayoutOrder = shown, Size = UDim2.new(1, -6, 0, 30), BackgroundColor3 = Theme.Panel, BorderSizePixel = 0 })
+				label(row, { Text = other.DisplayName .. "  ·  PUBLIC " .. count .. "/" .. PartyRules.MaxMembers, Font = Theme.BodyFont, TextSize = 14, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -90, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd })
+				if count < PartyRules.MaxMembers then
+					button(row, "JOIN", { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -4, 0.5, 0), Size = UDim2.fromOffset(64, 22) }, function()
+						send("join", other.UserId)
+					end, true)
+				else
+					label(row, { Text = "FULL", TextSize = 10, TextColor3 = Theme.Muted, TextXAlignment = Enum.TextXAlignment.Right, Position = UDim2.new(1, -90, 0, 0), Size = UDim2.new(0, 84, 1, 0) })
+				end
+			end
+		end
+	end
 	for _, other in ipairs(Players:GetPlayers()) do
 		if other ~= player and not other:GetAttribute("PartyId") then
 			shown += 1

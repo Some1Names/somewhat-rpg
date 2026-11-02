@@ -11,6 +11,7 @@
 -- buyer is in combat (CombatRules). A faction rank can take a share off every yen price (Factions).
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ServerStorage = game:GetService("ServerStorage")
 
 local CombatRules = require(ReplicatedStorage:WaitForChild("CombatRules"))
 local Consumables = require(script.Parent:WaitForChild("Consumables"))
@@ -30,6 +31,36 @@ if not sellItem then
 	sellItem.Name = "SellItem"
 	sellItem.Parent = ReplicatedStorage
 end
+
+-- copies of the weapons' models for the shop's preview (the client can't see ServerStorage): a
+-- script-free Model of each sold item's tool that has parts, named by the item's id, in
+-- ReplicatedStorage.ShopPreviews
+local previews = Instance.new("Folder")
+previews.Name = "ShopPreviews"
+local skillSetTools = ServerStorage:FindFirstChild("SkillSetTools")
+for _, item in ipairs(ShopConfig.Items) do
+	local set = item.set and SkillSetConfig.Sets[item.set]
+	local template = set and set.tool and skillSetTools and skillSetTools:FindFirstChild(set.tool)
+	if template and not item.briefcase then
+		local model = Instance.new("Model")
+		model.Name = item.id
+		for _, child in ipairs(template:GetChildren()) do
+			local copy = child:Clone()
+			if copy then
+				copy.Parent = model
+			end
+		end
+		for _, descendant in ipairs(model:GetDescendants()) do
+			if descendant:IsA("LuaSourceContainer") or descendant:IsA("Sound") then
+				descendant:Destroy()
+			end
+		end
+		if model:FindFirstChildWhichIsA("BasePart", true) then
+			model.Parent = previews
+		end
+	end
+end
+previews.Parent = ReplicatedStorage
 
 -- what each service does; returns whether it went through and what to say
 local services = {}

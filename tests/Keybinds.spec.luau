@@ -31,8 +31,9 @@ end
 local defaults = Keybinds.Defaults()
 
 check("parse_empty_is_defaults", same(Keybinds.Parse(""), defaults)
-	and defaults.SkillZ == "Z" and defaults.Special == "G" and defaults.Dash == "Q"
-	and defaults.Reload == "R" and defaults.Gallery == "T")
+	and defaults.SkillZ == "Z" and defaults.Special == "G" and defaults.Dash == "Q" and defaults.SkillF == "T" and defaults.Block == "F"
+	and defaults.Reload == "R" and defaults.Gallery == "Y"
+	and defaults.HideHud == "F1" and defaults.ItemWheel == "LeftControl")
 
 local swapped = Keybinds.Parse("SkillZ=Q,Dash=Z")
 check("parse_swapped", swapped.SkillZ == "Q" and swapped.Dash == "Z" and swapped.SkillX == "X")
@@ -46,8 +47,12 @@ check("parse_double_falls_back", same(Keybinds.Parse("SkillZ=Q"), defaults))
 
 -- Block came after players could already save its key for something else: it gives way
 -- (takes that action's old key) instead of the whole save being thrown out
-local onAlt = Keybinds.Parse("SkillZ=LeftAlt,Dash=K")
-check("parse_old_save_on_block_key_keeps_bindings", onAlt.SkillZ == "LeftAlt" and onAlt.Dash == "K" and onAlt.Block == "Z" and Keybinds.Valid(onAlt))
+local onAlt = Keybinds.Parse("SkillZ=F,Dash=K")
+check("parse_old_save_on_block_key_keeps_bindings", onAlt.SkillZ == "F" and onAlt.Dash == "K" and onAlt.Block == "Z" and Keybinds.Valid(onAlt))
+local twoNone = Keybinds.Parse("Gallery=Unknown,HideHud=Unknown")
+check("none_can_repeat", Keybinds.Valid(Keybinds.Bind(defaults, "Reload", Keybinds.None)) and Keybinds.Serialize(Keybinds.Bind(defaults, "Gallery", "K")) == "Gallery=K"
+	and twoNone.Gallery == Keybinds.None and twoNone.HideHud == Keybinds.None
+	and Keybinds.ShortName(Keybinds.None) == "—")
 check("parse_block_saved_on_e_stays", Keybinds.Parse("Block=E").Block == "E")
 
 check("parse_non_string_and_long", same(Keybinds.Parse(nil), defaults)
@@ -100,7 +105,7 @@ check("saved_j_is_ignored", Keybinds.Parse("SkillZ=J").SkillZ == "Z")
 local REAL = {}
 for name in string.gmatch("A B C D E F G H I J K L M N O P Q R S T U V W X Y Z F1 F2 F3 F4 F5 F6 F7 F8 "
 	.. "KeypadZero KeypadOne KeypadTwo KeypadThree KeypadFour KeypadFive KeypadSix KeypadSeven KeypadEight KeypadNine "
-	.. "Comma Period Semicolon Quote LeftBracket RightBracket Minus Equals BackSlash LeftAlt RightAlt CapsLock", "%S+") do
+	.. "Comma Period Semicolon Quote LeftBracket RightBracket Minus Equals BackSlash LeftAlt RightAlt CapsLock Unknown", "%S+") do
 	REAL[name] = true
 end
 local allReal = true

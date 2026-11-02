@@ -493,7 +493,7 @@ SkillSetConfig.Sets = {
 			animation = "CastZ",
 			projectile = { model = "FissionSeed", speed = 90, range = 80, radius = 1 },
 		},
-		-- Final Cut, on F: a dragon until F again (damageReduction less
+		-- Final Cut, on the ultimate slot (F): a dragon until pressed again (damageReduction less
 		-- damage taken, `form` skills blast blastScale times wider, the camera
 		-- can't come closer than `camera` studs). Its ranged move replaces Fuse
 		-- (SkillSetConfig.RangedFor); with no ranged cost, it is free.

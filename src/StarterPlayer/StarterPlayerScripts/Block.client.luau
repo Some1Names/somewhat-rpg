@@ -1,4 +1,4 @@
--- Hold Alt (Keybinds "Block") to block: sends true on the Block remote when the
+-- Hold F (Keybinds "Block") to block: sends true on the Block remote when the
 -- key goes down and false when it comes up (ServerScriptService.Guard decides
 -- whether the block takes; GuardConfig has the rules). Letting go also
 -- happens on death, a respawn and the window losing focus, and Dash lets go
@@ -17,8 +17,6 @@ local UserInputService = game:GetService("UserInputService")
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
-local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
-local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local blockRemote = ReplicatedStorage:WaitForChild("Block")
 
 local player = Players.LocalPlayer
@@ -37,12 +35,7 @@ local function canBlock()
 	if not character then
 		return false
 	end
-	local _, setName = SkillSetConfig.Equipped(character)
-	if setName then
-		return SkillSetConfig.Sets[setName].block ~= nil
-	end
-	local _, weapon = PunchConfig.WeaponFor(character)
-	return weapon ~= nil and weapon.block ~= nil
+	return true -- everyone can block (a set or weapon may bring its own cuts, Guard)
 end
 
 -- prompts are triggered with E
@@ -59,7 +52,7 @@ end
 
 -- Block key
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if not GuardConfig.Enabled or gameProcessed or Menus.Blocks() or Keybinds.Capturing() or input.KeyCode ~= Keybinds.Key("Block") then
+	if not GuardConfig.Enabled or gameProcessed or Menus.BlocksActions() or Keybinds.Capturing() or input.KeyCode ~= Keybinds.Key("Block") then
 		return
 	end
 	-- E is the prompt's while one is on screen

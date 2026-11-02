@@ -37,6 +37,7 @@ local ReforgeRules = require(ReplicatedStorage:WaitForChild("ReforgeRules"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local AimIndicator = require(script.Parent:WaitForChild("AimIndicator"))
 local LockOn = require(script.Parent:WaitForChild("LockOn"))
+local Menus = require(script.Parent:WaitForChild("Menus"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
@@ -665,7 +666,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	local key = slotFor(input.KeyCode)
 	if key then
 		pressSkill(key)
-	elseif Keybinds.ActionFor(input.KeyCode) == "Special" then
+	elseif Keybinds.ActionFor(input.KeyCode) == "Special" and not Menus.BlocksActions() then -- (not while an NPC is talking)
 		tryOvercharge()
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 and aiming then
 		-- right click calls the aim off
@@ -683,8 +684,8 @@ end)
 
 RunService.RenderStepped:Connect(function()
 	local setName = equippedSet()
-	-- (off while a shop or the smith has the screen: this switches itself back on every frame)
-	gui.Enabled = setName ~= nil and not ShopFocus.Active()
+	-- (off while a shop or the smith has the screen, or an NPC is talking: this switches itself back on every frame)
+	gui.Enabled = setName ~= nil and not ShopFocus.Active() and not Menus.IsOpen("Dialogue")
 	if not setName then
 		if aiming then
 			stopAiming()

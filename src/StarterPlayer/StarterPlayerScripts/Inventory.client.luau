@@ -1,7 +1,7 @@
 -- The hub's Backpack tab (B, or the hub's nav). Three columns: on the left what you
 -- carry (a power, a weapon, and a melee slot kept for melee weapons still to
 -- come), in the middle every set you own with ALL/POWER/WEAPON tabs, on the
--- right the selected set's info with its buttons. Cards show the set's
+-- right a preview of the selected set, its info and its buttons. Cards show the set's
 -- tier and your mastery in it. Powers are the held one, the ones in storage,
 -- the lifetime ones and the briefcases you carry (cards tagged HELD, STORED,
 -- LIFETIME, BRIEFCASE); their buttons (USE, STORE, SWAP, TAKE OUT, SWITCH)
@@ -17,6 +17,8 @@
 -- to use. The ALL tab groups the cards under POWERS, WEAPONS and ITEMS headers.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local BuildRules = require(ReplicatedStorage:WaitForChild("BuildRules"))
 local ConsumableConfig = require(ReplicatedStorage:WaitForChild("ConsumableConfig"))
@@ -25,6 +27,7 @@ local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
 local HubRules = require(ReplicatedStorage:WaitForChild("HubRules"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local PowerConfig = require(ReplicatedStorage:WaitForChild("PowerConfig"))
+local ShopConfig = require(ReplicatedStorage:WaitForChild("ShopConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Hub = require(script.Parent:WaitForChild("Hub"))
@@ -103,6 +106,10 @@ local TABS = {
 }
 local TALISMAN_BOX = 70 -- a talisman slot in the EQUIPPED column: a square, three in a row
 local TALISMAN_GAP = 10
+-- the selected thing's preview: a square at the top of the INFO column, the info under it
+local PREVIEW_SIZE = 190
+local PREVIEW_GAP = 24 -- between the preview and the info
+local PREVIEW_TURN = 0.6 -- radians a second a model in it turns (as in the shops)
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -313,10 +320,12 @@ local emptyLabel = label(middleColumn, {
 	Visible = false,
 })
 
--- right: the selected set's info, with its buttons at the bottom
+-- right: the selected set's preview at the top, its info under it (scrolling when it's long), its
+-- buttons at the bottom
+local DETAILS_TOP = HEADING_HEIGHT + PREVIEW_SIZE + PREVIEW_GAP
 local details = scroller(rightColumn, {
-	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
-	Size = UDim2.new(1, 0, 1, -(HEADING_HEIGHT + 3 * BUTTON_HEIGHT + 52)),
+	Position = UDim2.fromOffset(0, DETAILS_TOP),
+	Size = UDim2.new(1, 0, 1, -DETAILS_TOP), -- placeDetails stops it above the buttons
 })
 make("UIListLayout", { Parent = details, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) })
 local message = label(rightColumn, {
@@ -347,6 +356,69 @@ end
 local equipButton, equipStroke = makeButton(0) -- the main action
 local altButton, altStroke = makeButton(BUTTON_HEIGHT + 6) -- a second one, for powers
 local hotbarButton, hotbarStroke = makeButton(2 * (BUTTON_HEIGHT + 6)) -- a briefcase's EQUIP / UNEQUIP
+-- the info reaches down to the buttons showing (they stack up from the bottom), leaving room for
+-- the message line over them only while it has something to say
+local function placeDetails()
+	local reserve = 0 -- px up from the bottom
+	for i, button in ipairs({ equipButton, altButton, hotbarButton }) do
+		if button.Visible then
+			reserve = i * (BUTTON_HEIGHT + 6)
+		end
+	end
+	message.Position = UDim2.new(0, 0, 1, -(reserve + 4))
+	if message.Text ~= "" then
+		reserve += 34
+	end
+	details.Size = UDim2.new(1, 0, 1, -(DETAILS_TOP + reserve + 10))
+end
+for _, button in ipairs({ equipButton, altButton, hotbarButton }) do
+	button:GetPropertyChangedSignal("Visible"):Connect(placeDetails)
+end
+message:GetPropertyChangedSignal("Text"):Connect(placeDetails)
+placeDetails()
+
+-- at the top of the column, centred and still while the info under it scrolls: the selected thing's
+-- preview as in the shops (its picture, its model turning, or its letter big and faint) in a dark
+-- square washed and bracketed in its colour (muted with nothing selected)
+local preview = make("Frame", {
+	Parent = rightColumn,
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, HEADING_HEIGHT),
+	Size = UDim2.fromOffset(PREVIEW_SIZE, PREVIEW_SIZE),
+	BackgroundColor3 = Hub.Theme.Nav,
+	BackgroundTransparency = 0.35,
+	BorderSizePixel = 0,
+	ZIndex = 2,
+})
+local previewWash = make("Frame", { Parent = preview, Size = UDim2.fromScale(1, 1), BackgroundColor3 = MUTED, BorderSizePixel = 0, ZIndex = 2 })
+make("UIGradient", {
+	Parent = previewWash,
+	Rotation = 90,
+	Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.6, 0.88),
+		NumberSequenceKeypoint.new(1, 0.72),
+	}),
+})
+local previewBrackets = {}
+for _, corner in ipairs({ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }) do
+	for _, size in ipairs({ Vector2.new(16, 2), Vector2.new(2, 16) }) do
+		table.insert(previewBrackets, make("Frame", {
+			Parent = preview,
+			AnchorPoint = Vector2.new(corner[1], corner[2]),
+			Position = UDim2.fromScale(corner[1], corner[2]),
+			Size = UDim2.fromOffset(size.X, size.Y),
+			BackgroundColor3 = MUTED,
+			BorderSizePixel = 0,
+			ZIndex = 4,
+		}))
+	end
+end
+local previewPop = make("UIScale", { Parent = preview })
+local previewKey -- the card it shows, so a refresh leaves it be
+local previewContent -- what's in the box: an ImageLabel, a ViewportFrame or the letter
+local previewModel -- the model turning in it, if any
+local previewAngle = 0
 
 -- a note under the grid while you have briefcases (they aren't saved)
 local warning = label(middleColumn, {
@@ -1278,6 +1350,113 @@ local function talismanDetails(entry)
 	setButton(equipButton, equipStroke, entry.equipped and "TAKE OFF" or "WEAR", entry.equipped)
 end
 
+-- the picture the shops show for a set: a power's `image`, or the model of a weapon's tool
+-- (ReplicatedStorage.ShopPreviews, by the shop item's id); nil when there's neither
+local function previewSource(setName)
+	local folder = ReplicatedStorage:FindFirstChild("ShopPreviews")
+	for _, item in ipairs(ShopConfig.Items) do
+		if item.set == setName then
+			if item.image then
+				return item.image
+			end
+			local model = folder and folder:FindFirstChild(item.id)
+			if model then
+				return model
+			end
+		end
+	end
+	return nil
+end
+
+-- puts the selected card's thing in the preview, popping in, when the selection changes: its
+-- picture, its model turning, or its letter (a set's tier, else the first letter) big and faint
+local function showPreview(entry)
+	local key = entry and entry.key
+	if key == previewKey then
+		return
+	end
+	if previewContent then
+		previewContent:Destroy()
+		previewContent, previewModel = nil, nil
+	end
+	local set = entry and entry.setName and SkillSetConfig.Sets[entry.setName]
+	local color, letter, letterColor
+	if entry and entry.kind == "talisman" then
+		color = talismanColor(entry.talisman)
+		letter, letterColor = string.sub(entry.talisman.name, 1, 1), color
+	elseif entry and entry.kind == "item" then
+		color = itemColor(entry.item)
+		letter, letterColor = string.sub(entry.item.name, 1, 1), color
+	elseif set then
+		color = set.color or tierColor(set)
+		letter, letterColor = set.tier or string.sub(set.tool, 1, 1), tierColor(set)
+	end
+	previewKey = color and key
+	details.CanvasPosition = Vector2.zero -- a new selection's info starts at its top
+	local tint = color and onPaper(color) or MUTED
+	previewWash.BackgroundColor3 = tint
+	for _, bracket in ipairs(previewBrackets) do
+		bracket.BackgroundColor3 = tint
+	end
+	if not color then
+		return
+	end
+	local source = set and previewSource(entry.setName)
+	if type(source) == "string" then
+		previewContent = make("ImageLabel", {
+			Parent = preview,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.86, 0.86),
+			BackgroundTransparency = 1,
+			Image = source,
+			ScaleType = Enum.ScaleType.Fit,
+			ZIndex = 3,
+		})
+	elseif source then
+		local model = source:Clone()
+		model.WorldPivot = model:GetBoundingBox()
+		model:PivotTo(CFrame.new())
+		local viewport = make("ViewportFrame", {
+			Parent = preview,
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			Ambient = Color3.fromRGB(170, 170, 170),
+			LightColor = Color3.new(1, 1, 1),
+			LightDirection = Vector3.new(-1, -1, -1),
+			ZIndex = 3,
+		})
+		local _, size = model:GetBoundingBox()
+		local reach = size.Magnitude / 2
+		local camera = make("Camera", { Parent = viewport, FieldOfView = 30 })
+		camera.CFrame = CFrame.lookAt(Vector3.new(0, reach * 0.25, reach / math.tan(math.rad(15)) * 1.05), Vector3.zero)
+		viewport.CurrentCamera = camera
+		model.Parent = viewport
+		previewContent, previewModel, previewAngle = viewport, model, 0
+	else
+		previewContent = label(preview, {
+			Text = letter,
+			TextScaled = true,
+			TextColor3 = onPaper(letterColor),
+			TextTransparency = 0.35,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.5, 0.5),
+			ZIndex = 3,
+		})
+	end
+	previewPop.Scale = 0.94
+	TweenService:Create(previewPop, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+end
+-- a model in the preview turns while the Backpack shows it
+RunService.Heartbeat:Connect(function(dt)
+	if previewModel and Hub.IsOpen("Backpack") then
+		previewAngle += dt * PREVIEW_TURN
+		previewModel:PivotTo(CFrame.Angles(0, previewAngle, 0))
+	end
+end)
+
 local function showDetails(entry)
 	clear(details)
 	detailOrder = 0
@@ -1285,6 +1464,7 @@ local function showDetails(entry)
 	setButton(equipButton, equipStroke, nil, false)
 	setButton(altButton, altStroke, nil, true)
 	setButton(hotbarButton, hotbarStroke, nil, true)
+	showPreview(entry)
 	if entry and entry.kind == "item" then
 		itemDetails(entry)
 		return

@@ -229,12 +229,14 @@ local function isPointer(input)
 	return input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch
 end
 
--- where a pointer is, in the same pixels as AbsolutePosition (the screens ignore the gui inset)
+-- where a pointer is, in the same pixels as AbsolutePosition: those count from under Roblox's band
+-- (even on these screens that ignore the gui inset), as a touch's Position does; the mouse's
+-- location counts from the very top
 local function pointerAt(input)
 	if input.UserInputType == Enum.UserInputType.Touch then
-		return Vector2.new(input.Position.X, input.Position.Y) + GuiService:GetGuiInset()
+		return Vector2.new(input.Position.X, input.Position.Y)
 	end
-	return UserInputService:GetMouseLocation()
+	return UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
 end
 
 -- a stripped, anchored copy of the player's character in a ViewportFrame, standing on a
@@ -1311,6 +1313,11 @@ function Customizer.Open(slot, onDone, options)
 
 	if nameBox then
 		nameBox:GetPropertyChangedSignal("Text"):Connect(function()
+			local english = nameBox.Text:gsub("[^%w _]", "") -- English letters, numbers, space, _ only
+			if english ~= nameBox.Text then
+				nameBox.Text = english
+				return
+			end
 			if #nameBox.Text > SlotConfig.NameMax then
 				nameBox.Text = nameBox.Text:sub(1, SlotConfig.NameMax)
 				return

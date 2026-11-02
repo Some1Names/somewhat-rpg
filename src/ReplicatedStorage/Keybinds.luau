@@ -15,6 +15,10 @@ local Keybinds = {}
 Keybinds.Attribute = "Keybinds" -- on the player, saved by PlayerStats
 Keybinds.MaxLength = 200 -- PlayerStats' longest saved text
 
+-- None: an action with no key (any number of actions can be on it; Settings
+-- unbinds with Backspace).
+Keybinds.None = "Unknown"
+
 -- `yields`: added after players could already save keys; if a save has some
 -- other action on this one's default key, this one takes that action's old key
 -- (as Bind would) rather than the whole save being thrown out
@@ -23,14 +27,14 @@ Keybinds.Actions = {
 	{ id = "SkillX", label = "Skill 2", default = "X" },
 	{ id = "SkillC", label = "Skill 3", default = "C" },
 	{ id = "SkillV", label = "Skill 4", default = "V" },
-	{ id = "SkillF", label = "Skill 5 (ultimate)", default = "F" },
+	{ id = "SkillF", label = "Skill 5 (ultimate)", default = "T", yields = true },
 	{ id = "Special", label = "Passive ability", default = "G" },
 	{ id = "Dash", label = "Dash", default = "Q" },
-	{ id = "Block", label = "Block", default = "LeftAlt", yields = true },
+	{ id = "Block", label = "Block", default = "F", yields = true },
 	{ id = "Reload", label = "Reload", default = "R" },
-	{ id = "Gallery", label = "Photo Gallery", default = "T" },
-	{ id = "HideHud", label = "Hide HUD", default = "H" }, -- HideHud
-	{ id = "ItemWheel", label = "Item wheel", default = "CapsLock", yields = true }, -- Hotbar
+	{ id = "Gallery", label = "Passive 2", default = "Y", yields = true }, -- Photoshop's photo gallery
+	{ id = "HideHud", label = "Hide HUD", default = "F1", yields = true }, -- HideHud
+	{ id = "ItemWheel", label = "Item wheel", default = "LeftControl", yields = true }, -- Hotbar
 }
 
 local byId = {}
@@ -65,15 +69,20 @@ local SHORT = {
 	Equals = "=",
 	BackSlash = "\\",
 	LeftAlt = "LAlt",
+	LeftControl = "LCtrl",
 	RightAlt = "RAlt",
 	CapsLock = "Caps",
 }
 for name in pairs(SHORT) do
 	Keybinds.Allowed[name] = true
 end
+Keybinds.Allowed[Keybinds.None] = true
 
 -- a key's label for a small keycap: "Q", "F5", "N1" for the number pad, ";"
 function Keybinds.ShortName(keyName)
+	if keyName == Keybinds.None then
+		return "—"
+	end
 	local digit = KEYPAD_DIGIT[keyName]
 	return SHORT[keyName] or (digit and "N" .. digit) or keyName
 end
@@ -90,10 +99,12 @@ end
 local function hasDouble(map)
 	local seen = {}
 	for _, key in pairs(map) do
-		if seen[key] then
-			return true
+		if key ~= Keybinds.None then
+			if seen[key] then
+				return true
+			end
+			seen[key] = true
 		end
-		seen[key] = true
 	end
 	return false
 end
@@ -169,7 +180,7 @@ function Keybinds.Bind(map, actionId, keyName)
 	local bound = table.clone(map)
 	local old = bound[actionId]
 	for id, key in pairs(bound) do
-		if id ~= actionId and key == keyName then
+		if id ~= actionId and key == keyName and keyName ~= Keybinds.None then
 			bound[id] = old
 		end
 	end
@@ -193,14 +204,18 @@ function Keybinds.Current()
 		cachedMap = Keybinds.Parse(text)
 		cachedActionFor = {}
 		for id, key in pairs(cachedMap) do
-			cachedActionFor[Enum.KeyCode[key]] = id
+			if key ~= Keybinds.None then
+				cachedActionFor[Enum.KeyCode[key]] = id
+			end
 		end
 	end
 	return cachedMap
 end
 
 function Keybinds.Key(actionId)
-	return Enum.KeyCode[Keybinds.Current()[actionId]]
+	local key = Keybinds.Current()[actionId]
+	-- nil when unbound (not KeyCode.Unknown: mouse buttons carry that)
+	return key ~= Keybinds.None and Enum.KeyCode[key] or nil
 end
 
 -- the action a pressed key belongs to, if any

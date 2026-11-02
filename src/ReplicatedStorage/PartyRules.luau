@@ -9,8 +9,30 @@ PartyRules.MaxMembers = 4
 PartyRules.InviteTime = 30 -- seconds an invite stays open
 PartyRules.ActionInterval = 0.3 -- least seconds between one player's party actions
 
+-- a new party is private (invite only) with friendly fire off; the leader changes both
 function PartyRules.New(id, leaderId)
-	return { id = id, leader = leaderId, members = { leaderId } }
+	return { id = id, leader = leaderId, members = { leaderId }, public = false, friendlyFire = false }
+end
+
+-- can `userId` (in `ownParty`, or nil) walk into `party`? Public parties take anyone free.
+function PartyRules.CanEnter(party, userId, ownParty)
+	if not party or not party.public then
+		return false, "That party is invite only"
+	end
+	return PartyRules.CanJoin(party, userId, ownParty)
+end
+
+-- can `userId` change the party's open/private or friendly-fire setting?
+function PartyRules.CanConfigure(party, userId)
+	if not party or party.leader ~= userId then
+		return false, "Only the party leader can change that"
+	end
+	return true, ""
+end
+
+-- do `a` and `b` share a party that has friendly fire off? (then neither can hurt the other)
+function PartyRules.ProtectsFrom(party, a, b)
+	return party ~= nil and not party.friendlyFire and a ~= b and PartyRules.Has(party, a) and PartyRules.Has(party, b)
 end
 
 function PartyRules.IsFull(party)
@@ -62,7 +84,7 @@ function PartyRules.Add(party, userId)
 	return true
 end
 
--- takes `userId` out. Returns the party, or nil once fewer than 2 remain (it is gone).
+-- takes `userId` out. Returns the party, or nil once nobody remains (it is gone).
 -- The leader leaving hands the lead to the next member.
 function PartyRules.Remove(party, userId)
 	local index = table.find(party.members, userId)
@@ -70,7 +92,7 @@ function PartyRules.Remove(party, userId)
 		return party
 	end
 	table.remove(party.members, index)
-	if #party.members < 2 then
+	if #party.members < 1 then
 		return nil
 	end
 	if party.leader == userId then

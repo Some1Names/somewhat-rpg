@@ -1,5 +1,5 @@
 -- The hub: one full-screen menu holding Profile, Backpack (Inventory), Map, Quests,
--- Stats and Updates, with locked slots for later features. The first script to
+-- Stats, Updates and the Handbook, with locked slots for later features. The first script to
 -- require it builds the screen in Modern Warfare's style with Arknights' editorial bits:
 -- dark see-through paper (darkest on the left), the nav on the left (a narrow rail with
 -- the level, the swatches and ESC, then the numbered list of tabs on smoked glass), the
@@ -41,7 +41,8 @@ local NAV_ROW = 34
 local NAV_TOP = 64 -- the first tab button, this far under the brand
 local LIST_TRANSPARENCY = 0.35 -- the nav's list, smoked glass beside the solid rail
 local BAR_HEIGHT = 4 -- the accent bar after the #TITLE
-local APART_GAP = 17 -- px between the numbered tabs' room and a tab kept apart
+local APART_GAP = 17 -- px between the numbered tabs' room and the tabs kept apart
+local APART_ROWS = 3 -- how many tabs are kept apart (Updates, Handbook, Settings)
 -- Roblox's own buttons sit in a band across the top: the hub leaves it empty paper.
 -- Its height is read on each open (it's often still 0 while the game loads).
 local ROBLOX_BAR_FALLBACK = 58
@@ -416,23 +417,23 @@ label(listPanel, {
 local navList = make("Frame", {
 	Parent = listPanel,
 	Position = UDim2.fromOffset(0, NAV_TOP),
-	Size = UDim2.new(1, -1, 1, -(NAV_TOP + 20 + NAV_ROW + APART_GAP)),
+	Size = UDim2.new(1, -1, 1, -(NAV_TOP + 20 + APART_ROWS * NAV_ROW + APART_GAP)),
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = navList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2) })
 -- at the list's foot, apart from the rest behind a thin line: the tabs registered `apart`
--- (Settings), with no number
+-- (Updates, then the Handbook, then Settings), with no number
 local navApart = make("Frame", {
 	Parent = listPanel,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, 0, 1, -20),
-	Size = UDim2.new(1, -1, 0, NAV_ROW),
+	Size = UDim2.new(1, -1, 0, APART_ROWS * NAV_ROW),
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", { Parent = navApart, SortOrder = Enum.SortOrder.LayoutOrder })
 local navApartLine = make("Frame", {
 	Parent = listPanel,
-	Position = UDim2.new(0, NAV_PAD, 1, -(20 + NAV_ROW + APART_GAP / 2)),
+	Position = UDim2.new(0, NAV_PAD, 1, -(20 + APART_ROWS * NAV_ROW + APART_GAP / 2)),
 	Size = UDim2.new(1, -2 * NAV_PAD, 0, 1),
 	BackgroundColor3 = Theme.Edge,
 	BackgroundTransparency = Theme.EdgeTransparency,
@@ -457,6 +458,8 @@ local tabs = {} -- name -> { name, order, title, key, locked, pose, frame, butto
 local current -- the tab showing, while the hub is open
 local only = false -- opened by Hub.OpenOnly: that tab alone
 local wanted -- a tab asked for before it registered
+local lastTab -- the tab showing when the hub last closed, for the menu key to come back to
+local MENU_KEY = Enum.KeyCode.M -- the one key that opens and closes the hub
 local shownListeners = {} -- name -> { fn }
 local changedListeners = {}
 local closedListeners = {}
@@ -542,6 +545,7 @@ local function show(name)
 	end
 	wanted = nil
 	current = name
+	lastTab = name
 	stripWanted = tab.pose ~= nil
 	layout()
 	for _, other in pairs(tabs) do
@@ -758,7 +762,7 @@ function Hub.Badge(name, text)
 end
 
 -- registers a tab: opts = { order, title, key (Enum.KeyCode), locked, pose, apart }.
--- An `apart` tab sits at the foot of the nav, unnumbered (Settings).
+-- An `apart` tab sits at the foot of the nav, unnumbered (Updates, Handbook, Settings).
 -- A tab with no pose gets the whole width (no character strip).
 -- Returns the frame to build it in (nil for a locked slot).
 function Hub.Tab(name, opts)
@@ -884,6 +888,35 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	end
 	-- no tab keys on the title menu (its gui is there until PLAY, Settings opened from it too) or one tab alone
 	if only or player.PlayerGui:FindFirstChild("TitleMenu") then
+		return
+	end
+	-- the menu key opens the hub on the Map (closes it if the Map is showing, switches to it
+	-- from another tab); Q and E step through the tabs
+	if input.KeyCode == MENU_KEY then
+		if tabs.Map and not tabs.Map.locked then
+			if HubRules.KeyAction(Hub.Current(), "Map") == "close" then
+				Hub.Close()
+			else
+				Hub.Open("Map")
+			end
+		elseif gui.Enabled then
+			Hub.Close()
+		else
+			Hub.Open(lastTab)
+		end
+		return
+	elseif gui.Enabled and (input.KeyCode == Enum.KeyCode.Q or input.KeyCode == Enum.KeyCode.E) then
+		local order = {}
+		for _, name in ipairs(numberedOrder()) do
+			if not tabs[name].locked then
+				table.insert(order, name)
+			end
+		end
+		local at = table.find(order, current) or 0
+		local step = input.KeyCode == Enum.KeyCode.E and 1 or -1
+		if #order > 0 then
+			Hub.Open(order[(at - 1 + step) % #order + 1])
+		end
 		return
 	end
 	for name, tab in pairs(tabs) do

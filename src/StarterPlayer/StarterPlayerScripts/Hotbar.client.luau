@@ -6,7 +6,7 @@
 -- power or weapon set) in a 3x2 grid of six slots, keys 4-9, empty ones shown
 -- dimmed. Both blocks are the same size and sit above the key hints line. A key or a click equips a tool,
 -- or puts it away if it's already in hand. 4-9 are a long reach, so the grid also opens as an item
--- wheel on one key (Keybinds "ItemWheel", Caps Lock by default). No tools in the water: they can't
+-- wheel on one key (Keybinds "ItemWheel", Ctrl by default). No tools in the water: they can't
 -- be equipped there and one in hand is put away when you swim in.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -173,8 +173,8 @@ local function newLabel(parent, props)
 	l.TextXAlignment = props.TextXAlignment or Enum.TextXAlignment.Center
 	l.TextWrapped = true
 	l.TextSize = props.TextSize
-	l.Position = props.Position
-	l.Size = props.Size
+	l.Position = props.Position or UDim2.new() -- (the item wheel's name label has none)
+	l.Size = props.Size or UDim2.new()
 	l.AnchorPoint = props.AnchorPoint or Vector2.zero
 	l.Text = props.Text or ""
 	l.Parent = parent
@@ -249,7 +249,7 @@ end
 
 -- the item wheel: hold its key and the six grid slots open in a ring round the middle of the
 -- screen; point at one and let go to equip it. A quick tap leaves the wheel open to click
--- instead (a Mac's Caps Lock only reports the toggle); the key again, Escape or a right click
+-- instead; the key again, Escape or a right click
 -- shuts it
 local WHEEL_RADIUS = 110
 local WHEEL_TILE = 64
@@ -376,7 +376,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		closeWheel()
 		return
 	end
-	if gameProcessed or Menus.Blocks() then
+	if gameProcessed or Menus.BlocksActions() then
 		return
 	end
 	if Keybinds.ActionFor(input.KeyCode) == "ItemWheel" and not Keybinds.Capturing() then

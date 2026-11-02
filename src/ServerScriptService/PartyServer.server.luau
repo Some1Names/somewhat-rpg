@@ -24,6 +24,16 @@ action.OnServerInvoke = function(player, kind, userId)
 		return Party.Decline(player)
 	elseif kind == "leave" then
 		return Party.Leave(player)
+	elseif kind == "create" then
+		return Party.Create(player)
+	elseif kind == "public" or kind == "friendlyfire" then
+		if typeof(userId) ~= "boolean" then -- the setting's new value
+			return false, "Bad request"
+		end
+		if kind == "public" then
+			return Party.SetPublic(player, userId)
+		end
+		return Party.SetFriendlyFire(player, userId)
 	end
 	if typeof(userId) ~= "number" then
 		return false, "Bad request"
@@ -34,6 +44,8 @@ action.OnServerInvoke = function(player, kind, userId)
 			return false, "They left the game"
 		end
 		return Party.Invite(player, target)
+	elseif kind == "join" then
+		return Party.Join(player, userId) -- userId: the public party's leader
 	elseif kind == "kick" then
 		return Party.Kick(player, userId)
 	elseif kind == "promote" then

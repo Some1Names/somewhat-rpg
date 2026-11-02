@@ -58,14 +58,14 @@ function Guard.MarkCombat(character)
 	end
 end
 
--- the cuts the equipped set or melee weapon brings, if it has its own block
+-- the cuts the equipped set or melee weapon brings, else the base ones
 local function ownBlock(character)
 	local _, setName = SkillSetConfig.Equipped(character)
 	if setName then
-		return SkillSetConfig.Sets[setName].block
+		return SkillSetConfig.Sets[setName].block or GuardConfig.Cuts
 	end
 	local _, weapon = PunchConfig.WeaponFor(character)
-	return weapon and weapon.block
+	return weapon and weapon.block or GuardConfig.Cuts
 end
 
 local function guardBreak(character, now)
@@ -94,11 +94,7 @@ function Guard.Resolve(target, amount, kind, source, attacker)
 	if not GuardConfig.isFront(root.CFrame.LookVector, away) then
 		return amount
 	end
-	-- only a set or weapon with its own block can block
 	local own = ownBlock(target)
-	if not own then
-		return amount
-	end
 	local cut = GuardConfig.cut(kind, own)
 	if cut <= 0 then
 		return amount
@@ -124,7 +120,7 @@ function Guard.Resolve(target, amount, kind, source, attacker)
 	return amount - prevented
 end
 
--- whether this character's set or weapon gives it a block at all
+-- whether this character can block (everyone can; a set or weapon may change the cuts)
 function Guard.CanBlock(character)
 	return ownBlock(character) ~= nil
 end

@@ -18,8 +18,8 @@ local LIFETIME = 0.8 -- seconds a number stays on screen
 local RISE_STUDS = 3
 local START_HEIGHT = 3 -- studs above the head, clear of the OverheadHealth boxes
 local SPREAD_STUDS = 2 -- random sideways offset so quick hits don't overlap
-local CRIT_TEXT_COLOR = Color3.fromRGB(255, 205, 60)
-local CRIT_OUTLINE_COLOR = Color3.fromRGB(60, 30, 0)
+local CRIT_TEXT_COLOR = Color3.fromRGB(255, 170, 30) -- yellow-orange
+local CRIT_OUTLINE_COLOR = Color3.fromRGB(60, 25, 0)
 local CRIT_SIZE = 1.5 -- times the normal number size
 local CRIT_SPARK_COUNT = 18
 local CRIT_SOUND_RANGE = 60 -- studs from the camera a critical can be heard from
@@ -40,12 +40,18 @@ local function formatAmount(amount)
 	return string.format("%.1f", amount)
 end
 
-local function showNumber(anchor, amount, critical)
+local function showNumber(anchor, amount, critical, byOther)
 	if not Preferences.Get("DamageNumbers") then
 		return -- turned off in Settings (the flash and sparks still play)
 	end
 	local scale = (critical and CRIT_SIZE or 1) * Preferences.Get("DmgSize") / 100
-	local colors = HudConfig.DamageNumberColors[Preferences.Get("DmgColor")]
+	local colors
+	if byOther then
+		colors = critical and HudConfig.OtherPlayerCritColor or HudConfig.OtherPlayerDamageColor
+	else
+		colors = critical and { text = CRIT_TEXT_COLOR, outline = CRIT_OUTLINE_COLOR }
+			or HudConfig.DamageNumberColors[Preferences.Get("DmgColor")]
+	end
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "DamageNumber"
 	billboard.Adornee = anchor
@@ -62,12 +68,12 @@ local function showNumber(anchor, amount, critical)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.Highway
 	label.Text = formatAmount(amount) .. (critical and "!" or "")
-	label.TextColor3 = critical and CRIT_TEXT_COLOR or colors.text
+	label.TextColor3 = colors.text
 	label.TextScaled = true
 	label.Parent = billboard
 
 	local outline = Instance.new("UIStroke")
-	outline.Color = critical and CRIT_OUTLINE_COLOR or colors.outline
+	outline.Color = colors.outline
 	outline.Thickness = 2
 	outline.Parent = label
 
@@ -125,7 +131,8 @@ local function onHit(humanoid, amount, critical)
 	local root = humanoid.RootPart
 	local head = character:FindFirstChild("Head") or root
 	if head then
-		showNumber(head, amount, critical)
+		local by = humanoid:GetAttribute("HitByUserId") or 0
+		showNumber(head, amount, critical, by ~= 0 and by ~= Players.LocalPlayer.UserId)
 	end
 	flash(character)
 	if critical and root then

@@ -1,4 +1,5 @@
--- Hold Left Shift to sprint while moving; sprinting drains stamina and swaps
+-- Hold Left Shift to sprint while moving (or press it to start and stop, in the Sprint
+-- setting; toggled sprint also ends when you stop moving); sprinting drains stamina and swaps
 -- the normal run for the SprintRun animation. Blocking (Guard) halves the walk
 -- and rules out sprinting; a guard break's stun holds you still. No sprinting
 -- while swimming (Swim sets the character's Swimming attribute).
@@ -10,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local sprintAnimation = ReplicatedStorage:WaitForChild("SprintAnimation", 10) -- nil: sprinting works without it
@@ -23,6 +25,7 @@ local DRAIN_PER_SECOND = 10 -- a full bar lasts 10 seconds of sprinting
 local BLEND_TIME = 0.15 -- seconds to fade between the normal run and the sprint
 
 local holding = false
+local wasMoving = false
 local sprintTracks = setmetatable({}, { __mode = "k" })
 local nextLoadTry = 0 -- a failed load is retried after a pause, not every frame
 
@@ -59,11 +62,15 @@ end
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed and not Menus.Blocks() and input.KeyCode == SPRINT_KEY then
-		holding = true
+		if Preferences.Choice("Sprint") == "TOGGLE" then
+			holding = not holding
+		else
+			holding = true
+		end
 	end
 end)
 UserInputService.InputEnded:Connect(function(input)
-	if input.KeyCode == SPRINT_KEY then
+	if input.KeyCode == SPRINT_KEY and Preferences.Choice("Sprint") ~= "TOGGLE" then
 		holding = false
 	end
 end)
@@ -76,6 +83,10 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 	-- only drains while actually moving
 	local moving = humanoid.MoveDirection.Magnitude > 0.1
+	if wasMoving and not moving and Preferences.Choice("Sprint") == "TOGGLE" then
+		holding = false -- a toggled sprint ends when you stop
+	end
+	wasMoving = moving
 	local stunned = (character:GetAttribute("HitstunUntil") or 0) > workspace:GetServerTimeNow()
 	local blocking = character:GetAttribute("Blocking") == true
 	local swimming = character:GetAttribute("Swimming") == true

@@ -31,8 +31,9 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 
 ## Owner's standing preferences
 
-- UI is square everywhere: no rounded corners (`UICorner`). The one exception: the buttons up in
-  Roblox's top bar (`TopBar`), which are dressed as Roblox's own rounded pills.
+- UI is square everywhere: no rounded corners (`UICorner`). Two exceptions: the buttons up in
+  Roblox's top bar (`TopBar`), which are dressed as Roblox's own rounded pills, and the small round
+  dot a proximity prompt shows before you're in range (`PromptUI`).
 - The owner playtests; don't claim something works in-game unless it was actually tested.
 - All player damage goes through `ServerScriptService/Damage.luau` (`Damage.Deal`).
 - Any upload to the owner's Roblox account (images, animations) needs their OK first.
@@ -79,11 +80,12 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   loads the slot the player picks (`LoadSlot`); keybinds, preferences and the seen-update flag are the
   player's own (`<UserId>_account`, read on join). `SlotConfig` (names, look palettes/text, keys; pure, Lune-tested),
   `Slots` (server: meta, create/select/delete, holds the player anchored and shielded until they pick) +
-  `SlotServer` (the `SlotAction` remote), `CharacterLook` (paints the R6 rig; hair/face parts in
+  `SlotServer` (the `SlotAction` remote), `CharacterLook` (paints the R15 rig; hair/face parts in
   `ReplicatedStorage.CharacterParts`, the owner's), client `SlotMenu` (the 3 cards PLAY opens) and `Customizer`
   (tabs, square hair/face tiles, one colour wheel; a look's colours are free RGB, saved as hex). The hub
-  slot cards show level, yen and take their colour from the held power; the game is R6 only, enforced by an
-  R6 `StarterPlayer.StarterCharacter` rig that exists only in Studio (no script makes it). The hub
+  slot cards show level, yen and take their colour from the held power; the player is R15 only (every published
+  animation is R15), enforced by an R15 `StarterPlayer.StarterCharacter` rig that exists only in Studio (no script
+  makes it; the old R6 one is `ServerStorage.StarterCharacterR6`); NPC and boss models are still R6. The hub
   Profile names the character by its codename (`CharName`) with the real `@username` under it; `Slots` bumps the
   character's `LookRev` after each paint so `HubPose` redraws its model.
 - **Quests**: `Quests` (module) + `QuestServer`: bounties from NPCs tagged `QuestGiver` (a `GiverId`
@@ -97,6 +99,13 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   module (saved as the `Reforge` text, mirrored as `Reforge_<Set>` attributes), the smith's remote in
   `ReforgeServer`. `Damage.Deal` and `SkillSetServer` read the bonuses; status procs and lifesteal
   run from a `Damage.OnDealt` listener in `ReforgeServer`.
+- **Fast travel**: every model tagged `SpawnSetter` (the Spawn Keepers) is a travel point; their talk's "travel" reply
+  opens `FastTravelMenu` (client: a full-screen map in the shops' look over `MapModel`, the map blocks it shares with
+  `MapMenu`). `FastTravelServer` (the `FastTravel` RemoteFunction, made by script) decides every trip: at a keeper, a
+  real and unlocked point, out of PvP combat, off cooldown; it streams the destination in and lands the player in front
+  of its keeper. Numbers and pure rules in `FastTravelConfig` (Lune-tested): `Tag` moves it to another NPC, `IsUnlocked`
+  is the one unlock rule (every point until `RequireUnlock`). A keeper's map name is its `PlaceName` attribute, else its
+  `ZoneConfig` area.
 - **Enemy drops**: enemies tagged `Enemy` drop materials as orbs. `DropConfig` has the numbers and pure rules
   (Lune-tested); `Drops` tracks damage per enemy (`Damage.OnDealt`), rolls for each player who dealt 10% on
   `Damage.OnKill`, and runs the pickup loop; orbs are parts in `workspace.Drops` cloned from
@@ -118,8 +127,8 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
   popups), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row, the yen and the
   Menu icon), `KeyHints` (bottom-left move hints), `Leaderboard` (Tab: the player list in place of Roblox's own), `Compass` (a strip in the middle of Roblox's top bar: points,
-  the Headhunter, party mates and the bounty's nearest target, far ones from `MapServer`'s `MapPosition`/`QuestTarget`), `XPBar` (bottom left, under the cards), `PickupFeed` (above the yen: XP and yen per source, from `PlayerStats.Source`, and materials picked up, edged in the rarity colour), `ComboCounter`
-  (hits landed: `Damage.Deal` bumps the player's `HitsLanded` attribute), `LowHealth` (red screen edges), `ZoneName`
+  the Headhunter, party mates and the bounty's nearest target, far ones from `MapServer`'s `MapPosition`/`QuestTarget`), `XPBar` (bottom left, under the cards), `PickupFeed` (above the yen: XP and yen per source, from `PlayerStats.Source`, and materials picked up, edged in the rarity colour), the combo counter (the last row of `StatusHUD`:
+  hits landed, `Damage.Deal` bumps the player's `HitsLanded` attribute), `LowHealth` (red screen edges), `ZoneName`
   (area names from `ZoneConfig`, a mockup until the map is done; their numbers in `HudConfig`, pure rules in `HudRules`,
   Lune-tested), `PreloadAnimations` (loads every animation on join), `LoadingScreen` (in `ReplicatedFirst`; fades once `TitleMenu` is Ready), `TitleMenu` (on join: PLAY / SETTINGS / UPDATES over a camera drifting through the `workspace.MenuCameras` parts, a Persistent model, or circling the spawn), and `Menus` (module: one menu open at a time;
   every menu calls `Menus.Open/Close` and `Menus.Register`; shared HUD numbers and icon ids are in

@@ -121,7 +121,7 @@ local function tryAttack()
 		or player:GetAttribute("Dashing")
 		or player:GetAttribute("RangedReady")
 		or ActionLock.Busy(character) -- Undo carrying her back, a block, a stun, the water
-		or Menus.Blocks() -- a menu is up: a click is for the menu (the hub's empty paper isn't a button)
+		or Menus.BlocksActions() -- a menu is up: a click is for the menu (the hub's empty paper isn't a button)
 	then
 		return
 	end

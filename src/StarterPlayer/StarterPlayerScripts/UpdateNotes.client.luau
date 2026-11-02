@@ -50,7 +50,7 @@ local function label(parent, props)
 	return make("TextLabel", props)
 end
 
-local tabFrame = Hub.Tab("Updates", { order = 6, title = "UPDATES" })
+local tabFrame = Hub.Tab("Updates", { order = 6, title = "UPDATES", apart = true }) -- at the nav's foot, above the Handbook
 
 -- the whole tab scrolls: the version and title, then the topics as cards in one or two columns
 local panel = make("ScrollingFrame", {
@@ -237,6 +237,56 @@ local columns = make("Frame", {
 	AutomaticSize = Enum.AutomaticSize.Y,
 	BackgroundTransparency = 1,
 })
+local blocks = { { frame = columns, sections = UpdateNotes.Sections } } -- each update's column holder and topics
+
+-- earlier updates under the current one: a version chip, then their topics the same way
+for index, older in ipairs(UpdateNotes.Older or {}) do
+	local row = make("Frame", {
+		Parent = panel,
+		LayoutOrder = 10 + index * 2,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+	})
+	make("UIListLayout", {
+		Parent = row,
+		FillDirection = Enum.FillDirection.Horizontal,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 14),
+	})
+	make("TextLabel", {
+		Parent = row,
+		LayoutOrder = 1,
+		Size = UDim2.fromOffset(0, 26),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundColor3 = TEXT,
+		BorderSizePixel = 0,
+		Font = Hub.Theme.LabelFont,
+		Text = " " .. string.upper(older.Version) .. " ",
+		TextSize = 16,
+		TextColor3 = Hub.Theme.Paper,
+	})
+	make("TextLabel", {
+		Parent = row,
+		LayoutOrder = 2,
+		Size = UDim2.fromOffset(0, 34),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Font = Hub.Theme.TitleFont,
+		Text = "PREVIOUS UPDATE",
+		TextSize = TITLE_SIZE,
+		TextColor3 = MUTED,
+	})
+	local holder = make("Frame", {
+		Parent = panel,
+		LayoutOrder = 11 + index * 2,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+	})
+	table.insert(blocks, { frame = holder, sections = older.Sections })
+end
 
 local builtCount
 local function build()
@@ -246,39 +296,42 @@ local function build()
 	end
 	builtCount = count
 	tints = {}
-	columns:ClearAllChildren()
-	make("UIListLayout", {
-		Parent = columns,
-		FillDirection = Enum.FillDirection.Horizontal,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, COLUMN_GAP),
-	})
-	local holders, heights = {}, {}
-	for index = 1, count do
-		holders[index] = make("Frame", {
-			Parent = columns,
-			LayoutOrder = index,
-			Size = UDim2.new(1 / count, -COLUMN_GAP * (count - 1) / count, 0, 0),
-			AutomaticSize = Enum.AutomaticSize.Y,
-			BackgroundTransparency = 1,
+	for _, block in ipairs(blocks) do
+		local frame = block.frame
+		frame:ClearAllChildren()
+		make("UIListLayout", {
+			Parent = frame,
+			FillDirection = Enum.FillDirection.Horizontal,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, COLUMN_GAP),
 		})
-		make("UIListLayout", { Parent = holders[index], SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, CARD_GAP) })
-		heights[index] = 0
-	end
-	for index, section in ipairs(UpdateNotes.Sections) do
-		-- the next topic goes in the shortest column (a topic's weight: its heading and its characters)
-		local shortest = 1
-		for column = 2, count do
-			if heights[column] < heights[shortest] then
-				shortest = column
+		local holders, heights = {}, {}
+		for index = 1, count do
+			holders[index] = make("Frame", {
+				Parent = frame,
+				LayoutOrder = index,
+				Size = UDim2.new(1 / count, -COLUMN_GAP * (count - 1) / count, 0, 0),
+				AutomaticSize = Enum.AutomaticSize.Y,
+				BackgroundTransparency = 1,
+			})
+			make("UIListLayout", { Parent = holders[index], SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, CARD_GAP) })
+			heights[index] = 0
+		end
+		for index, section in ipairs(block.sections) do
+			-- the next topic goes in the shortest column (a topic's weight: its heading and its characters)
+			local shortest = 1
+			for column = 2, count do
+				if heights[column] < heights[shortest] then
+					shortest = column
+				end
 			end
+			card(holders[shortest], section, index)
+			local weight = 80
+			for _, line in ipairs(section[2]) do
+				weight += 40 + #line
+			end
+			heights[shortest] += weight
 		end
-		card(holders[shortest], section, index)
-		local weight = 80
-		for _, line in ipairs(section[2]) do
-			weight += 40 + #line
-		end
-		heights[shortest] += weight
 	end
 end
 build()
@@ -286,7 +339,7 @@ tabFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(build)
 UIScale.OnChange(build)
 
 if UpdateNotes.Footer then
-	label(panel, { LayoutOrder = 3, Text = UpdateNotes.Footer, TextSize = 15, TextColor3 = MUTED })
+	label(panel, { LayoutOrder = 1000, Text = UpdateNotes.Footer, TextSize = 15, TextColor3 = MUTED })
 end
 
 local unseen = false -- this version hasn't been marked seen yet

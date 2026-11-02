@@ -9,6 +9,7 @@
 -- brackets lighting up. BACK is plain text at the bottom left. Everything goes through the
 -- SlotAction remote (see Customizer.Call), and the server decides; this only shows the answer.
 -- Square everything; the accent is the hub's.
+local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -18,8 +19,10 @@ local HubRules = require(ReplicatedStorage:WaitForChild("HubRules"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local SlotConfig = require(ReplicatedStorage:WaitForChild("SlotConfig"))
+local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local Customizer = require(script.Parent:WaitForChild("Customizer"))
-local Hub = require(script.Parent:WaitForChild("Hub"))
+local FirstSetup = require(script.Parent:WaitForChild("FirstSetup"))
+local Hub =require(script.Parent:WaitForChild("Hub"))
 
 local player = Players.LocalPlayer
 local Theme = HudConfig.HubTheme
@@ -44,6 +47,18 @@ local STAT_Y = NAME_Y + 52
 local CHIP_Y = NAME_Y + 110
 
 local SlotMenu = {}
+
+local setupShown = false -- the quick setup is offered once a session
+
+-- no character in any slot yet
+local function allEmpty(slots)
+	for slot = 1, SlotConfig.SlotCount do
+		if type(slots) == "table" and type(slots[slot]) == "table" then
+			return false
+		end
+	end
+	return true
+end
 
 -- "just now", "5m ago", "3h ago", "2d ago"
 local function ago(time)
@@ -75,6 +90,12 @@ end
 -- the colour to write on a fill of `color`
 local function onColor(color)
 	return 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B > 0.4 and Theme.Nav or Color3.new(1, 1, 1)
+end
+
+-- where the mouse is, in the same pixels as AbsolutePosition: those count from under Roblox's band
+-- (even on a screen that ignores the gui inset), the mouse's location from the very top
+local function mouseAt()
+	return UserInputService:GetMouseLocation() - GuiService:GetGuiInset()
 end
 
 -- Opens the slot screen. onEntered() once a character is chosen or made and the player
@@ -114,14 +135,16 @@ function SlotMenu.Open(onEntered, onBack)
 	updateFit()
 	local viewportWatch = workspace.CurrentCamera and workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateFit)
 
-	label(stage, {
+	-- the chip, the title and the rule: hidden while the first-time setup shows
+	local header = make("Frame", { Parent = stage, Size = UDim2.fromOffset(STAGE_WIDTH, HEADER), BackgroundTransparency = 1 })
+	label(header, {
 		Text = string.format('[ <font color="#%s">CHARACTER SLOTS</font> ]', accent:ToHex()),
 		RichText = true,
 		Font = Theme.MonoFont,
 		TextSize = 14,
 		Size = UDim2.fromOffset(STAGE_WIDTH, 16),
 	})
-	label(stage, {
+	label(header, {
 		Text = "CHOOSE YOUR CHARACTER",
 		Font = Theme.TitleFont,
 		TextSize = 40,
@@ -129,7 +152,7 @@ function SlotMenu.Open(onEntered, onBack)
 		Size = UDim2.fromOffset(STAGE_WIDTH, 44),
 	})
 	make("Frame", {
-		Parent = stage,
+		Parent = header,
 		Position = UDim2.fromOffset(0, HEADER - 8),
 		Size = UDim2.fromOffset(STAGE_WIDTH, 1),
 		BackgroundColor3 = Theme.Muted,
@@ -137,7 +160,7 @@ function SlotMenu.Open(onEntered, onBack)
 		BorderSizePixel = 0,
 	})
 	make("Frame", {
-		Parent = stage,
+		Parent = header,
 		Position = UDim2.fromOffset(0, HEADER - 8),
 		Size = UDim2.fromOffset(120, 2),
 		BackgroundColor3 = accent,
@@ -202,7 +225,7 @@ function SlotMenu.Open(onEntered, onBack)
 		if not gui.Enabled then
 			return
 		end
-		local mouse = UserInputService:GetMouseLocation()
+		local mouse = mouseAt()
 		for _, entry in ipairs(entries) do
 			local position, size = entry.slotFrame.AbsolutePosition, entry.slotFrame.AbsoluteSize
 			local over = mouse.X >= position.X and mouse.X <= position.X + size.X and mouse.Y >= position.Y and mouse.Y <= position.Y + size.Y
@@ -233,7 +256,7 @@ function SlotMenu.Open(onEntered, onBack)
 	end
 	local clickAway = UserInputService.InputBegan:Connect(function(input)
 		if openMenu and input.UserInputType == Enum.UserInputType.MouseButton1 then
-			local mouse = UserInputService:GetMouseLocation()
+			local mouse = mouseAt()
 			local position, size = openMenu.AbsolutePosition, openMenu.AbsoluteSize
 			if mouse.X < position.X or mouse.X > position.X + size.X or mouse.Y < position.Y or mouse.Y > position.Y + size.Y then
 				closeMenu()
@@ -275,6 +298,24 @@ function SlotMenu.Open(onEntered, onBack)
 			local retry = button(cards, { Text = "RETRY", Filled = true, Size = UDim2.fromOffset(160, 44) }, refresh)
 			retry.AnchorPoint = Vector2.new(0.5, 0.5)
 			retry.Position = UDim2.fromScale(0.5, 0.5)
+			return
+		end
+		-- the first time ever (no character, no setting touched): the quick setup, then the slots
+		if not setupShown and allEmpty(result.slots) and (player:GetAttribute(Preferences.Attribute) or "") == "" then
+			clearCards()
+			header.Visible = false
+			local setup = make("Frame", {
+				Parent = stage,
+				Position = UDim2.fromOffset(0, CARDS_TOP - HEADER / 2),
+				Size = UDim2.fromOffset(STAGE_WIDTH, CARD_HEIGHT),
+				BackgroundTransparency = 1,
+			})
+			FirstSetup.Build(setup, accent, function()
+				setupShown = true
+				header.Visible = true
+				setup:Destroy()
+				render(result.slots)
+			end)
 			return
 		end
 		render(result.slots)

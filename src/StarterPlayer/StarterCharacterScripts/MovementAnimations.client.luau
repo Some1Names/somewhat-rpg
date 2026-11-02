@@ -8,8 +8,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ours = ReplicatedStorage:WaitForChild("MovementAnimations")
 local animate = script.Parent:WaitForChild("Animate", 10)
 if not animate then
+	warn("[MovementAnimations] the character has no Animate script: nothing plays walk, idle, jump or fall")
 	return
 end
+local humanoid = script.Parent:WaitForChild("Humanoid")
+local animator = humanoid:WaitForChild("Animator")
 
 -- the Animate values each of ours stands in for
 local SLOTS = {
@@ -30,10 +33,27 @@ for name in pairs(SLOTS) do
 end
 pcall(ContentProvider.PreloadAsync, ContentProvider, loading)
 
+-- one that can't be loaded here (not published for this player) is left out, so the default
+-- keeps playing rather than a frozen pose; the Output says which
+local LOAD_WAIT = 3 -- seconds a track may take to report its length
+local function loads(animation)
+	local track = animator:LoadAnimation(animation)
+	local deadline = os.clock() + LOAD_WAIT
+	while track.Length == 0 and os.clock() < deadline do
+		task.wait(0.1)
+	end
+	local ok = track.Length > 0
+	track:Destroy()
+	if not ok then
+		warn(string.format("[MovementAnimations] %s (%s) didn't load, keeping the default", animation.Name, animation.AnimationId))
+	end
+	return ok
+end
+
 -- Animate notices the change and reloads that set
 for name, slots in pairs(SLOTS) do
 	local animation = ours:FindFirstChild(name)
-	if animation and animation.AnimationId ~= "" then
+	if animation and animation.AnimationId ~= "" and loads(animation) then
 		for _, slot in ipairs(slots) do
 			local value = animate:WaitForChild(slot, 5)
 			if value then
@@ -47,12 +67,12 @@ for name, slots in pairs(SLOTS) do
 	end
 end
 
+print("[MovementAnimations] ready, walk id " .. (ours.Walk and ours.Walk.AnimationId or "none"))
+
 -- Safety net: if the walk/run animation is still playing while the character stands
 -- on the ground and isn't moving (Animate missed the stop, e.g. when its animations
 -- were swapped or loaded late), stop it and hold our idle until the player moves again.
 local RunService = game:GetService("RunService")
-local humanoid = script.Parent:WaitForChild("Humanoid")
-local animator = humanoid:WaitForChild("Animator")
 local walk = ours:FindFirstChild("Walk")
 local idle = ours:FindFirstChild("Idle")
 local STILL_SPEED = 0.5 -- studs per second

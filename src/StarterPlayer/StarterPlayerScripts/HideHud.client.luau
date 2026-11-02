@@ -1,4 +1,4 @@
--- Hide HUD: the Hide HUD key (Keybinds, H to start with) turns the HUD off for a clean
+-- Hide HUD: the Hide HUD key (Keybinds, F1 to start with) turns the HUD off for a clean
 -- screen, and again on. Every ScreenGui and BillboardGui in PlayerGui is switched off
 -- (Enabled) except the menus and screens that aren't HUD and the crosshairs, which turn
 -- themselves on and off every frame (SKIP), and any that appear

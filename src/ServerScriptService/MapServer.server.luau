@@ -1,6 +1,6 @@
 -- What the map tab (MapMenu) can't see for itself with streaming on, since far-off parts
 -- aren't on the client: where the NPCs it marks stand, as ReplicatedStorage.MapMarkers (a
--- Vector3Value each, named by its label, with a Kind attribute: Quest, Service or Spawn),
+-- Vector3Value each, named by its label, with a Kind attribute: Quest, Shop, Power, Service or Spawn),
 -- and where every player is, as their MapPosition attribute (party mates far away), and
 -- the nearest living enemy their bounty asks for, as their QuestTarget attribute (the
 -- compass). All are refreshed every second, as is exploring: the map cells around each player join
@@ -22,8 +22,8 @@ local TAGS = {
 	QuestGiver = { kind = "Quest", label = "Bounty Hunter" },
 	Smith = { kind = "Service", label = "Smith" },
 	FactionRecruiter = { kind = "Service", label = "Recruiter" },
-	Shop = { kind = "Service" },
-	PowerGacha = { kind = "Service", label = "Power Gacha" },
+	Shop = { kind = "Shop" },
+	PowerGacha = { kind = "Power", label = "Power Gacha" },
 	SpawnSetter = { kind = "Spawn", label = "Spawn Keeper" },
 }
 

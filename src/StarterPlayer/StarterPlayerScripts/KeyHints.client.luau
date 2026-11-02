@@ -115,13 +115,16 @@ local function hints()
 	if GuardConfig.Enabled and Keybinds.Current().Block then
 		table.insert(result, { Keybinds.Text("Block"), "Block / Parry" })
 	end
-	table.insert(result, { Keybinds.Text("ItemWheel"), "Item wheel" })
+	if Keybinds.Key("ItemWheel") then
+		table.insert(result, { Keybinds.Text("ItemWheel"), "Item wheel" })
+	end
 	if set and set.ranged then
 		table.insert(result, { "RMB", "Aim" })
 	end
 	table.insert(result, { "Space", "Double jump" })
 	table.insert(result, { "Shift", "Sprint" })
-	table.insert(result, { "Ctrl", "Shift lock" })
+	table.insert(result, { "M", "Menu" })
+	table.insert(result, { "Alt", "Free camera" })
 	table.insert(result, { "MMB", "Lock on" })
 	return result
 end

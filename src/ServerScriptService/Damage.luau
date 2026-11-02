@@ -164,6 +164,13 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	end
 	-- (a status effect's tick is neither combat nor blockable)
 	local targetPlayer = Players:GetPlayerFromCharacter(humanoid.Parent)
+	-- party mates can't hurt each other unless the party has friendly fire on (Party mirrors it)
+	if attacker and targetPlayer and attacker ~= targetPlayer then
+		local partyId = attacker:GetAttribute("PartyId")
+		if partyId ~= nil and targetPlayer:GetAttribute("PartyId") == partyId and not attacker:GetAttribute("PartyFriendlyFire") then
+			return 0
+		end
+	end
 	-- a player in the i-frames of a dash is missed
 	if targetPlayer and not options.dot and not options.unavoidable then
 		if CombatFeel.InDodge(humanoid.Parent:GetAttribute("DodgeUntil"), workspace:GetServerTimeNow()) then
@@ -247,6 +254,8 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 		-- HitFeedback shows the health drop that follows as a critical hit
 		humanoid:SetAttribute("CriticalHitAt", workspace:GetServerTimeNow())
 	end
+	-- HitFeedback colours the number of a hit another player landed
+	humanoid:SetAttribute("HitByUserId", attacker and attacker.UserId or 0)
 	local healthBefore = humanoid.Health
 	humanoid:TakeDamage(amount)
 	local dealt = healthBefore - humanoid.Health

@@ -7,6 +7,10 @@
 -- While you hold a block, a white posture bar (Guard) takes the stamina boxes'
 -- place, filling as hits wear the guard down; a guard break flashes it red and
 -- shakes it for the length of the stun, then the stamina boxes come back.
+-- Last row: the combo counter, the hits you land (Damage.Deal adds to your HitsLanded attribute;
+-- a status tick isn't a hit). It shows from HudConfig.ComboMin hits, pops on each one, steps colour
+-- at HudConfig.ComboTiers and fades HudConfig.ComboWindow seconds after the last hit. The Combo
+-- counter setting (Preferences) hides it.
 -- The Shoulder side setting (LEFT) moves it to the left of the body and mirrors it, so it
 -- still starts at the body: icons on the right, bars and boxes running out to the left.
 local Players = game:GetService("Players")
@@ -17,6 +21,7 @@ local TweenService = game:GetService("TweenService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
+local HudRules = require(ReplicatedStorage:WaitForChild("HudRules"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
@@ -61,6 +66,9 @@ local LINK_WIDTH = math.ceil(DODGE_STEP - DODGE_HALF_DIAGONAL) - LINK_START
 local MAX_DODGES = StatConfig.DodgeCharges(math.huge)
 -- wide enough for the HP bar or the longest stamina row plus the diamonds
 local CONTENT_WIDTH = ICON_WIDTH + math.max(BAR_WIDTH, boxesWidth(MAX_BOXES) + DODGE_GAP + MAX_DODGES * DODGE_STEP)
+local COMBO_HEIGHT = 18
+local COMBO_POP = 1.25
+local COMBO_FADE = 0.4
 local TRAIL_HOLD = 0.4 -- seconds the pale segment waits before catching up
 local TRAIL_SPEED = 1.2 -- bar fractions per second
 local HIDE_AFTER = 2.5 -- seconds full and unchanged before a bar fades out
@@ -84,7 +92,7 @@ billboard.Name = "StatusHUD"
 billboard.AlwaysOnTop = true
 billboard.LightInfluence = 0
 billboard.ResetOnSpawn = false
-billboard.Size = UDim2.fromOffset(CONTENT_WIDTH * 2, ROW_HEIGHT * 3 + ROW_GAP * 3 + StatusIcons.Size + 2)
+billboard.Size = UDim2.fromOffset(CONTENT_WIDTH * 2, ROW_HEIGHT * 3 + ROW_GAP * 4 + StatusIcons.Size + 2 + COMBO_HEIGHT)
 billboard.StudsOffset = OFFSET
 billboard.Parent = player:WaitForChild("PlayerGui")
 
@@ -231,6 +239,60 @@ local statusIcons = StatusIcons.new(content, Enum.HorizontalAlignment.Left,
 	UDim2.fromOffset(ICON_WIDTH - 1, 3 * (ROW_HEIGHT + ROW_GAP)))
 statusIcons.row.Size = UDim2.new(1, -(ICON_WIDTH - 1), 0, StatusIcons.Size + 2)
 
+-- combo, under the status icons
+local comboLabel = Instance.new("TextLabel")
+comboLabel.BackgroundTransparency = 1
+comboLabel.Position = UDim2.fromOffset(ICON_WIDTH, 3 * (ROW_HEIGHT + ROW_GAP) + StatusIcons.Size + 2 + ROW_GAP)
+comboLabel.Size = UDim2.new(1, -ICON_WIDTH, 0, COMBO_HEIGHT)
+comboLabel.Font = HudConfig.Style.TitleFont
+comboLabel.TextSize = 18
+comboLabel.TextColor3 = Color3.new(1, 1, 1)
+comboLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+comboLabel.TextTransparency = 1
+comboLabel.TextStrokeTransparency = 1
+comboLabel.Parent = content
+local comboPop = Instance.new("UIScale")
+comboPop.Parent = comboLabel
+
+local combo = 0
+local comboLastHitAt = -math.huge
+local comboShown = 0 -- bumps on every hit, so only the newest hit's fade runs
+
+local function showCombo()
+	comboShown += 1
+	local mine = comboShown
+	comboLabel.TextColor3 = HudConfig.ComboTiers[HudRules.ComboTier(HudConfig.ComboTiers, combo)].color
+	comboLabel.Text = string.format("%d HITS", combo)
+	comboLabel.TextTransparency = 0
+	comboLabel.TextStrokeTransparency = 0.3
+	comboPop.Scale = COMBO_POP
+	TweenService:Create(comboPop, TweenInfo.new(0.15, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+	task.delay(HudConfig.ComboWindow, function()
+		if comboShown == mine then
+			TweenService:Create(comboLabel, TweenInfo.new(COMBO_FADE), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		end
+	end)
+end
+
+-- several hits can land in one frame and arrive as one change, so count the difference
+local lastTotal = player:GetAttribute("HitsLanded") or 0
+player:GetAttributeChangedSignal("HitsLanded"):Connect(function()
+	local total = player:GetAttribute("HitsLanded") or 0
+	local gained = total - lastTotal
+	lastTotal = total
+	if gained <= 0 then
+		return
+	end
+	if os.clock() - comboLastHitAt > HudConfig.ComboWindow then
+		combo = 0
+	end
+	combo += gained
+	comboLastHitAt = os.clock()
+	if combo >= HudConfig.ComboMin and Preferences.Get("ComboCounter") then
+		showCombo()
+	end
+end)
+
 local function updateMeter(m, fraction, dt, stayVisible)
 	local now = os.clock()
 	if fraction < m.last then
@@ -282,6 +344,8 @@ local function applySide(value)
 	end
 	statusIcons.row.Position = UDim2.fromOffset(left and 0 or ICON_WIDTH - 1, 3 * (ROW_HEIGHT + ROW_GAP))
 	statusLayout.HorizontalAlignment = left and Enum.HorizontalAlignment.Right or Enum.HorizontalAlignment.Left
+	comboLabel.Position = UDim2.fromOffset(left and 0 or ICON_WIDTH, comboLabel.Position.Y.Offset)
+	comboLabel.TextXAlignment = left and Enum.TextXAlignment.Right or Enum.TextXAlignment.Left
 end
 applySide(Preferences.Choice("Side") == "LEFT")
 

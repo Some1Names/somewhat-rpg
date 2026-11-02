@@ -1,9 +1,10 @@
 -- The loading screen: replaces Roblox's own the moment the player joins (only
 -- ReplicatedFirst runs that early). Near-black paper with the hub's rail down the left,
 -- [ SOMEWHAT ], the big condensed title with RPG on a chip, a mono status line and a
--- thin progress bar (Modern Warfare's look, as the hub). It waits for
--- the game to load and the asset queue to drain (at least MIN_TIME, and no more
--- than ASSET_TIMEOUT on the assets), then for the title menu (TitleMenu sets
+-- thin progress bar (Modern Warfare's look, as the hub). It waits for the game to
+-- load, the map round the character to stream in and its meshes and textures to
+-- preload (at least MIN_TIME, no more than ASSET_TIMEOUT on the map, or until SKIP
+-- is pressed), then for the title menu (TitleMenu sets
 -- Ready on its gui) so the bare world never flashes between the two, and fades.
 -- Square everything. The colours are the hub's (HudConfig.HubTheme), written
 -- out here because ReplicatedStorage may not have arrived yet.
@@ -25,7 +26,10 @@ local RAIL_WIDTH = 52
 
 local PAD = 32 + RAIL_WIDTH
 local MIN_TIME = 1.5 -- s the screen shows at least, so it doesn't blink
-local ASSET_TIMEOUT = 15 -- s after the game loads that the asset queue may take
+local ASSET_TIMEOUT = 40 -- s after the game loads that the map and its assets may take
+local CHARACTER_WAIT = 5 -- s it waits for the character, whose spawn is the area streamed in
+local STREAM_TIMEOUT = 8 -- s the server may take streaming that area in
+local BATCH_SIZE = 60 -- instances preloaded at a time (the bar moves per batch)
 local TITLE_TIMEOUT = 10 -- s it waits for the title menu to be ready
 local FADE_TIME = 0.6
 local BAR_SPEED = 6 -- how fast the bar catches up with the real progress
@@ -38,6 +42,11 @@ ReplicatedFirst:RemoveDefaultLoadingScreen()
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local started = os.clock()
+-- the map is Persistent models (the place streams), sent after the join: the event says all have come
+local persistentLoaded = not workspace.StreamingEnabled
+local persistentConnection = workspace.PersistentLoaded:Connect(function()
+	persistentLoaded = true
+end)
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -165,40 +174,124 @@ local barFill = make("Frame", {
 	BorderSizePixel = 0,
 })
 
--- progress: until the game has loaded the bar creeps up to 40%; then the rest
--- follows the asset queue against the longest it has been
+-- SKIP, bottom right once the game has loaded: stops waiting on the map and its assets (they
+-- go on loading behind the title)
+local skipped = false
+local skip = make("TextButton", {
+	Parent = root,
+	AnchorPoint = Vector2.new(1, 1),
+	Position = UDim2.new(1, -PAD, 1, -PAD),
+	Size = UDim2.fromOffset(96, 30),
+	BackgroundColor3 = NAV,
+	BorderSizePixel = 0,
+	AutoButtonColor = false,
+	Font = MONO_FONT,
+	Text = "SKIP",
+	TextSize = 12,
+	TextColor3 = MUTED,
+	Visible = false,
+})
+local skipStroke = make("UIStroke", { Parent = skip, Color = INK, Transparency = 0.82, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+skip.MouseEnter:Connect(function()
+	skip.TextColor3 = INK
+	skipStroke.Transparency = 0.3
+end)
+skip.MouseLeave:Connect(function()
+	skip.TextColor3 = MUTED
+	skipStroke.Transparency = 0.82
+end)
+skip.Activated:Connect(function()
+	skipped = true
+	skip.Visible = false
+end)
+
+-- progress: until the game has loaded the bar creeps up to 30%; streaming the map round the
+-- character takes it to 45%; then the rest follows the map's meshes and textures, a batch at a time
 local target, shown = 0, 0
-local maxQueue = 1
 local loadedAt
-local done = false
+local phase = "world" -- world, map, assets, done
+local batchesDone, batchCount = 0, 1
 
 local stepConnection = RunService.RenderStepped:Connect(function(dt)
-	local queue = ContentProvider.RequestQueueSize
-	maxQueue = math.max(maxQueue, queue)
-	if done then
+	if phase == "done" then
 		target = 1
 		status.Text = "READY"
-	elseif not loadedAt then
-		target = math.min(0.4, (os.clock() - started) / 10 * 0.4)
+	elseif phase == "world" then
+		target = math.min(0.3, (os.clock() - started) / 10 * 0.3)
 		status.Text = "LOADING WORLD"
+	elseif phase == "map" then
+		target = math.max(target, math.min(0.45, 0.3 + (os.clock() - loadedAt) / 10 * 0.15))
+		status.Text = "LOADING MAP"
 	else
-		target = math.max(target, 0.4 + 0.6 * (1 - queue / maxQueue))
-		status.Text = queue > 0 and string.format("LOADING ASSETS · %d LEFT", queue) or "STARTING"
+		target = math.max(target, 0.45 + 0.55 * batchesDone / batchCount)
+		status.Text = string.format("LOADING ASSETS · %d / %d", batchesDone, batchCount)
 	end
 	shown += (target - shown) * math.min(1, dt * BAR_SPEED)
 	barFill.Size = UDim2.fromScale(shown, 1)
 	percent.Text = string.format("%d%%", math.floor(shown * 100 + 0.5))
 end)
 
+-- what the map draws with: meshes, textures and the sky, so nothing pops in once the screen lifts
+local function mapAssets()
+	local list = {}
+	for _, item in ipairs(workspace:GetDescendants()) do
+		if item:IsA("MeshPart") or item:IsA("SpecialMesh") or item:IsA("Decal") or item:IsA("SurfaceAppearance") or item:IsA("UnionOperation") then
+			table.insert(list, item)
+		end
+	end
+	for _, item in ipairs(game:GetService("Lighting"):GetDescendants()) do
+		if item:IsA("Sky") then
+			table.insert(list, item)
+		end
+	end
+	return list
+end
+
+-- the place streams: wait for the Persistent map, and ask for the area round the character (its
+-- spawn, the NPCs there) before the assets, so what the title and the entry shot show is all there
+local function loadMap()
+	while not persistentLoaded and os.clock() - loadedAt < ASSET_TIMEOUT and not skipped do
+		task.wait(0.1)
+	end
+	persistentConnection:Disconnect()
+	local waitUntil = os.clock() + CHARACTER_WAIT
+	while not (player.Character and player.Character:FindFirstChild("HumanoidRootPart")) and os.clock() < waitUntil and not skipped do
+		task.wait(0.1)
+	end
+	local character = player.Character
+	local characterRoot = character and character:FindFirstChild("HumanoidRootPart")
+	if characterRoot and workspace.StreamingEnabled then
+		pcall(player.RequestStreamAroundAsync, player, characterRoot.Position, STREAM_TIMEOUT)
+	end
+	if phase ~= "done" then
+		phase = "assets"
+	end
+	local assets = mapAssets()
+	batchCount = math.max(1, math.ceil(#assets / BATCH_SIZE))
+	for first = 1, #assets, BATCH_SIZE do
+		pcall(ContentProvider.PreloadAsync, ContentProvider, table.move(assets, first, math.min(first + BATCH_SIZE - 1, #assets), 1, {}))
+		batchesDone += 1
+	end
+	batchesDone = batchCount
+end
+
 if not game:IsLoaded() then
 	game.Loaded:Wait()
 end
 loadedAt = os.clock()
-while ContentProvider.RequestQueueSize > 0 and os.clock() - loadedAt < ASSET_TIMEOUT do
+phase = "map"
+skip.Visible = true
+local mapLoaded = false
+task.spawn(function()
+	loadMap()
+	mapLoaded = true
+end)
+while not mapLoaded and not skipped and os.clock() - loadedAt < ASSET_TIMEOUT do
 	task.wait(0.1)
 end
-done = true
-task.wait(math.max(0.3, MIN_TIME - (os.clock() - started)))
+phase = "done"
+skip.Visible = false
+task.wait(skipped and 0.1 or math.max(0.3, MIN_TIME - (os.clock() - started)))
 
 -- the title menu builds under this screen; fade once it's ready (or it never comes)
 local title = playerGui:WaitForChild("TitleMenu", TITLE_TIMEOUT)

@@ -35,7 +35,7 @@ local player = Players.LocalPlayer
 local Theme = Hub.Theme
 local TAB_HEIGHT = 30
 local TOP = TAB_HEIGHT + 16 -- the rows and the card start this far down
-local LIST_SHARE = 0.6 -- of the width, the rows; the card has the rest
+local LIST_SHARE = 0.5 -- of the width, the rows; the card has the rest
 local GAP = 16
 local ROW_HEIGHT = 40
 local ROW_PAD = 16
@@ -89,7 +89,7 @@ local function onClick(frame, fn)
 	end)
 end
 
-local tabFrame = Hub.Tab("Settings", { order = 7, title = "SETTINGS", apart = true })
+local tabFrame = Hub.Tab("Settings", { order = 7, title = "SETTINGS", apart = true, key = Enum.KeyCode.P })
 local ink = Hub.InkAccent()
 
 -- saving -----------------------------------------------------------------------------
@@ -292,10 +292,194 @@ end
 
 -- rows -------------------------------------------------------------------------------
 
-local selectRow, showSection -- defined below
 local capturing -- the action id waiting for a key, or nil
 local captureToken
 local dragging -- the slider row being dragged, or nil
+
+-- the keyboard -----------------------------------------------------------------------
+
+-- A 75% keyboard drawn above the card's text while the KEYBINDS tab is open, always there (it
+-- doesn't depend on the selected row; the text moves down under it). Only two things are lit:
+-- the keys that have an action of yours (the accent, tagged with what they do) and the selected
+-- row's key (bright). Clicking a lit key selects its row.
+local KEYBOARD_TOP = 0
+local KEY_HEIGHT = 26
+local KEY_GAP = 3
+local KEYBOARD_UNITS = 16 -- a 75% keyboard is 16 keys wide
+local KEYBOARD_WIDTH = 0.8 -- of the card
+local KEYBOARD_GAP = 22 -- px between the keyboard and the text under it
+
+-- { KeyCode name, what's drawn, width in keys }
+local function k(code, text, width)
+	return { code, text, width or 1 }
+end
+local function join(...)
+	local row = {}
+	for _, part in ipairs({ ... }) do
+		for _, key in ipairs(part) do
+			table.insert(row, key)
+		end
+	end
+	return row
+end
+local function letters(text)
+	local list = {}
+	for char in string.gmatch(text, ".") do
+		table.insert(list, k(char, char))
+	end
+	return list
+end
+local DIGIT_NAMES = { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Zero" }
+local digits = {}
+for i, name in ipairs(DIGIT_NAMES) do
+	table.insert(digits, k(name, tostring(i % 10)))
+end
+local functionKeys = {}
+for i = 1, 12 do
+	table.insert(functionKeys, k("F" .. i, "F" .. i))
+end
+local KEYBOARD_ROWS = {
+	join({ k("Escape", "Esc") }, functionKeys, { k("Print", "Prt"), k("Delete", "Del"), k("Insert", "Ins") }),
+	join({ k("Backquote", "`") }, digits, { k("Minus", "-"), k("Equals", "="), k("Backspace", "Bksp", 2), k("Home", "Home") }),
+	join({ k("Tab", "Tab", 1.5) }, letters("QWERTYUIOP"), { k("LeftBracket", "["), k("RightBracket", "]"), k("BackSlash", "\\", 1.5), k("PageUp", "PgUp") }),
+	join({ k("CapsLock", "Caps", 1.75) }, letters("ASDFGHJKL"), { k("Semicolon", ";"), k("Quote", "'"), k("Return", "Enter", 2.25), k("PageDown", "PgDn") }),
+	join({ k("LeftShift", "Shift", 2.25) }, letters("ZXCVBNM"), { k("Comma", ","), k("Period", "."), k("Slash", "/"), k("RightShift", "Shift", 1.75), k("Up", "^"), k("End", "End") }),
+	{
+		k("LeftControl", "Ctrl", 1.25),
+		k("LeftSuper", "Win", 1.25),
+		k("LeftAlt", "Alt", 1.25),
+		k("Space", "", 6.25),
+		k("RightAlt", "Alt"),
+		k("Fn", "Fn"),
+		k("RightControl", "Ctrl"),
+		k("Left", "<"),
+		k("Down", "v"),
+		k("Right", ">"),
+	},
+}
+
+-- what a key of yours is tagged with
+local ACTION_TAGS = {
+	SkillZ = "SK1",
+	SkillX = "SK2",
+	SkillC = "SK3",
+	SkillV = "SK4",
+	SkillF = "ULT",
+	Special = "PASV",
+	Dash = "DASH",
+	Block = "BLOCK",
+	Reload = "RELD",
+	Gallery = "PASV2",
+	HideHud = "HUD",
+	ItemWheel = "WHEEL",
+}
+
+local keyboard = make("Frame", {
+	Parent = card,
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, KEYBOARD_TOP),
+	Size = UDim2.new(KEYBOARD_WIDTH, 0, 0, #KEYBOARD_ROWS * (KEY_HEIGHT + KEY_GAP)),
+	BackgroundTransparency = 1,
+})
+local keyCells = {} -- KeyCode name -> { frame, name, tag, stroke, action }
+local selectRow, showSection -- (defined below)
+for rowIndex, row in ipairs(KEYBOARD_ROWS) do
+	local x = 0
+	for _, key in ipairs(row) do
+		local code, text, width = key[1], key[2], key[3]
+		local frame = make("Frame", {
+			Parent = keyboard,
+			Position = UDim2.new(x / KEYBOARD_UNITS, 0, 0, (rowIndex - 1) * (KEY_HEIGHT + KEY_GAP)),
+			Size = UDim2.new(width / KEYBOARD_UNITS, -KEY_GAP, 0, KEY_HEIGHT),
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.6,
+			BorderSizePixel = 0,
+		})
+		local stroke = make("UIStroke", { Parent = frame, Color = Theme.Muted, Transparency = 0.75, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+		local name = label(frame, {
+			Text = text,
+			Font = Theme.MonoFont,
+			TextSize = 11,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Size = UDim2.fromScale(1, 1),
+		})
+		local tag = label(frame, {
+			Font = Theme.MonoFont,
+			TextSize = 8,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.new(0, 0, 1, -2),
+			Size = UDim2.new(1, 0, 0, 10),
+		})
+		keyCells[code] = { frame = frame, name = name, tag = tag, stroke = stroke, action = nil }
+		x += width
+	end
+end
+
+-- a click on a key of yours: its row
+for _, cell in pairs(keyCells) do
+	onClick(cell.frame, function()
+		local id = cell.action
+		if not id or currentSection ~= sections[1] then
+			return
+		end
+		for _, row in ipairs(sections[1].rows) do
+			if row.info and row.info.id == id then
+				selectRow(row)
+			end
+		end
+	end)
+end
+
+-- shows or hides the keyboard, and puts the card's text under it (or back at the top)
+local function paintKeyboard()
+	keyboard.Visible = currentSection == sections[1]
+	local off = keyboard.Visible and (keyboard.Size.Y.Offset + KEYBOARD_GAP) or 0
+	cardKicker.Position = UDim2.fromOffset(0, off)
+	cardTitle.Position = UDim2.fromOffset(0, off + 20)
+	cardRule.Position = UDim2.fromOffset(0, off + 64)
+	cardBody.Position = UDim2.fromOffset(0, off + 80)
+	cardDefault.Position = UDim2.fromOffset(0, off + 176)
+	previewBox.Position = UDim2.fromOffset(0, PREVIEW_TOP + off)
+	if not keyboard.Visible then
+		return
+	end
+	local owner = {} -- KeyCode name -> action id
+	for id, keyName in pairs(keys.shown()) do
+		if keyName ~= Keybinds.None then
+			owner[keyName] = id
+		end
+	end
+	local chosen = selected and selected.info and selected.info.id
+	for code, cell in pairs(keyCells) do
+		local id = owner[code]
+		cell.action = id
+		cell.tag.Text = id and ACTION_TAGS[id] or ""
+		cell.name.Position = UDim2.fromOffset(0, id and -5 or 0)
+		if id and id == chosen then
+			cell.frame.BackgroundColor3 = ink
+			cell.frame.BackgroundTransparency = 0.05
+			cell.stroke.Color = ink
+			cell.stroke.Transparency = 0
+			cell.name.TextColor3 = Color3.new(0, 0, 0)
+			cell.tag.TextColor3 = Color3.new(0, 0, 0)
+		elseif id then
+			cell.frame.BackgroundColor3 = ink
+			cell.frame.BackgroundTransparency = 0.7
+			cell.stroke.Color = ink
+			cell.stroke.Transparency = 0.1
+			cell.name.TextColor3 = Theme.Ink
+			cell.tag.TextColor3 = ink
+		else
+			cell.frame.BackgroundColor3 = Color3.new(0, 0, 0)
+			cell.frame.BackgroundTransparency = 0.6
+			cell.stroke.Color = Theme.Muted
+			cell.stroke.Transparency = 0.75
+			cell.name.TextColor3 = Theme.Muted
+			cell.tag.TextColor3 = Theme.Muted
+		end
+	end
+end
 
 -- a row in `section`'s list: the accent behind it while selected, its name on the left
 -- and its control on the right (filled in by the kind of row)
@@ -690,6 +874,7 @@ function refresh()
 			row.marker.BackgroundColor3 = ink
 		end
 	end
+	paintKeyboard()
 	paintCard()
 end
 
@@ -739,7 +924,7 @@ function startCapture(id)
 	local token = {}
 	captureToken = token
 	Keybinds.SetCapturing(true)
-	setStatus("Press a key for this action. Esc cancels.")
+	setStatus("Press a key for this action. Backspace clears it, Esc cancels.")
 	refresh()
 	task.delay(CAPTURE_TIMEOUT, function()
 		if captureToken == token then
@@ -753,14 +938,15 @@ end
 local function bindPressed(keyCode)
 	local id = capturing
 	local current = keys.shown()
-	local bound, reason = Keybinds.Bind(current, id, keyCode.Name)
+	local keyName = keyCode == Enum.KeyCode.Backspace and Keybinds.None or keyCode.Name -- Backspace unbinds
+	local bound, reason = Keybinds.Bind(current, id, keyName)
 	if not bound then
 		setStatus(reason == "reserved" and "That key is reserved. Pick another." or "Can't bind that.", DANGER)
 		return -- keep waiting
 	end
-	local message = string.format("%s → %s", labelOf(id), Keybinds.ShortName(keyCode.Name))
+	local message = string.format("%s → %s", labelOf(id), Keybinds.ShortName(keyName))
 	for otherId, key in pairs(current) do
-		if otherId ~= id and key == keyCode.Name then
+		if otherId ~= id and key == keyName and keyName ~= Keybinds.None then
 			message ..= string.format("  (%s moved to %s)", labelOf(otherId), Keybinds.ShortName(current[id]))
 		end
 	end

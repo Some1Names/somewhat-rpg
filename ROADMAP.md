@@ -16,6 +16,13 @@ particle pack, `VFXPrefabs.Iridescent`). Left, one skill at a time, owner picks 
 The workflow so far: describe the current particles and weak spots, the owner says what to change,
 reuse `FORM_*` textures, `sunShaft`, `lyingFlat` and pack prefabs, check with frozen screenshots.
 
+## Next up (2026-10-27)
+
+Details and open questions in `docs/superpowers/plans/README.md`, "Next up".
+
+- **Ragdoll when dashing** (the Q dash and `Ragdoll`). Needs a design first. (Cloud for code, Studio to feel it)
+- **Walk and run VFX** (dust, sprint trail). Placeholder code is Cloud; the real effects are your VFX pack work. (Studio)
+
 ## Visual polish still open
 
 - Pack `Workspace."Particle effects".Blood` is unused: candidate for the Knife pin and Bleeding. (Studio)

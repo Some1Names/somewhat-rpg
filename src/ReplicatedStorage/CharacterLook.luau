@@ -1,4 +1,4 @@
--- Paints a character's look (SlotConfig) onto an R6 rig: skin on the head and arms, the
+-- Paints a character's look (SlotConfig) onto an R15 rig: skin on the head, arms and hands, the
 -- outfit colours on the torso and legs, hair, a face, an accessory, and a shirt, tee and pants,
 -- the last four from ReplicatedStorage.CharacterParts (Hair_<n>, Acc_<n> accessories, Face_<n>
 -- decals, Shirt_<n>, Tee_<n> and Pants_<n>, made in Studio). Used by the server for the real
@@ -9,6 +9,11 @@
 local CharacterLook = {}
 
 local DEFAULT_FACE = "rbxasset://textures/face.png" -- Roblox's smile
+
+-- the parts each colour goes on (R15 names; the R6 rigs of NPCs are painted by the same lists)
+local SKIN_PARTS = { "Head", "LeftHand", "RightHand", "LeftUpperArm", "RightUpperArm", "LeftLowerArm", "RightLowerArm", "Left Arm", "Right Arm" }
+local TOP_PARTS = { "UpperTorso", "Torso" }
+local BOTTOM_PARTS = { "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg", "LeftFoot", "RightFoot", "Left Leg", "Right Leg" }
 
 local function colorOf(rgb)
 	return Color3.fromRGB(rgb[1], rgb[2], rgb[3])
@@ -118,12 +123,15 @@ function CharacterLook.Apply(character, look, parts)
 			part.Color = color
 		end
 	end
-	paint("Head", skin)
-	paint("Left Arm", skin)
-	paint("Right Arm", skin)
-	paint("Torso", top)
-	paint("Left Leg", bottom)
-	paint("Right Leg", bottom)
+	for _, name in ipairs(SKIN_PARTS) do
+		paint(name, skin)
+	end
+	for _, name in ipairs(TOP_PARTS) do
+		paint(name, top)
+	end
+	for _, name in ipairs(BOTTOM_PARTS) do
+		paint(name, bottom)
+	end
 	local bodyColors = character:FindFirstChildOfClass("BodyColors")
 	if bodyColors then
 		bodyColors.HeadColor3 = skin
@@ -144,6 +152,7 @@ function CharacterLook.Apply(character, look, parts)
 	-- face, the others come from CharacterParts
 	local head = character:FindFirstChild("Head")
 	if head then
+		-- (an R6 head is a Part with a SpecialMesh, an R15 one a MeshPart already round)
 		local mesh = head:FindFirstChildOfClass("SpecialMesh")
 		if mesh then
 			mesh.MeshType = Enum.MeshType.Head

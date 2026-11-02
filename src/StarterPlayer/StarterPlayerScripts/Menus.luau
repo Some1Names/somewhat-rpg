@@ -17,8 +17,9 @@ local Menus = {}
 
 -- While a menu is open the player can't walk, jump or fight (ActionLock.MenuOpen,
 -- and Roblox's movement controls switched off). The Admin panel only takes the
--- right side of the screen, so it leaves them on.
-local NOT_BLOCKING = { Admin = true }
+-- right side of the screen, and a talk with an NPC (Dialogue) ends when you walk away,
+-- so both leave them on.
+local NOT_BLOCKING = { Admin = true, Dialogue = true }
 local controls -- Roblox's PlayerModule controls, once loaded
 
 local FIT_TOP = 12 -- px from the top of the screen below the top bar (the icon row is up in the bar)
@@ -34,9 +35,16 @@ function Menus.Blocks()
 	return openName ~= nil and not NOT_BLOCKING[openName]
 end
 
+-- whether the open menu stops fighting: any that takes over the player, and a talk with an
+-- NPC (you may walk, but no skills, shots, swings, blocks or hotbar keys; the number keys
+-- are the talk's replies)
+function Menus.BlocksActions()
+	return Menus.Blocks() or openName == "Dialogue"
+end
+
 local function applyBlocking()
 	local blocked = Menus.Blocks()
-	ActionLock.MenuOpen = blocked
+	ActionLock.MenuOpen = Menus.BlocksActions()
 	if controls then
 		if blocked then
 			controls:Disable()

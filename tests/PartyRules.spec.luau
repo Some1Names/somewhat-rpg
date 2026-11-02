@@ -41,7 +41,22 @@ local left = R.Remove(party, 30)
 check("the leader leaving hands over the lead", left == party and party.leader ~= 30 and party.leader == party.members[1] and #party.members == 3)
 R.Remove(party, 20)
 check("a member leaving keeps the party", #party.members == 2)
-check("a party of one is gone", R.Remove(party, party.members[2]) == nil)
+check("a party of one stays until it is empty", R.Remove(party, party.members[2]) == party and R.Remove(party, party.members[1]) == nil)
+
+local open = R.New("P4", 1)
+check("a new party is private with friendly fire off", open.public == false and open.friendlyFire == false)
+check("nobody walks into a private party", not R.CanEnter(open, 2, nil))
+open.public = true
+check("anyone free walks into a public party", R.CanEnter(open, 2, nil))
+check("not while in a party", not R.CanEnter(open, 2, R.New("P5", 2)))
+R.Add(open, 2)
+R.Add(open, 3)
+R.Add(open, 4)
+check("not into a full public party", not R.CanEnter(open, 5, nil))
+check("only the leader configures", R.CanConfigure(open, 1) and not R.CanConfigure(open, 2) and not R.CanConfigure(nil, 1))
+check("friendly fire off protects mates", R.ProtectsFrom(open, 1, 2) and not R.ProtectsFrom(open, 1, 1) and not R.ProtectsFrom(open, 1, 99))
+open.friendlyFire = true
+check("friendly fire on protects no one", not R.ProtectsFrom(open, 1, 2))
 check("removing a stranger changes nothing", R.Remove(R.New("P3", 1), 99) ~= nil)
 
 local from, expires = R.DecodeInvite(R.EncodeInvite(123, 45.5))

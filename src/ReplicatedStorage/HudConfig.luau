@@ -38,8 +38,12 @@ HudConfig.ComboWindow = 3
 HudConfig.ComboMin = 2
 HudConfig.ComboTiers = {
 	{ from = 0, color = Color3.new(1, 1, 1) },
+	{ from = 5, color = Color3.fromRGB(255, 238, 140) },
 	{ from = 10, color = Color3.fromRGB(255, 205, 60) },
-	{ from = 25, color = Color3.fromRGB(255, 80, 70) },
+	{ from = 20, color = Color3.fromRGB(255, 140, 50) },
+	{ from = 30, color = Color3.fromRGB(255, 80, 70) },
+	{ from = 50, color = Color3.fromRGB(255, 70, 190) },
+	{ from = 75, color = Color3.fromRGB(190, 110, 255) },
 }
 -- the red screen edges (LowHealth): they start below this share of max health and
 -- pulse below the second
@@ -98,6 +102,10 @@ HudConfig.DamageNumberColors = {
 	{ text = Color3.fromRGB(255, 150, 40), outline = Color3.fromRGB(50, 20, 0) },
 	{ text = Color3.fromRGB(90, 220, 255), outline = Color3.fromRGB(0, 30, 45) },
 }
+
+-- numbers for a hit another player (not you) landed (HitFeedback): grey, light yellow on a crit
+HudConfig.OtherPlayerDamageColor = { text = Color3.fromRGB(175, 175, 180), outline = Color3.fromRGB(25, 25, 28) }
+HudConfig.OtherPlayerCritColor = { text = Color3.fromRGB(255, 240, 160), outline = Color3.fromRGB(60, 50, 0) }
 
 -- the Colour filter setting (Preferences' Filter, same order after OFF): a ColorCorrection
 -- over the world (ScreenSettings). Roblox can't remap one colour onto another, so these

@@ -52,7 +52,10 @@ local noEntryUntil = 0
 
 local function setStates(humanoid, enabled)
 	for _, state in ipairs(DISABLED_STATES) do
-		humanoid:SetStateEnabled(state, enabled)
+		-- FallingDown stays off for good (Dash switches it off on every character)
+		if not (enabled and state == Enum.HumanoidStateType.FallingDown) then
+			humanoid:SetStateEnabled(state, enabled)
+		end
 	end
 end
 

@@ -1,21 +1,19 @@
 -- Block and posture (ServerScriptService.Guard): the numbers and the pure
 -- rules, kept free of Roblox types so Lune can test them
 -- (tests/GuardConfig.spec.luau). The HUDs read the same numbers.
--- Holding E blocks hits from the front (within 90° of where you face): the
+-- Holding F blocks hits from the front (within 90° of where you face): the
 -- hit's kind decides how much is cut (Cuts), and the damage a block prevented
 -- is added to the blocker's posture. A full bar is a guard break: stunned for
 -- BreakStun, no blocking for BreakLockout after that. Posture drains back down
 -- once you stop being hit. A skill set or melee weapon can bring its own cuts
 -- (`block = { melee =, ranged =, skill = }`) that replace the base ones. Block is
--- not basekit: only a set or weapon with such a table can block at all; fists and
--- the base kit can't, so the base Cuts below are only the fallback for a `block`
--- table that leaves a kind out.
+-- basekit: anyone can block, with the base Cuts below unless a set or weapon has its
+-- own table (the base Cuts also fill in a kind such a table leaves out).
 local Vector3 = Vector3 or require("@lune/roblox").Vector3
 
 local GuardConfig = {
-	-- Block is switched off for now (too much). Everything stays in place: set this back
-	-- to true and the key, the cuts, posture, the HUD bars and the hint all come back.
-	Enabled = false,
+	-- false switches block off everywhere (the key, the cuts, posture, the HUD bars, the hint)
+	Enabled = true,
 	-- share of the damage a block cuts, by the hit's `options.guard` kind
 	Cuts = { melee = 0.6, ranged = 0.5, skill = 0.3, unblockable = 0 },
 	MaxPosture = 100,

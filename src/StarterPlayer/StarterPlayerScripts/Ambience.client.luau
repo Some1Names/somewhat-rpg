@@ -2,7 +2,9 @@
 -- sounds in the ZoneConfig zones marked `ambience = "nature"` (the Upper Shrine and the
 -- Training Grounds), by where the camera is (so the title menu's drift has it
 -- too). A kind's tracks play in turn, back to back; walking into the other kind of area
--- cross-fades to it. Through its own volume setting, Ambience (AudioMix).
+-- cross-fades to it. A track is never cut off or looped hard: with `fade` seconds left the
+-- next one (the same one again, for a kind with a single track) fades in as it fades out.
+-- Through its own volume setting, Ambience (AudioMix).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
@@ -42,7 +44,7 @@ local function start(wanted)
 	current = current % 2 + 1
 	local sound = sounds[current]
 	sound.SoundId = "rbxassetid://" .. tracks[turn[wanted]].id
-	sound.Looped = #tracks == 1
+	sound.Looped = false -- it is cross-faded into the next before it ends
 	sound.TimePosition = 0
 	sound:Play()
 	fadeTo(sound, AMBIENCE.volume)
@@ -57,7 +59,7 @@ local function start(wanted)
 	kind = wanted
 end
 
--- a kind with more than one track moves on when its track ends
+-- a track that ends anyway (a short one, or a stall) moves on too
 for _, sound in ipairs(sounds) do
 	sound.Ended:Connect(function()
 		if sounds[current] == sound and kind then
@@ -74,6 +76,12 @@ while true do
 		local wanted = HudRules.AmbienceAt(ZoneConfig.Zones, at.X, at.Z, DEFAULT)
 		if wanted ~= kind and AMBIENCE[wanted] then
 			start(wanted)
+		elseif kind then
+			-- the playing track is nearly over: fade the next in under its tail
+			local playing = sounds[current]
+			if playing.IsPlaying and playing.TimeLength > 0 and playing.TimeLength - playing.TimePosition <= AMBIENCE.fade then
+				start(kind)
+			end
 		end
 	end
 	task.wait(CHECK)

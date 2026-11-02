@@ -1,9 +1,18 @@
 -- The Spawn Keeper: an NPC (a model tagged "SpawnSetter" with a ProximityPrompt
--- named "SpawnPrompt" in its root part). Using it saves a spot beside the NPC as
--- the player's spawn (the SpawnPoint text, saved by PlayerStats); every respawn
--- after that starts there. No saved spot means the normal SpawnLocation.
+-- named "SpawnPrompt" in its root part). The prompt starts a conversation (SpawnKeeperDialogue);
+-- its "set" reply saves a spot beside the NPC as the player's spawn (the SpawnPoint text,
+-- saved by PlayerStats) and "clear" forgets it; every respawn after a set starts there. No
+-- saved spot means the normal SpawnLocation. The replies come in on the SpawnKeeperAction remote.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local remote = ReplicatedStorage:FindFirstChild("SpawnKeeperAction")
+if not remote then
+	remote = Instance.new("RemoteEvent")
+	remote.Name = "SpawnKeeperAction"
+	remote.Parent = ReplicatedStorage
+end
 
 local TAG = "SpawnSetter"
 local PROMPT = "SpawnPrompt"
@@ -23,7 +32,10 @@ local function notify(player, text)
 	player:SetAttribute("SpawnNotice", text .. "|" .. os.clock()) -- the client shows the text part
 end
 
-local function onPrompt(npc, player)
+local function onAction(player, npc, action)
+	if typeof(npc) ~= "Instance" or not CollectionService:HasTag(npc, TAG) or (action ~= "set" and action ~= "clear") then
+		return
+	end
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart")
 	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
@@ -33,10 +45,17 @@ local function onPrompt(npc, player)
 	if (npc:GetPivot().Position - root.Position).Magnitude > RANGE then
 		return
 	end
+	if action == "clear" then
+		player:SetAttribute("SpawnPoint", "")
+		notify(player, "Spawn cleared")
+		return
+	end
 	local spot = (npc:GetPivot() * CFrame.new(0, 0, -SIDE_OFFSET)).Position + Vector3.new(0, LIFT, 0)
 	player:SetAttribute("SpawnPoint", string.format("%.1f,%.1f,%.1f", spot.X, spot.Y, spot.Z))
 	notify(player, "Spawn set")
 end
+
+remote.OnServerEvent:Connect(onAction)
 
 local function bind(npc)
 	if not npc:IsA("Model") then
@@ -47,16 +66,13 @@ local function bind(npc)
 	if not prompt then
 		prompt = Instance.new("ProximityPrompt")
 		prompt.Name = PROMPT
-		prompt.ActionText = "Set spawn"
 		prompt.ObjectText = npc.Name
-		prompt.HoldDuration = 0.6
 		prompt.MaxActivationDistance = 10
 		prompt.RequiresLineOfSight = false
 		prompt.Parent = root
 	end
-	prompt.Triggered:Connect(function(player)
-		onPrompt(npc, player)
-	end)
+	prompt.ActionText = "Talk"
+	prompt.HoldDuration = 0
 end
 
 local function onCharacter(player, character)

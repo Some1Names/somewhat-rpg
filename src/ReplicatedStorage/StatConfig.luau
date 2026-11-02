@@ -78,7 +78,7 @@ StatConfig.Stats = {
 	},
 	{
 		key = "Superliminal", -- skill-set skills like Mandela's, and their ranged moves (Knife, Light Shot)
-		damageBonus = 0.05,
+		damageBonus = 0.08, -- stronger than the others: powers are the game's main attack
 		milestones = {},
 	},
 	{

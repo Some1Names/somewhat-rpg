@@ -18,6 +18,21 @@ otherwise.
 | [Getting powers](2026-10-09-power-acquisition.md) | **Tasks 1–6 built and in Studio, gacha roll panel included** (untested in-game; task 7 is partly done, check what's left; checklist `specs/2026-10-09-power-acquisition-checklist.md`), task 7 left. One saved power + 2 storage slots + lifetime Robux powers; new powers come as briefcases from the Power Dealer (S ¥500,000), map drops and a ¥25,000 gacha; selling; death drops; no starter power. Spec: `specs/2026-10-09-power-acquisition-design.md`. | Studio, a live server and **you** for task 7 (Robux products, spawn points, briefcase model) | `Run task 7 of docs/superpowers/plans/2026-10-09-power-acquisition.md with me.` |
 | Studio sync | Brings everything pushed since the last sync into Studio. **Nothing waiting now** (the `studio` tag is at HEAD, 2026-10-15: power aura, sound effects, melee hitboxes, Prism Form trail all in). Last sync before that: 2026-10-14, enemy drops. | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
 
+## Next up (listed 2026-10-27, no spec or plan yet)
+
+Both are small. Start each with "Let's design ___" so the open questions get answered first.
+
+- **Ragdoll when dashing.** The Q dash would end in (or pass through) a ragdoll. Hooks: `Ragdoll`
+  (server), `DashRelay` (accepts a dash, sets `DodgeUntil`), `CrowdControl.CanControl`, `ActionLock`.
+  Open: ragdoll *the dasher* (a tumble or roll while dashing, getting up after) or *whoever the dash
+  hits*? Does it still dodge hits while ragdolled? Same for every power's dash (Lightstep,
+  Step In) or only the basic one? Length and a cooldown?
+- **Walk and run VFX.** Dust and footstep puffs while walking and sprinting, a speed trail when
+  sprinting. Hooks: `Sprint`, `VFX.Play`, `ReplicatedStorage.VFXPrefabs`. Final looks are your VFX
+  work (pack prefabs); a session only makes a placeholder client script with a clear spot for the
+  prefab. Open: ground-dependent dust (grass, stone, water) or one effect? Show on other players
+  too, and does the Settings "others' effects" slider hide theirs?
+
 ## Done
 
 - [Hub menu](2026-10-14-hub-menu.md): built and in Studio (2026-10-14). Left: play

@@ -524,6 +524,21 @@ local function dash()
 	task.delay(DASH_TIME, stop)
 end
 
+-- Running into something at dash speed (an NPC, a ledge, a slope) makes the Humanoid fall over
+-- and flop like a ragdoll. Nothing here wants that state (death has its own ragdoll, Ragdoll),
+-- so it's switched off on every character we get, and Swim leaves it off.
+local function keepStanding(character)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if humanoid then
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+	end
+end
+player.CharacterAdded:Connect(keepStanding)
+if player.Character then
+	task.spawn(keepStanding, player.Character)
+end
+
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	-- the player's own dash key (Keybinds; Q unless rebound in Settings)
 	if not gameProcessed and not Menus.Blocks() and not Keybinds.Capturing() and input.KeyCode == Keybinds.Key("Dash") then
