@@ -55,7 +55,9 @@ local DETAIL_GAP = 28
 local DETAIL_WIDTH = 340
 local DETAIL_TOP = 102
 local CAMERA_SHIFT = 4.5 -- studs the printer sits right of centre (the camera stands further back for a prop)
+local SHIFT_PER_SIZE = 0.35 -- a bigger printer sits further right: this much of its size (its diagonal)
 local PROMPT_DISTANCE = CraftConfig.Range - 2
+local PROMPT_RETRY = 2 -- seconds between looks for printers without a prompt yet (streamed in later)
 local Style = HudConfig.Style
 local Theme = HudConfig.HubTheme
 local BACKGROUND = Style.Glass
@@ -845,12 +847,34 @@ local function open(printer)
 	intro()
 	glow(printer)
 	-- the full-screen close-up on the printer (E leaves)
-	ShopFocus.Begin(printer, { ignoreGui = gui, onLeave = close, shift = CAMERA_SHIFT })
+	local size = printer:IsA("Model") and printer:GetExtentsSize() or printer.Size
+	ShopFocus.Begin(printer, { ignoreGui = gui, onLeave = close, shift = math.max(CAMERA_SHIFT, size.Magnitude * SHIFT_PER_SIZE) })
 end
 
--- the prompt on each printer (a part, or a model's primary or first part)
+-- the prompt on each printer: a part's own, or on a model the biggest part of its "ProximityPrompt"
+-- child (the console), else its primary or first part
+local function promptPart(printer)
+	if printer:IsA("BasePart") then
+		return printer
+	end
+	local console = printer:FindFirstChild("ProximityPrompt")
+	if console and console:IsA("BasePart") then
+		return console
+	end
+	local best
+	for _, part in ipairs(console and console:GetDescendants() or {}) do
+		if part:IsA("BasePart") and (not best or part.Size.Magnitude > best.Size.Magnitude) then
+			best = part
+		end
+	end
+	if console then
+		return best -- (nil while the console hasn't streamed in: the next look tries again)
+	end
+	return printer.PrimaryPart or printer:FindFirstChildWhichIsA("BasePart", true)
+end
+
 local function addPrompt(printer)
-	local part = printer:IsA("BasePart") and printer or (printer:IsA("Model") and (printer.PrimaryPart or printer:FindFirstChildWhichIsA("BasePart", true)))
+	local part = (printer:IsA("BasePart") or printer:IsA("Model")) and promptPart(printer)
 	if not part or part:FindFirstChild("PrinterPrompt") then
 		return
 	end
@@ -863,10 +887,16 @@ local function addPrompt(printer)
 		RequiresLineOfSight = false,
 	})
 end
-for _, printer in ipairs(CollectionService:GetTagged(CraftConfig.Tag)) do
-	addPrompt(printer)
-end
 CollectionService:GetInstanceAddedSignal(CraftConfig.Tag):Connect(addPrompt)
+-- a printer (or its console) streamed in later gets its prompt on the next look
+task.spawn(function()
+	while true do
+		for _, printer in ipairs(CollectionService:GetTagged(CraftConfig.Tag)) do
+			addPrompt(printer)
+		end
+		task.wait(PROMPT_RETRY)
+	end
+end)
 
 ProximityPromptService.PromptTriggered:Connect(function(prompt)
 	if prompt.Name ~= "PrinterPrompt" or openAt then

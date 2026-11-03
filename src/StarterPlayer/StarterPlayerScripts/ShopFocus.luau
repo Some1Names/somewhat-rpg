@@ -11,8 +11,8 @@
 --   options.shift: studs the NPC sits right of centre (CLOSEUP_SHIFT; a wider menu needs more)
 -- The camera sits straight in front of the NPC, or at the first angle to either side with a clear
 -- view of them (an NPC standing in front doesn't hide them), nearer if a wall is behind it.
--- A prop with no head (a part, or a model with a PrimaryPart, like the 3D printer) is framed at its
--- middle from its front face, far enough back to fit it.
+-- A prop with no head (a part or a model, like the 3D printer) is framed at its middle from the side
+-- the player stands on, far enough back to fit it.
 local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,7 +30,7 @@ local CLOSEUP_MIN_DISTANCE = 4.5 -- nearest the camera comes when a wall is in t
 local CLOSEUP_ANGLES = { 0, 20, -20, 40, -40, 60, -60, 80, -80 } -- degrees off straight-on to try
 local CLOSEUP_DROP = 1.4 -- studs below the head the camera looks at
 local CLOSEUP_SHIFT = 2.2 -- studs the NPC sits right of centre, clear of the menu
-local PROP_FIT = 1.6 -- a prop's camera distance, as a multiple of its size (its diagonal)
+local PROP_FIT = 1.2 -- a prop's camera distance, as a multiple of its size (its diagonal)
 local CLOSEUP_FOV = 35
 local CLOSEUP_TIME = 0.5
 local LEAVE_DELAY = 0.4 -- seconds before E leaves, so the E that opened the menu doesn't also close it
@@ -83,29 +83,32 @@ end
 
 -- the camera for the close-up (nil if the NPC has no head or facing)
 local function closeUpFrame(npc, shift)
+	local focus, front, reach
 	local head = not npc:IsA("BasePart") and npc:FindFirstChild("Head")
-	local root = head and (npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso") or npc.PrimaryPart)
-	local drop, reach = CLOSEUP_DROP, CLOSEUP_DISTANCE
-	if not head then
-		-- a prop: its middle, from its front, far enough back to fit it
-		local part = npc:IsA("BasePart") and npc or npc.PrimaryPart
-		if not part then
+	if head then
+		local root = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso") or npc.PrimaryPart
+		if not root then
 			return nil
 		end
-		local size = npc:IsA("Model") and npc:GetExtentsSize() or part.Size
-		head, root, drop = part, part, 0
+		focus, front, reach = head.Position - Vector3.new(0, CLOSEUP_DROP, 0), root.CFrame.LookVector, CLOSEUP_DISTANCE
+	else
+		-- a prop: its middle, seen from where the player stands, far enough back to fit it
+		local centre, size
+		if npc:IsA("Model") then
+			centre, size = npc:GetBoundingBox()
+		else
+			centre, size = npc.CFrame, npc.Size
+		end
+		local playerRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+		focus = centre.Position
+		front = playerRoot and playerRoot.Position - focus or centre.LookVector
 		reach = math.max(CLOSEUP_DISTANCE, size.Magnitude * PROP_FIT)
 	end
-	if not root then
-		return nil
-	end
-	local look = root.CFrame.LookVector
-	local front = Vector3.new(look.X, 0, look.Z)
+	front = Vector3.new(front.X, 0, front.Z)
 	if front.Magnitude < 0.1 then
 		return nil
 	end
 	front = front.Unit
-	local focus = head.Position - Vector3.new(0, drop, 0)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	local best
