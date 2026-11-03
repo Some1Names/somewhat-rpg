@@ -64,6 +64,12 @@ check("a hint gives a common piece one affix", #G.Roll("Head", "Common", 1, 5, "
 check("an unknown hint is ignored", #G.Roll("Head", "Common", 1, 5, "nope", "g4").affixes == 1)
 check("higher level picks a later base", G.Roll("Head", "Common", 60, 1, nil, "g5").base ~= G.Roll("Head", "Common", 1, 1, nil, "g5").base)
 
+-- affix lines
+check("percent affix line", G.AffixLine({ id = "maxHealthPct", value = 0.09 }) == "+9.0% max HP")
+check("reduction line is negative", G.AffixLine({ id = "damageReduction", value = 0.04 }) == "-4.0% damage taken")
+check("stat line is whole points", G.AffixLine({ id = "stat:Vitality", value = 3 }) == "+3 Vitality")
+check("flat line", G.AffixLine({ id = "regen", value = 2 }) == "+2.0 HP per second")
+
 -- saved texts
 local list = {}
 for i = 1, 5 do

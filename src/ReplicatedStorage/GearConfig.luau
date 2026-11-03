@@ -47,20 +47,21 @@ GearConfig.BaseStats = {
 }
 
 -- the random affixes, before the rarity's valueScale. An id is a talisman effect name
--- (maxHealthPct, regen, damageReduction, yenPct, healOnKill, damageDealt) or "stat:<Name>"
+-- (maxHealthPct, regen, damageReduction, yenPct, healOnKill, damageDealt) or "stat:<Name>".
+-- `label` and `percent` / `whole` / `sign` only decide how AffixLine writes a value
 GearConfig.Affixes = {
-	{ id = "maxHealthPct", min = 0.02, max = 0.06 },
-	{ id = "regen", min = 0.5, max = 2 },
-	{ id = "damageReduction", min = 0.01, max = 0.04 },
-	{ id = "damageDealt", min = 0.02, max = 0.06 },
-	{ id = "yenPct", min = 0.05, max = 0.15 },
-	{ id = "healOnKill", min = 0.005, max = 0.015 },
-	{ id = "stat:Vitality", min = 1, max = 3, whole = true },
-	{ id = "stat:Strength", min = 1, max = 3, whole = true },
-	{ id = "stat:Superliminal", min = 1, max = 3, whole = true },
-	{ id = "stat:Firearm", min = 1, max = 3, whole = true },
-	{ id = "stat:Agility", min = 1, max = 3, whole = true },
-	{ id = "stat:Willpower", min = 1, max = 3, whole = true },
+	{ id = "maxHealthPct", min = 0.02, max = 0.06, label = "max HP", percent = true },
+	{ id = "regen", min = 0.5, max = 2, label = "HP per second" },
+	{ id = "damageReduction", min = 0.01, max = 0.04, label = "damage taken", percent = true, sign = "-" },
+	{ id = "damageDealt", min = 0.02, max = 0.06, label = "damage dealt", percent = true },
+	{ id = "yenPct", min = 0.05, max = 0.15, label = "yen from kills and chests", percent = true },
+	{ id = "healOnKill", min = 0.005, max = 0.015, label = "max HP healed per kill", percent = true },
+	{ id = "stat:Vitality", min = 1, max = 3, whole = true, label = "Vitality" },
+	{ id = "stat:Strength", min = 1, max = 3, whole = true, label = "Strength" },
+	{ id = "stat:Superliminal", min = 1, max = 3, whole = true, label = "Superliminal" },
+	{ id = "stat:Firearm", min = 1, max = 3, whole = true, label = "Firearm" },
+	{ id = "stat:Agility", min = 1, max = 3, whole = true, label = "Agility" },
+	{ id = "stat:Willpower", min = 1, max = 3, whole = true, label = "Willpower" },
 }
 
 local rarityByKey = {}
@@ -88,6 +89,20 @@ end
 
 function GearConfig.Base(id)
 	return baseById[id]
+end
+
+-- one rolled affix as a line of text: "+9.0% max HP", "-4.0% damage taken", "+3 Vitality"
+function GearConfig.AffixLine(affix)
+	local def = affixById[affix.id]
+	if not def then
+		return affix.id
+	end
+	if def.whole then
+		return string.format("+%d %s", affix.value, def.label)
+	elseif def.percent then
+		return string.format("%s%.1f%% %s", def.sign or "+", affix.value * 100, def.label)
+	end
+	return string.format("+%.1f %s", affix.value, def.label)
 end
 
 -- a small seeded generator (no Roblox Random, so Lune can run it): values in (0, 1)
