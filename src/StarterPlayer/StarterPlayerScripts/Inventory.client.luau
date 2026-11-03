@@ -1644,7 +1644,7 @@ local function gearDetails(entry)
 	for index, affix in ipairs(piece.affixes) do
 		detailRow(index == 1 and "BASE" or "AFFIX", GearConfig.AffixLine(affix))
 	end
-	local level = player:GetAttribute("Level") or 0
+	local level = math.max(player:GetAttribute("Level") or 0, 1) -- GearConfig.Equip counts a level 0 character as level 1
 	if piece.level > level then
 		detailRow("LEVEL", string.format("Needs level %d", piece.level), nil, true)
 	end
