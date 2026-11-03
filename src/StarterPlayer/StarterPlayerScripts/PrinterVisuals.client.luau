@@ -6,12 +6,18 @@
 -- bright layer and sparks where it's printing, the tray's light pulsing cyan. Done, it turns green,
 -- floats and turns until you collect it. A new print, a finished one and a collect each burst at
 -- the tray. Placeholders (parts built here, the Shared prefabs) until the owner's printing effects.
+-- Its PointLights are off in the daytime (DayCycleConfig's Day phase), and while the player is in
+-- range of its "Print" prompt the whole printer is outlined.
 local CollectionService = game:GetService("CollectionService")
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
+local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 local CraftConfig = require(ReplicatedStorage:WaitForChild("CraftConfig"))
+local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
 local VFX = require(ReplicatedStorage:WaitForChild("VFX"))
 local player = Players.LocalPlayer
 
@@ -30,9 +36,15 @@ local SPIN = 0.6 -- radians per second a finished print turns
 local BOB = 0.12 -- studs a finished print floats up and down
 local FLOAT = 0.25 -- studs a finished print hovers over the tray
 local RETRY = 2 -- seconds between looks for printers not set up yet (streamed in later)
+local LIGHT_CHECK = 1 -- seconds between checks of the time of day for the lights
+local OUTLINE_FADE = 0.2 -- seconds the outline takes to show
 
 local states = {} -- printer -> { scanner, base, low, high, phase, slots }
 local jobs = {} -- the player's prints (CraftConfig.ParseJobs)
+
+local function isDaytime()
+	return DayCycleConfig.PhaseAt(Lighting.ClockTime) == "Day"
+end
 
 local function readJobs()
 	jobs = CraftConfig.ParseJobs(player:GetAttribute(CraftConfig.JobsAttribute))
@@ -148,6 +160,7 @@ local function updateSlot(slot, job, now, dt)
 		slot.light = Instance.new("PointLight")
 		slot.light.Range = 6
 		slot.light.Brightness = 1.5
+		slot.light.Enabled = not isDaytime()
 		slot.light.Parent = slot.holo
 	end
 	local color = ready and GOOD or ACCENT
@@ -197,6 +210,54 @@ RunService.Heartbeat:Connect(function(dt)
 				updateSlot(slot, jobs[index], now, dt)
 			end
 		end
+	end
+end)
+
+-- the printer that holds a prompt, if it's a printer's
+local function printerOf(prompt)
+	local printer = prompt.Name == "PrinterPrompt" and prompt.Parent
+	while printer and not CollectionService:HasTag(printer, CraftConfig.Tag) do
+		printer = printer.Parent
+	end
+	return printer
+end
+
+-- in range of the prompt: the printer is outlined in its cyan
+ProximityPromptService.PromptShown:Connect(function(prompt)
+	local printer = printerOf(prompt)
+	if not printer or printer:FindFirstChild("PrinterOutline") then
+		return
+	end
+	local outline = Instance.new("Highlight")
+	outline.Name = "PrinterOutline"
+	outline.Adornee = printer
+	outline.FillTransparency = 1
+	outline.OutlineColor = ACCENT
+	outline.OutlineTransparency = 1
+	outline.DepthMode = Enum.HighlightDepthMode.Occluded
+	outline.Parent = printer
+	TweenService:Create(outline, TweenInfo.new(OUTLINE_FADE), { OutlineTransparency = 0 }):Play()
+end)
+ProximityPromptService.PromptHidden:Connect(function(prompt)
+	local printer = printerOf(prompt)
+	local outline = printer and printer:FindFirstChild("PrinterOutline")
+	if outline then
+		outline:Destroy()
+	end
+end)
+
+-- the printers' own lights (and the holograms') are off in the daytime
+task.spawn(function()
+	while true do
+		local on = not isDaytime()
+		for printer in pairs(states) do
+			for _, light in ipairs(printer:GetDescendants()) do
+				if light:IsA("PointLight") then
+					light.Enabled = on
+				end
+			end
+		end
+		task.wait(LIGHT_CHECK)
 	end
 end)
 
