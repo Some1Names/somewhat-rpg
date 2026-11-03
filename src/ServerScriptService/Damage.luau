@@ -29,6 +29,7 @@ local Reforge = require(script.Parent:WaitForChild("Reforge"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
+local GearConfig = require(ReplicatedStorage:WaitForChild("GearConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local skillEffects = ReplicatedStorage:WaitForChild("SkillEffects")
 
@@ -80,7 +81,9 @@ local function payOutOnDeath(humanoid)
 			local source = PlayerStats.Source(character.Name, character:GetAttribute("Rarity"))
 			PlayerStats.AddXP(killer, rewardXP, source)
 			local rewardYen = character:GetAttribute("YenReward") or (level and StatConfig.EnemyYen(level)) or StatConfig.KillYen
-			PlayerStats.AddYen(killer, math.floor(rewardYen * TalismanConfig.YenMultiplier(killer:GetAttribute(TalismanConfig.EquippedAttribute))), source)
+			local yenMultiplier = TalismanConfig.YenMultiplier(killer:GetAttribute(TalismanConfig.EquippedAttribute))
+				* GearConfig.YenMultiplier(killer:GetAttribute(GearConfig.WornAttribute))
+			PlayerStats.AddYen(killer, math.floor(rewardYen * yenMultiplier), source)
 			-- finishing it is worth mastery to the set of the killing hit (a training
 			-- dummy only up to mastery DummyCap); none for a bare-handed kill
 			if hit and hit.skillSet then
@@ -190,7 +193,9 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	end
 	local amount = baseAmount
 	if attacker and options.stat then
-		amount *= StatConfig.DamageMultiplier(options.stat, attacker:GetAttribute(options.stat) or 0)
+		-- worn gear's stat points count toward damage (not toward build requirements)
+		local points = (attacker:GetAttribute(options.stat) or 0) + GearConfig.StatBonus(attacker:GetAttribute(GearConfig.WornAttribute), options.stat)
+		amount *= StatConfig.DamageMultiplier(options.stat, points)
 		amount *= BuildRules.PlayerModifier(attacker, "damage", options.stat)
 	end
 	-- lower-tier skill sets hit softer
@@ -212,11 +217,13 @@ function Damage.Deal(attacker, humanoid, baseAmount, options)
 	-- a worn Glass Charm hits harder
 	if attacker and not options.dot then
 		amount *= TalismanConfig.OutgoingMultiplier(attacker:GetAttribute(TalismanConfig.EquippedAttribute))
+		amount *= GearConfig.OutgoingMultiplier(attacker:GetAttribute(GearConfig.WornAttribute))
 	end
 	if targetPlayer then
 		-- a worn Bulwark Talisman cuts what they take
 		if not options.dot then
 			amount *= TalismanConfig.IncomingMultiplier(targetPlayer:GetAttribute(TalismanConfig.EquippedAttribute))
+			amount *= GearConfig.IncomingMultiplier(targetPlayer:GetAttribute(GearConfig.WornAttribute))
 		end
 		amount *= ConsumableConfig.IncomingMultiplier(
 			humanoid.Parent:GetAttribute("OverclockUntil"),

@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ChestConfig = require(ReplicatedStorage:WaitForChild("ChestConfig"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
+local GearConfig = require(ReplicatedStorage:WaitForChild("GearConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Talismans = require(script.Parent:WaitForChild("Talismans"))
 
@@ -57,7 +58,9 @@ local function collect(chest, index, hit)
 		return
 	end
 	chest:SetAttribute("Claimed", true)
-	local yen = ChestConfig.yen(roll) * TalismanConfig.YenMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute))
+	local yen = ChestConfig.yen(roll)
+		* TalismanConfig.YenMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute))
+		* GearConfig.YenMultiplier(player:GetAttribute(GearConfig.WornAttribute))
 	PlayerStats.AddYen(player, math.floor(yen), PlayerStats.Source("Chest", "Rare"))
 	-- sometimes a talisman too, one they don't own yet
 	if rng:NextNumber() < TalismanConfig.ChestChance then

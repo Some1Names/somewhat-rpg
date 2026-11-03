@@ -164,8 +164,9 @@ local function applyHealth(player, refill)
 	end
 	local maxHealth = math.max(
 		math.floor(
-			StatConfig.MaxHealth(vitality)
+			StatConfig.MaxHealth(vitality + GearConfig.StatBonus(player:GetAttribute(GearConfig.WornAttribute), "Vitality"))
 				* TalismanConfig.HealthMultiplier(player:GetAttribute(TalismanConfig.EquippedAttribute))
+				* GearConfig.HealthMultiplier(player:GetAttribute(GearConfig.WornAttribute))
 				* BuildRules.PlayerModifier(player, "maxHealth")
 				+ 0.5
 		),
