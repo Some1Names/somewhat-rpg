@@ -2,12 +2,11 @@
 -- script puts on everything tagged "Printer" (a part or a model) over a full-screen close-up of the
 -- printer (ShopFocus, which also makes E leave). Black bars close in along the top and bottom (E
 -- LEAVE and your yen in the bottom one), a dark fades off the left edge, and the column slides in:
--- the printer's line, its title big and a chip with your print slots, then the recipes as rows
--- (still to learn: greyed, with how to learn them). Beside them a pane for the picked recipe with
--- two tabs: RECIPE (what it makes, the materials it needs against what you hold, the yen and print
--- time, then PRINT, or a LEARN button per way to learn it) and PRINTS (your slots, each with a
--- progress bar and countdown, COLLECT once done and CANCEL while it runs). A cyan scan sweeps the
--- pane as it opens and when a print starts, and the printer glows a moment. Every action goes
+-- the printer's line, its title big, your open print slots as cards (each with its print's name,
+-- countdown and progress bar: click a finished one to collect it, × cancels one still running),
+-- then the recipes you know as rows (ones still to learn are left out). Beside them a pane for the
+-- picked recipe: what it makes, the materials it needs against what you hold, the yen and print
+-- time, then PRINT. A cyan scan sweeps the pane as it opens and when a print starts, and the printer glows a moment. Every action goes
 -- through the CraftAction remote (CraftServer), which does all the checking; its replies are
 -- subtitles under the printer. Closes when you walk away, or when another menu opens (Menus).
 -- A printer's ShopTitle / ShopSubtitle / ShopkeeperName attributes rename the header.
@@ -23,9 +22,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local CraftConfig = require(ReplicatedStorage:WaitForChild("CraftConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
-local FactionConfig = require(ReplicatedStorage:WaitForChild("FactionConfig"))
 local HudConfig = require(ReplicatedStorage:WaitForChild("HudConfig"))
-local QuestConfig = require(ReplicatedStorage:WaitForChild("QuestConfig"))
 local TalismanConfig = require(ReplicatedStorage:WaitForChild("TalismanConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local MenuFooter = require(script.Parent:WaitForChild("MenuFooter"))
@@ -37,7 +34,10 @@ local player = Players.LocalPlayer
 local PAD = 64 -- the screen's left edge to the column (as on the title menu and the shops)
 local COLUMN_WIDTH = 400
 local COLUMN_GAP = 26 -- between the top bar and the column, and the column and the bottom bar
-local HEADER = 150 -- the column's top: the printer's line, its title big, the slots chip
+local HEADER = 186 -- the column's top: the printer's line, its title big, the slot cards
+local SLOT_TOP = 102 -- the slot cards' top (level with the pane's)
+local SLOT_HEIGHT = 66
+local SLOT_GAP = 8
 local BOTTOM_BAR = 44
 local ROBLOX_BAR_FALLBACK = 58 -- Roblox's band across the top, while GetGuiInset still says 0
 local SHADE_SHARE = 0.62 -- how far across the screen the dark fades off the left edge
@@ -61,7 +61,6 @@ local Theme = HudConfig.HubTheme
 local BACKGROUND = Style.Glass
 local TEXT = Color3.new(1, 1, 1)
 local MUTED = Color3.fromRGB(165, 165, 180)
-local LOCKED = Color3.fromRGB(110, 110, 120)
 local GOLD = Color3.fromRGB(255, 205, 60)
 local ACCENT = Color3.fromRGB(60, 224, 230) -- the printer's cyan
 local DANGER = Color3.fromRGB(226, 75, 74)
@@ -74,10 +73,6 @@ local RARITY_COLORS = {
 	Legendary = Color3.fromRGB(255, 170, 50),
 }
 local RARITY_ORDER = { Common = 1, Uncommon = 2, Rare = 3, Epic = 4, Legendary = 5 }
-local TABS = {
-	{ id = "recipe", title = "RECIPE" },
-	{ id = "prints", title = "PRINTS" },
-}
 
 local function make(className, props)
 	local instance = Instance.new(className)
@@ -127,11 +122,6 @@ local function clear(parent)
 	end
 end
 
--- the colour to write on a fill of `color`
-local function onColor(color)
-	return 0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B > 0.4 and BACKGROUND or TEXT
-end
-
 local function now()
 	return workspace:GetServerTimeNow() -- the server's os.time(), give or take, so countdowns match
 end
@@ -160,35 +150,6 @@ local function outputName(recipe)
 		return "TALISMAN"
 	end
 	return string.upper(recipe.output.slot) .. " GEAR"
-end
-
-local function routeText(route)
-	if route.kind == "buy" then
-		return "Buy for " .. formatYen(route.yen)
-	elseif route.kind == "drop" then
-		return "Spend a " .. materialName(route.blueprint)
-	elseif route.kind == "quest" then
-		local _, quest = QuestConfig.parseQuestId(route.id)
-		return "Finish the bounty " .. (quest and quest.title or route.id)
-	end
-	local rank = FactionConfig.Ranks[route.rank]
-	local who = route.faction == "Any" and "any faction" or ((FactionConfig.Get(route.faction) or {}).name or route.faction)
-	return string.format("Reach %s in %s", rank and rank.name or ("rank " .. route.rank), who)
-end
-
--- the first way to learn it, short, for the list's row
-local function routeHint(recipe)
-	local route = recipe.routes and recipe.routes[1]
-	if not route then
-		return "EVENT ONLY"
-	elseif route.kind == "buy" then
-		return "BUY " .. formatYen(route.yen)
-	elseif route.kind == "drop" then
-		return "NEEDS A BLUEPRINT"
-	elseif route.kind == "quest" then
-		return "BOUNTY REWARD"
-	end
-	return "FACTION RANK"
 end
 
 local gui = make("ScreenGui", {
@@ -250,8 +211,8 @@ local balance = label(bottomBar, {
 	ZIndex = 5,
 })
 
--- the column down the left: the printer's line with the cyan before it, its title big, the slots
--- chip with a rule running on, then the recipes (they scroll on a short screen)
+-- the column down the left: the printer's line with the cyan before it, its title big, the slot
+-- cards, then the recipes (they scroll on a short screen)
 local column = make("Frame", { Parent = backdrop, BackgroundTransparency = 1, ZIndex = 5 })
 make("Frame", { Parent = column, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(24, 2), BackgroundColor3 = ACCENT, BorderSizePixel = 0, ZIndex = 5 })
 local subtitle = label(column, { Text = "FABRICATION", Font = Style.MonoFont, TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(34, 0), Size = UDim2.new(1, -34, 0, 14), ZIndex = 5 })
@@ -264,19 +225,9 @@ local title = label(column, {
 	ZIndex = 5,
 })
 make("UITextSizeConstraint", { Parent = title, MaxTextSize = 72 })
-local chip = make("TextLabel", {
-	Parent = column,
-	Font = Style.TitleFont,
-	TextSize = 20,
-	TextColor3 = onColor(ACCENT),
-	BackgroundColor3 = ACCENT,
-	BorderSizePixel = 0,
-	Position = UDim2.fromOffset(1, 102),
-	Size = UDim2.fromOffset(0, 24),
-	AutomaticSize = Enum.AutomaticSize.X,
-	ZIndex = 5,
-})
-local chipRule = make("Frame", { Parent = column, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = MUTED, BackgroundTransparency = 0.6, BorderSizePixel = 0, ZIndex = 5 })
+-- the open print slots, as cards in a row (renderSlots)
+local slotStrip = make("Frame", { Parent = column, Position = UDim2.fromOffset(0, SLOT_TOP), Size = UDim2.new(1, -8, 0, SLOT_HEIGHT), BackgroundTransparency = 1, ZIndex = 5 })
+make("UIListLayout", { Parent = slotStrip, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
 local panel = make("ScrollingFrame", {
 	Parent = column,
 	Position = UDim2.fromOffset(0, HEADER),
@@ -294,12 +245,12 @@ local panel = make("ScrollingFrame", {
 local list = make("Frame", { Parent = panel, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, BorderSizePixel = 0 })
 make("UIListLayout", { Parent = list, SortOrder = Enum.SortOrder.LayoutOrder })
 
--- the picked recipe's pane, beside the list: its name, what it makes, the tabs over a rule, then
--- the tab's rows (they scroll)
+-- the picked recipe's pane, beside the list: its name and what it makes over a rule, then its
+-- rows (they scroll)
 local detail = make("Frame", {
 	Parent = column,
 	Position = UDim2.fromOffset(COLUMN_WIDTH + DETAIL_GAP, DETAIL_TOP),
-	Size = UDim2.new(0, DETAIL_WIDTH, 1, -HEADER),
+	Size = UDim2.new(0, DETAIL_WIDTH, 1, -(DETAIL_TOP + 48)),
 	BackgroundColor3 = Theme.Nav,
 	BackgroundTransparency = 0.25,
 	BorderSizePixel = 0,
@@ -338,13 +289,11 @@ make("UIPadding", {
 })
 local detailTitle = label(inner, { Text = "", RichText = true, Font = Style.TitleFont, TextSize = 28, TextTruncate = Enum.TextTruncate.AtEnd, Size = UDim2.new(1, 0, 0, 30) })
 local detailSub = label(inner, { Text = "", Font = Style.MonoFont, TextSize = 11, TextColor3 = MUTED, Position = UDim2.fromOffset(0, 34), Size = UDim2.new(1, 0, 0, 14) })
-local tabRow = make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 28), BackgroundTransparency = 1 })
-make("UIListLayout", { Parent = tabRow, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 18) })
-make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 86), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
+make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 58), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
 local content = make("ScrollingFrame", {
 	Parent = inner,
-	Position = UDim2.fromOffset(0, 98),
-	Size = UDim2.new(1, 0, 1, -98),
+	Position = UDim2.fromOffset(0, 70),
+	Size = UDim2.new(1, 0, 1, -70),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	CanvasSize = UDim2.new(),
@@ -395,7 +344,7 @@ local function glow(printer)
 		Adornee = printer,
 		FillColor = ACCENT,
 		OutlineColor = ACCENT,
-		FillTransparency = 0.55,
+		FillTransparency = 0.85,
 		OutlineTransparency = 0,
 		DepthMode = Enum.HighlightDepthMode.Occluded,
 	})
@@ -466,7 +415,6 @@ local note = label(speech, {
 })
 
 local selected = CraftConfig.Recipes[1].id
-local tab = "recipe"
 local busy = false
 local openAt -- the printer whose menu is open, so walking away can close it
 local render
@@ -486,15 +434,6 @@ local function paintHeader(printer)
 	speakerLabel.Text = string.upper(printer:GetAttribute("ShopkeeperName") or title.Text)
 end
 
--- the chip: the print slots in use, and the level the next one opens at
-local function paintChip(jobs, slots, nextAt)
-	chip.Text = string.format(" PRINT SLOTS %d/%d ", #jobs, slots)
-	local ruleAt = TextService:GetTextSize(chip.Text, chip.TextSize, chip.Font, Vector2.new(1000, 100)).X + 14
-	chipRule.Position = UDim2.fromOffset(ruleAt, 114)
-	chipRule.Size = UDim2.new(1, -ruleAt, 0, 1)
-	subtitle.Text = string.upper(openAt and openAt:GetAttribute("ShopSubtitle") or "Fabrication") .. (nextAt and string.format("   ·   NEXT SLOT AT LV %d", nextAt) or "")
-end
-
 -- one action to the server; returns whether it went through
 local function request(...)
 	if busy then
@@ -511,6 +450,92 @@ local function request(...)
 		setStatus(message, not success)
 	end
 	return success
+end
+
+-- the open print slots as cards: the print's name, countdown and progress bar (a finished one is
+-- lit green and collects on a click; × cancels one still running), or EMPTY. The line over the
+-- title says the level the next slot opens at.
+local function renderSlots(jobs, slots, nextAt)
+	subtitle.Text = string.upper(openAt and openAt:GetAttribute("ShopSubtitle") or "Fabrication") .. (nextAt and string.format("   ·   NEXT SLOT AT LV %d", nextAt) or "")
+	clear(slotStrip)
+	for index = 1, slots do
+		local job = jobs[index]
+		local recipe = job and CraftConfig.Get(job.recipe)
+		local ready = job ~= nil and CraftConfig.IsReady(job, now())
+		local card = make("TextButton", {
+			Parent = slotStrip,
+			LayoutOrder = index,
+			Size = UDim2.new(1 / slots, -SLOT_GAP * (slots - 1) / slots, 1, 0),
+			BackgroundColor3 = ready and GOOD or Theme.Nav,
+			BackgroundTransparency = ready and 0.8 or 0.25,
+			BorderSizePixel = 0,
+			Text = "",
+			AutoButtonColor = ready,
+			ZIndex = 5,
+		})
+		make("UIStroke", { Parent = card, Color = ready and GOOD or Theme.Edge, Transparency = ready and 0.2 or Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+		make("UIPadding", { Parent = card, PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 8), PaddingTop = UDim.new(0, 7), PaddingBottom = UDim.new(0, 8) })
+		label(card, { Text = string.format("SLOT %d", index), Font = Style.MonoFont, TextSize = 10, TextColor3 = ready and GOOD or ACCENT, Size = UDim2.new(1, -18, 0, 12), ZIndex = 5 })
+		label(card, {
+			Text = recipe and string.upper(recipe.name) or "EMPTY",
+			Font = Style.TitleFont,
+			TextSize = 17,
+			TextColor3 = recipe and TEXT or MUTED,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Position = UDim2.fromOffset(0, 14),
+			Size = UDim2.new(1, 0, 0, 20),
+			ZIndex = 5,
+		})
+		if not job then
+			continue
+		end
+		local timeLabel = label(card, {
+			Text = ready and "READY · COLLECT" or formatTime(job.finishAt - now()),
+			Font = Style.MonoFont,
+			TextSize = 11,
+			TextColor3 = ready and GOOD or ACCENT,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			Position = UDim2.fromOffset(0, 35),
+			Size = UDim2.new(1, 0, 0, 12),
+			ZIndex = 5,
+		})
+		-- the progress bar along the bottom
+		local track = make("Frame", { Parent = card, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 3), BackgroundColor3 = Theme.BarBack, BackgroundTransparency = 0.4, BorderSizePixel = 0, ZIndex = 5 })
+		local fill = make("Frame", {
+			Parent = track,
+			Size = UDim2.fromScale(ready and 1 or math.clamp(1 - (job.finishAt - now()) / recipe.seconds, 0, 1), 1),
+			BackgroundColor3 = ready and GOOD or ACCENT,
+			BorderSizePixel = 0,
+			ZIndex = 5,
+		})
+		if ready then
+			card.Activated:Connect(function()
+				if request("collect", index) and openAt then
+					glow(openAt)
+				end
+				render()
+			end)
+		else
+			table.insert(countdowns, { label = timeLabel, fill = fill, finishAt = job.finishAt, seconds = recipe.seconds })
+			-- × cancels it (half the materials back)
+			local cancel = make("TextButton", {
+				Parent = card,
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, 0, 0, -2),
+				Size = UDim2.fromOffset(16, 16),
+				BackgroundTransparency = 1,
+				Font = Style.MonoFont,
+				Text = "×",
+				TextSize = 14,
+				TextColor3 = DANGER,
+				ZIndex = 6,
+			})
+			cancel.Activated:Connect(function()
+				request("cancel", index)
+				render()
+			end)
+		end
+	end
 end
 
 -- the content's rows ---------------------------------------------------------------
@@ -576,7 +601,7 @@ end
 
 -- the tabs ---------------------------------------------------------------------------
 
-local function recipeTab(recipe, known, jobs, slots, yen)
+local function recipeTab(recipe, jobs, slots, yen)
 	if recipe.output.kind == "talisman" then
 		local item = TalismanConfig.Get(recipe.output.key)
 		ruledRow("Makes", TEXT, item and item.name or recipe.output.key, ACCENT)
@@ -605,122 +630,17 @@ local function recipeTab(recipe, known, jobs, slots, yen)
 		ruledRow(materialName(cost.material), materialColor(cost.material), string.format("%d / %d", have, cost.amount), have >= cost.amount and TEXT or DANGER)
 	end
 	ruledRow("Yen", GOLD, string.format("%s / %s", formatYen(yen), formatYen(recipe.yen)), yen >= recipe.yen and TEXT or DANGER)
-	if known then
-		local free = #jobs < slots
-		local can = free and CraftConfig.CanAfford(recipe, held, yen)
-		wideButton(free and "PRINT" or "NO FREE PRINT SLOT", can, function()
-			if request("start", recipe.id) then
-				scan()
-				if openAt then
-					glow(openAt)
-				end
-				tab = "prints"
-			end
-			render()
-		end)
-		return
-	end
-	heading("TO LEARN")
-	if #(recipe.routes or {}) == 0 then
-		label(content, { LayoutOrder = nextOrder(), Text = "Given at events only.", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 16) })
-	end
-	for _, route in ipairs(recipe.routes or {}) do
-		ruledRow(routeText(route), TEXT, route.kind == "quest" and "taught when done" or "", MUTED)
-		if route.kind ~= "quest" then
-			wideButton("LEARN  ·  " .. string.upper(route.kind == "buy" and formatYen(route.yen) or route.kind == "drop" and "spend blueprint" or "faction rank"), true, function()
-				if request("learn", recipe.id, route.kind) then
-					scan()
-				end
-				render()
-			end, GOLD)
-		end
-	end
-end
-
-local function printsTab(jobs, slots)
-	for index, at in ipairs(CraftConfig.JobSlotLevels) do
-		local job = jobs[index]
-		local block = make("Frame", { Parent = content, LayoutOrder = nextOrder(), Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
-		make("UIPadding", { Parent = block, PaddingBottom = UDim.new(0, 8) })
-		make("UIListLayout", { Parent = block, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
-		-- the thin rule over each slot
-		make("Frame", { Parent = block, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = TEXT, BackgroundTransparency = 0.88, BorderSizePixel = 0 })
-		local open = index <= slots
-		local recipe = job and CraftConfig.Get(job.recipe)
-		local current = job and string.upper(recipe.name) or open and "empty" or string.format("opens at Lv %d", at)
-		local head = make("Frame", { Parent = block, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 20), BackgroundTransparency = 1 })
-		label(head, {
-			RichText = true,
-			Text = string.format('<font color="#%s">SLOT %d</font>   %s', (open and ACCENT or MUTED):ToHex(), index, current),
-			Font = job and Style.TitleFont or Enum.Font.Highway,
-			TextSize = job and 17 or 13,
-			TextColor3 = job and TEXT or MUTED,
-			Size = UDim2.new(1, -70, 1, 0),
-		})
-		if not job then
-			continue
-		end
-		local ready = CraftConfig.IsReady(job, now())
-		local timeLabel = label(head, {
-			Text = ready and "READY" or formatTime(job.finishAt - now()),
-			Font = Style.MonoFont,
-			TextSize = 13,
-			TextColor3 = ready and GOOD or ACCENT,
-			TextXAlignment = Enum.TextXAlignment.Right,
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.fromScale(1, 0),
-			Size = UDim2.new(0, 70, 1, 0),
-		})
-		-- the progress bar: how much of the print is done
-		local track = make("Frame", { Parent = block, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 4), BackgroundColor3 = Theme.BarBack, BackgroundTransparency = 0.4, BorderSizePixel = 0 })
-		local done = ready and 1 or math.clamp(1 - (job.finishAt - now()) / recipe.seconds, 0, 1)
-		local fill = make("Frame", { Parent = track, Size = UDim2.fromScale(done, 1), BackgroundColor3 = ready and GOOD or ACCENT, BorderSizePixel = 0 })
-		local buttonHolder = make("Frame", { Parent = block, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 30), BackgroundTransparency = 1 })
-		local b = make("TextButton", {
-			Parent = buttonHolder,
-			Size = UDim2.fromScale(1, 1),
-			BackgroundColor3 = ready and GOOD or DANGER,
-			BackgroundTransparency = ready and 0 or 1,
-			BorderSizePixel = 0,
-			Font = Style.TitleFont,
-			TextSize = 15,
-			TextColor3 = ready and BACKGROUND or DANGER,
-			Text = ready and "COLLECT" or "CANCEL  ·  HALF THE MATERIALS BACK",
-			AutoButtonColor = ready,
-		})
-		if not ready then
-			make("UIStroke", { Parent = b, Color = DANGER, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-			table.insert(countdowns, { label = timeLabel, fill = fill, finishAt = job.finishAt, seconds = recipe.seconds })
-		end
-		b.Activated:Connect(function()
-			if request(ready and "collect" or "cancel", index) and ready and openAt then
+	local free = #jobs < slots
+	local can = free and CraftConfig.CanAfford(recipe, held, yen)
+	wideButton(free and "PRINT" or "NO FREE PRINT SLOT", can, function()
+		if request("start", recipe.id) then
+			scan()
+			if openAt then
 				glow(openAt)
 			end
-			render()
-		end)
-	end
-end
-
-local tabButtons = {}
-for index, entry in ipairs(TABS) do
-	local button = make("TextButton", {
-		Parent = tabRow,
-		LayoutOrder = index,
-		Size = UDim2.fromOffset(0, 28),
-		AutomaticSize = Enum.AutomaticSize.X,
-		BackgroundTransparency = 1,
-		AutoButtonColor = false,
-		Font = Style.TitleFont,
-		Text = entry.title,
-		TextSize = 16,
-		TextColor3 = MUTED,
-	})
-	local underline = make("Frame", { Parent = button, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 2), BackgroundColor3 = ACCENT, BorderSizePixel = 0, Visible = false })
-	button.Activated:Connect(function()
-		tab = entry.id
+		end
 		render()
 	end)
-	tabButtons[entry.id] = { button = button, underline = underline }
 end
 
 -- the whole menu --------------------------------------------------------------------
@@ -735,15 +655,27 @@ render = function()
 	local jobs = CraftConfig.ParseJobs(player:GetAttribute(CraftConfig.JobsAttribute))
 	local slots = CraftConfig.JobSlots(level)
 	balance.Text = string.format('CASH  <font color="#%s">%s</font>', GOLD:ToHex(), formatYen(yen))
-	paintChip(jobs, slots, CraftConfig.NextSlotLevel(level))
+	table.clear(countdowns)
+	renderSlots(jobs, slots, CraftConfig.NextSlotLevel(level))
 
-	-- the recipes, as the shops' rows: number, what it makes, name, its grade and the print time.
+	-- the recipes you know, as the shops' rows: number, what it makes, name, its grade and the print time.
 	-- The picked one is lit; a row under the mouse brightens a little (hoverRows)
 	clear(list)
 	recipeRows = {}
 	hoveredRow = nil
-	for index, recipe in ipairs(CraftConfig.Recipes) do
-		local isKnown = CraftConfig.IsKnown(known, recipe.id)
+	local recipes = {}
+	for _, recipe in ipairs(CraftConfig.Recipes) do
+		if CraftConfig.IsKnown(known, recipe.id) then
+			table.insert(recipes, recipe)
+		end
+	end
+	if not CraftConfig.IsKnown(known, selected) then
+		selected = recipes[1] and recipes[1].id
+	end
+	if #recipes == 0 then
+		label(list, { Text = "You don't know any recipes yet", TextSize = 13, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, ROW_HEIGHT) })
+	end
+	for index, recipe in ipairs(recipes) do
 		local isSelected = recipe.id == selected
 		local color = recipeColor(recipe)
 		local row = make("TextButton", {
@@ -779,7 +711,7 @@ render = function()
 			Size = UDim2.fromOffset(NUMBER_WIDTH, 22),
 		})
 		-- the badge: what it makes (H head, B body, T talisman) in its grade's colour
-		local badgeColor = isKnown and color or LOCKED
+		local badgeColor = color
 		local badge = label(body, {
 			Text = recipe.output.kind == "talisman" and "T" or string.sub(recipe.output.slot, 1, 1),
 			Font = Style.TitleFont,
@@ -796,23 +728,22 @@ render = function()
 			Text = string.upper(recipe.name),
 			Font = Style.TitleFont,
 			TextSize = 22,
-			TextColor3 = isKnown and TEXT or LOCKED,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 			Position = UDim2.fromOffset(textLeft, 0),
 			Size = UDim2.new(1, -(textLeft + 56), 0, 22),
 		})
 		label(body, {
-			Text = isKnown and string.format("%s  ·  %s", outputName(recipe), string.upper(recipe.tier)) or ("LOCKED  ·  " .. routeHint(recipe)),
+			Text = string.format("%s  ·  %s", outputName(recipe), string.upper(recipe.tier)),
 			Font = Style.MonoFont,
 			TextSize = 11,
-			TextColor3 = isKnown and ACCENT or LOCKED,
+			TextColor3 = ACCENT,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 			Position = UDim2.fromOffset(textLeft, 26),
 			Size = UDim2.new(1, -(textLeft + 56), 0, 14),
 		})
 		-- the print time, top right (where a shop's row has its price)
 		label(body, {
-			Text = isKnown and formatTime(recipe.seconds) or "",
+			Text = formatTime(recipe.seconds),
 			Font = Style.MonoFont,
 			TextSize = 14,
 			TextColor3 = ACCENT,
@@ -829,7 +760,6 @@ render = function()
 		row.Activated:Connect(function()
 			if selected ~= recipe.id then
 				selected = recipe.id
-				tab = "recipe"
 				setStatus("")
 				render()
 			end
@@ -839,30 +769,16 @@ render = function()
 
 	-- the picked recipe's pane
 	clear(content)
-	table.clear(countdowns)
 	contentOrder = 0
-	local recipe = CraftConfig.Get(selected)
-	local isKnown = CraftConfig.IsKnown(known, recipe.id)
-	detailTitle.Text = string.upper(recipe.name) .. (isKnown and "" or string.format('  <font color="#%s">LOCKED</font>', LOCKED:ToHex()))
+	local recipe = selected and CraftConfig.Get(selected)
+	detail.Visible = recipe ~= nil
+	if not recipe then
+		return
+	end
+	detailTitle.Text = string.upper(recipe.name)
 	detailSub.Text = string.format("%s  ·  %s GRADE", outputName(recipe), string.upper(recipe.tier))
 	detailSub.TextColor3 = recipeColor(recipe)
-	local readyCount = 0
-	for _, job in ipairs(jobs) do
-		if CraftConfig.IsReady(job, now()) then
-			readyCount += 1
-		end
-	end
-	for id, entry in pairs(tabButtons) do
-		local active = id == tab
-		entry.button.Text = id == "prints" and (#jobs > 0 and string.format("PRINTS (%d)", #jobs) or "PRINTS") or "RECIPE"
-		entry.button.TextColor3 = active and TEXT or (id == "prints" and readyCount > 0 and GOOD or MUTED)
-		entry.underline.Visible = active
-	end
-	if tab == "recipe" then
-		recipeTab(recipe, isKnown, jobs, slots, player:GetAttribute("Yen") or 0)
-	else
-		printsTab(jobs, slots)
-	end
+	recipeTab(recipe, jobs, slots, yen)
 end
 
 -- (only what the menu shows: other attributes tick all the time, and rebuilding the rows drops clicks)
@@ -921,13 +837,6 @@ end
 local function open(printer)
 	openAt = printer
 	setStatus("")
-	-- a finished print waiting: open on the prints
-	tab = "recipe"
-	for _, job in ipairs(CraftConfig.ParseJobs(player:GetAttribute(CraftConfig.JobsAttribute))) do
-		if CraftConfig.IsReady(job, now()) then
-			tab = "prints"
-		end
-	end
 	paintHeader(printer)
 	Menus.Open("Printer", close)
 	gui.Enabled = true
