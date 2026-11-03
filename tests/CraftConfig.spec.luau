@@ -2,6 +2,7 @@
 -- texts, starting, readiness, refunds, learning, rarity rolls). Run with Lune,
 -- outside Roblox: tests/run.sh.
 local C = require("../src/ReplicatedStorage/CraftConfig")
+local Gear = require("../src/ReplicatedStorage/GearConfig")
 
 local failures = 0
 local function check(name, condition)
@@ -116,6 +117,19 @@ end) == "Epic")
 
 -- gear levels
 check("gear level is the player's, capped", C.GearLevel(helm, 7) == 7 and C.GearLevel(helm, 99) == helm.maxLevel)
+
+-- a recipe's themed affix must be a real gear affix, or GearConfig.Roll silently drops it
+local affixIds = {}
+for _, affix in ipairs(Gear.Affixes) do
+	affixIds[affix.id] = true
+end
+local affixesReal = true
+for _, recipe in ipairs(C.Recipes) do
+	if recipe.affix and not affixIds[recipe.affix] then
+		affixesReal = false
+	end
+end
+check("every recipe affix is a gear affix", affixesReal)
 
 if failures > 0 then
 	error(failures .. " failed")

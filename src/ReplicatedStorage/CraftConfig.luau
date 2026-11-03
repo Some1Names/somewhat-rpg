@@ -75,7 +75,7 @@ CraftConfig.Recipes = {
 		access = "learn",
 		routes = { { kind = "drop", blueprint = "PrismHelmBlueprint" } },
 		rarityWeights = { Epic = 70, Legendary = 30 },
-		affix = "Prism",
+		affix = "damageDealt",
 		maxLevel = 100,
 	},
 	{
