@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local Crafting = require(script.Parent:WaitForChild("Crafting"))
 local DayClock = require(script.Parent:WaitForChild("DayClock"))
+local Gear = require(script.Parent:WaitForChild("Gear"))
 local Overcharge = require(script.Parent:WaitForChild("Overcharge"))
 local Loadout = require(script.Parent:WaitForChild("Loadout"))
 local PlayerStats = require(script.Parent:WaitForChild("PlayerStats"))
@@ -20,6 +21,7 @@ local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
 local StatusConfig = require(ReplicatedStorage:WaitForChild("StatusConfig"))
 local DayCycleConfig = require(ReplicatedStorage:WaitForChild("DayCycleConfig"))
 local DropConfig = require(ReplicatedStorage:WaitForChild("DropConfig"))
+local GearConfig = require(ReplicatedStorage:WaitForChild("GearConfig"))
 local RaidConfig = require(ReplicatedStorage:WaitForChild("RaidConfig"))
 local adminAction = ReplicatedStorage:WaitForChild("AdminAction")
 
@@ -119,6 +121,31 @@ function actions.FinishPrints(target)
 	end
 	Crafting.FinishAll(target)
 	return true, target.Name .. "'s prints are done"
+end
+
+-- gear: one random piece per slot at the target's level (any rarity), and an empty bag and slots
+function actions.GiveGear(target)
+	if target:GetAttribute(GearConfig.BagAttribute) == nil then
+		return false, loadingMessage(target)
+	end
+	local rng = Random.new()
+	local given = 0
+	for _, slot in ipairs(GearConfig.Slots) do
+		local rarity = GearConfig.Rarities[rng:NextInteger(1, #GearConfig.Rarities)].key
+		if Gear.Grant(target, slot, rarity, math.max(target:GetAttribute("Level") or 1, 1), rng:NextInteger(1, 2 ^ 30)) then
+			given += 1
+		end
+	end
+	return given > 0, given > 0 and string.format("Gave %s %d gear pieces", target.Name, given) or "Their gear bag is full"
+end
+
+function actions.ClearGear(target)
+	if target:GetAttribute(GearConfig.BagAttribute) == nil then
+		return false, loadingMessage(target)
+	end
+	target:SetAttribute(GearConfig.BagAttribute, "")
+	target:SetAttribute(GearConfig.WornAttribute, "")
+	return true, "Cleared " .. target.Name .. "'s gear"
 end
 
 function actions.SetLevel(target, level)

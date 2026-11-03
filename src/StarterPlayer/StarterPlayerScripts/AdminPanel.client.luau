@@ -414,6 +414,11 @@ buttonRow({ { "Learn all recipes", function()
 end }, { "Finish prints", function()
 	run("FinishPrints")
 end } })
+buttonRow({ { "Give gear", function()
+	run("GiveGear")
+end }, { "Clear gear", function()
+	run("ClearGear")
+end } })
 
 heading("STATS")
 local statLabels = {}

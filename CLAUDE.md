@@ -161,7 +161,15 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   Lune-tested), `Crafting` (server: Start/Collect/Cancel/Learn, all-or-nothing; the result rolls from the job's seed at
   collect), `CraftServer` (the `CraftAction` RemoteFunction, made by script; range and busy checks), client `PrinterMenu`
   (adds the prompt itself). Learn routes: yen, a blueprint material (`DropConfig`), a bounty (`Quests` teaches it when
-  done) or a faction rank. Gear outputs need `ServerScriptService.Gear` (`Gear.Grant`), not built yet.
+  done) or a faction rank. Gear outputs go through `Gear.Grant` (Equipment).
+- **Equipment**: rolled Head and Body gear. `GearConfig` (rarities, bases, affixes, the saved `GearBag`/`GearWorn` texts and
+  every pure rule; Lune-tested) rolls a piece once and saves its values, so rebalancing never changes owned pieces. `Gear`
+  (server: `Grant` refuses a full bag so a craft is never thrown away, `GrantOrSalvage` for drops, `Equip` swaps in place,
+  `Unequip`, `Salvage`, heal on kill) + `GearServer` (the `GearAction` remote, made by script) + `GearVisuals` (worn
+  pieces show as an Accessory from `ReplicatedStorage.GearModels/<base model>`, the owner's; `HidesHair` hides painted hair).
+  Effects are read beside the talismans' in `Damage`, `PlayerStats` (max HP), `Health` and `Chests`; gear stat points raise
+  damage and HP only, never build requirements or talents. The Backpack (`Inventory`) has a GEAR row (Head, Body) under the
+  talismans, and its MATERIALS list became a tab of cards (with a USED IN list); GEAR is a tab too.
 - **Melee weapons**: a set with `kind = "melee"` fills the hotbar's MELEE slot (saved as the `MeleeSet` attribute, kept by `Loadout`
   like `WeaponSet`) and swings a combo from `PunchConfig.Weapons`. Its Tool needs a `SkillSet` attribute. Katana (B, needs 5 Strength,
   shop ¥1,200) is the first; no moves yet.
