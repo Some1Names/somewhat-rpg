@@ -16,6 +16,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local GuardConfig = require(ReplicatedStorage:WaitForChild("GuardConfig"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local TouchInput = require(script.Parent:WaitForChild("TouchInput"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local blockRemote = ReplicatedStorage:WaitForChild("Block")
 
@@ -72,6 +73,21 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 UserInputService.WindowFocusReleased:Connect(release)
+
+-- the touch button (TouchControls): held like the key
+local function press()
+	if not GuardConfig.Enabled or Menus.BlocksActions() or pressed then
+		return
+	end
+	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 or not canBlock() then
+		return
+	end
+	pressed = true
+	blockRemote:FireServer(true)
+end
+TouchInput.OnDown("Block", press)
+TouchInput.OnUp("Block", release)
 
 -- prompts on screen
 ProximityPromptService.PromptShown:Connect(function()

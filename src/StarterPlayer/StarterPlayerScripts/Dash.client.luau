@@ -31,6 +31,7 @@ local UserInputService = game:GetService("UserInputService")
 local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local TouchInput = require(script.Parent:WaitForChild("TouchInput"))
 local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local StatConfig = require(ReplicatedStorage:WaitForChild("StatConfig"))
@@ -542,6 +543,13 @@ end
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	-- the player's own dash key (Keybinds; Q unless rebound in Settings)
 	if not gameProcessed and not Menus.Blocks() and not Keybinds.Capturing() and input.KeyCode == Keybinds.Key("Dash") then
+		dash()
+	end
+end)
+
+-- the touch button (TouchControls)
+TouchInput.OnDown("Dash", function()
+	if not Menus.Blocks() then
 		dash()
 	end
 end)

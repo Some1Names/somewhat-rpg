@@ -16,6 +16,7 @@ local ActionLock = require(ReplicatedStorage:WaitForChild("ActionLock"))
 local CombatFeel = require(ReplicatedStorage:WaitForChild("CombatFeel"))
 local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local TouchInput = require(script.Parent:WaitForChild("TouchInput"))
 local PunchConfig = require(ReplicatedStorage:WaitForChild("PunchConfig"))
 local Stamina = require(script.Parent:WaitForChild("Stamina"))
 local punchEvent = ReplicatedStorage:WaitForChild("Punch")
@@ -169,6 +170,15 @@ UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
 		holding = false
 	end
+end)
+
+-- the touch Attack button (TouchControls): held like the mouse button
+TouchInput.OnDown("Attack", function()
+	holding = true
+	tryAttack()
+end)
+TouchInput.OnUp("Attack", function()
+	holding = false
 end)
 
 RunService.Heartbeat:Connect(function()

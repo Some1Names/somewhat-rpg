@@ -22,6 +22,7 @@ local Keybinds = require(ReplicatedStorage:WaitForChild("Keybinds"))
 local SkillSetConfig = require(ReplicatedStorage:WaitForChild("SkillSetConfig"))
 local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
+local TouchInput = require(script.Parent:WaitForChild("TouchInput"))
 local fireRanged = ReplicatedStorage:WaitForChild("FireRanged")
 local localSkillEffect = ReplicatedStorage:WaitForChild("LocalSkillEffect")
 local player = Players.LocalPlayer
@@ -48,6 +49,14 @@ local menuOpen = false
 Menus.OnChange(function(name)
 	menuOpen = name ~= nil
 end)
+
+-- where the player is pointing: the mouse, or the middle of the screen on a phone (the finger is on a button)
+local function pointer()
+	if TouchInput.Active() then
+		return workspace.CurrentCamera.ViewportSize / 2
+	end
+	return UserInputService:GetMouseLocation()
+end
 
 -- the crosshair: a small square with a dot, following the mouse
 local gui = Instance.new("ScreenGui")
@@ -193,7 +202,7 @@ local function updateAssist(active, character, ranged, color)
 	circlesShown = true
 	local camera = workspace.CurrentCamera
 	local reach = SkillSetConfig.RangedReach(ranged)
-	local mouse = UserInputService:GetMouseLocation()
+	local mouse = pointer()
 	local bestOff
 	for humanoid in pairs(candidates) do
 		local model = humanoid.Parent
@@ -259,7 +268,7 @@ local function mousePoint(character)
 		return lockedRoot.Position
 	end
 	local camera = workspace.CurrentCamera
-	local mouse = UserInputService:GetMouseLocation()
+	local mouse = pointer()
 	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
@@ -414,6 +423,26 @@ UserInputService.InputEnded:Connect(function(input)
 	end
 end)
 
+-- touch (TouchControls): Aim is the right mouse button held, Attack the left one (Punch has Attack too),
+-- Reload is R
+TouchInput.OnDown("Aim", function()
+	readying = true
+end)
+TouchInput.OnUp("Aim", function()
+	readying = false
+end)
+TouchInput.OnDown("Attack", function()
+	local _, ranged = heldSet()
+	if ranged and (ranged.primary or readying) and not menuOpen then
+		firing = true
+		fire()
+	end
+end)
+TouchInput.OnUp("Attack", function()
+	firing = false
+end)
+TouchInput.OnDown("Reload", reload)
+
 local function zoomTo(fov)
 	TweenService:Create(workspace.CurrentCamera, TweenInfo.new(ZOOM_TIME), { FieldOfView = fov }):Play()
 end
@@ -442,7 +471,7 @@ RunService.RenderStepped:Connect(function()
 	end
 	if showCrosshair then
 		-- on the locked-on target, where the shots go, when there is one on screen
-		local mouse = UserInputService:GetMouseLocation()
+		local mouse = pointer()
 		local _, targetRoot = LockOn.Target()
 		if targetRoot then
 			local screen, onScreen = workspace.CurrentCamera:WorldToViewportPoint(targetRoot.Position)

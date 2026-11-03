@@ -4,16 +4,21 @@
 -- positions still fit, offsets come out bigger). Anything that mixes real pixels
 -- (AbsoluteSize, the GuiInset, mouse positions) with UI pixels divides by UIScale.Get().
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local UIScale = {}
 
 local REFERENCE_HEIGHT = 771 -- the screen height where the UI is its drawn size (1080p comes out 1.4x)
 local MAX_SCALE = 3
+-- a phone is about 390 px tall, a fifth of a monitor's height: the UI may shrink below its drawn size there
+-- (a touch screen only; a monitor never drops under 1)
+local MIN_SCALE = 1
+local MIN_TOUCH_SCALE = 0.6
 
 -- guis (by name) that keep real pixels: the MenuButton lines up with Roblox's own bar,
 -- the crosshairs follow the mouse or a lock-on target, the loading screen scales itself (it
 -- shows before this starts)
-UIScale.SkipGui = { MenuButton = true, RangedCrosshair = true, ShiftLockCrosshair = true, LoadingScreen = true }
+UIScale.SkipGui = { MenuButton = true, RangedCrosshair = true, ShiftLockCrosshair = true, LoadingScreen = true, TouchControls = true }
 -- frames (by name) that stay out of the scaling, in an otherwise scaled gui (TopBar's pill sits in Roblox's bar)
 UIScale.SkipChild = { ButtonRow = true, UIScaleRoot = true }
 
@@ -26,7 +31,8 @@ local function compute()
 	if not camera then
 		return 1
 	end
-	local value = math.clamp(camera.ViewportSize.Y / REFERENCE_HEIGHT, 1, MAX_SCALE)
+	local floor = UserInputService.TouchEnabled and MIN_TOUCH_SCALE or MIN_SCALE
+	local value = math.clamp(camera.ViewportSize.Y / REFERENCE_HEIGHT, floor, MAX_SCALE)
 	return math.floor(value * 20 + 0.5) / 20 -- steps of 0.05, so tiny resizes don't reflow everything
 end
 

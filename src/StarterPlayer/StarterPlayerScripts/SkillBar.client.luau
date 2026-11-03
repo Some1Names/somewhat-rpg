@@ -40,6 +40,7 @@ local LockOn = require(script.Parent:WaitForChild("LockOn"))
 local Menus = require(script.Parent:WaitForChild("Menus"))
 local DodgeCharges = require(script.Parent:WaitForChild("DodgeCharges"))
 local ShopFocus = require(script.Parent:WaitForChild("ShopFocus"))
+local TouchInput = require(script.Parent:WaitForChild("TouchInput"))
 local useSkill = ReplicatedStorage:WaitForChild("UseSkill")
 local activateOvercharge = ReplicatedStorage:WaitForChild("ActivateOvercharge")
 local toggleFlight = ReplicatedStorage:WaitForChild("ToggleFlight")
@@ -386,7 +387,8 @@ local function mouseHit()
 		return lockedRoot.Position, nil
 	end
 	local camera = workspace.CurrentCamera
-	local mouse = UserInputService:GetMouseLocation()
+	-- on a phone the finger is on a button, so skills fly at the middle of the screen
+	local mouse = TouchInput.Active() and camera.ViewportSize / 2 or UserInputService:GetMouseLocation()
 	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
@@ -679,6 +681,33 @@ UserInputService.InputEnded:Connect(function(input)
 	if key and key == aiming then
 		stopAiming()
 		cast(key)
+	end
+end)
+
+-- Touch: a finger on a skill slot is the key held down (the slot lights up like a keycap press),
+-- and lifting it casts. The Special button (TouchControls) is G.
+for key, slot in pairs(slots) do
+	slot.frame.Active = true -- takes the touch, so it isn't a camera swipe
+	slot.frame.InputBegan:Connect(function(input)
+		if input.UserInputType ~= Enum.UserInputType.Touch or Menus.BlocksActions() then
+			return
+		end
+		pressSkill(key)
+		local connection
+		connection = input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End or input.UserInputState == Enum.UserInputState.Cancel then
+				connection:Disconnect()
+				if aiming == key then
+					stopAiming()
+					cast(key)
+				end
+			end
+		end)
+	end)
+end
+TouchInput.OnDown("Special", function()
+	if not Menus.BlocksActions() then
+		tryOvercharge()
 	end
 end)
 
