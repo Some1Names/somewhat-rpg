@@ -4,9 +4,11 @@
 -- LEAVE and your yen in the bottom one), a dark fades off the left edge, and the column slides in:
 -- the printer's line, its title big, your open print slots as cards (each with its print's name,
 -- countdown and progress bar: click a finished one to collect it, × cancels one still running),
--- then the recipes you know as rows (ones still to learn are left out). Beside them a pane for the
--- picked recipe: what it makes, the materials it needs against what you hold, the yen and print
--- time, then PRINT. A cyan scan sweeps the pane as it opens and when a print starts, and the printer glows a moment. Every action goes
+-- then a search box, the sort (click to change it) and a chip per category over the recipes you
+-- know as rows (ones still to learn are left out). Beside them a pane for the picked recipe: what
+-- it makes, the materials it needs against what you hold, the yen and print time, then PRINT. A
+-- cyan scan sweeps the pane as it opens and when a print starts, and the printer glows a moment.
+-- Every action goes
 -- through the CraftAction remote (CraftServer), which does all the checking; its replies are
 -- subtitles under the printer. Closes when you walk away, or when another menu opens (Menus).
 -- A printer's ShopTitle / ShopSubtitle / ShopkeeperName attributes rename the header.
@@ -34,7 +36,12 @@ local player = Players.LocalPlayer
 local PAD = 64 -- the screen's left edge to the column (as on the title menu and the shops)
 local COLUMN_WIDTH = 400
 local COLUMN_GAP = 26 -- between the top bar and the column, and the column and the bottom bar
-local HEADER = 186 -- the column's top: the printer's line, its title big, the slot cards
+local FILTER_TOP = 186 -- the search box and the sort, under the slot cards
+local FILTER_HEIGHT = 30
+local FILTER_GAP = 6
+local CHIP_HEIGHT = 22 -- the category chips, under the search
+local SORT_WIDTH = 130
+local HEADER = FILTER_TOP + FILTER_HEIGHT + FILTER_GAP + CHIP_HEIGHT + 12 -- the list's top: under all of the above
 local SLOT_TOP = 102 -- the slot cards' top (level with the pane's)
 local SLOT_HEIGHT = 66
 local SLOT_GAP = 8
@@ -154,6 +161,41 @@ local function outputName(recipe)
 	return string.upper(recipe.output.slot) .. " GEAR"
 end
 
+-- the list's sorts, in the order the sort button goes through them (no key: the recipes' own order)
+local SORTS = {
+	{ title = "DEFAULT" },
+	{
+		title = "NAME",
+		key = function(recipe)
+			return recipe.name
+		end,
+	},
+	{
+		title = "PRINT TIME",
+		key = function(recipe)
+			return recipe.seconds
+		end,
+	},
+	{
+		title = "COST",
+		key = function(recipe)
+			return recipe.yen
+		end,
+	},
+}
+
+local function categoryOf(recipe)
+	return recipe.output.kind == "talisman" and "Talisman" or recipe.output.slot
+end
+
+-- the category chips: All, then each kind of thing the recipes make, in the order they first come
+local CATEGORIES = { "All" }
+for _, recipe in ipairs(CraftConfig.Recipes) do
+	if not table.find(CATEGORIES, categoryOf(recipe)) then
+		table.insert(CATEGORIES, categoryOf(recipe))
+	end
+end
+
 local gui = make("ScreenGui", {
 	Name = "PrinterMenu",
 	ResetOnSpawn = false,
@@ -230,6 +272,71 @@ make("UITextSizeConstraint", { Parent = title, MaxTextSize = 72 })
 -- the open print slots, as cards in a row (renderSlots)
 local slotStrip = make("Frame", { Parent = column, Position = UDim2.fromOffset(0, SLOT_TOP), Size = UDim2.new(1, -8, 0, SLOT_HEIGHT), BackgroundTransparency = 1, ZIndex = 5 })
 make("UIListLayout", { Parent = slotStrip, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
+-- over the recipes: a search box and the sort (a click picks the next one), then a chip per category
+local filterBar = make("Frame", { Parent = column, Position = UDim2.fromOffset(0, FILTER_TOP), Size = UDim2.new(1, -8, 0, FILTER_HEIGHT), BackgroundTransparency = 1, ZIndex = 5 })
+local searchBox = make("TextBox", {
+	Parent = filterBar,
+	Size = UDim2.new(1, -(SORT_WIDTH + FILTER_GAP), 1, 0),
+	BackgroundColor3 = Theme.Nav,
+	BackgroundTransparency = 0.25,
+	BorderSizePixel = 0,
+	ClearTextOnFocus = false,
+	Font = Style.MonoFont,
+	PlaceholderText = "SEARCH RECIPES",
+	PlaceholderColor3 = MUTED,
+	Text = "",
+	TextColor3 = TEXT,
+	TextSize = 12,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 5,
+})
+make("UIStroke", { Parent = searchBox, Color = Theme.Edge, Transparency = Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+make("UIPadding", { Parent = searchBox, PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+local sortButton = make("TextButton", {
+	Parent = filterBar,
+	AnchorPoint = Vector2.new(1, 0),
+	Position = UDim2.fromScale(1, 0),
+	Size = UDim2.new(0, SORT_WIDTH, 1, 0),
+	BackgroundColor3 = Theme.Nav,
+	BackgroundTransparency = 0.25,
+	BorderSizePixel = 0,
+	AutoButtonColor = false,
+	Font = Style.MonoFont,
+	Text = "",
+	TextColor3 = ACCENT,
+	TextSize = 11,
+	ZIndex = 5,
+})
+make("UIStroke", { Parent = sortButton, Color = Theme.Edge, Transparency = Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+local chipRow = make("Frame", {
+	Parent = column,
+	Position = UDim2.fromOffset(0, FILTER_TOP + FILTER_HEIGHT + FILTER_GAP),
+	Size = UDim2.new(1, -8, 0, CHIP_HEIGHT),
+	BackgroundTransparency = 1,
+	ZIndex = 5,
+})
+make("UIListLayout", { Parent = chipRow, FillDirection = Enum.FillDirection.Horizontal, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, FILTER_GAP) })
+local categoryChips = {} -- category -> its chip
+for index, category in ipairs(CATEGORIES) do
+	local chip = make("TextButton", {
+		Parent = chipRow,
+		LayoutOrder = index,
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundColor3 = ACCENT,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AutoButtonColor = false,
+		Font = Style.MonoFont,
+		Text = string.upper(category),
+		TextColor3 = MUTED,
+		TextSize = 11,
+		ZIndex = 5,
+	})
+	make("UIPadding", { Parent = chip, PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10) })
+	make("UIStroke", { Parent = chip, Color = Theme.Edge, Transparency = Theme.EdgeTransparency, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
+	categoryChips[category] = chip
+end
 local panel = make("ScrollingFrame", {
 	Parent = column,
 	Position = UDim2.fromOffset(0, HEADER),
@@ -421,6 +528,19 @@ local busy = false
 local openAt -- the printer whose menu is open, so walking away can close it
 local render
 local countdowns = {} -- { label, fill, finishAt, seconds } of the running prints, ticked while open
+local query = "" -- the search box's text
+local sortIndex = 1 -- into SORTS
+local category = "All" -- the chip picked
+
+-- the chips and the sort button show what's picked
+local function paintFilters()
+	sortButton.Text = "SORT  ·  " .. SORTS[sortIndex].title
+	for name, chip in pairs(categoryChips) do
+		local on = name == category
+		chip.BackgroundTransparency = on and 0 or 1
+		chip.TextColor3 = on and BACKGROUND or MUTED
+	end
+end
 
 local function setStatus(text, failed)
 	note.Text = text
@@ -665,17 +785,41 @@ render = function()
 	clear(list)
 	recipeRows = {}
 	hoveredRow = nil
-	local recipes = {}
+	-- the known ones in the picked category whose name has the search in it, sorted
+	local recipes, anyKnown = {}, false
+	local needle = string.lower(query)
 	for _, recipe in ipairs(CraftConfig.Recipes) do
 		if CraftConfig.IsKnown(known, recipe.id) then
-			table.insert(recipes, recipe)
+			anyKnown = true
+			if (category == "All" or categoryOf(recipe) == category) and string.find(string.lower(recipe.name), needle, 1, true) then
+				table.insert(recipes, recipe)
+			end
 		end
 	end
-	if not CraftConfig.IsKnown(known, selected) then
-		selected = recipes[1] and recipes[1].id
+	local sortKey = SORTS[sortIndex].key
+	if sortKey then
+		local order = {}
+		for index, recipe in ipairs(recipes) do
+			order[recipe] = index
+		end
+		table.sort(recipes, function(a, b)
+			local keyA, keyB = sortKey(a), sortKey(b)
+			if keyA ~= keyB then
+				return keyA < keyB
+			end
+			return order[a] < order[b]
+		end)
 	end
+	-- the picked one stays picked while it's listed (or nothing is), else the first listed is
+	if recipes[1] and not table.find(recipes, CraftConfig.Get(selected)) then
+		selected = recipes[1].id
+	end
+	if not CraftConfig.IsKnown(known, selected) then
+		selected = nil
+	end
+	paintFilters()
 	if #recipes == 0 then
-		label(list, { Text = "You don't know any recipes yet", TextSize = 13, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, ROW_HEIGHT) })
+		label(list, { Text = anyKnown and "No recipes match" or "You don't know any recipes yet", TextSize = 13, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, ROW_HEIGHT) })
 	end
 	for index, recipe in ipairs(recipes) do
 		local isSelected = recipe.id == selected
@@ -836,9 +980,28 @@ local function hoverRows()
 	end
 end
 
+-- searching, sorting and picking a category redraw the list
+searchBox:GetPropertyChangedSignal("Text"):Connect(function()
+	query = searchBox.Text
+	render()
+end)
+sortButton.Activated:Connect(function()
+	sortIndex = sortIndex % #SORTS + 1
+	render()
+end)
+for name, chip in pairs(categoryChips) do
+	chip.Activated:Connect(function()
+		category = name
+		render()
+	end)
+end
+
 local function open(printer)
 	openAt = printer
 	setStatus("")
+	-- a fresh search and category each time (the sort stays)
+	searchBox.Text = ""
+	query, category = "", "All"
 	paintHeader(printer)
 	Menus.Open("Printer", close)
 	gui.Enabled = true
