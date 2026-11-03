@@ -1,20 +1,18 @@
--- The hub's Backpack tab (B, or the hub's nav). Three columns: on the left what you
--- carry (a power, a weapon, and a melee slot kept for melee weapons still to
--- come), in the middle every set you own with ALL/POWER/WEAPON tabs, on the
--- right a preview of the selected set, its info and its buttons. Cards show the set's
--- tier and your mastery in it. Powers are the held one, the ones in storage,
--- the lifetime ones and the briefcases you carry (cards tagged HELD, STORED,
--- LIFETIME, BRIEFCASE); their buttons (USE, STORE, SWAP, TAKE OUT, SWITCH)
--- go through the PowerAction remote (Powers), and one that would lose a power
--- asks CONFIRM first. Weapons come from the OwnedSets attribute the server
--- keeps; equipping goes through the EquipSet remote, which checks ownership
--- (see Loadout). The ITEMS tab (and ALL) also lists consumables: the Tools
--- equipped on the hotbar and the stacks stored in the Backpack (the saved
--- ConsumableStorage attribute); USE, STORE and EQUIP go through the
--- ConsumableAction remote (Consumables). Power briefcases are items too: equipped on the
--- hotbar or stored in the Backpack (the BriefcaseStorage attribute), with the power buttons
--- plus EQUIP / UNEQUIP (the PowerAction remote). EQUIP asks which free hotbar slot (4 to 9)
--- to use. The ALL tab groups the cards under POWERS, WEAPONS and ITEMS headers.
+-- The hub's Backpack tab (B, or the hub's nav). Three columns: on the left the LOADOUT (the held
+-- power as a banner in its colour, the weapon and melee tiles, the talisman and gear slots), in
+-- the middle every thing you own under four tabs (SETS, ITEMS, GEAR, MATERIALS), on the right a
+-- banner of the selected thing, its info (a set's moves as key chips) and its buttons. Cards show
+-- the thing's colour slashed across them, its tier or letter big, and your mastery as a bar.
+-- Powers are the held one, the ones in storage, the lifetime ones and the briefcases you carry
+-- (cards tagged HELD, STORED, LIFETIME, or in ITEMS); their buttons (USE, STORE, SWAP, TAKE OUT,
+-- SWITCH) go through the PowerAction remote (Powers), and one that would lose a power asks CONFIRM
+-- first. Weapons come from the OwnedSets attribute the server keeps; equipping goes through the
+-- EquipSet remote, which checks ownership (see Loadout). The ITEMS tab also lists consumables: the
+-- Tools equipped on the hotbar and the stacks stored in the Backpack (the saved ConsumableStorage
+-- attribute); USE, STORE and EQUIP go through the ConsumableAction remote (Consumables). Power
+-- briefcases are items too: equipped on the hotbar or stored in the Backpack (the
+-- BriefcaseStorage attribute), with the power buttons plus EQUIP / UNEQUIP (the PowerAction
+-- remote). EQUIP asks which free hotbar slot (4 to 9) to use.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -71,53 +69,46 @@ local player = Players.LocalPlayer
 local PANEL_SIZE = Vector2.new(1000, 460)
 local COLUMN_PADDING = 10
 local GAP = 12 -- between the columns
-local LEFT_WIDTH = 250
-local RIGHT_WIDTH = 330
+local LEFT_WIDTH = 260
+local RIGHT_WIDTH = 320
 local HEADING_HEIGHT = 24 -- a column's title row
-local CARD_SIZE = 96
-local SLOT_HEIGHT = 66
-local SLOT_GAP = 8
-local BUTTON_HEIGHT = 32
+local TAB_HEIGHT = 26 -- the tabs over the grid
+local CARD_WIDTH = 108
+local CARD_HEIGHT = 128
+local CARD_GAP = 10
+local HERO_HEIGHT = 156 -- the held power's banner at the top of the LOADOUT column
+local TILE_HEIGHT = 64 -- the weapon and melee tiles under it
+local BOX_HEIGHT = 52 -- a talisman or gear box under those
+local BOX_GAP = 8
+local BUTTON_HEIGHT = 34
 local BACKGROUND = Hub.Theme.Panel -- cards, and the text on ink buttons
 local SELECTED_BACKGROUND = Color3.fromRGB(58, 58, 66)
+local DARK = Hub.Theme.Nav -- behind the colour of a banner
 local TEXT = Hub.Theme.Ink
 local MUTED = Hub.Theme.Muted
 local DANGER = Color3.fromRGB(226, 75, 74)
+local TITLE_FONT = Hub.Theme.TitleFont
 local TIER_ORDER = { S = 1, A = 2, B = 3, C = 4 }
--- the carry slots, top to bottom, with the player attribute Loadout keeps
--- each in; `reserved` ones (none now) are shown but can't hold anything yet
+-- the tiles under the power banner, with the player attribute Loadout keeps each in
 local SLOTS = {
-	{ kind = "power", title = "POWER", attribute = "PowerSet" },
 	{ kind = "weapon", title = "WEAPON", attribute = "WeaponSet" },
 	{ kind = "melee", title = "MELEE", attribute = "MeleeSet" },
 }
--- the ALL tab's groups of cards, top to bottom
-local SECTIONS = {
-	{ kind = "power", title = "POWERS" },
-	{ kind = "weapon", title = "WEAPONS" },
-	{ kind = "melee", title = "MELEE" },
-	{ kind = "item", title = "ITEMS" },
-	{ kind = "talisman", title = "TALISMANS" },
-	{ kind = "gear", title = "GEAR" },
-	{ kind = "material", title = "MATERIALS" },
-}
+-- the tabs over the grid, each a list of sections (a header, when there's more than one, and its cards)
 local TABS = {
-	{ kind = "all", title = "ALL" },
-	{ kind = "power", title = "POWER" },
-	{ kind = "weapon", title = "WEAPON" },
-	{ kind = "melee", title = "MELEE" },
-	{ kind = "item", title = "ITEMS" },
-	{ kind = "talisman", title = "TALISMAN" },
-	{ kind = "gear", title = "GEAR" },
-	{ kind = "material", title = "MATERIAL" },
+	{
+		id = "sets",
+		title = "SETS",
+		sections = { { kind = "power", title = "POWERS" }, { kind = "weapon", title = "WEAPONS" }, { kind = "melee", title = "MELEE" } },
+	},
+	{ id = "items", title = "ITEMS", sections = { { kind = "item" } } },
+	{ id = "gear", title = "GEAR", sections = { { kind = "gear", title = "GEAR" }, { kind = "talisman", title = "TALISMANS" } } },
+	{ id = "materials", title = "MATERIALS", sections = { { kind = "material" } } },
 }
-local TALISMAN_BOX = 70 -- a talisman slot in the EQUIPPED column: a square, three in a row
-local TALISMAN_GAP = 10
-local GEAR_BOX_HEIGHT = 44 -- a gear slot in the EQUIPPED column: two wide boxes in a row
-local GEAR_BOX_WIDTH = math.floor((LEFT_WIDTH - 2 * COLUMN_PADDING - TALISMAN_GAP) / 2)
--- the selected thing's preview: a square at the top of the INFO column, the info under it
-local PREVIEW_SIZE = 190
-local PREVIEW_GAP = 24 -- between the preview and the info
+-- the tab each kind of card is in (a briefcase's category is "item")
+local KIND_TAB = { power = "sets", weapon = "sets", melee = "sets", item = "items", gear = "gear", talisman = "gear", material = "materials" }
+-- the selected thing's banner at the top of the INFO column, the info under it
+local PREVIEW_HEIGHT = 150
 local PREVIEW_TURN = 0.6 -- radians a second a model in it turns (as in the shops)
 
 local function make(className, props)
@@ -212,6 +203,47 @@ local function onPaper(color)
 	return Color3.new(HubRules.Ink(color.R, color.G, color.B))
 end
 
+-- a band of `color` over the right of `parent`, its left edge cut on a slant (`from` is where it
+-- starts, 0 to 1 across) with a thin stripe just before it: the banners', tiles' and cards' graphic
+local function slash(parent, color, from, transparency, zIndex)
+	local band = make("Frame", {
+		Parent = parent,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = color,
+		BorderSizePixel = 0,
+		ZIndex = zIndex or 1,
+	})
+	make("UIGradient", {
+		Parent = band,
+		Rotation = 20,
+		Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 1),
+			NumberSequenceKeypoint.new(from - 0.06, 1),
+			NumberSequenceKeypoint.new(from - 0.059, transparency + 0.2),
+			NumberSequenceKeypoint.new(from - 0.04, transparency + 0.2),
+			NumberSequenceKeypoint.new(from - 0.039, 1),
+			NumberSequenceKeypoint.new(from, 1),
+			NumberSequenceKeypoint.new(from + 0.001, transparency),
+			NumberSequenceKeypoint.new(1, math.max(transparency - 0.15, 0)),
+		}),
+	})
+	return band
+end
+
+-- a bar: a dark track with `fraction` of it filled in `color` (mastery)
+local function progressBar(parent, position, size, fraction, color)
+	local track = make("Frame", {
+		Parent = parent,
+		Position = position,
+		Size = size,
+		BackgroundColor3 = Hub.Theme.BarBack,
+		BackgroundTransparency = 0.3,
+		BorderSizePixel = 0,
+	})
+	make("Frame", { Parent = track, Size = UDim2.fromScale(math.clamp(fraction, 0, 1), 1), BackgroundColor3 = color, BorderSizePixel = 0 })
+	return track
+end
+
 local body = make("Frame", {
 	Parent = panel,
 	Size = UDim2.fromScale(1, 1),
@@ -237,7 +269,7 @@ local function column(position, size, anchor, title)
 	return frame
 end
 
-local leftColumn = column(UDim2.new(), UDim2.new(0, LEFT_WIDTH, 1, 0), Vector2.zero, "EQUIPPED")
+local leftColumn = column(UDim2.new(), UDim2.new(0, LEFT_WIDTH, 1, 0), Vector2.zero, "LOADOUT")
 local middleColumn = column(
 	UDim2.fromOffset(LEFT_WIDTH + GAP, 0),
 	UDim2.new(1, -(LEFT_WIDTH + RIGHT_WIDTH + 2 * GAP), 1, 0),
@@ -250,82 +282,71 @@ for _, x in ipairs({ UDim.new(0, LEFT_WIDTH + GAP / 2), UDim.new(1, -(RIGHT_WIDT
 	make("Frame", { Parent = body, Position = UDim2.new(x, UDim.new()), Size = UDim2.new(0, 1, 1, 0), BackgroundColor3 = TEXT, BackgroundTransparency = 0.85, BorderSizePixel = 0 })
 end
 
--- left: the carry slots, then the talismans and the gear you wear
-local SLOTS_HEIGHT = #SLOTS * SLOT_HEIGHT + (#SLOTS - 1) * SLOT_GAP
-local slotList = make("Frame", {
+-- left: the held power's banner, the weapon and melee tiles, then the talismans and the gear you wear
+local loadout = make("Frame", {
 	Parent = leftColumn,
 	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
-	Size = UDim2.new(1, 0, 0, SLOTS_HEIGHT),
+	Size = UDim2.new(1, 0, 1, -HEADING_HEIGHT),
 	BackgroundTransparency = 1,
 })
-make("UIListLayout", { Parent = slotList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, SLOT_GAP) })
--- under the slots: a row of square talisman slots (worn, empty or locked)
-local SECTION_GAP = 20 -- between the EQUIPPED slots, the talismans and the gear
-local TALISMANS_TOP = HEADING_HEIGHT + SLOTS_HEIGHT + SECTION_GAP
-local TALISMANS_HEIGHT = 16 + TALISMAN_BOX
-label(leftColumn, {
-	Text = "TALISMANS",
-	Font = Enum.Font.Highway,
-	TextSize = 12,
-	TextColor3 = MUTED,
-	Position = UDim2.fromOffset(0, TALISMANS_TOP),
-	Size = UDim2.new(1, 0, 0, 16),
-})
-local talismanList = make("Frame", {
-	Parent = leftColumn,
-	Position = UDim2.fromOffset(0, TALISMANS_TOP + 18),
-	Size = UDim2.new(1, 0, 0, TALISMANS_HEIGHT - 16),
-	BackgroundTransparency = 1,
-})
-make("UIListLayout", {
-	Parent = talismanList,
-	FillDirection = Enum.FillDirection.Horizontal,
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, TALISMAN_GAP),
-})
-local GEAR_TOP = TALISMANS_TOP + TALISMANS_HEIGHT + SECTION_GAP
-label(leftColumn, {
-	Text = "GEAR",
-	Font = Enum.Font.Highway,
-	TextSize = 12,
-	TextColor3 = MUTED,
-	Position = UDim2.fromOffset(0, GEAR_TOP),
-	Size = UDim2.new(1, 0, 0, 16),
-})
--- under them: the Head and Body slots, two wide boxes
-local gearList = make("Frame", {
-	Parent = leftColumn,
-	Position = UDim2.fromOffset(0, GEAR_TOP + 18),
-	Size = UDim2.new(1, 0, 0, GEAR_BOX_HEIGHT),
-	BackgroundTransparency = 1,
-})
-make("UIListLayout", {
-	Parent = gearList,
-	FillDirection = Enum.FillDirection.Horizontal,
-	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, TALISMAN_GAP),
-})
+make("UIListLayout", { Parent = loadout, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, BOX_GAP) })
+local function loadoutRow(order, height)
+	local row = make("Frame", { Parent = loadout, LayoutOrder = order, Size = UDim2.new(1, 0, 0, height), BackgroundTransparency = 1 })
+	make("UIListLayout", {
+		Parent = row,
+		FillDirection = Enum.FillDirection.Horizontal,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, BOX_GAP),
+	})
+	return row
+end
+-- a row's caption ("TALISMANS 1/3"), set on each refresh
+local function loadoutHeading(order)
+	return label(loadout, {
+		Text = "",
+		RichText = true,
+		TextSize = 11,
+		TextColor3 = MUTED,
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		LayoutOrder = order,
+		Size = UDim2.new(1, 0, 0, 18),
+	})
+end
+local heroRow = loadoutRow(1, HERO_HEIGHT)
+local tileRow = loadoutRow(2, TILE_HEIGHT)
+local talismanHeading = loadoutHeading(3)
+local talismanList = loadoutRow(4, BOX_HEIGHT)
+local gearHeading = loadoutHeading(5)
+local gearList = loadoutRow(6, BOX_HEIGHT)
 
--- middle: the title, the tabs under it, then the grid of owned things
+-- middle: the tabs (the one showing underlined), then the grid of owned things
 local tabRow = make("Frame", {
 	Parent = middleColumn,
-	Position = UDim2.fromOffset(0, HEADING_HEIGHT - 6),
-	Size = UDim2.new(1, 0, 0, 20),
+	Position = UDim2.fromOffset(0, HEADING_HEIGHT - 4),
+	Size = UDim2.new(1, 0, 0, TAB_HEIGHT),
 	BackgroundTransparency = 1,
 })
 make("UIListLayout", {
 	Parent = tabRow,
 	FillDirection = Enum.FillDirection.Horizontal,
 	SortOrder = Enum.SortOrder.LayoutOrder,
-	Padding = UDim.new(0, 4),
+	Padding = UDim.new(0, 18),
 })
-local GRID_TOP = HEADING_HEIGHT + 22 -- under the tabs
+make("Frame", {
+	Parent = middleColumn,
+	Position = UDim2.fromOffset(0, HEADING_HEIGHT - 4 + TAB_HEIGHT),
+	Size = UDim2.new(1, 0, 0, 1),
+	BackgroundColor3 = TEXT,
+	BackgroundTransparency = 0.85,
+	BorderSizePixel = 0,
+})
+local GRID_TOP = HEADING_HEIGHT + TAB_HEIGHT + 8 -- under the tabs
 local grid = scroller(middleColumn, {
 	Position = UDim2.fromOffset(0, GRID_TOP),
 	Size = UDim2.new(1, 0, 1, -(GRID_TOP + 18)), -- room under it for the briefcase warning
 })
--- the grid is a list of sections (a header and a grid of cards each; ALL has a section per kind of card)
-make("UIListLayout", { Parent = grid, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 10) })
+-- the grid is a list of sections (a header when the tab has more than one, and a grid of cards each)
+make("UIListLayout", { Parent = grid, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 12) })
 local cardParent = grid -- where makeCard puts the card it makes
 local emptyLabel = label(middleColumn, {
 	Text = "Nothing here yet",
@@ -336,14 +357,14 @@ local emptyLabel = label(middleColumn, {
 	Visible = false,
 })
 
--- right: the selected set's preview at the top, its info under it (scrolling when it's long), its
+-- right: the selected thing's banner at the top, its info under it (scrolling when it's long), its
 -- buttons at the bottom
-local DETAILS_TOP = HEADING_HEIGHT + PREVIEW_SIZE + PREVIEW_GAP
+local DETAILS_TOP = HEADING_HEIGHT + PREVIEW_HEIGHT + 12
 local details = scroller(rightColumn, {
 	Position = UDim2.fromOffset(0, DETAILS_TOP),
 	Size = UDim2.new(1, 0, 1, -DETAILS_TOP), -- placeDetails stops it above the buttons
 })
-make("UIListLayout", { Parent = details, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 5) })
+make("UIListLayout", { Parent = details, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 local message = label(rightColumn, {
 	Text = "",
 	TextSize = 11,
@@ -393,43 +414,19 @@ end
 message:GetPropertyChangedSignal("Text"):Connect(placeDetails)
 placeDetails()
 
--- at the top of the column, centred and still while the info under it scrolls: the selected thing's
--- preview as in the shops (its picture, its model turning, or its letter big and faint) in a dark
--- square washed and bracketed in its colour (muted with nothing selected)
+-- at the top of the column, still while the info under it scrolls: the selected thing's banner, its
+-- colour slashed across a dark box, with its picture, its model turning, or its letter big on the colour
 local preview = make("Frame", {
 	Parent = rightColumn,
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, HEADING_HEIGHT),
-	Size = UDim2.fromOffset(PREVIEW_SIZE, PREVIEW_SIZE),
-	BackgroundColor3 = Hub.Theme.Nav,
-	BackgroundTransparency = 0.35,
+	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
+	Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT),
+	BackgroundColor3 = DARK,
+	BackgroundTransparency = 0.2,
 	BorderSizePixel = 0,
+	ClipsDescendants = true,
 	ZIndex = 2,
 })
-local previewWash = make("Frame", { Parent = preview, Size = UDim2.fromScale(1, 1), BackgroundColor3 = MUTED, BorderSizePixel = 0, ZIndex = 2 })
-make("UIGradient", {
-	Parent = previewWash,
-	Rotation = 90,
-	Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 1),
-		NumberSequenceKeypoint.new(0.6, 0.88),
-		NumberSequenceKeypoint.new(1, 0.72),
-	}),
-})
-local previewBrackets = {}
-for _, corner in ipairs({ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }) do
-	for _, size in ipairs({ Vector2.new(16, 2), Vector2.new(2, 16) }) do
-		table.insert(previewBrackets, make("Frame", {
-			Parent = preview,
-			AnchorPoint = Vector2.new(corner[1], corner[2]),
-			Position = UDim2.fromScale(corner[1], corner[2]),
-			Size = UDim2.fromOffset(size.X, size.Y),
-			BackgroundColor3 = MUTED,
-			BorderSizePixel = 0,
-			ZIndex = 4,
-		}))
-	end
-end
+local previewBand = slash(preview, MUTED, 0.38, 0.45, 2)
 local previewPop = make("UIScale", { Parent = preview })
 local previewKey -- the card it shows, so a refresh leaves it be
 local previewContent -- what's in the box: an ImageLabel, a ViewportFrame or the letter
@@ -448,7 +445,7 @@ local warning = label(middleColumn, {
 })
 
 local selected -- the selected card's key: a set name, or "briefcase:<set>"
-local tab = "all"
+local tab = "sets"
 local busy = false
 local pending -- { action, set }: a power action waiting for CONFIRM
 local salvageArmed -- the gear piece key whose SALVAGE is waiting for CONFIRM
@@ -677,11 +674,13 @@ local function masteryText(setName)
 	return level >= SkillSetConfig.MaxMastery and "Mastery MAX" or ("Mastery " .. level)
 end
 
-local function selectKey(key)
+-- selects a card; `kind` (from the LOADOUT column) also shows that kind's tab
+local function selectKey(key, kind)
 	if key ~= selected then
 		UiSfx.Play("itemSelect")
 	end
 	selected = key
+	tab = kind and KIND_TAB[kind] or tab
 	pending = nil
 	salvageArmed = nil
 	pickingSlot = false
@@ -692,72 +691,6 @@ end
 -- consumables: orange when limited, cyan for a lifetime item
 local function itemColor(item)
 	return item.kind == "lifetime" and Color3.fromRGB(60, 224, 230) or Color3.fromRGB(255, 154, 60)
-end
-
--- a card for an equipped or stored consumable
-local function makeItemCard(entry, index)
-	local item = entry.item
-	local isSelected = entry.key == selected
-	local color = itemColor(item)
-	local card = make("TextButton", {
-		Parent = cardParent,
-		LayoutOrder = index,
-		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-		BackgroundTransparency = 0.2,
-		Text = "",
-	})
-	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
-	label(card, {
-		Text = item.kind == "limited" and string.format("%d/%d", entry.uses or 0, item.maxUses) or "LIFE",
-		Font = Enum.Font.Highway,
-		TextSize = item.kind == "limited" and 20 or 15,
-		TextColor3 = onPaper(color),
-		Position = UDim2.fromOffset(8, 6),
-		Size = UDim2.fromOffset(44, 22),
-	})
-	-- only an equipped item is tagged; a stored one has no tag
-	if entry.equipped then
-		label(card, {
-			Text = "EQUIPPED",
-			Font = Enum.Font.Highway,
-			TextSize = 9,
-			TextColor3 = BACKGROUND,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			BackgroundTransparency = 0,
-			BackgroundColor3 = TEXT,
-			BorderSizePixel = 0,
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -6, 0, 30),
-			Size = UDim2.fromOffset(64, 14),
-		})
-	end
-	label(card, {
-		Text = item.name,
-		Font = Enum.Font.Highway,
-		TextSize = 12,
-		TextWrapped = true,
-		TextYAlignment = Enum.TextYAlignment.Bottom,
-		Position = UDim2.new(0, 8, 1, -52),
-		Size = UDim2.new(1, -16, 0, 30),
-	})
-	label(card, {
-		Text = item.kind == "limited" and "Limited use" or "Lifetime",
-		TextSize = 10,
-		TextColor3 = MUTED,
-		Position = UDim2.new(0, 8, 1, -20),
-		Size = UDim2.new(1, -16, 0, 12),
-	})
-	make("Frame", {
-		Parent = card,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = color,
-		BorderSizePixel = 0,
-	})
-	card.Activated:Connect(function()
-		selectKey(entry.key)
-	end)
 end
 
 local function talismanColor(talisman)
@@ -775,198 +708,6 @@ local function gearName(piece)
 	return string.format("%s %s", GearConfig.Rarity(piece.rarity).name, base and base.name or piece.base)
 end
 
--- a card for an owned talisman
-local function makeTalismanCard(entry, index)
-	local talisman = entry.talisman
-	local isSelected = entry.key == selected
-	local color = talismanColor(talisman)
-	local card = make("TextButton", {
-		Parent = cardParent,
-		LayoutOrder = index,
-		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-		BackgroundTransparency = 0.2,
-		Text = "",
-	})
-	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
-	-- a diamond-ish mark: the first letter in the talisman's colour
-	label(card, {
-		Text = string.sub(talisman.name, 1, 1),
-		Font = Enum.Font.Highway,
-		TextSize = 24,
-		TextColor3 = onPaper(color),
-		Position = UDim2.fromOffset(8, 4),
-		Size = UDim2.fromOffset(30, 28),
-	})
-	if entry.equipped then
-		label(card, {
-			Text = "WORN",
-			Font = Enum.Font.Highway,
-			TextSize = 9,
-			TextColor3 = BACKGROUND,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			BackgroundTransparency = 0,
-			BackgroundColor3 = TEXT,
-			BorderSizePixel = 0,
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -6, 0, 8),
-			Size = UDim2.fromOffset(44, 14),
-		})
-	end
-	label(card, {
-		Text = talisman.name,
-		Font = Enum.Font.Highway,
-		TextSize = 12,
-		TextWrapped = true,
-		TextYAlignment = Enum.TextYAlignment.Bottom,
-		Position = UDim2.new(0, 8, 1, -52),
-		Size = UDim2.new(1, -16, 0, 30),
-	})
-	label(card, {
-		Text = "Talisman",
-		TextSize = 10,
-		TextColor3 = MUTED,
-		Position = UDim2.new(0, 8, 1, -20),
-		Size = UDim2.new(1, -16, 0, 12),
-	})
-	make("Frame", {
-		Parent = card,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = color,
-		BorderSizePixel = 0,
-	})
-	card.Activated:Connect(function()
-		selectKey(entry.key)
-	end)
-end
-
--- a card for a material you hold: a letter in its tier's colour, the amount, the name
-local function makeMaterialCard(entry, index)
-	local info = entry.material
-	local isSelected = entry.key == selected
-	local color = DropConfig.TierColor(info.tier)
-	local card = make("TextButton", {
-		Parent = cardParent,
-		LayoutOrder = index,
-		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-		BackgroundTransparency = 0.2,
-		Text = "",
-	})
-	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
-	label(card, {
-		Text = string.sub(info.display, 1, 1),
-		Font = Enum.Font.Highway,
-		TextSize = 24,
-		TextColor3 = onPaper(color),
-		Position = UDim2.fromOffset(8, 4),
-		Size = UDim2.fromOffset(30, 28),
-	})
-	label(card, {
-		Text = "x" .. entry.amount,
-		Font = Enum.Font.Highway,
-		TextSize = 12,
-		TextColor3 = TEXT,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Position = UDim2.new(0, 8, 0, 8),
-		Size = UDim2.new(1, -16, 0, 16),
-	})
-	label(card, {
-		Text = info.display,
-		Font = Enum.Font.Highway,
-		TextSize = 12,
-		TextWrapped = true,
-		TextYAlignment = Enum.TextYAlignment.Bottom,
-		Position = UDim2.new(0, 8, 1, -52),
-		Size = UDim2.new(1, -16, 0, 30),
-	})
-	label(card, {
-		Text = "Material",
-		TextSize = 10,
-		TextColor3 = MUTED,
-		Position = UDim2.new(0, 8, 1, -20),
-		Size = UDim2.new(1, -16, 0, 12),
-	})
-	make("Frame", {
-		Parent = card,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = color,
-		BorderSizePixel = 0,
-	})
-	card.Activated:Connect(function()
-		selectKey(entry.key)
-	end)
-end
-
--- a card for a gear piece, edged in its rarity colour
-local function makeGearCard(entry, index)
-	local piece = entry.piece
-	local isSelected = entry.key == selected
-	local color = gearColor(piece)
-	local base = GearConfig.Base(piece.base)
-	local card = make("TextButton", {
-		Parent = cardParent,
-		LayoutOrder = index,
-		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-		BackgroundTransparency = 0.2,
-		Text = "",
-	})
-	outline(card, isSelected and 0 or 0.35, onPaper(color), isSelected and 3 or 1)
-	label(card, {
-		Text = string.sub(base and base.name or piece.base, 1, 1),
-		Font = Enum.Font.Highway,
-		TextSize = 24,
-		TextColor3 = onPaper(color),
-		Position = UDim2.fromOffset(8, 4),
-		Size = UDim2.fromOffset(30, 28),
-	})
-	if entry.equipped then
-		label(card, {
-			Text = "WORN",
-			Font = Enum.Font.Highway,
-			TextSize = 9,
-			TextColor3 = BACKGROUND,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			BackgroundTransparency = 0,
-			BackgroundColor3 = TEXT,
-			BorderSizePixel = 0,
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -6, 0, 8),
-			Size = UDim2.fromOffset(44, 14),
-		})
-	end
-	label(card, {
-		Text = gearName(piece),
-		Font = Enum.Font.Highway,
-		TextSize = 12,
-		TextWrapped = true,
-		TextYAlignment = Enum.TextYAlignment.Bottom,
-		Position = UDim2.new(0, 8, 1, -52),
-		Size = UDim2.new(1, -16, 0, 30),
-	})
-	label(card, {
-		Text = string.format("%s  ·  Lv %d", piece.slot, piece.level),
-		TextSize = 10,
-		TextColor3 = MUTED,
-		Position = UDim2.new(0, 8, 1, -20),
-		Size = UDim2.new(1, -16, 0, 12),
-	})
-	make("Frame", {
-		Parent = card,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = color,
-		BorderSizePixel = 0,
-	})
-	card.Activated:Connect(function()
-		selectKey(entry.key)
-	end)
-end
-
--- a square card in the inventory grid
 -- "Needs Strength 10" when the player is below the set's stat requirement
 local function needsText(setName)
 	local requires = SkillSetConfig.Sets[setName].requires
@@ -978,335 +719,481 @@ local function needsText(setName)
 	return not ok and string.format("Needs %s %d", missing, requires[missing]) or nil
 end
 
-local function makeCard(entry, index)
+-- what a card shows, for any kind of thing: its colour, the big glyph (and its colour), its name,
+-- a tag (HELD, WORN...), a corner note (uses, amount, level), a bar along the bottom (mastery,
+-- 0 to 1) and whether the player is below its stat requirement
+local function cardLook(entry)
 	if entry.kind == "item" then
-		makeItemCard(entry, index)
-		return
+		local item = entry.item
+		return {
+			color = itemColor(item),
+			glyph = string.sub(item.name, 1, 1),
+			name = item.name,
+			tag = entry.equipped and "EQUIPPED" or nil,
+			corner = item.kind == "limited" and string.format("%d/%d", entry.uses or 0, item.maxUses) or "LIFE",
+		}
 	elseif entry.kind == "talisman" then
-		makeTalismanCard(entry, index)
-		return
+		local talisman = entry.talisman
+		return {
+			color = talismanColor(talisman),
+			glyph = string.sub(talisman.name, 1, 1),
+			name = talisman.name,
+			tag = entry.equipped and "WORN" or nil,
+		}
 	elseif entry.kind == "material" then
-		makeMaterialCard(entry, index)
-		return
+		local info = entry.material
+		return {
+			color = DropConfig.TierColor(info.tier),
+			glyph = string.sub(info.display, 1, 1),
+			name = info.display,
+			corner = "x" .. entry.amount,
+		}
 	elseif entry.kind == "gear" then
-		makeGearCard(entry, index)
-		return
+		local piece = entry.piece
+		local base = GearConfig.Base(piece.base)
+		return {
+			color = gearColor(piece),
+			glyph = string.sub(base and base.name or piece.base, 1, 1),
+			name = gearName(piece),
+			tag = entry.equipped and "WORN" or nil,
+			corner = "LV " .. piece.level,
+		}
 	end
-	local setName = entry.setName
-	local set = SkillSetConfig.Sets[setName]
+	local set = SkillSetConfig.Sets[entry.setName]
+	return {
+		color = set.color or tierColor(set),
+		glyph = set.tier or string.sub(set.tool, 1, 1),
+		glyphColor = tierColor(set),
+		name = set.tool,
+		tag = tagText(entry),
+		corner = entry.briefcase and "CASE" or nil,
+		bar = mastery(entry.setName) / SkillSetConfig.MaxMastery,
+		locked = needsText(entry.setName) ~= nil,
+	}
+end
+
+-- a card in the grid: a dark tile with its colour slashed across it, the big glyph, the name under
+-- it, a tag chip, a corner note and a bar along the bottom
+local function makeCard(entry, index)
+	local look = cardLook(entry)
 	local isSelected = entry.key == selected
 	local card = make("TextButton", {
 		Parent = cardParent,
 		LayoutOrder = index,
 		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-		BackgroundTransparency = 0.2,
+		BackgroundTransparency = 0.15,
+		ClipsDescendants = true,
 		Text = "",
 	})
-	outline(card, isSelected and 0 or 0.35, tierColor(set), isSelected and 3 or 1)
+	outline(card, isSelected and 0 or 0.75, isSelected and onPaper(look.color) or TEXT, isSelected and 2 or 1)
+	slash(card, look.color, 0.55, isSelected and 0.5 or 0.72)
 	label(card, {
-		Text = set.tier or "",
-		Font = Enum.Font.Highway,
-		TextSize = 20,
-		TextColor3 = tierColor(set),
-		Position = UDim2.fromOffset(8, 6),
-		Size = UDim2.fromOffset(24, 22),
+		Text = look.glyph,
+		Font = TITLE_FONT,
+		TextSize = 54,
+		TextColor3 = onPaper(look.glyphColor or look.color),
+		TextTransparency = look.locked and 0.6 or 0,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.4),
+		Size = UDim2.fromOffset(70, 60),
 	})
-	local tag = tagText(entry)
-	if tag then
+	if look.tag then
 		label(card, {
-			Text = tag,
-			Font = Enum.Font.Highway,
+			Text = look.tag,
 			TextSize = 9,
 			TextColor3 = BACKGROUND,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			BackgroundTransparency = 0,
 			BackgroundColor3 = TEXT,
 			BorderSizePixel = 0,
+			Position = UDim2.fromOffset(6, 6),
+			Size = UDim2.fromOffset(56, 14),
+		})
+	end
+	if look.locked then
+		label(card, {
+			Text = "LOCKED",
+			TextSize = 9,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			BackgroundTransparency = 0,
+			BackgroundColor3 = DANGER,
+			BorderSizePixel = 0,
 			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -6, 0, 8),
-			Size = UDim2.fromOffset(64, 14),
+			Position = UDim2.new(1, -6, 0, 6),
+			Size = UDim2.fromOffset(44, 14),
+		})
+	elseif look.corner then
+		label(card, {
+			Text = look.corner,
+			TextSize = 11,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -6, 0, 5),
+			Size = UDim2.fromOffset(50, 16),
 		})
 	end
 	label(card, {
-		Text = set.tool,
+		Text = look.name,
 		Font = Enum.Font.Highway,
 		TextSize = 12,
 		TextWrapped = true,
 		TextYAlignment = Enum.TextYAlignment.Bottom,
-		Position = UDim2.new(0, 8, 1, -52),
+		Position = UDim2.new(0, 8, 1, -44),
 		Size = UDim2.new(1, -16, 0, 30),
 	})
-	local needs = needsText(setName)
-	label(card, {
-		Text = needs or masteryText(setName),
-		TextSize = 10,
-		TextColor3 = needs and Color3.fromRGB(220, 70, 60) or MUTED,
-		Position = UDim2.new(0, 8, 1, -20),
-		Size = UDim2.new(1, -16, 0, 12),
-	})
-	-- the set's own colour along the bottom
-	make("Frame", {
-		Parent = card,
-		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 4),
-		BackgroundColor3 = set.color or TEXT,
-		BorderSizePixel = 0,
-	})
+	progressBar(card, UDim2.new(0, 8, 1, -9), UDim2.new(1, -16, 0, 3), look.bar or 1, look.color)
 	card.Activated:Connect(function()
 		selectKey(entry.key)
 	end)
 end
 
--- a wide card in the EQUIPPED column: what's in this slot, or that it's empty
-local function makeSlot(slot, index)
-	local setName = slot.attribute and player:GetAttribute(slot.attribute)
+-- the LOADOUT column's banner: the held power in its colour, its tier letter huge in the colour,
+-- its name, and its mastery as a bar (or that no power is held)
+local function makeHero()
+	clear(heroRow)
+	local setName = player:GetAttribute("PowerSet")
 	local set = setName and SkillSetConfig.Sets[setName]
-	local isSelected = set ~= nil and setName == selected
-	local frame = make(set and "TextButton" or "Frame", {
-		Parent = slotList,
-		LayoutOrder = index,
-		Size = UDim2.new(1, 0, 0, SLOT_HEIGHT),
-		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-		BackgroundTransparency = slot.reserved and 0.6 or 0.2,
-	})
-	if set then
-		frame.Text = ""
-	end
-	outline(frame, isSelected and 0 or (set and 0.35 or 0.8), set and tierColor(set) or TEXT, isSelected and 3 or 1)
-	label(frame, {
-		Text = slot.title,
-		Font = Enum.Font.Highway,
-		TextSize = 10,
-		TextColor3 = MUTED,
-		Position = UDim2.fromOffset(12, 6),
-		Size = UDim2.new(1, -20, 0, 12),
+	local hero = make(set and "TextButton" or "Frame", {
+		Parent = heroRow,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = DARK,
+		BackgroundTransparency = 0.2,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
 	})
 	if not set then
-		label(frame, {
-			Text = slot.reserved and "Coming soon" or "Empty",
-			TextSize = 12,
+		outline(hero, 0.8)
+		label(hero, { Text = "NO POWER", Font = TITLE_FONT, TextSize = 26, TextColor3 = MUTED, Position = UDim2.fromOffset(14, 14), Size = UDim2.new(1, -28, 0, 30) })
+		label(hero, {
+			Text = "Open a briefcase, or switch to a lifetime power.",
+			TextSize = 11,
 			TextColor3 = MUTED,
-			TextTransparency = slot.reserved and 0.4 or 0,
-			Position = UDim2.fromOffset(12, 24),
-			Size = UDim2.new(1, -20, 1, -30),
+			TextWrapped = true,
+			Position = UDim2.fromOffset(14, 48),
+			Size = UDim2.new(1, -28, 0, 30),
 		})
 		return
 	end
-	-- the set's own colour down the left edge
-	make("Frame", {
-		Parent = frame,
-		Size = UDim2.new(0, 4, 1, 0),
-		BackgroundColor3 = set.color or TEXT,
-		BorderSizePixel = 0,
-	})
-	label(frame, {
-		Text = set.tier or "",
-		Font = Enum.Font.Highway,
-		TextSize = 24,
-		TextColor3 = tierColor(set),
+	hero.Text = ""
+	hero.AutoButtonColor = false
+	local color = set.color or tierColor(set)
+	local isSelected = setName == selected
+	outline(hero, isSelected and 0 or 0.6, onPaper(color), isSelected and 2 or 1)
+	slash(hero, color, 0.5, 0.35)
+	-- the tier letter, bigger than text goes (a UIScale), dark and cut by the banner's edge
+	local letter = label(hero, {
+		Text = set.tier or string.sub(set.tool, 1, 1),
+		Font = TITLE_FONT,
+		TextSize = 100,
+		TextColor3 = DARK,
+		TextTransparency = 0.45,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(12, 26),
-		Size = UDim2.fromOffset(26, 30),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -50, 0.5, 8),
+		Size = UDim2.fromOffset(100, 110),
 	})
-	label(frame, {
-		Text = set.tool,
-		Font = Enum.Font.Highway,
-		TextSize = 13,
+	make("UIScale", { Parent = letter, Scale = 1.7 })
+	label(hero, { Text = "POWER", TextSize = 10, TextColor3 = MUTED, Position = UDim2.fromOffset(14, 12), Size = UDim2.fromOffset(120, 12) })
+	label(hero, {
+		Text = string.format("%s-TIER", set.tier or "?"),
+		Font = TITLE_FONT,
+		TextSize = 14,
+		TextColor3 = onPaper(tierColor(set)),
+		Position = UDim2.fromOffset(14, 28),
+		Size = UDim2.fromOffset(120, 18),
+	})
+	label(hero, {
+		Text = string.upper(set.tool),
+		Font = TITLE_FONT,
+		TextSize = 26,
 		TextWrapped = true,
+		TextStrokeTransparency = 0.7,
 		TextYAlignment = Enum.TextYAlignment.Top,
-		Position = UDim2.fromOffset(46, 24),
-		Size = UDim2.new(1, -54, 0, 20),
+		Position = UDim2.fromOffset(14, 50),
+		Size = UDim2.new(0.66, 0, 0, 64),
 	})
-	label(frame, {
+	label(hero, {
 		Text = masteryText(setName),
 		TextSize = 10,
-		TextColor3 = MUTED,
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 46, 1, -8),
-		Size = UDim2.new(1, -54, 0, 12),
+		Position = UDim2.new(0, 14, 1, -18),
+		Size = UDim2.fromOffset(120, 12),
 	})
-	frame.Activated:Connect(function()
-		selectKey(setName)
+	progressBar(hero, UDim2.new(0, 14, 1, -12), UDim2.new(0.55, 0, 0, 4), mastery(setName) / SkillSetConfig.MaxMastery, color)
+	hero.Activated:Connect(function()
+		selectKey(setName, "power")
 	end)
 end
 
--- the EQUIPPED column's talisman slots, three squares in a row: a worn one (click to
--- select it), or a placeholder name for an empty or locked slot (with its level)
+-- a weapon or melee tile under the banner: what's carried in that slot, or that it's empty
+local TILE_WIDTH = (LEFT_WIDTH - 2 * COLUMN_PADDING - BOX_GAP) / 2
+local function makeTile(slot, index)
+	local setName = player:GetAttribute(slot.attribute)
+	local set = setName and SkillSetConfig.Sets[setName]
+	local isSelected = set ~= nil and setName == selected
+	local tile = make(set and "TextButton" or "Frame", {
+		Parent = tileRow,
+		LayoutOrder = index,
+		Size = UDim2.fromOffset(TILE_WIDTH, TILE_HEIGHT),
+		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
+		BackgroundTransparency = set and 0.15 or 0.6,
+		ClipsDescendants = true,
+	})
+	label(tile, { Text = slot.title, TextSize = 9, TextColor3 = MUTED, Position = UDim2.fromOffset(8, 6), Size = UDim2.new(1, -16, 0, 10) })
+	if not set then
+		outline(tile, 0.85)
+		label(tile, { Text = "Empty", TextSize = 12, TextColor3 = MUTED, Position = UDim2.fromOffset(8, 24), Size = UDim2.new(1, -16, 0, 16) })
+		return
+	end
+	tile.Text = ""
+	local color = set.color or tierColor(set)
+	outline(tile, isSelected and 0 or 0.75, isSelected and onPaper(color) or TEXT, isSelected and 2 or 1)
+	slash(tile, color, 0.62, 0.7)
+	label(tile, {
+		Text = set.tier or "",
+		Font = TITLE_FONT,
+		TextSize = 34,
+		TextColor3 = onPaper(tierColor(set)),
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -8, 0.5, 0),
+		Size = UDim2.fromOffset(30, 40),
+	})
+	label(tile, { Text = set.tool, Font = TITLE_FONT, TextSize = 15, Position = UDim2.fromOffset(8, 20), Size = UDim2.new(1, -44, 0, 20) })
+	progressBar(tile, UDim2.new(0, 8, 1, -11), UDim2.new(1, -44, 0, 3), mastery(setName) / SkillSetConfig.MaxMastery, color)
+	tile.Activated:Connect(function()
+		selectKey(setName, set.kind)
+	end)
+end
+
+-- a small box in the LOADOUT column (a talisman or gear slot): the worn thing's letter in its colour
+-- and its name, or the slot's caption (EMPTY, the level that opens it) faint
+local function makeBox(parent, index, width, color, glyph, name, caption, onClick, isSelected)
+	local box = make(color and "TextButton" or "Frame", {
+		Parent = parent,
+		LayoutOrder = index,
+		Size = UDim2.fromOffset(width, BOX_HEIGHT),
+		BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
+		BackgroundTransparency = color and 0.15 or 0.6,
+		ClipsDescendants = true,
+	})
+	if not color then
+		outline(box, 0.85)
+		label(box, { Text = caption, TextSize = 10, TextColor3 = MUTED, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 1) })
+		return
+	end
+	box.Text = ""
+	outline(box, isSelected and 0 or 0.75, isSelected and onPaper(color) or TEXT, isSelected and 2 or 1)
+	slash(box, color, 0.6, 0.7)
+	label(box, { Text = glyph, Font = TITLE_FONT, TextSize = 24, TextColor3 = onPaper(color), Position = UDim2.fromOffset(7, 2), Size = UDim2.fromOffset(24, 28) })
+	label(box, { Text = name, TextSize = 10, AnchorPoint = Vector2.new(0, 1), Position = UDim2.new(0, 7, 1, -5), Size = UDim2.new(1, -14, 0, 12) })
+	box.Activated:Connect(onClick)
+end
+
+-- the talisman slots, three boxes in a row: a worn one (click to select it), an empty one, or a
+-- locked one with its level
 local function makeTalismanSlots()
 	clear(talismanList)
 	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
 	local open = TalismanConfig.Slots(player:GetAttribute("Level") or 0)
+	talismanHeading.Text = string.format('TALISMANS  <font color="#ececee">%d/%d</font>', #worn, open)
+	local width = (LEFT_WIDTH - 2 * COLUMN_PADDING - 2 * BOX_GAP) / 3
 	for i, at in ipairs(TalismanConfig.SlotLevels) do
 		local key = worn[i]
 		local talisman = key and TalismanConfig.Get(key)
-		local isSelected = talisman ~= nil and "talisman:" .. key == selected
-		local box = make(talisman and "TextButton" or "Frame", {
-			Parent = talismanList,
-			LayoutOrder = i,
-			Size = UDim2.fromOffset(TALISMAN_BOX, TALISMAN_BOX),
-			BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-			BackgroundTransparency = talisman and 0.2 or 0.6,
-		})
-		if talisman then
-			box.Text = ""
-		end
-		outline(box, isSelected and 0 or (talisman and 0.35 or 0.8), talisman and onPaper(talismanColor(talisman)) or TEXT, isSelected and 3 or 1)
-		-- the slot number, top left
-		label(box, {
-			Text = tostring(i),
-			Font = Enum.Font.Highway,
-			TextSize = 10,
-			TextColor3 = MUTED,
-			Position = UDim2.fromOffset(6, 4),
-			Size = UDim2.fromOffset(20, 12),
-		})
-		-- the worn talisman's name, or a placeholder name (with the level that opens a locked slot)
-		label(box, {
-			Text = talisman and talisman.name or string.format("Talisman %d", i),
-			Font = talisman and Enum.Font.Highway or Enum.Font.Highway,
-			TextSize = 11,
-			TextColor3 = talisman and TEXT or MUTED,
-			TextWrapped = true,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			TextYAlignment = Enum.TextYAlignment.Center,
-			Position = UDim2.fromOffset(4, 16),
-			Size = UDim2.new(1, -8, 1, -34),
-		})
-		if i > open then
-			label(box, {
-				Text = string.format("LV %d", at),
-				Font = Enum.Font.Highway,
-				TextSize = 9,
-				TextColor3 = MUTED,
-				TextXAlignment = Enum.TextXAlignment.Center,
-				AnchorPoint = Vector2.new(0, 1),
-				Position = UDim2.new(0, 0, 1, -8),
-				Size = UDim2.new(1, 0, 0, 12),
-			})
-		end
-		if talisman then
-			make("Frame", {
-				Parent = box,
-				AnchorPoint = Vector2.new(0, 1),
-				Position = UDim2.fromScale(0, 1),
-				Size = UDim2.new(1, 0, 0, 4),
-				BackgroundColor3 = talismanColor(talisman),
-				BorderSizePixel = 0,
-			})
-			box.Activated:Connect(function()
-				selectKey("talisman:" .. key)
-			end)
-		end
+		makeBox(
+			talismanList,
+			i,
+			width,
+			talisman and talismanColor(talisman),
+			talisman and string.sub(talisman.name, 1, 1),
+			talisman and talisman.name,
+			i > open and string.format("LV %d", at) or "EMPTY",
+			talisman and function()
+				selectKey("talisman:" .. key, "talisman")
+			end,
+			talisman ~= nil and "talisman:" .. key == selected
+		)
 	end
 end
 
--- the EQUIPPED column's gear slots, Head and Body: a worn piece (click to select it) or an empty slot
+-- the gear slots, Head and Body: a worn piece (click to select it) or an empty slot
 local function makeGearSlots()
 	clear(gearList)
 	local worn = GearConfig.ParseWorn(player:GetAttribute(GearConfig.WornAttribute))
+	local count = 0
+	for _, slotName in ipairs(GearConfig.Slots) do
+		if worn[slotName] then
+			count += 1
+		end
+	end
+	gearHeading.Text = string.format('GEAR  <font color="#ececee">%d/%d</font>', count, #GearConfig.Slots)
+	local width = (LEFT_WIDTH - 2 * COLUMN_PADDING - (#GearConfig.Slots - 1) * BOX_GAP) / #GearConfig.Slots
 	for i, slotName in ipairs(GearConfig.Slots) do
 		local piece = worn[slotName]
-		local color = piece and gearColor(piece)
-		local isSelected = piece ~= nil and "gear:" .. piece.id == selected
-		local box = make(piece and "TextButton" or "Frame", {
-			Parent = gearList,
-			LayoutOrder = i,
-			Size = UDim2.fromOffset(GEAR_BOX_WIDTH, GEAR_BOX_HEIGHT),
-			BackgroundColor3 = isSelected and SELECTED_BACKGROUND or BACKGROUND,
-			BackgroundTransparency = piece and 0.2 or 0.6,
-		})
-		if piece then
-			box.Text = ""
-		end
-		outline(box, isSelected and 0 or (piece and 0.35 or 0.8), piece and onPaper(color) or TEXT, isSelected and 3 or 1)
-		label(box, {
-			Text = string.upper(slotName),
-			Font = Enum.Font.Highway,
-			TextSize = 9,
-			TextColor3 = MUTED,
-			Position = UDim2.fromOffset(6, 3),
-			Size = UDim2.new(1, -12, 0, 12),
-		})
 		local base = piece and GearConfig.Base(piece.base)
-		label(box, {
-			Text = piece and (base and base.name or piece.base) or "Empty",
-			Font = Enum.Font.Highway,
-			TextSize = 11,
-			TextColor3 = piece and TEXT or MUTED,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			Position = UDim2.fromOffset(4, 15),
-			Size = UDim2.new(1, -8, 0, 20),
-		})
-		if piece then
-			make("Frame", {
-				Parent = box,
-				AnchorPoint = Vector2.new(0, 1),
-				Position = UDim2.fromScale(0, 1),
-				Size = UDim2.new(1, 0, 0, 4),
-				BackgroundColor3 = color,
-				BorderSizePixel = 0,
-			})
-			box.Activated:Connect(function()
-				selectKey("gear:" .. piece.id)
-			end)
-		end
+		local baseName = piece and (base and base.name or piece.base)
+		makeBox(
+			gearList,
+			i,
+			width,
+			piece and gearColor(piece),
+			baseName and string.sub(baseName, 1, 1),
+			baseName,
+			string.upper(slotName),
+			piece and function()
+				selectKey("gear:" .. piece.id, "gear")
+			end,
+			piece ~= nil and "gear:" .. piece.id == selected
+		)
 	end
 end
 
+-- the tabs: big titles with how many cards each has, the one showing in ink and underlined in the accent
 local tabButtons = {}
 for i, entry in ipairs(TABS) do
 	local button = make("TextButton", {
 		Parent = tabRow,
 		LayoutOrder = i,
-		Size = UDim2.new(1 / #TABS, -4, 1, 0),
-		BackgroundColor3 = TEXT,
-		Font = Enum.Font.Highway,
+		Size = UDim2.new(0, 0, 1, 0),
+		AutomaticSize = Enum.AutomaticSize.X,
+		BackgroundTransparency = 1,
+		Font = TITLE_FONT,
+		RichText = true,
 		Text = entry.title,
-		TextSize = 10,
-		TextScaled = true,
+		TextSize = 16,
+		TextColor3 = MUTED,
 	})
-	make("UITextSizeConstraint", { Parent = button, MaxTextSize = 10, MinTextSize = 6 })
-	outline(button, 0.5)
+	local underline = make("Frame", {
+		Parent = button,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 2),
+		BackgroundColor3 = TEXT,
+		BorderSizePixel = 0,
+		Visible = false,
+	})
 	button:SetAttribute("SectionSelect", true)
 	button.Activated:Connect(function()
-		tab = entry.kind
+		tab = entry.id
 		refresh()
 	end)
-	tabButtons[entry.kind] = button
+	tabButtons[entry.id] = { button = button, underline = underline, title = entry.title }
 end
+Hub.OnAccent(function(accent)
+	for _, tabButton in pairs(tabButtons) do
+		tabButton.underline.BackgroundColor3 = accent
+	end
+end)
 
--- one line of the info: a key (or tag) box, then the move's name and a note
+-- one line of the info: a caption (or key), then the value and a note
 local detailOrder = 0
 local function detailRow(key, name, note, dim)
 	detailOrder += 1
 	local row = make("Frame", {
 		Parent = details,
 		LayoutOrder = detailOrder,
-		Size = UDim2.new(1, 0, 0, 20),
+		Size = UDim2.new(1, 0, 0, 18),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		BackgroundTransparency = 1,
 	})
-	local color = dim and MUTED or TEXT
-	local keyBox = label(row, {
-		Text = key,
-		Font = Enum.Font.Highway,
-		TextSize = 9,
-		TextColor3 = color,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Size = UDim2.fromOffset(50, 20),
-	})
-	outline(keyBox, dim and 0.8 or 0.6)
 	label(row, {
-		Text = note and string.format('%s  <font color="#a5a5b4" size="10">%s</font>', name, note) or name,
+		Text = key,
+		TextSize = 10,
+		TextColor3 = MUTED,
+		TextTransparency = dim and 0.4 or 0,
+		Position = UDim2.fromOffset(0, 3),
+		Size = UDim2.fromOffset(64, 12),
+	})
+	label(row, {
+		Text = note and string.format('%s  <font color="#a5a5b4" size="11">%s</font>', name, note) or name,
 		RichText = true,
-		TextSize = 12,
-		TextColor3 = color,
+		TextSize = 13,
+		TextColor3 = dim and MUTED or TEXT,
 		TextWrapped = true,
 		AutomaticSize = Enum.AutomaticSize.Y,
-		Position = UDim2.fromOffset(58, 0),
-		Size = UDim2.new(1, -58, 0, 20),
+		Position = UDim2.fromOffset(70, 0),
+		Size = UDim2.new(1, -70, 0, 18),
 	})
+end
+
+-- the info's title: the thing's name big, a line about it under it in its colour
+local function detailTitle(name, subtitle, color)
+	detailOrder += 1
+	local title = make("Frame", { Parent = details, LayoutOrder = detailOrder, Size = UDim2.new(1, 0, 0, 48), BackgroundTransparency = 1 })
+	label(title, { Text = string.upper(name), Font = TITLE_FONT, TextSize = 24, Size = UDim2.new(1, 0, 0, 28) })
+	label(title, { Text = subtitle, TextSize = 11, TextColor3 = color, Position = UDim2.fromOffset(0, 30), Size = UDim2.new(1, 0, 0, 14) })
+end
+
+-- a set's moves as a row of key chips; the one hovered (or clicked) names its move under the row
+local MOVE_CHIP = Vector2.new(42, 30)
+local function moveChips(moves)
+	detailOrder += 1
+	local frame = make("Frame", {
+		Parent = details,
+		LayoutOrder = detailOrder,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+	})
+	make("UIListLayout", { Parent = frame, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 8) })
+	label(frame, { Text = "MOVES", TextSize = 10, TextColor3 = MUTED, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 12) })
+	local chips = make("Frame", {
+		Parent = frame,
+		LayoutOrder = 2,
+		Size = UDim2.new(1, 0, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		BackgroundTransparency = 1,
+	})
+	make("UIGridLayout", {
+		Parent = chips,
+		CellSize = UDim2.fromOffset(MOVE_CHIP.X, MOVE_CHIP.Y),
+		CellPadding = UDim2.fromOffset(6, 6),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+	})
+	-- (inset a pixel, so the chips' outlines show)
+	make("UIPadding", { Parent = chips, PaddingTop = UDim.new(0, 1), PaddingLeft = UDim.new(0, 1) })
+	local line = label(frame, {
+		Text = "",
+		RichText = true,
+		TextSize = 13,
+		TextWrapped = true,
+		LayoutOrder = 3,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 18),
+	})
+	local buttons = {}
+	local function show(index)
+		local move = moves[index]
+		line.Text = move.note and string.format('%s  <font color="#a5a5b4" size="11">%s</font>', move.name, move.note) or move.name
+		line.TextColor3 = move.locked and MUTED or TEXT
+		for i, chip in ipairs(buttons) do
+			chip.BackgroundTransparency = i == index and 0 or 1
+			chip.TextColor3 = i == index and BACKGROUND or (moves[i].locked and MUTED or TEXT)
+		end
+	end
+	for i, move in ipairs(moves) do
+		local chip = make("TextButton", {
+			Parent = chips,
+			LayoutOrder = i,
+			BackgroundColor3 = TEXT,
+			BackgroundTransparency = 1,
+			AutoButtonColor = false,
+			Font = Enum.Font.Highway,
+			Text = move.key,
+			TextSize = 12,
+		})
+		outline(chip, move.locked and 0.85 or 0.5)
+		chip.MouseEnter:Connect(function()
+			show(i)
+		end)
+		chip.Activated:Connect(function()
+			show(i)
+		end)
+		table.insert(buttons, chip)
+	end
+	show(1)
 end
 
 -- shows a button (or hides it with nil text), filled for a main action and outlined for a quiet one
@@ -1517,16 +1404,7 @@ end
 local function itemDetails(entry)
 	local item = entry.item
 	local color = onPaper(itemColor(item))
-	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = item.name, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
-	label(title, {
-		Text = string.format("%s  ·  %s", item.kind == "limited" and "Limited use" or "Lifetime", entry.equipped and "Equipped on the hotbar" or "Stored in the Backpack"),
-		Font = Enum.Font.Highway,
-		TextSize = 11,
-		TextColor3 = color,
-		Position = UDim2.fromOffset(0, 24),
-		Size = UDim2.new(1, 0, 0, 14),
-	})
+	detailTitle(item.name, string.format("%s  ·  %s", item.kind == "limited" and "Limited use" or "Lifetime", entry.equipped and "Equipped on the hotbar" or "Stored in the Backpack"), color)
 	if pickingSlot and not entry.equipped then
 		slotPicker(function(slot)
 			runItem("equip", entry.storedIndex, slot)
@@ -1557,16 +1435,7 @@ end
 local function talismanDetails(entry)
 	local talisman = entry.talisman
 	local color = onPaper(talismanColor(talisman))
-	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = talisman.name, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
-	label(title, {
-		Text = entry.equipped and "Talisman  ·  Worn" or "Talisman  ·  In your collection",
-		Font = Enum.Font.Highway,
-		TextSize = 11,
-		TextColor3 = color,
-		Position = UDim2.fromOffset(0, 24),
-		Size = UDim2.new(1, 0, 0, 14),
-	})
+	detailTitle(talisman.name, entry.equipped and "Talisman  ·  Worn" or "Talisman  ·  In your collection", color)
 	detailRow("EFFECT", talisman.description)
 	local level = player:GetAttribute("Level") or 0
 	local worn = TalismanConfig.Parse(player:GetAttribute(TalismanConfig.EquippedAttribute))
@@ -1631,16 +1500,7 @@ end
 local function gearDetails(entry)
 	local piece = entry.piece
 	local color = onPaper(gearColor(piece))
-	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = gearName(piece), Font = Enum.Font.Highway, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
-	label(title, {
-		Text = string.format("%s  ·  Level %d  ·  %s", piece.slot, piece.level, entry.equipped and "Worn" or "In your bag"),
-		Font = Enum.Font.Highway,
-		TextSize = 11,
-		TextColor3 = color,
-		Position = UDim2.fromOffset(0, 24),
-		Size = UDim2.new(1, 0, 0, 14),
-	})
+	detailTitle(gearName(piece), string.format("%s  ·  Level %d  ·  %s", piece.slot, piece.level, entry.equipped and "Worn" or "In your bag"), color)
 	for index, affix in ipairs(piece.affixes) do
 		detailRow(index == 1 and "BASE" or "AFFIX", GearConfig.AffixLine(affix))
 	end
@@ -1708,16 +1568,7 @@ end
 local function materialDetails(entry)
 	local info = entry.material
 	local color = onPaper(DropConfig.TierColor(info.tier))
-	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = info.display, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = color, Size = UDim2.new(1, 0, 0, 22) })
-	label(title, {
-		Text = "Material  ·  " .. info.tier,
-		Font = Enum.Font.Highway,
-		TextSize = 11,
-		TextColor3 = color,
-		Position = UDim2.fromOffset(0, 24),
-		Size = UDim2.new(1, 0, 0, 14),
-	})
+	detailTitle(info.display, "Material  ·  " .. info.tier, color)
 	detailRow("HELD", tostring(entry.amount), string.format("of %d", DropConfig.MaxPerMaterial))
 	local uses = usedIn(entry.materialKey)
 	if #uses == 0 then
@@ -1777,11 +1628,7 @@ local function showPreview(entry)
 	end
 	previewKey = color and key
 	details.CanvasPosition = Vector2.zero -- a new selection's info starts at its top
-	local tint = color and onPaper(color) or MUTED
-	previewWash.BackgroundColor3 = tint
-	for _, bracket in ipairs(previewBrackets) do
-		bracket.BackgroundColor3 = tint
-	end
+	previewBand.BackgroundColor3 = color or MUTED
 	if not color then
 		return
 	end
@@ -1790,8 +1637,8 @@ local function showPreview(entry)
 		previewContent = make("ImageLabel", {
 			Parent = preview,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.86, 0.86),
+			Position = UDim2.fromScale(0.68, 0.5),
+			Size = UDim2.fromScale(0.56, 0.9),
 			BackgroundTransparency = 1,
 			Image = source,
 			ScaleType = Enum.ScaleType.Fit,
@@ -1820,15 +1667,18 @@ local function showPreview(entry)
 	else
 		previewContent = label(preview, {
 			Text = letter,
-			TextScaled = true,
+			Font = TITLE_FONT,
+			TextSize = 100,
 			TextColor3 = onPaper(letterColor),
-			TextTransparency = 0.35,
+			TextTransparency = 0.1,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.5, 0.5),
+			Position = UDim2.fromScale(0.7, 0.56),
+			Size = UDim2.fromOffset(100, 110),
 			ZIndex = 3,
 		})
+		-- bigger than text goes, and cut by the banner's bottom edge
+		make("UIScale", { Parent = previewContent, Scale = 1.5 })
 	end
 	previewPop.Scale = 0.94
 	TweenService:Create(previewPop, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), { Scale = 1 }):Play()
@@ -1864,57 +1714,59 @@ local function showDetails(entry)
 	end
 	local set = entry and SkillSetConfig.Sets[entry.setName]
 	if not set then
-		label(details, { Text = "Pick a set to see its moves.", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 20) })
+		label(details, { Text = "Pick something to see it here.", TextSize = 12, TextColor3 = MUTED, Size = UDim2.new(1, 0, 0, 20) })
 		return
 	end
 	local selectedSet = entry.setName
-
-	local title = make("Frame", { Parent = details, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 44), BackgroundTransparency = 1 })
-	label(title, { Text = set.tool, Font = Enum.Font.Highway, TextSize = 16, TextColor3 = set.color and onPaper(set.color) or TEXT, Size = UDim2.new(1, 0, 0, 22) })
-	label(title, {
-		Text = string.format("%s-tier %s  ·  %s  ·  %s", set.tier or "?", set.kind, masteryText(selectedSet), stateText(entry)),
-		Font = Enum.Font.Highway,
-		TextSize = 11,
-		TextColor3 = tierColor(set),
-		Position = UDim2.fromOffset(0, 24),
-		Size = UDim2.new(1, 0, 0, 14),
-	})
+	local level = mastery(selectedSet)
+	local color = set.color or tierColor(set)
+	detailTitle(set.tool, string.format("%s-tier %s  ·  %s", set.tier or "?", set.kind, stateText(entry)), onPaper(tierColor(set)))
+	-- mastery, as a bar under its number
+	detailOrder += 1
+	local masteryRow = make("Frame", { Parent = details, LayoutOrder = detailOrder, Size = UDim2.new(1, 0, 0, 24), BackgroundTransparency = 1 })
+	label(masteryRow, { Text = masteryText(selectedSet), TextSize = 11, Size = UDim2.new(1, 0, 0, 12) })
+	progressBar(masteryRow, UDim2.fromOffset(0, 17), UDim2.new(1, -4, 0, 4), level / SkillSetConfig.MaxMastery, color)
+	-- a weapon below its stat requirement says so here (a power's message says it over its buttons)
+	local needs = entry.kind ~= "power" and needsText(selectedSet)
+	if needs then
+		detailOrder += 1
+		label(details, { Text = needs, TextSize = 12, TextColor3 = DANGER, LayoutOrder = detailOrder, Size = UDim2.new(1, 0, 0, 16) })
+	end
 
 	if pickingSlot and entry.briefcase and not entry.equipped then
 		slotPicker(function(slot)
 			runPower("equipBriefcase", selectedSet, false, slot)
 		end)
 	end
-	local level = mastery(selectedSet)
-	-- a feature that isn't unlocked yet is dimmed with its mastery, like a locked skill
-	local function featureRow(key, feature, name, note)
-		local at = set[feature].mastery
-		if at and level < at then
-			detailRow(key, name, "Mastery " .. at, true)
-		else
-			detailRow(key, name, note)
-		end
-	end
+	-- the passive on its own line, then the moves as key chips; one that isn't unlocked yet is
+	-- dimmed with its mastery, like a locked skill
 	if set.passive then
-		featureRow("PASSIVE", "passive", set.passive.name)
+		local at = set.passive.mastery
+		local locked = at ~= nil and level < at
+		detailRow("PASSIVE", set.passive.name, locked and ("Mastery " .. at) or nil, locked)
+	end
+	local moves = {}
+	local function addMove(key, name, at, note)
+		local locked = at ~= nil and level < at
+		table.insert(moves, { key = key, name = name, note = locked and ("Mastery " .. at) or note, locked = locked })
 	end
 	if set.ranged then
-		detailRow(set.ranged.primary and "LMB" or "RANGED", set.ranged.name)
+		addMove(set.ranged.primary and "LMB" or "RNG", set.ranged.name)
 	end
 	if set.dash then
-		featureRow(Keybinds.Text("Dash"), "dash", set.dash.name)
+		addMove(Keybinds.Text("Dash"), set.dash.name, set.dash.mastery)
 	end
 	if set.overcharge then
-		featureRow(Keybinds.Text("Special"), "overcharge", set.overcharge.name, "overcharge")
+		addMove(Keybinds.Text("Special"), set.overcharge.name, set.overcharge.mastery, "overcharge")
 	end
 	if set.flight then
-		featureRow(Keybinds.Text("Special"), "flight", "Flight")
+		addMove(Keybinds.Text("Special"), "Flight", set.flight.mastery)
 	end
 	if set.undo then
-		featureRow(Keybinds.Text("Special"), "undo", set.undo.name)
+		addMove(Keybinds.Text("Special"), set.undo.name, set.undo.mastery)
 	end
 	if set.gallery then
-		featureRow(Keybinds.Text("Gallery"), "gallery", set.gallery.name)
+		addMove(Keybinds.Text("Gallery"), set.gallery.name, set.gallery.mastery)
 	end
 	for _, key in ipairs(SkillSetConfig.Keys) do
 		local skill = set.skills and set.skills[key]
@@ -1926,10 +1778,11 @@ local function showDetails(entry)
 			if skill.fullName then
 				name ..= " / " .. skill.fullName
 			end
-			local locked = level < (skill.mastery or 0)
-			local note = locked and ("Mastery " .. skill.mastery) or skill.overchargedOnly and "overcharge only" or nil
-			detailRow(Keybinds.Text("Skill" .. key), name, note, locked)
+			addMove(Keybinds.Text("Skill" .. key), name, skill.mastery, skill.overchargedOnly and "overcharge only" or nil)
 		end
+	end
+	if #moves > 0 then
+		moveChips(moves)
 	end
 
 	if entry.kind == "power" then
@@ -1996,71 +1849,78 @@ function refresh()
 		pending = nil
 	end
 	selected = selected or heldPower() or (list[1] and list[1].key)
-	-- the ITEMS, TALISMAN, MATERIAL and GEAR tabs select one of theirs (the first) when what's selected isn't
-	if tab == "item" or tab == "talisman" or tab == "material" or tab == "gear" then
-		local current = selected and findEntry(list, selected)
-		if not (current and (current.category or current.kind) == tab) then
-			for _, entry in ipairs(list) do
-				if (entry.category or entry.kind) == tab then
-					selected = entry.key
-					pending = nil
-					break
-				end
+	-- a tab shows only its own cards: it selects its first one when what's selected is elsewhere
+	local current = selected and findEntry(list, selected)
+	if not (current and KIND_TAB[current.category or current.kind] == tab) then
+		for _, entry in ipairs(list) do
+			if KIND_TAB[entry.category or entry.kind] == tab then
+				selected = entry.key
+				pending = nil
+				break
 			end
 		end
 	end
 
-	clear(slotList)
+	makeHero()
+	clear(tileRow)
 	for i, slot in ipairs(SLOTS) do
-		makeSlot(slot, i)
+		makeTile(slot, i)
 	end
 	makeTalismanSlots()
 	makeGearSlots()
 
-	for kind, button in pairs(tabButtons) do
-		local active = kind == tab
-		button.BackgroundTransparency = active and 0 or 1
-		button.TextColor3 = active and BACKGROUND or TEXT
+	for id, tabButton in pairs(tabButtons) do
+		local n = 0
+		for _, entry in ipairs(list) do
+			if KIND_TAB[entry.category or entry.kind] == id then
+				n += 1
+			end
+		end
+		local active = id == tab
+		tabButton.button.Text = string.format('%s <font size="12" color="#aaacb2">%d</font>', tabButton.title, n)
+		tabButton.button.TextColor3 = active and TEXT or MUTED
+		tabButton.underline.Visible = active
 	end
 	clear(grid)
 	local count = 0
-	-- a section is a header (ALL only) and a grid of cards under it
+	-- a section is a header (when the tab has more than one) and a grid of cards under it
 	local sectionOrder = 0
 	local function newSection(title)
 		sectionOrder += 1
 		local section = make("Frame", { Parent = grid, LayoutOrder = sectionOrder, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 		make("UIListLayout", { Parent = section, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 6) })
 		if title then
-			label(section, { Text = title, Font = Enum.Font.Highway, TextSize = 11, TextColor3 = MUTED, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 14) })
+			label(section, { Text = title, Font = TITLE_FONT, TextSize = 13, TextColor3 = MUTED, LayoutOrder = 0, Size = UDim2.new(1, 0, 0, 16) })
 		end
 		local cards = make("Frame", { Parent = section, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
-		make("UIGridLayout", { Parent = cards, CellSize = UDim2.fromOffset(CARD_SIZE, CARD_SIZE), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder })
-		-- the cells start just inside, so selected cards' thick outlines show
-		make("UIPadding", { Parent = cards, PaddingTop = UDim.new(0, 3), PaddingLeft = UDim.new(0, 3) })
+		make("UIGridLayout", {
+			Parent = cards,
+			CellSize = UDim2.fromOffset(CARD_WIDTH, CARD_HEIGHT),
+			CellPadding = UDim2.fromOffset(CARD_GAP, CARD_GAP),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		})
+		-- the cells start just inside, so selected cards' outlines show
+		make("UIPadding", { Parent = cards, PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2) })
 		return cards
 	end
-	if tab == "all" then
-		for _, group in ipairs(SECTIONS) do
-			local members = {}
-			for _, entry in ipairs(list) do
-				if (entry.category or entry.kind) == group.kind then
-					table.insert(members, entry)
-				end
-			end
-			if #members > 0 then
-				cardParent = newSection(group.title)
-				for i, entry in ipairs(members) do
-					count += 1
-					makeCard(entry, i)
-				end
+	local sections = {}
+	for _, entry in ipairs(TABS) do
+		if entry.id == tab then
+			sections = entry.sections
+		end
+	end
+	for _, group in ipairs(sections) do
+		local members = {}
+		for _, entry in ipairs(list) do
+			if (entry.category or entry.kind) == group.kind then
+				table.insert(members, entry)
 			end
 		end
-	else
-		cardParent = newSection(nil)
-		for _, entry in ipairs(list) do
-			if (entry.category or entry.kind) == tab then
+		if #members > 0 then
+			cardParent = newSection(#sections > 1 and group.title or nil)
+			for i, entry in ipairs(members) do
 				count += 1
-				makeCard(entry, count)
+				makeCard(entry, i)
 			end
 		end
 	end
