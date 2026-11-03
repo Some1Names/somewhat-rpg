@@ -64,6 +64,16 @@ check("a hint gives a common piece one affix", #G.Roll("Head", "Common", 1, 5, "
 check("an unknown hint is ignored", #G.Roll("Head", "Common", 1, 5, "nope", "g4").affixes == 1)
 check("higher level picks a later base", G.Roll("Head", "Common", 60, 1, nil, "g5").base ~= G.Roll("Head", "Common", 1, 1, nil, "g5").base)
 
+-- the saved text limit must fit a full bag of the longest pieces (an over-long text is wiped on load)
+local longest = {}
+for i = 1, G.BagLimit do
+	table.insert(longest, G.Roll(i % 2 == 0 and "Head" or "Body", "Legendary", 100, i, "stat:Superliminal", "g" .. i))
+end
+check("a full bag of legendary pieces fits the save limit", #G.EncodeBag(longest) <= G.MaxSaveLength)
+check("two worn legendary pieces fit the save limit", #G.EncodeWorn({ Head = longest[2], Body = longest[1] }) <= G.MaxSaveLength)
+local level1 = G.EncodeBag({ G.Roll("Head", "Common", 1, 1, nil, "g1") })
+check("a level 0 character can wear a level 1 piece", select(1, G.Equip(level1, "", "g1", 0)) ~= nil)
+
 -- affix lines
 check("percent affix line", G.AffixLine({ id = "maxHealthPct", value = 0.09 }) == "+9.0% max HP")
 check("reduction line is negative", G.AffixLine({ id = "damageReduction", value = 0.04 }) == "-4.0% damage taken")

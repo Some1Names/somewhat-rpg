@@ -14,7 +14,7 @@ GearConfig.BagAttribute = "GearBag" -- on the player, saved (PlayerStats)
 GearConfig.WornAttribute = "GearWorn" -- on the player, saved (PlayerStats)
 GearConfig.Remote = "GearAction" -- RemoteFunction in ReplicatedStorage, made by GearServer
 GearConfig.BagLimit = 30
-GearConfig.MaxSaveLength = 2400 -- 30 bag pieces and 2 worn, about 70 characters each
+GearConfig.MaxSaveLength = 6000 -- 30 bag pieces and 2 worn; a Legendary one is up to about 115 characters (PlayerStats wipes a longer text on load)
 GearConfig.Slots = { "Head", "Body" }
 GearConfig.ModelsFolder = "GearModels" -- under ReplicatedStorage: an Accessory per base id (the owner's, optional)
 
@@ -346,7 +346,7 @@ function GearConfig.Equip(bagText, wornText, id, playerLevel)
 		return nil, nil, "No such piece"
 	end
 	local piece = bag[at]
-	if piece.level > playerLevel then
+	if piece.level > math.max(playerLevel, 1) then -- a new character is level 0 but a piece is never below 1
 		return nil, nil, "Level too low"
 	end
 	local worn = GearConfig.ParseWorn(wornText)

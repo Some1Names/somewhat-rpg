@@ -1,7 +1,8 @@
 -- Shows worn gear on the character: an Accessory cloned from ReplicatedStorage.GearModels/<base
 -- model> for each worn piece (the owner's models; a base without one just shows nothing). A model
 -- with a HidesHair attribute hides the painted hair (CharacterLook's Hair_<n>) while it is worn.
--- Redrawn when the worn text changes (equip, unequip, a slot loading) and when the character spawns.
+-- Redrawn when the worn text changes (equip, unequip, a slot loading), when the character spawns and after
+-- each paint of the look (Slots bumps LookRev), which clears every accessory first.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -48,6 +49,7 @@ local function redraw(player)
 		if template and template:IsA("Accoutrement") then
 			local item = template:Clone()
 			item:SetAttribute(TAG, true)
+			item:SetAttribute("SlotLook", true) -- so Slots' avatar clean-up leaves it be
 			humanoid:AddAccessory(item)
 			hidesHair = hidesHair or item:GetAttribute("HidesHair") == true
 		end
@@ -62,6 +64,10 @@ local function watchPlayer(player)
 	end)
 	local function onCharacter(character)
 		task.defer(redraw, player)
+		-- every paint of the look (CharacterLook.Apply) clears the accessories first: put the gear back after it
+		character:GetAttributeChangedSignal("LookRev"):Connect(function()
+			redraw(player)
+		end)
 		-- the painted look arrives after the character does; hide its hair if a worn model asks
 		character.ChildAdded:Connect(function(child)
 			if child:GetAttribute("SlotLook") and character:GetAttribute("GearHidesHair") then
