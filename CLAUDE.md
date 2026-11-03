@@ -156,7 +156,7 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
 - **Factions and parties**: `FactionConfig` (three factions, their rank names, colours and shop discount; pure rules, Lune-tested), `Factions` + `FactionServer` (a model tagged `FactionRecruiter` opens the `FactionMenu` close-up; JOIN goes through the `FactionAction` remote; standing from kills; saved `FactionData`), the overhead title in `OverheadHealth` and a card in `HubProfile`. Parties: `PartyRules` (pure, Lune-tested), `Party` + `PartyServer` (the `PartyAction` remote), the hub tab `PartyMenu` and `PartyHUD`.
 - **Crafting**: the 3D printer (anything tagged `Printer`, a part or model). The real one is the `workspace.Printer` model: its
   `ProximityPrompt` child (the console) gets the prompt, `Scanner` rides up and down and `Slot1`..`Slot3` show your prints
-  (client `PrinterVisuals`: growing holograms, sparks, placeholders until the owner's VFX); the old turquoise part is a stand-in.
+  (client `PrinterVisuals`: growing holograms, sparks, placeholders until the owner's VFX).
   `CraftConfig` (recipes, job slots by level, the saved `PrintJobs` "recipe|seed|finishAt" and `RecipesKnown` texts; pure,
   Lune-tested), `Crafting` (server: Start/Collect/Cancel/Learn, all-or-nothing; the result rolls from the job's seed at
   collect), `CraftServer` (the `CraftAction` RemoteFunction, made by script; range and busy checks), client `PrinterMenu`
