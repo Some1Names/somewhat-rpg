@@ -690,6 +690,268 @@
   "enabled": true
  },
  {
+  "file": "src/ServerScriptService/BuildCheck.luau",
+  "names": [
+   "ServerScriptService",
+   "BuildCheck"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Talents.luau",
+  "names": [
+   "ServerScriptService",
+   "Talents"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/TalentsServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "TalentsServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Factions.luau",
+  "names": [
+   "ServerScriptService",
+   "Factions"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/FactionServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "FactionServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Party.luau",
+  "names": [
+   "ServerScriptService",
+   "Party"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/PartyServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "PartyServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/MapServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "MapServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/RaidServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "RaidServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/RaidBoss.luau",
+  "names": [
+   "ServerScriptService",
+   "RaidBoss"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/RaidAyato.luau",
+  "names": [
+   "ServerScriptService",
+   "RaidAyato"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/Slots.luau",
+  "names": [
+   "ServerScriptService",
+   "Slots"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/SlotServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "SlotServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/FastTravelServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "FastTravelServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/MenuServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "MenuServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Crafting.luau",
+  "names": [
+   "ServerScriptService",
+   "Crafting"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/CraftServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "CraftServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/Gear.luau",
+  "names": [
+   "ServerScriptService",
+   "Gear"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ServerScriptService/GearServer.server.luau",
+  "names": [
+   "ServerScriptService",
+   "GearServer"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/ServerScriptService/GearVisuals.server.luau",
+  "names": [
+   "ServerScriptService",
+   "GearVisuals"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/ServerScriptService/Skills/BlackHole.luau",
   "names": [
    "ServerScriptService",
@@ -1110,6 +1372,20 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/ServerScriptService/PlayerCollision.server.luau",
+  "names": [
+   "ServerScriptService",
+   "PlayerCollision"
+  ],
+  "classes": [
+   "ServerScriptService",
+   "Script"
+  ],
+  "class": "Script",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/StarterPlayer/StarterPlayerScripts/HitFeedback.client.luau",
   "names": [
    "StarterPlayer",
@@ -1369,20 +1645,6 @@
    "StarterPlayer",
    "StarterPlayerScripts",
    "DodgeCharges"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/LockOn.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LockOn"
   ],
   "classes": [
    "StarterPlayer",
@@ -1944,6 +2206,22 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PickupFeed.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PickupFeed"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
   "file": "src/StarterPlayer/StarterPlayerScripts/UiSfx.luau",
   "names": [
    "StarterPlayer",
@@ -1977,6 +2255,620 @@
    "StarterPlayer",
    "StarterPlayerScripts",
    "UIScaler"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/FactionNotice.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "FactionNotice"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PartyMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PartyMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PartyHUD.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PartyHUD"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PreloadAnimations.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PreloadAnimations"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/TitleMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "TitleMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/MapMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "MapMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/LockOn.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LockOn"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Compass.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Compass"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/XPBar.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "XPBar"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/FastTravelMenu.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "FastTravelMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/LowHealth.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LowHealth"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ZoneName.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ZoneName"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Vignette.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Vignette"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Crosshair.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Crosshair"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/AudioMix.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "AudioMix"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ScreenSettings.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ScreenSettings"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/HideHud.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "HideHud"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SettingsPreviews.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SettingsPreviews"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Leaderboard.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Leaderboard"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/FactionMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "FactionMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Music.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Music"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/RaidClient.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "RaidClient"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Ambience.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Ambience"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PromptUI.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PromptUI"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Dialogue.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Dialogue"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SpawnKeeperDialogue.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SpawnKeeperDialogue"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/MenuFooter.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "MenuFooter"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Handbook.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Handbook"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Footsteps.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Footsteps"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/Customizer.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "Customizer"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SlotMenu.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SlotMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/FirstSetup.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "FirstSetup"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/MapModel.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "MapModel"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/ArrivalShot.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ArrivalShot"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/SpeedLines.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "SpeedLines"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/MainMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "MainMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PrinterMenu.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PrinterMenu"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/PrinterVisuals.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "PrinterVisuals"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "LocalScript"
+  ],
+  "class": "LocalScript",
+  "runContext": "Legacy",
+  "enabled": true
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/TouchInput.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "TouchInput"
+  ],
+  "classes": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/StarterPlayer/StarterPlayerScripts/TouchControls.client.luau",
+  "names": [
+   "StarterPlayer",
+   "StarterPlayerScripts",
+   "TouchControls"
   ],
   "classes": [
    "StarterPlayer",
@@ -2380,6 +3272,234 @@
   "class": "ModuleScript"
  },
  {
+  "file": "src/ReplicatedStorage/TalentConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "TalentConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/BuildRules.luau",
+  "names": [
+   "ReplicatedStorage",
+   "BuildRules"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/CombatFeel.luau",
+  "names": [
+   "ReplicatedStorage",
+   "CombatFeel"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/EnemyAttackConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "EnemyAttackConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/FactionConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "FactionConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/PartyRules.luau",
+  "names": [
+   "ReplicatedStorage",
+   "PartyRules"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/EnemyConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "EnemyConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/MapRules.luau",
+  "names": [
+   "ReplicatedStorage",
+   "MapRules"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/HudRules.luau",
+  "names": [
+   "ReplicatedStorage",
+   "HudRules"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/ZoneConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "ZoneConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/RaidConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "RaidConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/DialogueConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "DialogueConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/HandbookConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "HandbookConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/FootstepConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "FootstepConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/SlotConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "SlotConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/CharacterLook.luau",
+  "names": [
+   "ReplicatedStorage",
+   "CharacterLook"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/FastTravelConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "FastTravelConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/CraftConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "CraftConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
+  "file": "src/ReplicatedStorage/GearConfig.luau",
+  "names": [
+   "ReplicatedStorage",
+   "GearConfig"
+  ],
+  "classes": [
+   "ReplicatedStorage",
+   "ModuleScript"
+  ],
+  "class": "ModuleScript"
+ },
+ {
   "file": "src/ServerStorage/BlackHoleTemplate/ClientEffect.client.luau",
   "names": [
    "ServerStorage",
@@ -2396,85 +3516,17 @@
   "enabled": true
  },
  {
-  "file": "src/ReplicatedStorage/RaidConfig.luau",
+  "file": "src/ReplicatedFirst/LoadingScreen.client.luau",
   "names": [
-   "ReplicatedStorage",
-   "RaidConfig"
+   "ReplicatedFirst",
+   "LoadingScreen"
   ],
   "classes": [
-   "ReplicatedStorage",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/RaidBoss.luau",
-  "names": [
-   "ServerScriptService",
-   "RaidBoss"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
- },
- {
-  "file": "src/ServerScriptService/RaidServer.server.luau",
-  "names": [
-   "ServerScriptService",
-   "RaidServer"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "Script"
-  ],
-  "class": "Script",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/RaidClient.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "RaidClient"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
+   "ReplicatedFirst",
    "LocalScript"
   ],
   "class": "LocalScript",
   "runContext": "Legacy",
   "enabled": true
- },
- {
-  "file": "src/StarterPlayer/StarterPlayerScripts/Ambience.client.luau",
-  "names": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "Ambience"
-  ],
-  "classes": [
-   "StarterPlayer",
-   "StarterPlayerScripts",
-   "LocalScript"
-  ],
-  "class": "LocalScript",
-  "runContext": "Legacy",
-  "enabled": true
- },
- {
-  "file": "src/ServerScriptService/RaidAyato.luau",
-  "names": [
-   "ServerScriptService",
-   "RaidAyato"
-  ],
-  "classes": [
-   "ServerScriptService",
-   "ModuleScript"
-  ],
-  "class": "ModuleScript"
  }
 ]

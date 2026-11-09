@@ -145,8 +145,9 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `options.unavoidable` still land); Agility widens the window. Enemies swing a quick or a heavy attack
   (`EnemyAttackConfig`; heavy is slow, harder and can't be staggered out of) and tell clients to draw a
   `SkillEffects` "Telegraph" for the wind-up. Melee swings cost stamina and slow your walk (`CombatFeel`, `Punch`,
-  `Sprint`). Block is not basekit: only a set or weapon with its own `block` table can block (`Guard.CanBlock`);
-  `GuardConfig.Enabled` is still off. Cues are placeholders until the owner's VFX.
+  `Sprint`). Block is basekit and on (`GuardConfig.Enabled`): anyone can block with the base `GuardConfig.Cuts`
+  (`Guard.CanBlock` is always true); a set or weapon with its own `block` table replaces them, and none has one
+  yet. Cues are placeholders until the owner's VFX.
 - **Raid bosses**: `RaidConfig` (numbers, phases, moves, the QTE; pure, Lune-tested), `RaidBoss` (module: spawns and fights one;
   `Damage.SetAbsorber` gives it Misremembered and the dome's shield), `RaidServer` (spawns each on the workspace part its `arena` names, on a
   timer; admin panel WORLD page spawns/removes), `RaidClient` (boss bar, banners, ground warnings, the grab QTE). Hide Seto (Mandela,
