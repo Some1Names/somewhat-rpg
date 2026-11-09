@@ -23,7 +23,7 @@ DialogueConfig.Trees = {
 				text = "Easy there, traveller. You look like someone who keeps waking up in all the wrong places. Shall I fix that?",
 				choices = {
 					{ label = "Set my spawn here", action = "set", next = "set", accent = "cyan" },
-					{ label = "Take me to another keeper", action = "travel" }, -- the map takes over
+					{ label = "Take me to another keeper", action = "travel", accent = "cyan" }, -- the map takes over
 					{ label = "Clear my spawn", action = "clear", next = "clear" },
 					{ label = "Who are you?", next = "lore" },
 					{ label = "Goodbye", next = "bye" },
@@ -47,7 +47,7 @@ DialogueConfig.Trees = {
 				text = "Anything else?",
 				choices = {
 					{ label = "Set my spawn here", action = "set", next = "set", accent = "cyan" },
-					{ label = "Take me to another keeper", action = "travel" },
+					{ label = "Take me to another keeper", action = "travel", accent = "cyan" },
 					{ label = "Clear my spawn", action = "clear", next = "clear" },
 					{ label = "Tell me about the flame", next = "lore" },
 					{ label = "Goodbye", next = "bye" },

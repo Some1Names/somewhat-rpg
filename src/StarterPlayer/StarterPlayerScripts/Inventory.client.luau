@@ -108,7 +108,7 @@ local TABS = {
 -- the tab each kind of card is in (a briefcase's category is "item")
 local KIND_TAB = { power = "sets", weapon = "sets", melee = "sets", item = "items", gear = "gear", talisman = "gear", material = "materials" }
 -- the selected thing's banner at the top of the INFO column, the info under it
-local PREVIEW_HEIGHT = 150
+local PREVIEW_HEIGHT = 220 -- the preview is a square this big
 local PREVIEW_TURN = 0.6 -- radians a second a model in it turns (as in the shops)
 
 local function make(className, props)
@@ -203,8 +203,8 @@ local function onPaper(color)
 	return Color3.new(HubRules.Ink(color.R, color.G, color.B))
 end
 
--- a band of `color` over the right of `parent`, its left edge cut on a slant (`from` is where it
--- starts, 0 to 1 across) with a thin stripe just before it: the banners', tiles' and cards' graphic
+-- a band of `color` over the bottom of `parent`, fading in smoothly from clear going down (`from` is
+-- about where it starts, 0 to 1 down): the banners', tiles' and cards' graphic
 local function slash(parent, color, from, transparency, zIndex)
 	local band = make("Frame", {
 		Parent = parent,
@@ -213,20 +213,16 @@ local function slash(parent, color, from, transparency, zIndex)
 		BorderSizePixel = 0,
 		ZIndex = zIndex or 1,
 	})
-	make("UIGradient", {
-		Parent = band,
-		Rotation = 20,
-		Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 1),
-			NumberSequenceKeypoint.new(from - 0.06, 1),
-			NumberSequenceKeypoint.new(from - 0.059, transparency + 0.2),
-			NumberSequenceKeypoint.new(from - 0.04, transparency + 0.2),
-			NumberSequenceKeypoint.new(from - 0.039, 1),
-			NumberSequenceKeypoint.new(from, 1),
-			NumberSequenceKeypoint.new(from + 0.001, transparency),
-			NumberSequenceKeypoint.new(1, math.max(transparency - 0.15, 0)),
-		}),
-	})
+	-- the bottom third, eased (smoothstep) so it blurs in with no visible edge. Only the
+	-- transparency is graded: callers recolour the band with BackgroundColor3
+	local strongest = math.max(transparency - 0.3, 0.12)
+	local keypoints = { NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(2 / 3, 1) }
+	for step = 1, 10 do
+		local t = step / 10
+		local eased = t * t * (3 - 2 * t)
+		table.insert(keypoints, NumberSequenceKeypoint.new(2 / 3 + t / 3, 1 - (1 - strongest) * eased))
+	end
+	make("UIGradient", { Parent = band, Rotation = 90, Transparency = NumberSequence.new(keypoints) })
 	return band
 end
 
@@ -359,7 +355,7 @@ local emptyLabel = label(middleColumn, {
 
 -- right: the selected thing's banner at the top, its info under it (scrolling when it's long), its
 -- buttons at the bottom
-local DETAILS_TOP = HEADING_HEIGHT + PREVIEW_HEIGHT + 12
+local DETAILS_TOP = HEADING_HEIGHT + PREVIEW_HEIGHT + 28
 local details = scroller(rightColumn, {
 	Position = UDim2.fromOffset(0, DETAILS_TOP),
 	Size = UDim2.new(1, 0, 1, -DETAILS_TOP), -- placeDetails stops it above the buttons
@@ -418,15 +414,41 @@ placeDetails()
 -- colour slashed across a dark box, with its picture, its model turning, or its letter big on the colour
 local preview = make("Frame", {
 	Parent = rightColumn,
-	Position = UDim2.fromOffset(0, HEADING_HEIGHT),
-	Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT),
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0, HEADING_HEIGHT),
+	Size = UDim2.fromOffset(PREVIEW_HEIGHT, PREVIEW_HEIGHT), -- a square, in the middle of the column
 	BackgroundColor3 = DARK,
 	BackgroundTransparency = 0.2,
 	BorderSizePixel = 0,
 	ClipsDescendants = true,
 	ZIndex = 2,
 })
-local previewBand = slash(preview, MUTED, 0.38, 0.45, 2)
+-- the preview is the shop's box: a faint wash of the item's colour rising from the bottom and
+-- corner brackets in it (both recoloured with the selection)
+local previewBand = make("Frame", { Parent = preview, Size = UDim2.fromScale(1, 1), BackgroundColor3 = MUTED, BorderSizePixel = 0, ZIndex = 2 })
+make("UIGradient", {
+	Parent = previewBand,
+	Rotation = 90,
+	Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.6, 0.88),
+		NumberSequenceKeypoint.new(1, 0.72),
+	}),
+})
+local previewBrackets = {}
+for _, corner in ipairs({ { 0, 0 }, { 1, 0 }, { 0, 1 }, { 1, 1 } }) do
+	for _, size in ipairs({ Vector2.new(16, 2), Vector2.new(2, 16) }) do
+		table.insert(previewBrackets, make("Frame", {
+			Parent = preview,
+			AnchorPoint = Vector2.new(corner[1], corner[2]),
+			Position = UDim2.fromScale(corner[1], corner[2]),
+			Size = UDim2.fromOffset(size.X, size.Y),
+			BackgroundColor3 = MUTED,
+			BorderSizePixel = 0,
+			ZIndex = 4,
+		}))
+	end
+end
 local previewPop = make("UIScale", { Parent = preview })
 local previewKey -- the card it shows, so a refresh leaves it be
 local previewContent -- what's in the box: an ImageLabel, a ViewportFrame or the letter
@@ -1629,6 +1651,9 @@ local function showPreview(entry)
 	previewKey = color and key
 	details.CanvasPosition = Vector2.zero -- a new selection's info starts at its top
 	previewBand.BackgroundColor3 = color or MUTED
+	for _, bracket in ipairs(previewBrackets) do
+		bracket.BackgroundColor3 = color and onPaper(color) or MUTED
+	end
 	if not color then
 		return
 	end
@@ -1637,8 +1662,8 @@ local function showPreview(entry)
 		previewContent = make("ImageLabel", {
 			Parent = preview,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.68, 0.5),
-			Size = UDim2.fromScale(0.56, 0.9),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.8, 0.8),
 			BackgroundTransparency = 1,
 			Image = source,
 			ScaleType = Enum.ScaleType.Fit,
@@ -1673,7 +1698,7 @@ local function showPreview(entry)
 			TextTransparency = 0.1,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.7, 0.56),
+			Position = UDim2.fromScale(0.5, 0.5),
 			Size = UDim2.fromOffset(100, 110),
 			ZIndex = 3,
 		})
