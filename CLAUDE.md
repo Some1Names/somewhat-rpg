@@ -125,7 +125,7 @@ playtest, take screenshots, inspect or move instances, publish animations or upl
   `UpdateNotes` (Updates), `HubPose` (the player's posed character over the hub; poses in
   `HubPoses`), `SkillBar`, `AdminPanel`, `ShopMenu`,
   `StatusHUD`, `OverheadHealth`, `Hotbar`, `KillFeed`, `QuestBoard` (Bounty Hunter panel, tracker,
-  popups), `Block` (E), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row, the yen and the
+  popups), `Block` (F), `ReforgeMenu` (the smith), `TopBar` (the top-right icon row, the yen and the
   Menu icon), `KeyHints` (bottom-left move hints), `Leaderboard` (Tab: the player list in place of Roblox's own), `Compass` (a strip in the middle of Roblox's top bar: points,
   the Headhunter, party mates and the bounty's nearest target, far ones from `MapServer`'s `MapPosition`/`QuestTarget`), `XPBar` (bottom left, under the cards), `PickupFeed` (above the yen: XP and yen per source, from `PlayerStats.Source`, and materials picked up, edged in the rarity colour), the combo counter (the last row of `StatusHUD`:
   hits landed, `Damage.Deal` bumps the player's `HitsLanded` attribute), `LowHealth` (red screen edges), `ZoneName`
