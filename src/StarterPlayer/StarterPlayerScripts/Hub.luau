@@ -42,7 +42,7 @@ local NAV_TOP = 64 -- the first tab button, this far under the brand
 local LIST_TRANSPARENCY = 0.35 -- the nav's list, smoked glass beside the solid rail
 local BAR_HEIGHT = 4 -- the accent bar after the #TITLE
 local APART_GAP = 17 -- px between the numbered tabs' room and the tabs kept apart
-local APART_ROWS = 3 -- how many tabs are kept apart (Updates, Handbook, Settings)
+local APART_ROWS = 4 -- how many tabs are kept apart (Updates, Handbook, Settings, Main Menu)
 -- Roblox's own buttons sit in a band across the top: the hub leaves it empty paper.
 -- Its height is read on each open (it's often still 0 while the game loads).
 local ROBLOX_BAR_FALLBACK = 58
@@ -761,8 +761,10 @@ function Hub.Badge(name, text)
 	end
 end
 
--- registers a tab: opts = { order, title, key (Enum.KeyCode), locked, pose, apart }.
+-- registers a tab: opts = { order, title, key (Enum.KeyCode), locked, pose, apart, action, confirm }.
 -- An `apart` tab sits at the foot of the nav, unnumbered (Updates, Handbook, Settings).
+-- An `action` entry has no page: pressing it (twice, with `confirm` as the text between) runs
+-- action(), whose returned string, if any, shows in its place (a refusal).
 -- A tab with no pose gets the whole width (no character strip).
 -- Returns the frame to build it in (nil for a locked slot).
 function Hub.Tab(name, opts)
@@ -841,17 +843,47 @@ function Hub.Tab(name, opts)
 	})
 	tab.badge.BackgroundTransparency = 0
 	if not tab.locked then
-		tab.frame = make("Frame", {
-			Name = name,
-			Parent = content,
-			Size = UDim2.fromScale(1, 1),
-			BackgroundTransparency = 1,
-			ClipsDescendants = true,
-			Visible = false,
-		})
+		local armedUntil, busy = 0, false
+		-- an action entry shows `text` in place of its name for a moment
+		local function say(text)
+			tab.nameLabel.Text = text
+			task.delay(3, function()
+				if tab.nameLabel.Text == text then
+					tab.nameLabel.Text = tab.title
+				end
+			end)
+		end
+		if not opts.action then
+			tab.frame = make("Frame", {
+				Name = name,
+				Parent = content,
+				Size = UDim2.fromScale(1, 1),
+				BackgroundTransparency = 1,
+				ClipsDescendants = true,
+				Visible = false,
+			})
+		end
 		tab.button.Activated:Connect(function()
 			UiSfx.Play("menuSelect") -- (pressing the tab already showing sounds too)
-			show(name)
+			if not opts.action then
+				show(name)
+				return
+			end
+			if opts.confirm and os.clock() > armedUntil then
+				armedUntil = os.clock() + 3
+				say(opts.confirm)
+				return
+			end
+			armedUntil = 0
+			if busy then
+				return
+			end
+			busy = true
+			local reason = opts.action()
+			busy = false
+			if reason then
+				say(string.upper(reason))
+			end
 		end)
 		-- hover: the entry nudges right and takes the accent
 		tab.button.MouseEnter:Connect(function()
