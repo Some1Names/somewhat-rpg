@@ -2,7 +2,7 @@
 
 Pick one, open the session it needs, and paste its line. Each plan carries its own design, so the
 session doesn't need old chats. Branch: `claude/vigilant-rubin-ckqtnn` unless the plan says
-otherwise.
+otherwise. The order to run them in is the Master plan at the top of `ROADMAP.md`.
 
 - **Cloud** = a Claude Code cloud session (claude.ai/code) on this repo. Code only; it can't open
   Studio. It commits and pushes, then a Studio sync applies the change.
@@ -18,7 +18,9 @@ otherwise.
 | [HUD layout pass](2026-10-09-hud-layout.md) | **Tasks 1–5 built and applied to Studio** (task 6 left: screenshots at three sizes, icon images, playtest). A minimal top-right icon row (Settings, Inventory, Stats, Quests, Admin, yen) replacing the left buttons, key hints at the bottom left (with a setting), a less crowded bottom centre, one menu at a time. Spec: `specs/2026-10-09-hud-layout-design.md`. | Cloud for tasks 1–5, then Studio for task 6 (screen sizes; icon images with you) | `Run docs/superpowers/plans/2026-10-09-hud-layout.md with superpowers:executing-plans, tasks 1–5. Read the spec first.` Then, in Studio: `Run task 6 of docs/superpowers/plans/2026-10-09-hud-layout.md with me.` |
 | [Getting powers](2026-10-09-power-acquisition.md) | **Tasks 1–6 built and in Studio, gacha roll panel included** (untested in-game; task 7 is partly done, check what's left; checklist `specs/2026-10-09-power-acquisition-checklist.md`), task 7 left. One saved power + 2 storage slots + lifetime Robux powers; new powers come as briefcases from the Power Dealer (S ¥500,000), map drops and a ¥25,000 gacha; selling; death drops; no starter power. Spec: `specs/2026-10-09-power-acquisition-design.md`. | Studio, a live server and **you** for task 7 (Robux products, spawn points, briefcase model) | `Run task 7 of docs/superpowers/plans/2026-10-09-power-acquisition.md with me.` |
 | [Crafting](2026-11-03-crafting.md) | **Built and in Studio (2026-11-03), untested in-game.** The 3D printer (`workspace.Printer`, a part tagged `Printer` for now): timed prints from materials and yen, recipes known or learned (yen, blueprint, bounty, faction rank), collect/cancel. Gear recipes wait for the equipment system (`ServerScriptService.Gear`); talisman recipes only matter once `TalismanConfig.OwnAll` is off. Spec: `specs/2026-11-03-crafting-design.md`. | You, in Studio | Playtest: admin Materials +50, yen, Learn all recipes, print, Finish prints, collect, cancel. |
-| Studio sync | Brings everything pushed since the last sync into Studio. **Nothing waiting now** (the `studio` tag is at HEAD, 2026-10-15: power aura, sound effects, melee hitboxes, Prism Form trail all in). Last sync before that: 2026-10-14, enemy drops. | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
+| [Dungeons](2026-11-03-dungeon.md) | **Not built (plan written 2026-11-03).** Private party runs: a portal, difficulty tiers, hand-built rooms chained in a seeded order to a boss, shared revives, a completion chest. Five tasks: `DungeonConfig`, `DungeonRun`, `DungeonServer`, the menu and HUD, admin helpers and the smoke test. Spec: `specs/2026-11-03-dungeon-design.md`. | Cloud for tasks 1–4; Studio and **you** for task 5 (the portal, room models, the boss) | `Run docs/superpowers/plans/2026-11-03-dungeon.md, tasks 1-4. Read the spec first.` |
+| [VIP perks](2026-11-02-vip-perks.md) | **Not built; four open questions for you first** (recustomize for VIPs only, the +25%, a lost third slot, pass or product). A game pass with no combat power: a tee and title, +25% XP and yen, half the fast travel cooldown, a third power storage slot. Nine small tasks. | Cloud, then **you** (the game pass and its id) | `Let's settle the open questions in docs/superpowers/plans/2026-11-02-vip-perks.md, then build it.` |
+| Studio sync | Brings everything pushed since the last sync into Studio. **Waiting (2026-11-10):** the `studio` tag is at 2026-10-26 (Ayato Yoji), 40 commits behind HEAD, and nine changed scripts plus three new ones are uncommitted. Crafting was applied on 2026-11-03 without moving the tag, so compare script sizes with Studio before applying anything. | Studio | `Sync branch claude/vigilant-rubin-ckqtnn to Studio, following "Repo → Studio" in CLAUDE.md. Apply only what changed since the studio tag, as targeted edits, then compile-check and move the tag.` |
 
 ## Next up (listed 2026-10-27, no spec or plan yet)
 
@@ -80,8 +82,10 @@ spec, then a plan that lands in this menu.
 
 - **Himaru** (S power), **Daemon** (A power) and **Daemon's katana** (A weapon), **Kintsugi**
   (B power), **Monotwister** (Aido's katana, S weapon). Each needs its canon from you.
-- **The katana weapon kind** (a katana combo and the MELEE inventory slot), needed before Daemon's
-  katana and Monotwister.
+- **Katana moves.** The melee kind, the MELEE slot and the Katana's combo are built; its skills are
+  not designed. Daemon's katana and Monotwister build on it.
+- **Release safety, the tutorial quests, more enemy types, daily rewards, codes, badges, global
+  leaderboards, analytics:** new on 2026-11-10, see phases 2 to 4 of the Master plan in `ROADMAP.md`.
 - **Aido's looks:** the dragon model, `AidoAnimations`, and a VFX pack pass like Photoshop's. Do
   these after the Aido plan, once you have a model.
 - **Iridescent Requiem's remaining revisual:** Z Prism Shot, C Refraction Field, Q Lightstep. This

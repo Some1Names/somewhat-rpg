@@ -1,7 +1,77 @@
 # Roadmap
 
-What's left, as of 2026-10-14. Plans ready to run are listed in `docs/superpowers/plans/README.md`. **Cloud** = code-only, a cloud session can do it.
+Plans ready to run are listed in `docs/superpowers/plans/README.md`. **Cloud** = code-only, a cloud session can do it.
 **Studio** = needs the local Studio connection (looking at effects, prefabs, uploads, playtests).
+
+## Master plan (2026-11-10)
+
+Read from the repo; Studio was closed, so nothing here was re-checked in Studio. The sections under this one
+are older per-system detail (most date from 2026-10-14 to 10-27). Where they disagree with this one, this one is newer.
+
+**Built (code in the repo):** combat (damage, dodge, stamina, statuses, block), builds (six stats, talents,
+stat requirements), getting powers (briefcases, storage, gacha, lifetime), mastery, reforge, enemy drops,
+talismans, chests, consumables, crafting, equipment, bounties, factions, parties, two raid bosses, character
+slots and the customizer, fast travel, the map, the hub and HUD, settings, dialogue, the handbook, the day
+cycle, swimming, sound, phone controls. Sets with a kit: Mandela, Iridescent Requiem, Photoshop, Aido
+(S powers), Revolver (B weapon), Katana (B melee, a combo and no moves).
+
+**Thin: content.** One regular enemy type (Henchman), three bounty givers, six named areas on a mockup map,
+and no A, B or C power has a kit: the seven other powers in `SkillSetConfig` are sell-only placeholders
+(Eventide, Mnemosyne, Afterimage, Blackfrost, Kintsugi, PlaceholderB, PlaceholderC).
+
+### Phase 0: one truth between the repo and Studio (Studio, small)
+
+- The `studio` tag is at 2026-10-26 (Ayato Yoji), 40 commits behind HEAD: the item wheel, slots and the
+  customizer, the photo gallery, 0.0.3, crafting, equipment, the Backpack redo and phone support. Crafting is
+  written down as applied on 2026-11-03, so the tag was not moved every time: compare script sizes first.
+- Uncommitted on 2026-11-10: nine changed scripts (customizer, slots, hub, Backpack, sprint) and three new ones
+  (`MenuServer`, `MainMenu`, `SpeedLines`), plus the dungeon and VIP documents.
+- Aido, the Henchman, Settings, build depth, combat feel, factions, parties and the raid bosses were all
+  committed before the tag, so their scripts should already be in Studio; the "waiting on the Studio apply"
+  lines below predate that.
+- `GuardConfig.Enabled` is `true` in the repo while `CLAUDE.md` says block is still off: settle which is right.
+
+### Phase 1: play what exists (the owner; a session writes one merged checklist first, small)
+
+There are 18 checklists in `docs/superpowers/specs/`, most still listed below as waiting on a playtest, and none
+for build depth, combat feel, raid bosses, factions, parties, fast travel, crafting or equipment. One merged
+run-through in play order (a solo half, a two-player half), then fix what breaks.
+
+### Phase 2: safe to release (Cloud, medium; the full process, since it is saving and remotes)
+
+- Saving: `PlayerStats` and `Slots` write with `SetAsync`; there is no `UpdateAsync` and no session lock, so
+  check that an old server's late save can't overwrite a newer one (rejoining through MAIN MENU is the case to try).
+- Remotes: 22 are made by script and there is no shared rate limit; audit each one's checks.
+- One test-mode switch in place of `SkillSetConfig.OwnAllSets`, `TalismanConfig.OwnAll` and
+  `FastTravelConfig.RequireUnlock`, which are all still in their testing state.
+- No safe zone in the code (no no-PvP area around the spawn). Real prices and Robux ids
+  (`PowerConfig.RobuxProducts` is empty, slot 3's `productId` is 0).
+- The "Before release" list at the end of this file.
+
+### Phase 3: a loop worth staying for (design with the owner, then Cloud; models and VFX are the owner's)
+
+1. A first-hour tutorial quest chain on `Quests`, `Dialogue` and `Compass` (today: `FirstSetup` and the Handbook). Small to medium.
+2. Enemy types 2 to 4 and their bounties (data in `EnemyConfig` and `QuestConfig`; the models are the owner's). Small each.
+3. Party rules for PvE (no friendly fire, shared kill credit), which dungeons need. Small.
+4. Dungeons: spec and plan are ready (`plans/2026-11-03-dungeon.md`); code against stub rooms, the owner builds the rooms. Large.
+5. A kit for one A, one B and one C power (Daemon and his katana, Kintsugi), and Katana moves. Large each, needs the canon.
+
+### Phase 4: retention and money (Cloud, small to medium each)
+
+VIP perks (plan ready, four open questions), a daily login reward and daily bounties, promo codes, badges and
+titles from the Milestones, global leaderboards, analytics events. None of these has code yet.
+
+### Later
+
+Awakening (spec only, needs the owner's picks), trading (after phase 2's saving work), gamepad support, Thai
+and English text, gear set bonuses and gear drops, night effects, faction quests and perks, ranked duels,
+ragdoll when dashing, walk and run dust.
+
+### The owner's track (alongside; a session can't do these)
+
+VFX (Iridescent Requiem Z, C and Q, Photoshop, Aido, Revolver, the printer), models (`GearModels`, the
+briefcase, dungeon rooms and portal, water parts, chests, Aido's dragon), the map, Robux products and the VIP
+pass, publishing `CastX`.
 
 ## Owner's VFX work: Iridescent Requiem revisual (and the Photoshop revisual)
 
