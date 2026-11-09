@@ -1,12 +1,11 @@
 -- The character customizer: for an empty slot (a new character) or an existing one
 -- (recustomize: its codename stays, its look changes). On the left a smoked-glass panel: the
 -- codename, then a catalogue split into tabs: BODY (skin colour), HAIR (square tiles that show
--- each hair on a head, and its colour), FACE (tiles showing each face), OUTFIT (top and bottom
--- colours, and shirt, tee and pants tiles) and EXTRAS (accessories). A tile is the button:
--- pressing one replaces the current choice. Colours come from one colour wheel (hue and
+-- each hair on a head, and its colour), FACE (tiles showing each face), OUTFIT (shirt and
+-- pants tiles, shown worn, no colours: a picture keeps its own). A tile is the
+-- button: pressing one replaces the current choice. Colours come from one colour wheel (hue and
 -- saturation round it, brightness on the bar beside it, type a hex, or press one of the
--- palette's presets); a piece that can't change colour (a shirt or pants picture) hides the
--- wheel and says so. Only the page under the tabs scrolls, so the buttons stay on screen. On
+-- palette's presets). Only the page under the tabs scrolls, so the buttons stay on screen. On
 -- the right the stage: the player's own character (a stripped, anchored clone in a
 -- ViewportFrame, as HubPose does) wearing the look through CharacterLook, standing on a ring
 -- inside corner brackets, with the slot's big faint number behind it and the codename under it
@@ -44,7 +43,7 @@ local FOOTER = 96 -- the strip under the panel and the stage: BACK, RANDOMIZE an
 local MIN_WIDTH, MIN_HEIGHT = 980, 680 -- a smaller screen shrinks the whole layout to fit
 local PANEL_WIDTH = 460
 local PANEL_PAD = 22
-local HEADER = 182 -- the panel's fixed top (slot, title, codename, tabs); the page scrolls under it
+local HEADER = 126 -- the panel's fixed top (slot, title, tabs); the page scrolls under it
 local TILE_SIZE = 75 -- five to a row
 local WHEEL_SIZE = 150
 local WHEEL_SEGMENTS = 60 -- each bar of the wheel covers a direction and its opposite
@@ -70,9 +69,8 @@ local KINDS = {
 	hair = { prefix = "Hair", field = "hair", styles = SlotConfig.HairStyles, head = true },
 	face = { prefix = "Face", field = "face", styles = SlotConfig.FaceStyles, head = true },
 	accessory = { prefix = "Acc", field = "accessory", styles = SlotConfig.AccessoryStyles, head = true },
-	shirt = { prefix = "Shirt", field = "shirt", styles = SlotConfig.ShirtStyles, image = "ShirtTemplate" },
-	tee = { prefix = "Tee", field = "tee", styles = SlotConfig.TeeStyles, image = "Graphic" },
-	pants = { prefix = "Pants", field = "pants", styles = SlotConfig.PantsStyles, image = "PantsTemplate" },
+	shirt = { prefix = "Shirt", field = "shirt", styles = SlotConfig.ShirtStyles, body = true },
+	pants = { prefix = "Pants", field = "pants", styles = SlotConfig.PantsStyles, body = true },
 }
 
 local Customizer = {}
@@ -368,8 +366,48 @@ local function buildHeadTile(parent, kind)
 	return { model = model }
 end
 
+-- a square tile showing a shirt or pants worn: a copy of the player's character in a
+-- ViewportFrame, framed on the chest (shirt) or the legs (pants). Returns { model }.
+local function buildBodyTile(parent, kind)
+	local viewport = make("ViewportFrame", {
+		Parent = parent,
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(170, 170, 170),
+		LightColor = Color3.new(1, 1, 1),
+		LightDirection = Vector3.new(-1, -1, 1),
+	})
+	local distance, height, yaw = 9, 0.5, math.rad(20)
+	if kind == "pants" then
+		height = -1.5
+	end
+	local camera = make("Camera", { Parent = viewport, FieldOfView = FIELD_OF_VIEW })
+	camera.CFrame = CFrame.lookAt(Vector3.new(distance * math.sin(yaw), height + 0.1, -distance * math.cos(yaw)), Vector3.new(0, height, 0))
+	viewport.CurrentCamera = camera
+	local character = player.Character
+	if not character then
+		return { model = nil }
+	end
+	local world = make("WorldModel", { Parent = viewport })
+	local archivable = character.Archivable
+	character.Archivable = true
+	local copy = character:Clone()
+	character.Archivable = archivable
+	if not copy then
+		return { model = nil }
+	end
+	for _, item in ipairs(copy:GetDescendants()) do
+		if item:IsA("BaseScript") or item:IsA("Tool") or item:IsA("ForceField") or item:IsA("Animator") or item:IsA("Sound") then
+			item:Destroy()
+		end
+	end
+	copy:PivotTo(CFrame.new())
+	copy.Parent = world
+	return { model = copy }
+end
+
 -- a copy of the look with this tile's style in it (a face tile is bald and a hair tile
--- hatless: they would hide what the tile shows)
+-- hatless, a shirt tile has no pants and a pants tile no shirt: they would hide what the tile shows)
 local function tileLook(look, kind, index)
 	local copy = {}
 	for key, value in pairs(look) do
@@ -380,6 +418,11 @@ local function tileLook(look, kind, index)
 		copy.accessory = 1
 	elseif kind == "hair" then
 		copy.accessory = 1
+	elseif kind == "shirt" or kind == "pants" then
+		copy.hair = 1
+		copy.accessory = 1
+		copy.shirt = 1
+		copy.pants = 1
 	end
 	copy[KINDS[kind].field] = index
 	return copy
@@ -447,7 +490,7 @@ local function buildPicker(connections)
 	})
 	make("UIStroke", { Parent = hexBox, Color = Theme.Edge, Transparency = 0.6, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
 	make("UIPadding", { Parent = hexBox, PaddingLeft = UDim.new(0, 8) })
-	label(frame, { Text = "PRESETS", Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(side, 66), Size = UDim2.fromOffset(100, 14) })
+	local presetsLabel = label(frame, { Text = "PRESETS", Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(side, 66), Size = UDim2.fromOffset(100, 14) })
 	local presetGrid = make("Frame", { Parent = frame, Position = UDim2.fromOffset(side, 84), Size = UDim2.fromOffset(6 * PRESET_SIZE + 5 * 6, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1 })
 	make("UIGridLayout", { Parent = presetGrid, CellSize = UDim2.fromOffset(PRESET_SIZE, PRESET_SIZE), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder })
 
@@ -564,8 +607,18 @@ local function buildPicker(connections)
 
 	return {
 		Frame = frame,
-		Bind = function(rgb, callback, palette)
+		Bind = function(rgb, callback, palette, presetsOnly)
 			onChange = nil
+			-- presets only: no wheel, bar, swatch or hex, just the palette to press
+			for _, piece in ipairs({ wheel, slider, swatch, hexBox, presetsLabel }) do
+				piece.Visible = not presetsOnly
+			end
+			for _, child in ipairs(frame:GetChildren()) do
+				if child:IsA("TextLabel") and child ~= presetsLabel then
+					child.Visible = not presetsOnly
+				end
+			end
+			presetGrid.Position = presetsOnly and UDim2.fromOffset(0, 8) or UDim2.fromOffset(side, 84)
 			presets = palette or {}
 			for index = #chips + 1, #presets do
 				chips[index] = newChip(index)
@@ -639,55 +692,7 @@ function Customizer.Open(slot, onDone, options)
 	make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 62), Size = UDim2.new(1, 0, 0, 1), BackgroundColor3 = Theme.Muted, BackgroundTransparency = 0.6, BorderSizePixel = 0 })
 	make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 62), Size = UDim2.fromOffset(90, 2), BackgroundColor3 = accent, BorderSizePixel = 0 })
 
-	-- the codename: no box, just a line under it that lights up while typing, and on the right
-	-- its length (or what is wrong with it). A recustomized character keeps its codename:
-	-- shown, not typed.
-	label(inner, { Text = "CODENAME", Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 74), Size = UDim2.new(1, 0, 0, 14) })
-	local hint = label(inner, {
-		Text = recustomize and "LOCKED" or string.format("0/%d", SlotConfig.NameMax),
-		Font = Theme.MonoFont,
-		TextSize = 11,
-		TextColor3 = Theme.Muted,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Position = UDim2.fromOffset(0, 74),
-		Size = UDim2.new(1, 0, 0, 14),
-	})
-	local nameBox
-	if recustomize then
-		label(inner, { Text = string.upper(options.name), Font = Theme.TitleFont, TextSize = 26, Position = UDim2.fromOffset(0, 90), Size = UDim2.new(1, 0, 0, 32), TextTruncate = Enum.TextTruncate.AtEnd })
-	else
-		nameBox = make("TextBox", {
-			Parent = inner,
-			Position = UDim2.fromOffset(0, 90),
-			Size = UDim2.new(1, 0, 0, 32),
-			BackgroundTransparency = 1,
-			BorderSizePixel = 0,
-			Font = Theme.TitleFont,
-			TextSize = 26,
-			TextColor3 = Theme.NavText,
-			PlaceholderText = "Enter a codename",
-			PlaceholderColor3 = Theme.Muted,
-			Text = "",
-			ClearTextOnFocus = false,
-			TextXAlignment = Enum.TextXAlignment.Left,
-		})
-	end
-	local underline = make("Frame", {
-		Parent = inner,
-		Position = UDim2.fromOffset(0, 124),
-		Size = UDim2.new(1, 0, 0, 2),
-		BackgroundColor3 = Theme.Muted,
-		BackgroundTransparency = recustomize and 0.6 or 0,
-		BorderSizePixel = 0,
-	})
-	if nameBox then
-		nameBox.Focused:Connect(function()
-			tween(underline, 0.2, { BackgroundColor3 = accent })
-		end)
-		nameBox.FocusLost:Connect(function()
-			tween(underline, 0.2, { BackgroundColor3 = Theme.Muted })
-		end)
-	end
+	-- (the codename is typed on the stage: click the name under the figure)
 
 	-- the stage, on the right: the figure on its ring inside corner brackets, a wash of the
 	-- accent behind it, the slot's big faint number and the codename under it as it is typed.
@@ -749,15 +754,48 @@ function Customizer.Open(slot, onDone, options)
 	})
 	local plateBar = make("Frame", { Parent = plate, Position = UDim2.fromOffset(0, 6), Size = UDim2.fromOffset(24, 2), BackgroundColor3 = accent, BorderSizePixel = 0, ZIndex = 3 })
 	local plateCaption = label(plate, { Text = string.format("SLOT %02d", slot), Font = Theme.MonoFont, TextSize = 11, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(32, 0), Size = UDim2.new(1, -32, 0, 14), ZIndex = 3 })
-	local plateName = label(plate, {
-		Text = "",
-		Font = Theme.TitleFont,
-		TextSize = 52,
-		Position = UDim2.fromOffset(0, 14),
-		Size = UDim2.new(1, 0, 0, 58),
-		TextTruncate = Enum.TextTruncate.AtEnd,
+	-- the codename: click the name to type it (its length, or what is wrong with it, shows beside
+	-- the slot). A recustomized character keeps its codename: shown, not typed.
+	local hint = label(plate, {
+		Text = recustomize and "LOCKED" or "CLICK THE NAME TO TYPE IT",
+		Font = Theme.MonoFont,
+		TextSize = 11,
+		TextColor3 = Theme.Muted,
+		Position = UDim2.fromOffset(100, 0),
+		Size = UDim2.new(1, -100, 0, 14),
 		ZIndex = 3,
 	})
+	local nameBox
+	local plateName
+	if recustomize then
+		plateName = label(plate, {
+			Text = string.upper(options.name),
+			Font = Theme.TitleFont,
+			TextSize = 52,
+			Position = UDim2.fromOffset(0, 14),
+			Size = UDim2.new(1, 0, 0, 58),
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			ZIndex = 3,
+		})
+	else
+		nameBox = make("TextBox", {
+			Parent = plate,
+			Position = UDim2.fromOffset(0, 14),
+			Size = UDim2.new(1, 0, 0, 58),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Font = Theme.TitleFont,
+			TextSize = 52,
+			TextColor3 = Theme.NavText,
+			PlaceholderText = "UNNAMED",
+			PlaceholderColor3 = Theme.Muted,
+			Text = "",
+			ClearTextOnFocus = false,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 3,
+		})
+		plateName = nameBox
+	end
 	label(stage, {
 		Text = "DRAG TO TURN",
 		Font = Theme.MonoFont,
@@ -771,20 +809,16 @@ function Customizer.Open(slot, onDone, options)
 	})
 	-- the plate fades out close up (the figure fills the stage then)
 	local zoom, zoomGoal = 0, 0 -- 0 the whole figure, 1 close up on the head
-	local nameFade = 0 -- how faint the name is: "UNNAMED" is
 	local function fadePlate()
 		plateBar.BackgroundTransparency = zoom
 		plateCaption.TextTransparency = zoom
-		plateName.TextTransparency = nameFade + (1 - nameFade) * zoom
+		hint.TextTransparency = zoom
+		plateName.TextTransparency = zoom
+		if nameBox then
+			nameBox.PlaceholderColor3 = Theme.Muted:Lerp(Color3.new(0, 0, 0), zoom)
+		end
 	end
-	local function showName(text)
-		local empty = text == ""
-		plateName.Text = empty and "UNNAMED" or string.upper(text)
-		plateName.TextColor3 = empty and Theme.Muted or Theme.NavText
-		nameFade = empty and 0.55 or 0
-		fadePlate()
-	end
-	showName(options.name or "")
+	fadePlate()
 
 	local angle = 0
 	local turning = false
@@ -841,7 +875,6 @@ function Customizer.Open(slot, onDone, options)
 	-- the tiles, kept so they can be repainted when a colour (or the face a hair is shown with) changes
 	local tiles = {} -- { model, kind, index }
 	local refreshers = {} -- functions that redraw which tile (or option) is selected
-	local pieceSquares = {} -- look field -> the little square of its colour on OUTFIT's TOP and BOTTOM
 	local previewDirty = false
 	local tilesDirty = false
 	local lastTilesAt = 0
@@ -853,9 +886,6 @@ function Customizer.Open(slot, onDone, options)
 	table.insert(connections, RunService.RenderStepped:Connect(function(dt)
 		if previewDirty then
 			previewDirty = false
-			for field, square in pairs(pieceSquares) do
-				square.BackgroundColor3 = colorOf(look[field])
-			end
 			if model then
 				Customizer.Dress(model, look, parts)
 				lift = lift or standOnRing(model)
@@ -886,7 +916,8 @@ function Customizer.Open(slot, onDone, options)
 			for _, tile in ipairs(tiles) do
 				if tile.model then
 					Customizer.Dress(tile.model, tileLook(look, tile.kind, tile.index), parts)
-					local head = tile.model:FindFirstChild("Head")
+					-- (a head tile's lone head sits at the middle; a body tile's rig stays where it is)
+					local head = KINDS[tile.kind].head and tile.model:FindFirstChild("Head")
 					if head then
 						head.CFrame = CFrame.new()
 					end
@@ -897,7 +928,7 @@ function Customizer.Open(slot, onDone, options)
 
 	-- the catalogue: the tab bar, and under it one page at a time in a frame that scrolls
 	local picker = buildPicker(connections)
-	local tabBar = make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 138), Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1 })
+	local tabBar = make("Frame", { Parent = inner, Position = UDim2.fromOffset(0, 82), Size = UDim2.new(1, 0, 0, 34), BackgroundTransparency = 1 })
 	make("Frame", {
 		Parent = tabBar,
 		AnchorPoint = Vector2.new(0, 1),
@@ -989,7 +1020,7 @@ function Customizer.Open(slot, onDone, options)
 		picker.Bind(look[field], function(rgb)
 			look[field] = rgb
 			markDirty()
-		end, pickerPresets[tabName])
+		end, pickerPresets[tabName], tabName == "BODY")
 	end
 	local function showTab(name)
 		currentTab = name
@@ -1070,17 +1101,10 @@ function Customizer.Open(slot, onDone, options)
 			if spec.head then
 				local built = buildHeadTile(tile, kind)
 				table.insert(tiles, { model = built.model, kind = kind, index = index })
-			elseif index > 1 then
-				-- a shirt, tee or pants: its picture
-				local part = parts:FindFirstChild(spec.prefix .. "_" .. index)
-				make("ImageLabel", {
-					Parent = tile,
-					Size = UDim2.new(1, -8, 1, -24),
-					Position = UDim2.fromOffset(4, 4),
-					BackgroundTransparency = 1,
-					Image = part and part[spec.image] or "",
-					ScaleType = Enum.ScaleType.Fit,
-				})
+			else
+				-- a shirt or pants: worn on the body
+				local built = buildBodyTile(tile, kind)
+				table.insert(tiles, { model = built.model, kind = kind, index = index })
 			end
 			local tag = label(tile, {
 				Text = string.upper(spec.styles[index]),
@@ -1136,55 +1160,17 @@ function Customizer.Open(slot, onDone, options)
 	local face = newPage("FACE", 3)
 	addTiles(face, 1, "STYLE", "face", 1)
 
-	-- OUTFIT: top or bottom (each with a square of its colour) and its colour (off when a shirt
-	-- or pants picture is on that piece), then the tiles for shirts, tees and pants
+	-- OUTFIT: the tiles for shirts and pants, each shown worn (no colours: a picture keeps its
+	-- own, and what it leaves bare is the skin)
 	local outfit = newPage("OUTFIT", 4)
-	heading(outfit, 1, "PIECE", 1)
-	local chips = make("Frame", { Parent = outfit, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 32), BackgroundTransparency = 1 })
-	local chipFor = {}
-	local function selectPiece(field)
-		pickerField.OUTFIT = field
-		for chipField, chip in pairs(chipFor) do
-			local selected = chipField == field
-			local stroke = chip:FindFirstChildOfClass("UIStroke")
-			stroke.Color = selected and accent or Theme.Edge
-			stroke.Transparency = selected and 0 or 0.6
-			stroke.Thickness = selected and 2 or 1
-			chip.TextColor3 = selected and Theme.NavText or Theme.Muted
-		end
-		if currentTab == "OUTFIT" then
-			bindPicker("OUTFIT")
-		end
-	end
-	for position, piece in ipairs({ { "top", "TOP" }, { "bottom", "BOTTOM" } }) do
-		local chip = button(chips, { Text = piece[2], TextSize = 16, Position = UDim2.new((position - 1) * 0.5, position == 2 and 4 or 0, 0, 0), Size = UDim2.new(0.5, -4, 1, 0) }, function()
-			selectPiece(piece[1])
-		end)
-		local square = make("Frame", { Parent = chip, AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Size = UDim2.fromOffset(12, 12), BackgroundColor3 = colorOf(look[piece[1]]), BorderSizePixel = 0 })
-		make("UIStroke", { Parent = square, Color = Theme.Edge, Transparency = 0.5, ApplyStrokeMode = Enum.ApplyStrokeMode.Border })
-		pieceSquares[piece[1]] = square
-		chipFor[piece[1]] = chip
-	end
-	heading(outfit, 2, "COLOUR", 4)
-	addPickerSlot(outfit, "OUTFIT", "top", 6, SlotConfig.OutfitColors, function()
-		if pickerField.OUTFIT == "top" and look.shirt > 1 then
-			return "THIS SHIRT KEEPS ITS OWN COLOURS. CHOOSE NONE TO PICK A COLOUR."
-		elseif pickerField.OUTFIT == "bottom" and look.pants > 1 then
-			return "THESE PANTS KEEP THEIR OWN COLOURS. CHOOSE NONE TO PICK A COLOUR."
-		end
-		return nil
-	end)
-	local number = 2
-	for _, extra in ipairs({ { "shirt", "SHIRT", 7 }, { "tee", "T-SHIRT", 10 }, { "pants", "PANTS", 13 } }) do
+	local number = 0
+	for _, extra in ipairs({ { "shirt", "SHIRT", 1 }, { "pants", "PANTS", 4 } }) do
 		if addTiles(outfit, number + 1, extra[2], extra[1], extra[3]) then
 			number += 1
 		end
 	end
-	selectPiece("top")
 
-	-- EXTRAS: accessories
-	local extras = newPage("EXTRAS", 5)
-	addTiles(extras, 1, "ACCESSORY", "accessory", 1)
+	-- (no EXTRAS tab for now: addTiles(newPage("EXTRAS", 5), 1, "ACCESSORY", "accessory", 1) brings it back)
 
 	for name, tab in pairs(tabs) do
 		tab.button.Activated:Connect(function()
@@ -1217,12 +1203,8 @@ function Customizer.Open(slot, onDone, options)
 		local natural = SlotConfig.HairColors[random:NextInteger(1, #SlotConfig.HairColors)]
 		rolled.hairColor = random:NextInteger(1, 2) == 1 and { natural[1], natural[2], natural[3] } or randomColor(0.3, 0.95, 0.3, 0.95)
 		rolled.face = pickStyle("face")
-		rolled.top = randomColor(0.1, 0.9, 0.2, 0.9)
-		rolled.bottom = randomColor(0.1, 0.8, 0.15, 0.7)
 		rolled.shirt = pickStyle("shirt")
-		rolled.tee = random:NextInteger(1, 3) == 1 and pickStyle("tee") or 1
 		rolled.pants = pickStyle("pants")
-		rolled.accessory = random:NextInteger(1, 2) == 1 and pickStyle("accessory") or 1
 		return rolled
 	end
 	local function takeLook(newLook)
@@ -1279,6 +1261,14 @@ function Customizer.Open(slot, onDone, options)
 	})
 	button(root, { Text = "RANDOMIZE", AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -(MARGIN + 210), 1, -34), Size = UDim2.fromOffset(150, 48) }, function()
 		takeLook(randomLook())
+		if nameBox then -- a new character gets a random codename too (one different from the last)
+			local names = SlotConfig.RandomNames
+			local pick = names[random:NextInteger(1, #names)]
+			if pick == nameBox.Text then
+				pick = names[(table.find(names, pick) % #names) + 1]
+			end
+			nameBox.Text = pick
+		end
 	end)
 	local create
 	create = button(root, { Text = recustomize and "SAVE" or "CREATE", Filled = true, TextSize = 20, AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -MARGIN, 1, -34), Size = UDim2.fromOffset(200, 48) }, function()
@@ -1323,9 +1313,12 @@ function Customizer.Open(slot, onDone, options)
 				return
 			end
 			status.Text = ""
-			showName(nameBox.Text)
 			local name, reason = SlotConfig.CleanName(nameBox.Text)
-			hint.Text = (nameBox.Text == "" or name) and string.format("%d/%d", #nameBox.Text, SlotConfig.NameMax) or string.upper(reason)
+			if nameBox.Text == "" then
+				hint.Text = "CLICK THE NAME TO TYPE IT"
+			else
+				hint.Text = name and string.format("%d/%d", #nameBox.Text, SlotConfig.NameMax) or string.upper(reason)
+			end
 		end)
 	end
 

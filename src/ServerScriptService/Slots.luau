@@ -263,6 +263,9 @@ function Slots.Create(player, slot, name, lookText)
 		if meta[slot] then
 			return false, "That slot is taken"
 		end
+		if SlotConfig.RobuxSlots[slot] then
+			return false, "That slot is Robux only"
+		end
 		local clean, why = SlotConfig.CleanName(name)
 		if not clean then
 			return false, why

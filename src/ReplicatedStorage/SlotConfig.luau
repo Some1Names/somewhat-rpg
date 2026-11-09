@@ -5,8 +5,22 @@
 local SlotConfig = {}
 
 SlotConfig.SlotCount = 3
+-- Slots that need Robux to create a character in. productId is the Developer Product that
+-- unlocks it (0 = not made yet, so nobody can unlock it for now). A character already
+-- saved in such a slot stays playable.
+SlotConfig.RobuxSlots = {
+	[3] = { productId = 0 },
+}
 SlotConfig.NameMin = 3
 SlotConfig.NameMax = 16
+-- codenames RANDOMIZE picks from (each passes CleanName: 3-16 letters and spaces)
+SlotConfig.RandomNames = {
+	"Kuro", "Shiro", "Nyx", "Rei", "Sora", "Haru", "Yami", "Kira", "Toma", "Lumi", "Echo", "Onyx",
+	"Sable", "Noir", "Hoshi", "Ryuu", "Tatsu", "Ibuki", "Ayame", "Kaede", "Hikari", "Mizuki",
+	"Sakuya", "Daichi", "Tsubaki", "Kagami", "Kitsune", "Raiden", "Vesper", "Zephyr",
+	"Akira Voss", "Ren Hayashi", "Yuki Frost", "Zero Kage", "Ash Ember", "Kenji Ward",
+	"Jin Mori", "Raven Kuze", "Saeko Vale", "Mikado Rain",
+}
 
 -- palettes, {r, g, b} 0-255 (placeholder colours); index 1 is each list's default
 SlotConfig.SkinTones = {
@@ -24,16 +38,26 @@ SlotConfig.HairColors = {
 }
 -- display names; the part for style n is ReplicatedStorage.CharacterParts.Hair_<n> (a style
 -- with no part is hidden in the customizer), and Face_<n> for faces
-SlotConfig.HairStyles = { "None", "Messy", "Spiky", "Ponytail", "Side Part", "Swoop", "Neat", "Long", "Bangs" }
-SlotConfig.FaceStyles = { "Default", "Calm", "Fierce", "Kawaii", "Gentleman", "Glow", "Shades", "Smirk", "Grin", "Braces" }
--- clothes and accessories: the part for style n is CharacterParts.Shirt_<n> / Tee_<n> /
--- Pants_<n> / Acc_<n>. A shirt or pants is a picture that keeps its own colours (it hides the
--- colour wheel for its piece); a tee is a graphic over the top colour. A list with only "None"
--- has nothing to pick yet (no free shirt or pants worth shipping): add names here and the
--- parts in Studio.
-SlotConfig.ShirtStyles = { "None" }
-SlotConfig.TeeStyles = { "None", "Spiral", "VIP" }
-SlotConfig.PantsStyles = { "None" }
+SlotConfig.HairStyles = {
+	"None", "Pink Cut", "Gothic Messy", "Akane", "Short Spiky", "Slick Back", "Ponytail",
+	"Long Messy", "Long Anime", "Wolfcut", "Low Pigtails", "Messy Curly",
+}
+SlotConfig.FaceStyles = {
+	"Default", "Tired", "Annoyed", "Cold Boy", "Vampire", "Happy Boy", "Nursefather",
+	"Beast Mode", "Smirking Girl", "Soft Green", "Anime Gaze",
+}
+-- clothes and accessories: the part for style n is CharacterParts.Shirt_<n> / Pants_<n> /
+-- Acc_<n>. A shirt or pants is a picture that keeps its own colours, over the skin colour. Tees
+-- are gone (the list stays so a saved look still reads). A list with only "None" has nothing to
+-- pick yet: add names here and the parts in Studio.
+SlotConfig.ShirtStyles = {
+	"None", "Girl", "Chrome Hearts", "Carhartt", "Baggy White", "Vkei", "Casual", "Vest",
+	"Student", "Girl 2", "Cute",
+}
+SlotConfig.TeeStyles = { "None" }
+SlotConfig.PantsStyles = {
+	"None", "Student", "White Jeans", "Cargo", "Cargo 2", "Student 2", "Skirt", "Skirt 2", "Skirt 3",
+}
 SlotConfig.AccessoryStyles = { "None", "Fedora", "Top Hat", "Cowboy", "Witch", "Reading Glasses", "Sunglasses" }
 
 -- the keys in the DataStore: one record per slot, one for the summaries

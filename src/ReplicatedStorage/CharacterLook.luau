@@ -1,7 +1,7 @@
 -- Paints a character's look (SlotConfig) onto an R15 rig: skin on the head, arms and hands, the
--- outfit colours on the torso and legs, hair, a face, an accessory, and a shirt, tee and pants,
+-- torso and legs (a shirt and pants go over the skin), hair, a face, an accessory, and a shirt and pants,
 -- the last four from ReplicatedStorage.CharacterParts (Hair_<n>, Acc_<n> accessories, Face_<n>
--- decals, Shirt_<n>, Tee_<n> and Pants_<n>, made in Studio). Used by the server for the real
+-- heads, Head_Default, Shirt_<n> and Pants_<n>, made in Studio). Used by the server for the real
 -- character (Slots) and by the customizer for its previews. Hair is recoloured flat: its texture
 -- is dropped and the part takes the colour, because a textured hair can't be made to any
 -- colour (a dark one stays dark). Things the player wears are marked SlotLook, so Slots can
@@ -89,10 +89,14 @@ local function wear(character, humanoid, parts, prefix, index, color)
 	place(character, item)
 end
 
--- adds style `index` of a clothing part (Shirt_, Tee_ or Pants_) to the character
+-- adds style `index` of a clothing part (Shirt_ or Pants_) to the character
 local function dress(character, parts, prefix, index)
-	if index <= 1 or not parts then
+	if not parts then
 		return
+	end
+	-- "None" (1) would leave the character nude: it wears the default instead (Vest, Student 2)
+	if index <= 1 then
+		index = prefix == "Shirt" and 8 or 6
 	end
 	local template = parts:FindFirstChild(prefix .. "_" .. index)
 	if template then
@@ -100,6 +104,45 @@ local function dress(character, parts, prefix, index)
 		item:SetAttribute("SlotLook", true)
 		item.Parent = character
 	end
+end
+
+-- the head of face `index`: face 1 is Roblox's round head (CharacterParts.Head_Default), any other
+-- is a whole head (Face_<n>, a MeshPart from a dynamic head) swapped in on an R15 rig. A head
+-- remembers its index (SlotHead), so painting again is a no-op. Returns true when the head is
+-- one of those (it brings its own face). The skin tone still tints it, as on any avatar.
+local function swapHead(character, humanoid, parts, index)
+	local head = character:FindFirstChild("Head")
+	if not head or not parts or not head:IsA("MeshPart") or humanoid.RigType ~= Enum.HumanoidRigType.R15 then
+		return false
+	end
+	local current = head:GetAttribute("SlotHead") or 1
+	if index == 1 and current == 1 then
+		return false -- the rig's own head is the default one
+	end
+	local template = parts:FindFirstChild(index > 1 and ("Face_" .. index) or "Head_Default")
+	if not template or not template:IsA("MeshPart") then
+		return false
+	end
+	if current ~= index then
+		local new = template:Clone()
+		new.Name = "Head"
+		if character:FindFirstChild("HumanoidRootPart") then
+			-- a humanoid that needs its neck dies the moment the old head's joint goes
+			humanoid.RequiresNeck = false
+			if not humanoid:ReplaceBodyPartR15(Enum.BodyPartR15.Head, new) then
+				return false
+			end
+		else
+			-- a lone head (the customizer's tiles) has no rig to rejoin: it just takes the old one's place
+			new.CFrame = head.CFrame
+			new.Anchored = head.Anchored
+			new.Parent = character
+			head:Destroy()
+		end
+		-- (a replacement copies the part over; it doesn't keep the clone's attributes)
+		character.Head:SetAttribute("SlotHead", index)
+	end
+	return index > 1
 end
 
 function CharacterLook.Apply(character, look, parts)
@@ -113,10 +156,9 @@ function CharacterLook.Apply(character, look, parts)
 			child:Destroy()
 		end
 	end
+	local customHead = swapHead(character, humanoid, parts, look.face or 1)
 
 	local skin = colorOf(look.skin)
-	local top = colorOf(look.top)
-	local bottom = colorOf(look.bottom)
 	local function paint(name, color)
 		local part = character:FindFirstChild(name)
 		if part and part:IsA("BasePart") then
@@ -126,32 +168,32 @@ function CharacterLook.Apply(character, look, parts)
 	for _, name in ipairs(SKIN_PARTS) do
 		paint(name, skin)
 	end
+	-- no top or bottom colour: what a shirt or pants leaves bare is the skin
 	for _, name in ipairs(TOP_PARTS) do
-		paint(name, top)
+		paint(name, skin)
 	end
 	for _, name in ipairs(BOTTOM_PARTS) do
-		paint(name, bottom)
+		paint(name, skin)
 	end
 	local bodyColors = character:FindFirstChildOfClass("BodyColors")
 	if bodyColors then
 		bodyColors.HeadColor3 = skin
 		bodyColors.LeftArmColor3 = skin
 		bodyColors.RightArmColor3 = skin
-		bodyColors.TorsoColor3 = top
-		bodyColors.LeftLegColor3 = bottom
-		bodyColors.RightLegColor3 = bottom
+		bodyColors.TorsoColor3 = skin
+		bodyColors.LeftLegColor3 = skin
+		bodyColors.RightLegColor3 = skin
 	end
 
 	wear(character, humanoid, parts, "Hair", look.hair or 1, colorOf(look.hairColor))
 	wear(character, humanoid, parts, "Acc", look.accessory or 1, nil)
 	dress(character, parts, "Shirt", look.shirt or 1)
-	dress(character, parts, "Tee", look.tee or 1)
 	dress(character, parts, "Pants", look.pants or 1)
 
 	-- the head is Roblox's default round one, not the avatar's shape; face 1 is its default
-	-- face, the others come from CharacterParts
+	-- face (a swapped-in head brings its own)
 	local head = character:FindFirstChild("Head")
-	if head then
+	if head and not customHead then
 		-- (an R6 head is a Part with a SpecialMesh, an R15 one a MeshPart already round)
 		local mesh = head:FindFirstChildOfClass("SpecialMesh")
 		if mesh then
@@ -161,20 +203,13 @@ function CharacterLook.Apply(character, look, parts)
 			mesh.Scale = Vector3.new(1.25, 1.25, 1.25)
 			mesh.Offset = Vector3.zero
 		end
-		local texture = DEFAULT_FACE
-		if (look.face or 1) > 1 and parts then
-			local template = parts:FindFirstChild("Face_" .. look.face)
-			if template and template:IsA("Decal") then
-				texture = template.Texture
-			end
-		end
 		local face = head:FindFirstChild("face")
 		if not face then
 			face = Instance.new("Decal")
 			face.Name = "face"
 			face.Parent = head
 		end
-		face.Texture = texture
+		face.Texture = DEFAULT_FACE
 	end
 end
 

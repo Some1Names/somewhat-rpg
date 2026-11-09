@@ -22,7 +22,7 @@ local SlotConfig = require(ReplicatedStorage:WaitForChild("SlotConfig"))
 local Preferences = require(ReplicatedStorage:WaitForChild("Preferences"))
 local Customizer = require(script.Parent:WaitForChild("Customizer"))
 local FirstSetup = require(script.Parent:WaitForChild("FirstSetup"))
-local Hub =require(script.Parent:WaitForChild("Hub"))
+local Hub = require(script.Parent:WaitForChild("Hub"))
 
 local player = Players.LocalPlayer
 local Theme = HudConfig.HubTheme
@@ -551,7 +551,7 @@ function SlotMenu.Open(onEntered, onBack)
 				-- the character's top half, dressed in the look this slot wears, across the top
 				-- of the card (behind the text) and fading out towards the bottom
 				local previewHolder = make("Frame", { Parent = cardEntry.card, Size = UDim2.new(1, 0, 0, PREVIEW_HEIGHT), BackgroundTransparency = 1, ZIndex = 1 })
-				local model = Customizer.BuildPreview(previewHolder, 10, false, -0.2)
+				local model = Customizer.BuildPreview(previewHolder, 10, false, 0.2)
 				if model then
 					Customizer.Dress(model, SlotConfig.ParseLook(entry.look), parts)
 				end
@@ -642,25 +642,28 @@ function SlotMenu.Open(onEntered, onBack)
 					showMenu(cardEntry, slot, entry)
 				end)
 			else
-				label(content, { Text = "EMPTY SLOT", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 16) })
-				label(content, { Text = "+", Font = Theme.TitleFont, TextSize = 120, TextColor3 = accent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromOffset(160, 140), TextXAlignment = Enum.TextXAlignment.Center })
-				label(content, { Text = "NEW CHARACTER", Font = Theme.TitleFont, TextSize = 26, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, 0, 0, 30), TextXAlignment = Enum.TextXAlignment.Center })
-				-- the whole card is the button
-				local create = make("TextButton", { Parent = content, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 3 })
-				create.Activated:Connect(function()
-					if busy then
-						return
-					end
-					gui.Enabled = false
-					Customizer.Open(slot, function(entered)
-						if entered then
-							onEntered()
-							gui:Destroy()
-						else
-							gui.Enabled = true
+				local locked = SlotConfig.RobuxSlots[slot] ~= nil
+				label(content, { Text = locked and "LOCKED" or "EMPTY SLOT", Font = Theme.MonoFont, TextSize = 12, TextColor3 = Theme.Muted, Position = UDim2.fromOffset(0, 22), Size = UDim2.new(1, 0, 0, 16) })
+				label(content, { Text = locked and "R$" or "+", Font = Theme.TitleFont, TextSize = locked and 90 or 120, TextColor3 = locked and Theme.Muted or accent, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.42), Size = UDim2.fromOffset(160, 140), TextXAlignment = Enum.TextXAlignment.Center })
+				label(content, { Text = locked and "ROBUX ONLY" or "NEW CHARACTER", Font = Theme.TitleFont, TextSize = 26, TextColor3 = locked and Theme.Muted or nil, AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -6), Size = UDim2.new(1, 0, 0, 30), TextXAlignment = Enum.TextXAlignment.Center })
+				-- the whole card is the button (a Robux slot has none until its product exists)
+				if not locked then
+					local create = make("TextButton", { Parent = content, Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 3 })
+					create.Activated:Connect(function()
+						if busy then
+							return
 						end
+						gui.Enabled = false
+						Customizer.Open(slot, function(entered)
+							if entered then
+								onEntered()
+								gui:Destroy()
+							else
+								gui.Enabled = true
+							end
+						end)
 					end)
-				end)
+				end
 			end
 		end
 	end
