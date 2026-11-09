@@ -19,17 +19,17 @@ cycle, swimming, sound, phone controls. Sets with a kit: Mandela, Iridescent Req
 and no A, B or C power has a kit: the seven other powers in `SkillSetConfig` are sell-only placeholders
 (Eventide, Mnemosyne, Afterimage, Blackfrost, Kintsugi, PlaceholderB, PlaceholderC).
 
-### Phase 0: one truth between the repo and Studio (Studio, small)
+### Phase 0: one truth between the repo and Studio (done 2026-11-10)
 
-- The `studio` tag is at 2026-10-26 (Ayato Yoji), 40 commits behind HEAD: the item wheel, slots and the
-  customizer, the photo gallery, 0.0.3, crafting, equipment, the Backpack redo and phone support. Crafting is
-  written down as applied on 2026-11-03, so the tag was not moved every time: compare script sizes first.
-- Uncommitted on 2026-11-10: nine changed scripts (customizer, slots, hub, Backpack, sprint) and three new ones
-  (`MenuServer`, `MainMenu`, `SpeedLines`), plus the dungeon and VIP documents.
-- Aido, the Henchman, Settings, build depth, combat feel, factions, parties and the raid bosses were all
-  committed before the tag, so their scripts should already be in Studio; the "waiting on the Studio apply"
-  lines below predate that.
-- `GuardConfig.Enabled` is `true` in the repo while `CLAUDE.md` says block is still off: settle which is right.
+- Every script in the repo matches Studio byte for byte (253, all in `studio-manifest.json`) and the `studio`
+  tag is at that sync. The uncommitted work (customizer and slots, the hub's MAIN MENU, the sprint build-up
+  and speed lines, Backpack touches, the dungeon and VIP documents) was already in Studio and is committed.
+- Moved: AxeBoomerang's two missing "Right Arm" fallbacks and two comments went to Studio, two spacing fixes
+  came back, and `PlayerCollision` (players walk through each other) went into Studio: it loads, not yet playtested.
+- Only in Studio, on purpose: the baked `MapLayout` and the rigs' `Animate` and free-model scripts
+  (`StarterCharacter`, `ServerStorage.Bosses`, `ServerStorage.R15Backup`).
+- Block stays on and basekit (`GuardConfig.Enabled = true`, anyone can block); `CLAUDE.md` now says so.
+- So the "waiting on the Studio apply" lines further down are out of date: everything in the repo is in Studio.
 
 ### Phase 1: play what exists (the owner; a session writes one merged checklist first, small)
 
