@@ -20,12 +20,15 @@ local player = Players.LocalPlayer
 
 local SPRINT_KEY = Enum.KeyCode.LeftShift
 local SPRINT_SPEED = 32
+local MAX_SPRINT_SPEED = 44 -- reached after RAMP_TIME seconds of unbroken sprinting
+local RAMP_TIME = 6
 local WALK_SPEED = StarterPlayer.CharacterWalkSpeed
 local DRAIN_PER_SECOND = 10 -- a full bar lasts 10 seconds of sprinting
 local BLEND_TIME = 0.15 -- seconds to fade between the normal run and the sprint
 
 local holding = false
 local wasMoving = false
+local runTime = 0 -- seconds of unbroken sprinting
 local sprintTracks = setmetatable({}, { __mode = "k" })
 local nextLoadTry = 0 -- a failed load is retried after a pause, not every frame
 
@@ -92,6 +95,9 @@ RunService.Heartbeat:Connect(function(dt)
 	local swimming = character:GetAttribute("Swimming") == true
 	local swinging = os.clock() < (player:GetAttribute("SwingUntil") or 0)
 	local sprinting = holding and moving and not stunned and not blocking and not swimming and not swinging and Stamina.Drain(DRAIN_PER_SECOND * dt)
+	if stunned or blocking or swinging then
+		runTime = 0 -- any interruption restarts the build-up
+	end
 	if stunned then
 		humanoid.WalkSpeed = 0
 		humanoid.Jump = false
@@ -100,7 +106,9 @@ RunService.Heartbeat:Connect(function(dt)
 	elseif swinging then
 		humanoid.WalkSpeed = WALK_SPEED * CombatFeel.SwingWalkShare
 	else
-		humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
+		-- the longer you keep sprinting, the faster you get; stopping resets it
+		runTime = sprinting and math.min(runTime + dt, RAMP_TIME) or 0
+		humanoid.WalkSpeed = sprinting and SPRINT_SPEED + (MAX_SPRINT_SPEED - SPRINT_SPEED) * runTime / RAMP_TIME or WALK_SPEED
 	end
 
 	-- the sprint animation only shows while actually running fast on the ground
