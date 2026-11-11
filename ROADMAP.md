@@ -52,7 +52,7 @@ run-through in play order (a solo half, a two-player half), then fix what breaks
 
 1. A first-hour tutorial quest chain on `Quests`, `Dialogue` and `Compass` (today: `FirstSetup` and the Handbook). Small to medium.
 2. Enemy types 2 to 4 and their bounties (data in `EnemyConfig` and `QuestConfig`; the models are the owner's). Small each.
-3. Party rules for PvE (no friendly fire, shared kill credit), which dungeons need. Small.
+3. Party rules for PvE, which dungeons need: friendly fire between party mates is already off (the leader's toggle); shared kill credit and bounty progress are not built. Small.
 4. Dungeons: spec and plan are ready (`plans/2026-11-03-dungeon.md`); code against stub rooms, the owner builds the rooms. Large.
 5. A kit for one A, one B and one C power (Daemon and his katana, Kintsugi), and Katana moves. Large each, needs the canon.
 

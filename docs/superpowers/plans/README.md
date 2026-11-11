@@ -3,6 +3,7 @@
 Pick one, open the session it needs, and paste its line. Each plan carries its own design, so the
 session doesn't need old chats. Branch: `claude/vigilant-rubin-ckqtnn` unless the plan says
 otherwise. The order to run them in is the Master plan at the top of `ROADMAP.md`.
+To playtest what is already built, use the one merged run-through, [docs/playtest-checklist.md](../../playtest-checklist.md), instead of the per-system checklists in `specs/`.
 
 - **Cloud** = a Claude Code cloud session (claude.ai/code) on this repo. Code only; it can't open
   Studio. It commits and pushes, then a Studio sync applies the change.
